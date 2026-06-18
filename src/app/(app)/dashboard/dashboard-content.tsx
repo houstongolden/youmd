@@ -554,8 +554,7 @@ function ShellYouMark({ collapsed, onToggleCollapsed }: { collapsed: boolean; on
       aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       className={[
-        "group relative flex shrink-0 cursor-pointer items-center overflow-hidden text-[hsl(var(--text-secondary))] transition-[background,color,opacity]",
-        collapsed ? "h-8 w-10 justify-center" : "h-8 w-[68px] justify-start",
+        "group relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center overflow-hidden p-0.5 text-[hsl(var(--text-secondary))] transition-[background,color,opacity]",
         "hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))]",
       ].join(" ")}
       style={{ borderRadius: "var(--radius)" }}
@@ -564,22 +563,22 @@ function ShellYouMark({ collapsed, onToggleCollapsed }: { collapsed: boolean; on
         role="img"
         aria-label="YOU"
         className={[
-          "absolute top-1/2 -translate-y-1/2 overflow-hidden text-[hsl(var(--text-primary))] transition-[opacity,transform] duration-150 group-hover:-translate-y-3 group-hover:opacity-0",
-          collapsed ? "left-0.5 h-5 w-9" : "left-1 h-7 w-[62px]",
+          "relative h-full w-full overflow-hidden text-[hsl(var(--text-primary))] transition-[opacity,transform] duration-150 group-hover:-translate-y-1 group-hover:opacity-0",
         ].join(" ")}
       >
         <div
-          className={collapsed ? "origin-top-left scale-[0.094]" : "origin-top-left scale-[0.18]"}
+          className="absolute left-1/2 top-1/2"
+          style={{
+            transform: "translate(-50%, -50%) scale(0.095)",
+            transformOrigin: "center",
+          }}
           aria-hidden="true"
         >
           <PixelYOU />
         </div>
       </div>
       <MenuGlyph
-        className={[
-          "absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-2 text-[hsl(var(--accent))] opacity-0 transition-[opacity,transform] duration-150 group-hover:-translate-y-1/2 group-hover:opacity-90",
-          collapsed ? "" : "sm:left-6",
-        ].join(" ")}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 translate-y-2 text-[hsl(var(--accent))] opacity-0 transition-[opacity,transform] duration-150 group-hover:-translate-y-1/2 group-hover:opacity-90"
       />
     </button>
   );

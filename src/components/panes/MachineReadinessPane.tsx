@@ -10,7 +10,7 @@ import type {
   LocalProjectReadiness,
 } from "@/lib/local-machine-readiness.server";
 import { CopyableCommand } from "./CopyableCommand";
-import { PaneDivider, PaneHeader, PaneSectionLabel } from "./shared";
+import { PaneCallout, PaneDivider, PaneHeader, PaneSectionLabel } from "./shared";
 import {
   FRESH_MACHINE_BOOTSTRAP_DAYS,
   FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS,
@@ -185,9 +185,7 @@ function MachineSetupHero({
   };
 
   return (
-    <section className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-5 py-5" style={{ borderRadius: "var(--radius)" }}>
-      <div className="border-l border-[hsl(var(--accent))]/70 pl-4">
-        <PaneSectionLabel>new machine setup</PaneSectionLabel>
+    <PaneCallout label="new machine setup" className="px-5 py-5">
         <h2 className="font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
           Copy one Claude/Codex setup prompt into a blank Mac to rebuild this working context.
         </h2>
@@ -239,8 +237,7 @@ function MachineSetupHero({
             key mint fallback: {error}
           </div>
         )}
-      </div>
-    </section>
+    </PaneCallout>
   );
 }
 

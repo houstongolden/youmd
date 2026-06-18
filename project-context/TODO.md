@@ -7,6 +7,14 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-18 — Shell callout and logo polish
+- [x] Clarify Mac mini Secret Vault flow: the new Mac does not need the vault passphrase first; it registers as a trusted device, then the source Mac runs `youmd env vault share` once using the source vault passphrase locally
+- [x] Add shared `PaneCallout` styling so top explainer/copy-prompt blocks match the Skills tab left-border + gradient treatment
+- [x] Convert Skills, Machine setup, and Vault explainer blocks to the shared callout
+- [x] Replace the unreadable bright-orange Vault explainer with a dark, readable callout
+- [x] Contain the top sidebar YOU logo in a fixed square parent for expanded and collapsed sidebar states
+- [x] Verify with root TypeScript, full production build, local server restart, and Codex in-app Browser screenshots for Vault, Skills, Machine, and collapsed sidebar
+
 ### 2026-06-18 — Realtime agent bus for trusted Macs (`youmd@0.8.6`)
 - [x] Add owner-gated Convex realtime agent-bus records and HTTP `GET/POST /api/v1/me/agent-bus/messages`
 - [x] Add CLI `youmd agent send`, `youmd agent inbox`, and `youmd agent status`

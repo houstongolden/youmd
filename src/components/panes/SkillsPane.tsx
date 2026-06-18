@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 import { useUser } from "@/lib/you-auth";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { PaneSectionLabel, PaneDivider } from "./shared";
+import { PaneCallout, PaneSectionLabel, PaneDivider } from "./shared";
 import { skillPropagation } from "@/data/portfolioGraph";
 
 interface SkillEntry {
@@ -449,17 +449,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   return (
     <div className="p-6 space-y-6">
       {/* ── Always-visible explainer ─────────────────────────── */}
-      <div
-        className="relative overflow-hidden border border-[hsl(var(--border))]/80 p-4 space-y-3"
-        style={{
-          borderRadius: "var(--radius)",
-          background: "linear-gradient(90deg, hsl(var(--accent) / 0.055), hsl(var(--bg)) 38%)",
-        }}
-      >
-        <span aria-hidden className="absolute left-0 top-0 h-full w-px bg-[hsl(var(--accent))]/70" />
-        <div className="text-[11px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider">
-          skills
-        </div>
+      <PaneCallout label="skills">
         <p className="text-[11px] font-mono text-[hsl(var(--text-primary))] opacity-80 leading-relaxed">
           Identity-aware agent instructions that get rendered with YOUR data
           and shipped to your AI tools (Claude Code, Cursor, etc.)
@@ -527,7 +517,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
             {showAllSkills ? "hide all skills" : "view all skills"}
           </button>
         </div>
-      </div>
+      </PaneCallout>
 
       <div>
         <PaneSectionLabel>local agent sync</PaneSectionLabel>

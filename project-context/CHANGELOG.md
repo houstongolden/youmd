@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-18 — Shell callout and sidebar logo polish
+
+### fix(shell): make pane intro blocks consistent and readable
+- Added a shared `PaneCallout` primitive matching the Skills tab treatment: subtle left accent line, faint left-to-right gradient, dark background, 2px radius, and restrained terminal typography.
+- Moved the Skills, Machine/new-computer setup, and Vault top explainer blocks onto the shared callout so copyable prompt/setup sections keep one visual language.
+- Replaced the unreadable solid-orange Vault explainer with the shared callout while preserving the private-notes vault explanation.
+- Contained the top sidebar YOU mark in a fixed `40px` square button with inner padding so expanded/collapsed sidebar states no longer crop the logo.
+- Verification: root TypeScript pass, full production Next build, local `next start -p 3100`, and Codex in-app Browser visual checks for Vault, Skills, Machine, and collapsed sidebar logo. No browser console warnings/errors observed.
+
 ## 2026-06-18 — Desktop demo light/dark theme switch
 
 ### feat(web): visible theme toggle for `/desktop-demo`
