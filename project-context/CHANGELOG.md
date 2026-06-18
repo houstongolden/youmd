@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo mobile polish (swipe + safe areas)
+
+### feat(web): native-feeling mobile gestures and notch handling for `/desktop-demo`
+- Added swipe gestures via a new `useSwipe` hook (touchstart/touchend only — never preventDefault, so it can't break scrolling): edge-swipe right (within 32px of the left edge) opens the drawer, swipe left closes it. Verified end-to-end with synthetic touch events (`translate -100% → 0 → -100%`).
+- Added safe-area insets so the chrome dodges the notch and home indicator on modern phones: title bar gets `pt-[env(safe-area-inset-top)]` (now `min-h` so it grows below the notch instead of squishing) and the bottom tab bar gets `pb-[env(safe-area-inset-bottom)]`. Enabled `viewport-fit=cover` via a page-scoped `viewport` export so those insets actually resolve.
+- Drawer now casts a shadow over the dimmed workspace for clearer depth.
+- Verified on a 390×844 phone viewport (system Chromium): swipe open/close works, layout intact, TypeScript + radius lint pass, dev serves HTTP 200.
+
 ## 2026-06-18 — Mobile-responsive desktop demo (`/desktop-demo`)
 
 ### fix(web): make the desktop app demo usable on phones

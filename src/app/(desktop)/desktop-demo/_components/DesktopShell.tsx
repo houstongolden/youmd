@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PRIMARY_NAV, type ViewId } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
+import { useSwipe } from "../_lib/useSwipe";
 import { cn } from "../_lib/cn";
 import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
@@ -59,7 +60,7 @@ function MobileTabBar({
     { id: "view" as const, label: viewMeta?.label ?? "Workspace", icon: viewMeta?.icon ?? ("home" as const) },
   ];
   return (
-    <nav className="flex shrink-0 border-t border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
+    <nav className="flex shrink-0 border-t border-[hsl(var(--border))] bg-[hsl(var(--bg))] pb-[env(safe-area-inset-bottom)]">
       {tabs.map((t) => {
         const active = pane === t.id;
         return (
@@ -104,6 +105,14 @@ export function DesktopShell() {
     else setSidebarCollapsed((c) => !c);
   };
 
+  // Edge-swipe right opens the drawer; swipe left closes it.
+  const workspaceSwipe = useSwipe({
+    edgeOnly: 32,
+    onSwipeRight: () => setDrawerOpen(true),
+    onSwipeLeft: () => setDrawerOpen(false),
+  });
+  const drawerSwipe = useSwipe({ onSwipeLeft: () => setDrawerOpen(false) });
+
   const title = isMobile
     ? mobilePane === "chat"
       ? "Chat"
@@ -135,8 +144,9 @@ export function DesktopShell() {
               />
             )}
             <div
+              {...drawerSwipe}
               className={cn(
-                "absolute inset-y-0 left-0 z-30 w-64 max-w-[82%] transition-transform duration-200",
+                "absolute inset-y-0 left-0 z-30 w-64 max-w-[82%] shadow-2xl transition-transform duration-200",
                 drawerOpen ? "translate-x-0" : "-translate-x-full",
               )}
             >
@@ -144,7 +154,7 @@ export function DesktopShell() {
             </div>
 
             {/* Single-column workspace */}
-            <div className="flex min-w-0 flex-1 flex-col">
+            <div {...workspaceSwipe} className="flex min-w-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-hidden">
                 {mobilePane === "chat" ? (
                   <ChatPanel full />

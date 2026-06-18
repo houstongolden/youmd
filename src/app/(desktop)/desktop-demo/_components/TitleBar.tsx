@@ -24,7 +24,7 @@ export function TitleBar({
   onToggleChatFull: () => void;
 }) {
   return (
-    <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 md:h-10 md:gap-3">
+    <div className="flex min-h-[44px] shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 pt-[env(safe-area-inset-top)] md:h-10 md:min-h-0 md:gap-3 md:pt-0">
       {/* traffic lights — desktop only */}
       <div className="hidden items-center gap-2 md:flex">
         {["#ED6A5E", "#F4BF4F", "#61C554"].map((c) => (
