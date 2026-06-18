@@ -13,7 +13,7 @@ const STATUS_TONE = {
 
 export function AppsView() {
   return (
-    <div className="mx-auto h-full max-w-3xl overflow-y-auto px-8 py-8">
+    <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
       <h2 className="mb-1 font-mono text-xl font-semibold tracking-tight">Connections</h2>
       <p className="mb-6 text-[13px] text-[hsl(var(--text-secondary))]/80">
         Every app feeds your brain. Crawlers, capture, and your own MCP/API pull
@@ -21,7 +21,7 @@ export function AppsView() {
       </p>
 
       <SectionLabel className="mb-2">Active</SectionLabel>
-      <div className="mb-6 grid grid-cols-2 gap-3">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {APPS.filter((a) => a.status !== "available").map((a) => {
           const st = STATUS_TONE[a.status];
           return (
@@ -50,7 +50,7 @@ export function AppsView() {
       </div>
 
       <SectionLabel className="mb-2">Available</SectionLabel>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {APPS.filter((a) => a.status === "available").map((a) => (
           <button
             key={a.id}

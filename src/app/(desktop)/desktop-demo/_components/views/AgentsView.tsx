@@ -66,7 +66,7 @@ export function AgentsView() {
   const [spawning, setSpawning] = useState(false);
 
   return (
-    <div className="mx-auto h-full max-w-3xl overflow-y-auto px-8 py-8">
+    <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
       <div className="mb-1 flex items-center gap-2">
         <Icon name="agent" size={18} className="text-[hsl(var(--accent))]" />
         <h2 className="font-mono text-xl font-semibold tracking-tight">Sub-agents</h2>

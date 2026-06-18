@@ -32,16 +32,16 @@ export function GraphView() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-5 py-2.5">
-        <SectionLabel>Knowledge graph</SectionLabel>
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3 border-b border-[hsl(var(--border))] px-4 py-2.5 md:px-5">
+        <SectionLabel className="shrink-0">Graph</SectionLabel>
+        <div className="flex items-center gap-2 overflow-x-auto md:gap-3">
           {Object.entries(KIND_STYLE).map(([k, s]) => (
-            <span key={k} className="flex items-center gap-1.5">
+            <span key={k} className="flex shrink-0 items-center gap-1.5">
               <span
                 style={{ background: s.ring, width: 8, height: 8, borderRadius: "50%" }}
                 aria-hidden
               />
-              <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/70">
+              <span className="hidden font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/70 sm:inline">
                 {s.label}
               </span>
             </span>

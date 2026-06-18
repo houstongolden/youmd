@@ -24,6 +24,8 @@ import {
   Columns2,
   ChevronRight,
   ChevronDown,
+  Menu,
+  X,
   Folder,
   FolderOpen,
   ArrowUp,
@@ -31,6 +33,8 @@ import {
   Circle,
   GitBranch,
   Boxes,
+  Sun,
+  Moon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -56,6 +60,8 @@ const MAP = {
   split: Columns2,
   chevronRight: ChevronRight,
   chevronDown: ChevronDown,
+  menu: Menu,
+  close: X,
   folder: Folder,
   folderOpen: FolderOpen,
   send: ArrowUp,
@@ -63,6 +69,8 @@ const MAP = {
   dot: Circle,
   branch: GitBranch,
   stack: Boxes,
+  sun: Sun,
+  moon: Moon,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof MAP;

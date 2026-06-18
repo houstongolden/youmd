@@ -9,10 +9,14 @@ export function Sidebar({
   collapsed,
   activeView,
   onNavigate,
+  theme,
+  onToggleTheme,
 }: {
   collapsed: boolean;
   activeView: ViewId;
   onNavigate: (v: ViewId) => void;
+  theme: "dark" | "light";
+  onToggleTheme: () => void;
 }) {
   return (
     <aside
@@ -84,8 +88,19 @@ export function Sidebar({
       {/* footer */}
       <div className={cn("border-t border-[hsl(var(--border))] px-2 py-2", collapsed && "px-0")}>
         <button
+          onClick={onToggleTheme}
+          title={collapsed ? `Switch to ${theme === "light" ? "dark" : "light"} mode` : undefined}
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg-raised))]",
+            "flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          <Icon name={theme === "light" ? "moon" : "sun"} size={16} />
+          {!collapsed && <span>{theme === "light" ? "Dark mode" : "Light mode"}</span>}
+        </button>
+        <button
+          className={cn(
+            "flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]",
             collapsed && "justify-center px-0",
           )}
         >

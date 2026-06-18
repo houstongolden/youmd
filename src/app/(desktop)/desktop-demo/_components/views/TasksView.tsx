@@ -28,14 +28,14 @@ export function TasksView() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-5 py-2.5">
+      <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--border))] px-4 py-2.5 md:px-5">
         <SectionLabel>Tasks</SectionLabel>
-        <span className="font-mono text-[11px] text-[hsl(var(--text-secondary))]/70">
-          {tasks.filter((t) => t.status !== "done").length} open · click a card to advance
+        <span className="truncate font-mono text-[11px] text-[hsl(var(--text-secondary))]/70">
+          {tasks.filter((t) => t.status !== "done").length} open · tap a card to advance
         </span>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-3 gap-3 overflow-y-auto p-4">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-4 sm:grid-cols-3">
         {COLUMNS.map((col) => {
           const colTasks = tasks.filter((t) => t.status === col.id);
           return (

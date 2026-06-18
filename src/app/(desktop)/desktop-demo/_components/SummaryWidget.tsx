@@ -7,7 +7,7 @@ import { Dot } from "./primitives";
 // Codex-style sticky summary widget, shown top-right in full-chat mode.
 export function SummaryWidget() {
   return (
-    <div className="w-64 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]/90 p-3 shadow-sm backdrop-blur">
+    <div className="w-64 max-w-[calc(100vw-2.5rem)] rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]/90 p-3 shadow-sm backdrop-blur">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Icon name="sparkles" size={12} className="text-[hsl(var(--accent))]" />

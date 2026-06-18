@@ -1,5 +1,38 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo light/dark theme switch
+
+### feat(web): visible theme toggle for `/desktop-demo`
+- Added a discoverable light/dark switch in the sidebar footer (sun/moon, "Light mode" / "Dark mode"), backed by a `useTheme` hook that toggles the `.light` class and persists `localStorage.theme` exactly like the rest of the site's pre-hydration theme bootstrap.
+- Theme state lives in `DesktopShell` and is shared by both the sidebar toggle and the ⌘K palette "Toggle light / dark theme" action, so they stay in sync.
+- Verified the full demo in light mode (warm off-white canvas, white panels, burnt-orange accent preserved across nav, chips, metrics, and project dots) — the design system's light variant holds up across every view. Toggle verified dark → light → dark; TypeScript + radius lint pass; dev serves HTTP 200.
+- Note: this work and future desktop-demo polish lives on a new branch / PR (`claude/desktop-demo-polish`) since the original demo PR (#23) was already merged.
+
+## 2026-06-18 — Desktop demo ⌘K command palette
+
+### feat(web): real command palette for `/desktop-demo`
+- Built a working ⌘K / Ctrl+K command palette (`CommandPalette.tsx`) — the title bar's "Search or run a command…" button and the mobile search icon now both open it instead of being dead UI. The whole product surface in one input, Notion/Linear/Raycast-style.
+- Grouped commands: **Navigate** (every view), **Notes** (open any vault file directly), **Projects** (jump into the graph), and **Actions** (spawn a YOU sub-agent, toggle light/dark theme, focus/split chat).
+- Full keyboard control: ⌘K toggles, type to fuzzy-filter, ↑/↓ to move across groups, Enter to run, Esc/backdrop to close; mouse hover also selects and the active row auto-scrolls into view.
+- Lifted the Notes editor's active-file state into `DesktopShell` so the palette can open a specific note (verified: filtering "voice" + Enter opens `identity/voice.md`).
+- Verified end-to-end via Playwright (system Chromium): shortcut opens it, filtering works, Enter runs the command and routes to the editor. TypeScript + radius lint pass; dev serves HTTP 200.
+
+## 2026-06-18 — Desktop demo mobile polish (swipe + safe areas)
+
+### feat(web): native-feeling mobile gestures and notch handling for `/desktop-demo`
+- Added swipe gestures via a new `useSwipe` hook (touchstart/touchend only — never preventDefault, so it can't break scrolling): edge-swipe right (within 32px of the left edge) opens the drawer, swipe left closes it. Verified end-to-end with synthetic touch events (`translate -100% → 0 → -100%`).
+- Added safe-area insets so the chrome dodges the notch and home indicator on modern phones: title bar gets `pt-[env(safe-area-inset-top)]` (now `min-h` so it grows below the notch instead of squishing) and the bottom tab bar gets `pb-[env(safe-area-inset-bottom)]`. Enabled `viewport-fit=cover` via a page-scoped `viewport` export so those insets actually resolve.
+- Drawer now casts a shadow over the dimmed workspace for clearer depth.
+- Verified on a 390×844 phone viewport (system Chromium): swipe open/close works, layout intact, TypeScript + radius lint pass, dev serves HTTP 200.
+
+## 2026-06-18 — Mobile-responsive desktop demo (`/desktop-demo`)
+
+### fix(web): make the desktop app demo usable on phones
+- Made `/desktop-demo` fully responsive (it was desktop-only and looked broken on mobile). Added a `useIsMobile` hook (matchMedia `< 768px`, SSR-safe — starts desktop, corrects on mount, no hydration mismatch).
+- Mobile layout: the macOS title bar collapses to a menu button + title + search icon (traffic lights / wide command bar / split-vs-full toggle hidden); the left sidebar becomes an off-canvas drawer with a dimmed backdrop (tap a nav item or the backdrop to close); the desktop split (chat + main view) collapses to a single column with a bottom tab bar that swaps between **Chat** and the active **Workspace** view.
+- View-level responsiveness: Home metric grid/quick-actions reflow, Notes stacks the vault file tree above the document (was a side rail), Tasks kanban stacks vertically, Connections grids go single-column, the Graph legend collapses to dots and nodes reflow via percentage positions, padding tightens across views, and the terminal helper label hides on small screens.
+- Verified on a 390×844 phone viewport (system Chromium via Playwright): chat, drawer, Notes, Graph, and Tasks all render cleanly with proper tap targets. TypeScript passes for all new/changed files; `scripts/check-radius.mjs` passes; dev serves `/desktop-demo` at HTTP 200 with no runtime errors.
+
 ## 2026-06-18 — Realtime agent bus and CLI 0.8.6 prep
 
 ### feat(sync): let trusted local agents message each other through You.md

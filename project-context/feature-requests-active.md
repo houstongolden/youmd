@@ -23,6 +23,7 @@ Last Updated: 2026-06-18
 9. Toggle to shell/terminal mode running Claude Code / Codex / any CLI agent in-app (Notion × Conductor / Obsidian × Cmux). **DONE** (`TerminalView` with claude/codex/shell tabs).
 10. Global principle: most powerful tool, most minimal product surface area. **APPLIED** throughout.
 **Notes:** Stack recommendation for the real native build (Tauri vs RN etc.) was requested — to be answered in chat, not in code. Demo deliberately uses mock data and canned interactions.
+**Follow-up (2026-06-18):** Houston reported it "looks terrible from my phone." Made the whole demo mobile-responsive — off-canvas drawer sidebar, single-column workspace with a bottom Chat/Workspace tab bar, collapsed title-bar chrome, and per-view reflow (Notes vault stacks on top, kanban/grids go single-column, graph legend → dots). Verified on a 390×844 phone viewport via system Chromium (screenshots of chat/drawer/Notes/Graph/Tasks). **DONE pending Houston re-check on `https://www.you.md/desktop-demo` after deploy.**
 
 ---
 

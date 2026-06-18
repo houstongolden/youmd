@@ -17,7 +17,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
       {/* Header */}
       <div className="mb-1 flex items-center gap-2">
         <SectionLabel>{WORKSPACE.brain}</SectionLabel>
@@ -28,12 +28,12 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
           </span>
         </span>
       </div>
-      <h1 className="mb-6 font-mono text-3xl font-semibold tracking-tight">
+      <h1 className="mb-6 font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
         {greeting()}, Houston
       </h1>
 
       {/* Metric row */}
-      <div className="mb-7 grid grid-cols-3 gap-3">
+      <div className="mb-7 grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: "Shipped · 7d", value: shipped7d, sub: "across 4 projects" },
           { label: "Open tasks", value: openTasks, sub: "2 high priority" },
@@ -41,11 +41,11 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
         ].map((m) => (
           <div
             key={m.label}
-            className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4"
+            className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 sm:p-4"
           >
             <SectionLabel>{m.label}</SectionLabel>
-            <div className="mt-2 font-mono text-2xl font-semibold tracking-tight">{m.value}</div>
-            <div className="mt-1 text-[12px] text-[hsl(var(--text-secondary))]/70">{m.sub}</div>
+            <div className="mt-2 font-mono text-xl font-semibold tracking-tight sm:text-2xl">{m.value}</div>
+            <div className="mt-1 text-[11px] text-[hsl(var(--text-secondary))]/70 sm:text-[12px]">{m.sub}</div>
           </div>
         ))}
       </div>
@@ -91,7 +91,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
 
       {/* Quick actions */}
       <SectionLabel className="mb-2">What&apos;s next</SectionLabel>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {[
           { v: "agents" as ViewId, icon: "agent" as const, t: "Spawn a YOU sub-agent", d: "Clone yourself into a scoped agent" },
           { v: "editor" as ViewId, icon: "file" as const, t: "Open your notes", d: "Identity, projects, ideas" },

@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import type { ViewId } from "../_data/mock";
+import { useEffect, useMemo, useState } from "react";
+import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, type ViewId } from "../_data/mock";
+import { useIsMobile } from "../_lib/useIsMobile";
+import { useSwipe } from "../_lib/useSwipe";
+import { useTheme } from "../_lib/useTheme";
+import { cn } from "../_lib/cn";
 import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
 import { ChatPanel } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
+import { CommandPalette, type Command } from "./CommandPalette";
+import { Icon } from "./icons";
 import { HomeView } from "./views/HomeView";
 import { EditorView } from "./views/EditorView";
 import { GraphView } from "./views/GraphView";
@@ -17,15 +23,19 @@ import { TerminalView } from "./views/TerminalView";
 function MainView({
   view,
   onNavigate,
+  editorFile,
+  onEditorSelect,
 }: {
   view: ViewId;
   onNavigate: (v: ViewId) => void;
+  editorFile: string;
+  onEditorSelect: (id: string) => void;
 }) {
   switch (view) {
     case "home":
       return <HomeView onNavigate={onNavigate} />;
     case "editor":
-      return <EditorView />;
+      return <EditorView activeId={editorFile} onSelect={onEditorSelect} />;
     case "graph":
       return <GraphView />;
     case "tasks":
@@ -39,56 +49,269 @@ function MainView({
   }
 }
 
+// Mobile-only bottom bar: swap between the conversation and the active
+// workspace view (the desktop split is collapsed into a single column).
+function MobileTabBar({
+  pane,
+  activeView,
+  onSelect,
+}: {
+  pane: "chat" | "view";
+  activeView: ViewId;
+  onSelect: (p: "chat" | "view") => void;
+}) {
+  const viewMeta = PRIMARY_NAV.find((n) => n.id === activeView);
+  const tabs = [
+    { id: "chat" as const, label: "Chat", icon: "chat" as const },
+    { id: "view" as const, label: viewMeta?.label ?? "Workspace", icon: viewMeta?.icon ?? ("home" as const) },
+  ];
+  return (
+    <nav className="flex shrink-0 border-t border-[hsl(var(--border))] bg-[hsl(var(--bg))] pb-[env(safe-area-inset-bottom)]">
+      {tabs.map((t) => {
+        const active = pane === t.id;
+        return (
+          <button
+            key={t.id}
+            onClick={() => onSelect(t.id)}
+            className={cn(
+              "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors",
+              active ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))]",
+            )}
+          >
+            <Icon name={t.icon} size={18} />
+            <span className="font-mono text-[10px] uppercase tracking-wider">{t.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function DesktopShell() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop rail
+  const [drawerOpen, setDrawerOpen] = useState(false); // mobile off-canvas
   const [chatFull, setChatFull] = useState(false);
   const [activeView, setActiveView] = useState<ViewId>("home");
+  const [mobilePane, setMobilePane] = useState<"chat" | "view">("chat");
+  const [editorFile, setEditorFile] = useState("identity/you.md");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const navigate = (v: ViewId) => {
     setActiveView(v);
-    // Jumping to a workspace view from full-chat returns to split so you can
-    // see it next to the conversation.
-    if (chatFull) setChatFull(false);
+    if (isMobile) {
+      setMobilePane("view");
+      setDrawerOpen(false);
+    } else if (chatFull) {
+      // Jumping to a workspace view from full-chat returns to split.
+      setChatFull(false);
+    }
   };
+
+  const openNote = (id: string) => {
+    setEditorFile(id);
+    navigate("editor");
+  };
+
+  // ⌘K / Ctrl+K toggles the command palette anywhere in the app.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // The whole product surface as a flat command list for the palette.
+  const commands = useMemo<Command[]>(() => {
+    const nav: Command[] = PRIMARY_NAV.map((n) => ({
+      id: `nav:${n.id}`,
+      label: `Go to ${n.label}`,
+      group: "Navigate",
+      icon: n.icon,
+      run: () => navigate(n.id),
+    }));
+
+    const notes: Command[] = Object.keys(FILE_CONTENT).map((id) => ({
+      id: `note:${id}`,
+      label: id.split("/").pop() ?? id,
+      group: "Notes",
+      icon: "file",
+      hint: id.includes("/") ? id.split("/").slice(0, -1).join("/") : undefined,
+      keywords: id,
+      run: () => openNote(id),
+    }));
+
+    const projects: Command[] = PROJECTS.map((p) => ({
+      id: `project:${p.slug}`,
+      label: `Open ${p.name} in graph`,
+      group: "Projects",
+      icon: "graph",
+      keywords: p.slug,
+      run: () => navigate("graph"),
+    }));
+
+    const actions: Command[] = [
+      {
+        id: "action:spawn",
+        label: "Spawn a YOU sub-agent",
+        group: "Actions",
+        icon: "sparkles",
+        run: () => navigate("agents"),
+      },
+      {
+        id: "action:theme",
+        label: "Toggle light / dark theme",
+        group: "Actions",
+        icon: "sparkles",
+        keywords: "appearance mode color",
+        run: toggleTheme,
+      },
+      {
+        id: "action:focus-chat",
+        label: chatFull ? "Exit full-chat (split view)" : "Focus chat (full width)",
+        group: "Actions",
+        icon: "chat",
+        keywords: "layout split focus conversation",
+        run: () => (isMobile ? setMobilePane("chat") : setChatFull((f) => !f)),
+      },
+    ];
+
+    return [...nav, ...notes, ...projects, ...actions];
+    // navigate/openNote are stable enough for the demo; rebuild on layout flags.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatFull, isMobile]);
+
+  const toggleSidebar = () => {
+    if (isMobile) setDrawerOpen((o) => !o);
+    else setSidebarCollapsed((c) => !c);
+  };
+
+  // Edge-swipe right opens the drawer; swipe left closes it.
+  const workspaceSwipe = useSwipe({
+    edgeOnly: 32,
+    onSwipeRight: () => setDrawerOpen(true),
+    onSwipeLeft: () => setDrawerOpen(false),
+  });
+  const drawerSwipe = useSwipe({ onSwipeLeft: () => setDrawerOpen(false) });
+
+  const title = isMobile
+    ? mobilePane === "chat"
+      ? "Chat"
+      : PRIMARY_NAV.find((n) => n.id === activeView)?.label ?? ""
+    : chatFull
+      ? "Chat"
+      : PRIMARY_NAV.find((n) => n.id === activeView)?.label ?? "";
 
   return (
     <div className="flex h-full w-full flex-col">
       <TitleBar
-        activeView={activeView}
+        title={title}
+        isMobile={isMobile}
         sidebarCollapsed={sidebarCollapsed}
-        onToggleSidebar={() => setSidebarCollapsed((c) => !c)}
+        onToggleSidebar={toggleSidebar}
         chatFull={chatFull}
         onToggleChatFull={() => setChatFull((f) => !f)}
+        onOpenCommand={() => setPaletteOpen(true)}
       />
 
-      <div className="flex min-h-0 flex-1">
-        <Sidebar collapsed={sidebarCollapsed} activeView={activeView} onNavigate={navigate} />
+      <div className="relative flex min-h-0 flex-1">
+        {isMobile ? (
+          <>
+            {/* Off-canvas drawer + backdrop */}
+            {drawerOpen && (
+              <button
+                aria-label="Close menu"
+                onClick={() => setDrawerOpen(false)}
+                className="absolute inset-0 z-20 bg-black/50"
+              />
+            )}
+            <div
+              {...drawerSwipe}
+              className={cn(
+                "absolute inset-y-0 left-0 z-30 w-64 max-w-[82%] shadow-2xl transition-transform duration-200",
+                drawerOpen ? "translate-x-0" : "-translate-x-full",
+              )}
+            >
+              <Sidebar
+                collapsed={false}
+                activeView={activeView}
+                onNavigate={navigate}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+              />
+            </div>
 
-        {chatFull ? (
-          // ── Full-chat mode: chat fills the workspace, Codex-style summary
-          //    widget floats top-right. No main area. ─────────────────────────
-          <div className="relative min-w-0 flex-1">
-            <ChatPanel full />
-            <div className="pointer-events-none absolute right-5 top-4">
-              <div className="pointer-events-auto">
-                <SummaryWidget />
+            {/* Single-column workspace */}
+            <div {...workspaceSwipe} className="flex min-w-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-hidden">
+                {mobilePane === "chat" ? (
+                  <ChatPanel full />
+                ) : (
+                  <div className="h-full overflow-y-auto bg-[hsl(var(--bg))]">
+                    <MainView
+                      view={activeView}
+                      onNavigate={navigate}
+                      editorFile={editorFile}
+                      onEditorSelect={setEditorFile}
+                    />
+                  </div>
+                )}
               </div>
+              <MobileTabBar pane={mobilePane} activeView={activeView} onSelect={setMobilePane} />
             </div>
-          </div>
+          </>
         ) : (
-          // ── Split mode: chat 1/3 on the left, main view 2/3 on the right. ──
-          <div className="flex min-w-0 flex-1">
-            <div className="flex w-[33%] min-w-[320px] max-w-[460px] flex-col border-r border-[hsl(var(--border))]">
-              <ChatPanel />
-            </div>
-            <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
-              <div className="h-full overflow-y-auto">
-                <MainView view={activeView} onNavigate={navigate} />
+          <>
+            <Sidebar
+              collapsed={sidebarCollapsed}
+              activeView={activeView}
+              onNavigate={navigate}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+            />
+
+            {chatFull ? (
+              // Full-chat: chat fills the workspace, summary widget floats.
+              <div className="relative min-w-0 flex-1">
+                <ChatPanel full />
+                <div className="pointer-events-none absolute right-5 top-4">
+                  <div className="pointer-events-auto">
+                    <SummaryWidget />
+                  </div>
+                </div>
               </div>
-            </main>
-          </div>
+            ) : (
+              // Split: chat 1/3 left, main view 2/3 right.
+              <div className="flex min-w-0 flex-1">
+                <div className="flex w-[33%] min-w-[320px] max-w-[460px] flex-col border-r border-[hsl(var(--border))]">
+                  <ChatPanel />
+                </div>
+                <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
+                  <div className="h-full overflow-y-auto">
+                    <MainView
+                      view={activeView}
+                      onNavigate={navigate}
+                      editorFile={editorFile}
+                      onEditorSelect={setEditorFile}
+                    />
+                  </div>
+                </main>
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        commands={commands}
+        onClose={() => setPaletteOpen(false)}
+      />
     </div>
   );
 }

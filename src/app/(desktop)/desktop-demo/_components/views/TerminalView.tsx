@@ -109,7 +109,7 @@ export function TerminalView() {
             {a.label}
           </button>
         ))}
-        <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/40">
+        <span className="ml-auto hidden font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/40 sm:inline">
           run any CLI agent inside you.md
         </span>
       </div>
