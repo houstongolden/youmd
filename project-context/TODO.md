@@ -7,6 +7,14 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-18 — Machine tab new-computer setup surface
+- [x] Add a top Machine pane setup panel matching the Skills tab intro style
+- [x] Add a primary `copy setup command` action that mints a 7-day scoped bootstrap key from the signed-in shell
+- [x] Copy the full Claude Code/Codex blank-Mac setup command from the Machine tab, not from this Mac's external clipboard state
+- [x] Keep `/new computer` as an explicit fallback command for shell-chat generation
+- [x] State the expected blank-computer outcome in the pane: You.md install, auth, identity sync, shared skills/stacks, agent host config, `CODE_YOU`, env vault, active/focused project clones, proof sync, and resident daemons
+- [ ] Run signed-in visual click proof in `/shell?tab=machine` and verify clipboard shape from the Machine pane button
+
 ### 2026-06-17 — Shell dedicated path drill-ins
 - [x] Add dedicated hard-refreshable shell routes for project, stack, and skill detail pages: `/shell/projects/[projectSlug]`, `/shell/stacks/[stackSlug]`, and `/shell/skills/[skillName]`
 - [x] Teach the shell pane router to open Portfolio, YouStacks, and Skills from those pathname drill-ins

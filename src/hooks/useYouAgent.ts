@@ -108,23 +108,23 @@ type BrainDumpCommand = {
   }>;
 };
 
-const FRESH_MACHINE_BOOTSTRAP_SCOPES = [
+export const FRESH_MACHINE_BOOTSTRAP_SCOPES = [
   "read:public",
   "read:private",
   "write:bundle",
   "write:memories",
 ];
 
-const FRESH_MACHINE_BOOTSTRAP_ROOT = "~/Desktop/CODE_YOU";
-const FRESH_MACHINE_BOOTSTRAP_DAYS = 30;
-const FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS = 90;
-const FRESH_MACHINE_BOOTSTRAP_LIMIT = 80;
+export const FRESH_MACHINE_BOOTSTRAP_ROOT = "~/Desktop/CODE_YOU";
+export const FRESH_MACHINE_BOOTSTRAP_DAYS = 30;
+export const FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS = 90;
+export const FRESH_MACHINE_BOOTSTRAP_LIMIT = 80;
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\"'\"'`)}'`;
 }
 
-function buildFreshMachineBootstrapCommand(apiKey?: string): string {
+export function buildFreshMachineBootstrapCommand(apiKey?: string): string {
   const script = [
     "set -euo pipefail",
     'ROOT="${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}"',

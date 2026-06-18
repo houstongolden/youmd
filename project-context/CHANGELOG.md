@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-18 — Machine tab new-computer setup surface
+
+### feat(machine): copy the fresh-Mac bootstrap command from Machine
+- Added a top-of-pane `new machine setup` terminal panel to the Machine tab, matching the Skills tab's intro-block style.
+- The primary button mints a 7-day scoped `fresh-machine bootstrap` key from the signed-in shell and copies the full Claude Code/Codex setup command directly from the Machine tab.
+- The copied command is the same graph-backed flow used by `/new computer`: install You.md, authenticate, sync identity, restore shared skills/stacks and host config, create `~/Desktop/CODE_YOU`, clone active + Top Priority/Focusing projects from 30 days first, ask before 90-day expansion, restore the encrypted env vault, sync a machine proof, and install resident daemons.
+- Added a fallback button for copying `/new computer` when the user wants the shell chat to mint the command instead.
+- Verification: `npx tsc --noEmit --pretty false`, focused ESLint, full `npm run lint`, and `npm run build` passed. Headless Playwright redirected to sign-in, so signed-in visual click proof remains pending in the visible shell.
+
 ## 2026-06-18 — Portfolio graph hydrate and sync hash repair
 
 ### fix(cli): keep pull/status in sync after publishing the latest bundle

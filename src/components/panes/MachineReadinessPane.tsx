@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { RefreshCw } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
 import type {
   LocalMachineReadiness,
   LocalReadinessStatus,
@@ -11,6 +11,14 @@ import type {
 } from "@/lib/local-machine-readiness.server";
 import { CopyableCommand } from "./CopyableCommand";
 import { PaneDivider, PaneHeader, PaneSectionLabel } from "./shared";
+import {
+  FRESH_MACHINE_BOOTSTRAP_DAYS,
+  FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS,
+  FRESH_MACHINE_BOOTSTRAP_LIMIT,
+  FRESH_MACHINE_BOOTSTRAP_ROOT,
+  FRESH_MACHINE_BOOTSTRAP_SCOPES,
+  buildFreshMachineBootstrapCommand,
+} from "@/hooks/useYouAgent";
 
 type RootMode = "current" | "fresh";
 
@@ -70,11 +78,134 @@ function BooleanCell({ label, value }: { label: string; value: boolean }) {
   );
 }
 
+function MachineSetupHero({
+  clerkId,
+  onCopied,
+}: {
+  clerkId?: string;
+  onCopied: (label: string) => void;
+}) {
+  const createApiKey = useMutation(api.apiKeys.createKey);
+  const [copyState, setCopyState] = useState<"idle" | "minting" | "copied" | "fallback" | "failed">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  const copyText = async (text: string, label: string) => {
+    await navigator.clipboard.writeText(text);
+    onCopied(label);
+  };
+
+  const copyGeneratedCommand = async () => {
+    setError(null);
+    if (!clerkId) {
+      try {
+        await copyText(freshComputerShellCommand, "copied shell command");
+        setCopyState("fallback");
+      } catch {
+        setCopyState("failed");
+        setError("clipboard unavailable");
+      }
+      return;
+    }
+
+    setCopyState("minting");
+    try {
+      const result = await createApiKey({
+        clerkId,
+        label: "fresh-machine bootstrap",
+        scopes: FRESH_MACHINE_BOOTSTRAP_SCOPES,
+        expiresInDays: 7,
+      });
+      const command = buildFreshMachineBootstrapCommand(result.key);
+      await copyText(command, "copied setup command");
+      setCopyState("copied");
+    } catch (err) {
+      try {
+        await copyText(freshComputerShellCommand, "copied shell fallback");
+        setCopyState("fallback");
+      } catch {
+        setCopyState("failed");
+      }
+      setError(err instanceof Error ? err.message : "could not mint bootstrap key");
+    }
+  };
+
+  const copyShellCommand = async () => {
+    setError(null);
+    try {
+      await copyText(freshComputerShellCommand, "copied shell command");
+      setCopyState("fallback");
+    } catch {
+      setCopyState("failed");
+      setError("clipboard unavailable");
+    }
+  };
+
+  return (
+    <section className="border border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-5 py-5" style={{ borderRadius: "var(--radius)" }}>
+      <div className="border-l border-[hsl(var(--accent))]/70 pl-4">
+        <PaneSectionLabel>new machine setup</PaneSectionLabel>
+        <h2 className="font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
+          Copy one command into Claude Code or Codex on a blank Mac to rebuild this working context.
+        </h2>
+        <p className="mt-3 max-w-4xl font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">
+          Installs You.md, authenticates, pulls your identity bundle, syncs shared skills/stacks and agent host config, creates {FRESH_MACHINE_BOOTSTRAP_ROOT}, restores encrypted env files from the transferred vault, clones active focused projects, writes a machine proof, and starts resident sync.
+        </p>
+
+        <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          {[
+            ["30d first", `${FRESH_MACHINE_BOOTSTRAP_DAYS}-day active + Top Priority/Focusing project pass`],
+            ["90d optional", `asks before expanding to ${FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS}-day active project set`],
+            ["env vault", "requires ~/Desktop/youmd-env-vault/ on the new Mac for done-proof"],
+          ].map(([label, detail]) => (
+            <div key={label} className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg-raised))]/35 px-3 py-2">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--accent))]">{label}</div>
+              <div className="mt-1 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">{detail}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void copyGeneratedCommand()}
+            disabled={copyState === "minting"}
+            className="flex h-9 items-center gap-2 border border-[hsl(var(--border))] bg-[hsl(var(--accent))]/10 px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]/50 disabled:cursor-wait disabled:opacity-60"
+          >
+            <Copy size={13} />
+            {copyState === "minting" ? "minting key" : copyState === "copied" ? "setup command copied" : "copy setup command"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void copyShellCommand()}
+            className="h-9 border border-[hsl(var(--border))] bg-[hsl(var(--bg))]/60 px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-70 transition-colors hover:border-[hsl(var(--accent))]/35 hover:opacity-95"
+          >
+            copy /new computer
+          </button>
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-42">
+            {copyState === "copied"
+              ? "7-day scoped key embedded"
+              : copyState === "fallback"
+                ? "paste into You.md shell to mint"
+                : `${FRESH_MACHINE_BOOTSTRAP_LIMIT} project cap before expansion`}
+          </span>
+        </div>
+
+        {error && (
+          <div className="mt-3 font-mono text-[10px] leading-relaxed text-[hsl(var(--accent))] opacity-70">
+            key mint fallback: {error}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
   const [rootMode, setRootMode] = useState<RootMode>("current");
   const [report, setReport] = useState<LocalMachineReadiness | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copiedNotice, setCopiedNotice] = useState<string | null>(null);
   const syncedProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 8 } : "skip");
 
   const load = useCallback(async () => {
@@ -97,6 +228,11 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
       setLoading(false);
     }
   }, [rootMode]);
+
+  const handleCopied = useCallback((label: string) => {
+    setCopiedNotice(label);
+    window.setTimeout(() => setCopiedNotice(null), 1800);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -160,6 +296,15 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
     <div className="h-full overflow-y-auto">
       <PaneHeader>machine readiness</PaneHeader>
       <div className="max-w-6xl px-6 py-6">
+        <MachineSetupHero clerkId={clerkId} onCopied={handleCopied} />
+        {copiedNotice && (
+          <div className="mt-3 border-l border-[hsl(var(--success))]/70 bg-[hsl(var(--success))]/5 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--success))]">
+            {copiedNotice}
+          </div>
+        )}
+
+        <PaneDivider />
+
         <section className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <PaneSectionLabel>local agent host</PaneSectionLabel>
