@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Mobile-responsive desktop demo (`/desktop-demo`)
+
+### fix(web): make the desktop app demo usable on phones
+- Made `/desktop-demo` fully responsive (it was desktop-only and looked broken on mobile). Added a `useIsMobile` hook (matchMedia `< 768px`, SSR-safe — starts desktop, corrects on mount, no hydration mismatch).
+- Mobile layout: the macOS title bar collapses to a menu button + title + search icon (traffic lights / wide command bar / split-vs-full toggle hidden); the left sidebar becomes an off-canvas drawer with a dimmed backdrop (tap a nav item or the backdrop to close); the desktop split (chat + main view) collapses to a single column with a bottom tab bar that swaps between **Chat** and the active **Workspace** view.
+- View-level responsiveness: Home metric grid/quick-actions reflow, Notes stacks the vault file tree above the document (was a side rail), Tasks kanban stacks vertically, Connections grids go single-column, the Graph legend collapses to dots and nodes reflow via percentage positions, padding tightens across views, and the terminal helper label hides on small screens.
+- Verified on a 390×844 phone viewport (system Chromium via Playwright): chat, drawer, Notes, Graph, and Tasks all render cleanly with proper tap targets. TypeScript passes for all new/changed files; `scripts/check-radius.mjs` passes; dev serves `/desktop-demo` at HTTP 200 with no runtime errors.
+
 ## 2026-06-18 — Native desktop app design demo (`/desktop-demo`)
 
 ### feat(web): private, frontend-only desktop app UI/UX demo
