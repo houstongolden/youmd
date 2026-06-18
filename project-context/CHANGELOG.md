@@ -33,6 +33,14 @@
 - View-level responsiveness: Home metric grid/quick-actions reflow, Notes stacks the vault file tree above the document (was a side rail), Tasks kanban stacks vertically, Connections grids go single-column, the Graph legend collapses to dots and nodes reflow via percentage positions, padding tightens across views, and the terminal helper label hides on small screens.
 - Verified on a 390×844 phone viewport (system Chromium via Playwright): chat, drawer, Notes, Graph, and Tasks all render cleanly with proper tap targets. TypeScript passes for all new/changed files; `scripts/check-radius.mjs` passes; dev serves `/desktop-demo` at HTTP 200 with no runtime errors.
 
+## 2026-06-18 — Reference-intelligence follow-through visibility
+
+### chore(reference-intelligence): make daily upstream audits harder to misread
+- Verified that `steipete/agent-scripts` did have recent upstream activity on 2026-06-15 and 2026-06-16; the prior "no new commits" phrasing was only true relative to the last local sync head, not as a plain-English statement about recent upstream activity.
+- Updated `scripts/reference-intelligence.mjs` so generated reports now show the latest upstream commit timestamp and age for every tracked repo, while still separately reporting whether there was a delta since the previous local sync.
+- Added `project-context/reference-intelligence/FOLLOW_THROUGH.md` as the durable ledger of shipped reference-derived improvements and pending accepted tasks, so the daily loop has an explicit audit -> tracked task -> shipped outcome path.
+- Updated reference-intelligence docs and project trackers so future runs are expected to record accepted and shipped work, not only regenerate `LATEST.md` and `TASKS.md`.
+
 ## 2026-06-18 — Realtime agent bus and CLI 0.8.6 prep
 
 ### feat(sync): let trusted local agents message each other through You.md

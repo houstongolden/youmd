@@ -1,9 +1,9 @@
 # Reference-Derived You.md Tasks
 
-Last updated: 2026-06-18T15:32:12.187Z
+Last updated: 2026-06-18T22:37:55.014Z
 
-Use this as a review queue, not an automatic mandate. Only promote an item into `TODO.md` or implementation when it clearly improves YouStacks, You.md brain/context, memory, profiles, API/MCP, source-of-truth sync, safety, or docs.
+Use this as a review queue, not an automatic mandate. Only promote an item into `TODO.md` or implementation when it clearly improves YouStacks, You.md brain/context, memory, profiles, API/MCP, source-of-truth sync, safety, or docs. Record accepted or shipped follow-through in `project-context/reference-intelligence/FOLLOW_THROUGH.md`.
 
-- [ ] You.md retrieval layer
-  - Source: GBrain 9bf96db: v0.42.51.0 fix(sync): contention-free clock + checkpoint integrity + honest sync freshness (#2255)
-  - You.md review: Compare this retrieval/indexing signal against You.md memory search, project context search, and protected brain retrieval plans.
+- [ ] YouStacks workflow quality gates
+  - Source: GStack a861c00: v1.58.3.0 feat: gbrowser anti-detection Layer C stealth (#2047)
+  - You.md review: Consider adding or refining stack workflows, smoke tests, evals, or release-review loops based on this upstream quality pattern.

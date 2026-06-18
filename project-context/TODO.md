@@ -21,6 +21,12 @@ PRD Version: 2.3
 - [ ] Houston publishes `youmd@0.8.6` to npm with OTP
 - [ ] Mac mini reruns the setup prompt on `0.8.6`, sends a `machine-sync` message back, and both Macs show the same agent-bus inbox/status
 
+### 2026-06-18 — Reference-intelligence follow-through visibility
+- [x] Verify whether `steipete/agent-scripts` really had recent upstream activity and stop describing "no delta since last sync" as "no activity"
+- [x] Teach `npm run references:sync` to show the latest upstream commit timestamp/age for each tracked repo
+- [x] Add a durable `project-context/reference-intelligence/FOLLOW_THROUGH.md` ledger for shipped reference-derived improvements
+- [ ] Keep promoting accepted high-signal reference tasks into tracked implementation work instead of leaving them only in `TASKS.md`
+
 ### 2026-06-18 — Native desktop app design demo (`/desktop-demo`)
 - [x] Add a private, frontend-only `/desktop-demo` route (route group `(desktop)`, mock data, noindex, no SiteNav/Convex)
 - [x] macOS-style title bar (traffic lights, breadcrumb, ⌘K command bar, sidebar + chat-layout toggles)

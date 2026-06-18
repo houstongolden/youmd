@@ -79,7 +79,18 @@ function ensureRepo(repo) {
   return {
     remoteHead,
     commit: run("git", ["rev-parse", "HEAD"], { cwd: repo.localDir }),
+    latestCommitDate: run("git", ["show", "-s", "--date=iso-strict", "--format=%cd", "HEAD"], { cwd: repo.localDir, quiet: true }),
   };
+}
+
+function formatActivityAge(dateText) {
+  const thenMs = new Date(dateText).getTime();
+  if (!Number.isFinite(thenMs)) return "unknown age";
+  const diffMs = Math.max(0, now.getTime() - thenMs);
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
 }
 
 function getRemoteHead(repoDir) {
@@ -222,7 +233,7 @@ function uniqueTasks(tasks) {
 function markdownForRepo(repo, info, commits, previousCommit) {
   const localPath = path.relative(rootDir, repo.localDir);
   const newLabel = previousCommit === info.commit
-    ? `No new commits since ${previousCommit.slice(0, 7)}`
+    ? `No new commits since last sync (${previousCommit.slice(0, 7)})`
     : previousCommit && previousCommit !== info.commit
     ? `Changes since ${previousCommit.slice(0, 7)}`
     : "Recent commits";
@@ -234,6 +245,7 @@ function markdownForRepo(repo, info, commits, previousCommit) {
     `- Local path: \`${localPath}\``,
     `- Branch: \`${info.remoteHead}\``,
     `- Latest commit: \`${info.commit.slice(0, 12)}\``,
+    `- Latest upstream activity: ${info.latestCommitDate} (${formatActivityAge(info.latestCommitDate)})`,
     `- Mode: ${newLabel}`,
     "",
     commits.length === 0 ? "- No commits found." : commits.map((commit) => {
@@ -249,7 +261,7 @@ function renderReport(results, tasks) {
 
 Last updated: ${now.toISOString()}
 
-You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under \`.reference-repos/\` and are ignored by git.
+You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under \`.reference-repos/\` and are ignored by git. "No new commits since last sync" means no delta versus the previous local reference head, not "the upstream repo has been inactive."
 
 Tracked lighthouses:
 
@@ -264,6 +276,10 @@ Run:
 npm run references:sync
 \`\`\`
 
+Follow-through ledger:
+
+- \`project-context/reference-intelligence/FOLLOW_THROUGH.md\`
+
 ${results.map((result) => markdownForRepo(result.repo, result.info, result.commits, result.previousCommit)).join("\n\n")}
 
 ## Candidate Tasks
@@ -277,7 +293,7 @@ function renderTasks(tasks) {
 
 Last updated: ${now.toISOString()}
 
-Use this as a review queue, not an automatic mandate. Only promote an item into \`TODO.md\` or implementation when it clearly improves YouStacks, You.md brain/context, memory, profiles, API/MCP, source-of-truth sync, safety, or docs.
+Use this as a review queue, not an automatic mandate. Only promote an item into \`TODO.md\` or implementation when it clearly improves YouStacks, You.md brain/context, memory, profiles, API/MCP, source-of-truth sync, safety, or docs. Record accepted or shipped follow-through in \`project-context/reference-intelligence/FOLLOW_THROUGH.md\`.
 
 ${tasks.length === 0 ? "- [ ] No new candidates from this sync." : tasks.map((item) => `- [ ] ${item.surface}\n  - Source: ${item.source}\n  - You.md review: ${item.action}`).join("\n")}
 `;

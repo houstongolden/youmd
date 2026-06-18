@@ -6,6 +6,18 @@ Last Updated: 2026-06-18
 
 ## 2026-06-18 — Native desktop app design demo (frontend only)
 
+### 139. Make the daily reference-intelligence loop prove actual You.md follow-through
+**Status:** DONE locally
+**Verified:** YES (`npm run references:sync` regenerated the reference artifacts with the new semantics, and the new follow-through ledger exists in project context)
+**Production Verified:** NO
+**Source:** 2026-06-18 — Houston: "are you sure? ... i've seen some activity on it the last day or two ... tell me what actionable follow ups and improvements you have taken ... if not, i need you to do more than just audit"
+**Actionable Scope:**
+1. Verify whether `steipete/agent-scripts` actually had recent upstream activity instead of trusting the prior summary. **DONE.**
+2. Stop using phrasing that can make "no delta since last sync" sound like "no recent upstream activity". **DONE.**
+3. Add a durable place to record what changed in You.md because of accepted reference-derived work. **DONE.**
+4. Update docs/tracking so future daily runs are expected to leave a visible follow-through trail. **DONE.**
+**Progress (2026-06-18):** Verified directly against the GitHub commits feed that `steipete/agent-scripts` had recent upstream activity on 2026-06-15 and 2026-06-16, with local reference head `6e512e6` matching the latest public commit. Patched `scripts/reference-intelligence.mjs` so `LATEST.md` now reports the latest upstream commit timestamp/age for each tracked repo and keeps "no new commits since last sync" scoped to the local-delta meaning. Added `project-context/reference-intelligence/FOLLOW_THROUGH.md` to show which reference-derived tasks have already changed You.md and which accepted tasks remain pending. Updated `REFERENCE_INTELLIGENCE.md`, `TODO.md`, `FEATURES.md`, and `CHANGELOG.md` so the daily loop is explicitly expected to produce tracked/shipped follow-through, not only raw audit artifacts.
+
 ### 138. Build a private, hosted, non-functional desktop-app frontend at `/desktop-demo` to lock the new UI/UX
 **Status:** DONE pending Houston verification (frontend-only design demo; intentionally non-functional)
 **Verified:** PARTIAL (production `next build` compiled + TypeScript passed for all new files; `scripts/check-radius.mjs` passes; dev server serves `/desktop-demo` HTTP 200 with expected content and no runtime errors. Visual screenshot proof blocked — Playwright browser binary download is disallowed by the sandbox network policy.)
