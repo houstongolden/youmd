@@ -11,12 +11,14 @@ export function Sidebar({
   onNavigate,
   theme,
   onToggleTheme,
+  onOpenStatus,
 }: {
   collapsed: boolean;
   activeView: ViewId;
   onNavigate: (v: ViewId) => void;
   theme: "dark" | "light";
   onToggleTheme: () => void;
+  onOpenStatus: () => void;
 }) {
   return (
     <aside
@@ -25,8 +27,15 @@ export function Sidebar({
         collapsed ? "w-[58px]" : "w-60",
       )}
     >
-      {/* workspace switcher */}
-      <div className={cn("flex items-center gap-2.5 px-3 py-3", collapsed && "justify-center px-0")}>
+      {/* workspace switcher — also the system-status (background activity) trigger */}
+      <button
+        onClick={onOpenStatus}
+        title={collapsed ? "System status" : undefined}
+        className={cn(
+          "flex items-center gap-2.5 px-3 py-3 text-left transition-colors hover:bg-[hsl(var(--bg-raised))]",
+          collapsed && "justify-center px-0",
+        )}
+      >
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-sm bg-[hsl(var(--accent))] font-mono text-[13px] font-bold text-white">
           Y
         </span>
@@ -36,12 +45,12 @@ export function Sidebar({
             <div className="flex items-center gap-1.5">
               <Dot tone="green" pulse size={5} />
               <span className="truncate font-mono text-[10px] text-[hsl(var(--text-secondary))]/70">
-                {WORKSPACE.brain} · {WORKSPACE.machines} machines
+                {WORKSPACE.brain} · synced · {WORKSPACE.machines} machines
               </span>
             </div>
           </div>
         )}
-      </div>
+      </button>
 
       {/* sectioned primary nav (Context / Stacks / Runtime) */}
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 pt-1">

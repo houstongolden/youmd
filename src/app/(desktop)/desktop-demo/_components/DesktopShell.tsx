@@ -11,6 +11,7 @@ import { TitleBar } from "./TitleBar";
 import { ChatPanel } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
+import { SystemStatus } from "./SystemStatus";
 import { Icon } from "./icons";
 import { HomeView } from "./views/HomeView";
 import { EditorView } from "./views/EditorView";
@@ -107,6 +108,7 @@ export function DesktopShell() {
   const [editorFile, setEditorFile] = useState("identity/you.md");
   const [selectedProject, setSelectedProject] = useState(PROJECTS[0].slug);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
 
   const navigate = (v: ViewId) => {
@@ -270,6 +272,7 @@ export function DesktopShell() {
                 onNavigate={navigate}
                 theme={theme}
                 onToggleTheme={toggleTheme}
+                onOpenStatus={() => setStatusOpen(true)}
               />
             </div>
 
@@ -302,6 +305,7 @@ export function DesktopShell() {
               onNavigate={navigate}
               theme={theme}
               onToggleTheme={toggleTheme}
+              onOpenStatus={() => setStatusOpen(true)}
             />
 
             {chatFull ? (
@@ -343,6 +347,7 @@ export function DesktopShell() {
         commands={commands}
         onClose={() => setPaletteOpen(false)}
       />
+      <SystemStatus open={statusOpen} onClose={() => setStatusOpen(false)} />
     </div>
   );
 }

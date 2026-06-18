@@ -85,6 +85,31 @@ RUNTIME   Agents · Terminal
 - **Projects** weren't first-class → added a Projects view: per-project context, its tasks, its stack, and repo/API/MCP links (the spine connecting WORK ↔ CAPABILITIES).
 - **Brain** under-represented memory → folded memories + goals into the vault and relabeled Notes → Brain.
 
+## 7b. Background vs. foreground — the hard line (decided)
+
+The single most important product decision: what the user *acts on* (foreground)
+vs. what *just works* (background, awareness-only, never config). Drawn explicitly:
+
+**Background — awareness only, surfaced in one System Status popover ("managed
+by your daemons — nothing to configure"):**
+- Identity sync daemon, skill + stack sync, project-context sync, realtime websocket
+- Crawlers / source ingestion
+- Skill propagation across machines, identity compile/push, env vault, machine bootstrap
+- Machine online/offline + last-sync state
+
+The user never configures these in the desktop app. They are installed by the
+curl one-liner and run as daemons. The app shows a calm green pulse; clicking it
+reveals the live background activity. That popover IS the entire "settings"
+surface for the magic layer.
+
+**Foreground — first-class screens the user acts on:**
+- Chat (scope-aware), Brain (identity/memories/notes), Projects, Tasks,
+  Skills & Stacks, Agents (spawn/scope), Connections (connect an app), Terminal.
+
+Home is the **daily-brief command center**: an AI brief line, a "Needs attention"
+list of cross-project follow-ups, metrics, and the projects glance — the one
+screen that orients you across everything.
+
 ## 8. The governing principle
 
 Because curl + daemons + API/MCP do the heavy lifting behind the scenes, the

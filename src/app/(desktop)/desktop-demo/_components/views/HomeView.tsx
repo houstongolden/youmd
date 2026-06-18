@@ -1,6 +1,6 @@
 "use client";
 
-import { PROJECTS, TASKS, SUB_AGENTS, WORKSPACE, type ViewId } from "../../_data/mock";
+import { PROJECTS, TASKS, SUB_AGENTS, WORKSPACE, DAILY_BRIEF, type ViewId } from "../../_data/mock";
 import { Panel, Dot, Chip, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
 
@@ -15,6 +15,10 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   const shipped7d = PROJECTS.reduce((a, p) => a + p.shipped7d, 0);
   const openTasks = TASKS.filter((t) => t.status !== "done").length;
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
+  // Cross-project follow-ups that want a human: high-priority or you-owned.
+  const needsAttention = TASKS.filter(
+    (t) => t.status !== "done" && (t.priority === "high" || t.owner === "you"),
+  ).slice(0, 4);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
@@ -28,9 +32,15 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
           </span>
         </span>
       </div>
-      <h1 className="mb-6 font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
+      <h1 className="mb-3 font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
         {greeting()}, Houston
       </h1>
+
+      {/* AI daily brief — your agent's read on the day */}
+      <div className="mb-6 flex items-start gap-2.5 rounded-sm border-l-2 border-[hsl(var(--accent))]/60 bg-[hsl(var(--bg-raised))] px-3.5 py-3">
+        <Icon name="sparkles" size={14} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" />
+        <p className="text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]">{DAILY_BRIEF}</p>
+      </div>
 
       {/* Metric row */}
       <div className="mb-7 grid grid-cols-3 gap-2 sm:gap-3">
@@ -49,6 +59,38 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
           </div>
         ))}
       </div>
+
+      {/* Needs attention — cross-project follow-ups that want a human */}
+      <Panel
+        title="Needs attention"
+        right={
+          <button
+            onClick={() => onNavigate("tasks")}
+            className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]"
+          >
+            all tasks →
+          </button>
+        }
+        bodyClassName="p-0"
+        className="mb-5"
+      >
+        <div className="divide-y divide-[hsl(var(--border))]">
+          {needsAttention.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => onNavigate("tasks")}
+              className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[hsl(var(--bg))]"
+            >
+              <Dot tone={t.priority === "high" ? "orange" : "green"} size={6} />
+              <span className="flex-1 truncate text-[13px]">{t.title}</span>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">
+                {t.project}
+              </span>
+              <Chip tone={t.owner === "agent" ? "accent" : "default"}>{t.owner === "agent" ? "agent" : "you"}</Chip>
+            </button>
+          ))}
+        </div>
+      </Panel>
 
       {/* Projects */}
       <Panel

@@ -446,3 +446,25 @@ export const AGENT_BUS: BusMessage[] = [
   { id: "b2", from: "research-you", device: "Mac-mini", channel: "bigbounce", text: "Synced 3 new sources, drafting section 3.", at: "1m ago" },
   { id: "b3", from: "ops-you", device: "Houstons-MBP", channel: "machine-sync", text: "studio-vm online, identity + skills pulled.", at: "4m ago" },
 ];
+
+// ── Background daemons (the "it just works" layer — awareness, never config) ─
+// These run behind the scenes via the curl install + resident daemons. The
+// desktop app only ever shows their STATE, never controls — that's the
+// product line between background and foreground.
+export type Daemon = {
+  name: string;
+  detail: string;
+  last: string;
+};
+
+export const DAEMONS: Daemon[] = [
+  { name: "identity sync", detail: "every 5 min", last: "just now" },
+  { name: "skill + stack sync", detail: "every 5 min", last: "1m ago" },
+  { name: "project-context sync", detail: "every 15 min", last: "8m ago" },
+  { name: "realtime websocket", detail: "live", last: "now" },
+  { name: "crawlers", detail: "5 sources · GitHub, Slack, X…", last: "2m ago" },
+];
+
+// One-line AI brief for Home (like the Codex/assistant brief in the inspo).
+export const DAILY_BRIEF =
+  "84 changes shipped across 4 projects this week — you.md leads with 41. Two follow-ups need you, and everything's synced across 3 machines.";

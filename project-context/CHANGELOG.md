@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo: background-magic layer + daily-brief Home
+
+### feat(web): make the "it just works behind the scenes" layer visible (awareness only)
+- Decided and implemented the hard background/foreground line (documented in the audit, §7b). Everything that runs on its own — identity/skill/stack/project-context sync daemons, the realtime websocket, crawlers, machine sync — is now surfaced in a single **System Status popover** opened from the sidebar workspace header. It's awareness only: live daemon state + intervals + last-run, machines online, and recent background activity, footed with "managed by your daemons — nothing to configure." No controls, no config — that's the product line vs. the foreground screens you act on.
+- Reworked **Home into a daily-brief command center**: an AI brief line (your agent's read on the day), a **Needs attention** list of cross-project follow-ups (high-priority / you-owned tasks, click → Tasks), the metric row, and the projects glance.
+- Verified desktop + mobile render consistently (system Chromium): the status popover and the new Home reflow cleanly at 1440px and 390px. TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-18 — Desktop demo: scope-aware chat + contextual agent actions
 
 ### feat(web): make the `/desktop-demo` agent context-aware
