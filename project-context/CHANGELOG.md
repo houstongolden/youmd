@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo restructured around the MECE product model
+
+### feat(web): audit-driven IA + Skills/Projects/Devices for `/desktop-demo`
+- Ran a full product-surface audit (saved to `project-context/DESKTOP_APP_AUDIT_2026-06-18.md`): mapped every feature across web/CLI/API/YouStacks/shared-skills/second-brain/realtime-sync into four MECE buckets — **Context · Work · Capabilities · Runtime** — and defined what the desktop daily-driver intentionally leaves out vs. the web control plane.
+- Restructured the demo's navigation into a sectioned rail matching the model: **Home**, then **Context** (Brain · Projects · Tasks · Graph), **Stacks** (Skills · Connections), **Runtime** (Agents · Terminal). Chat + Terminal are modes; everything else is reachable via ⌘K.
+- Closed the biggest vision gaps in the mockup:
+  - **Skills view (new):** stacks grouped by domain with visibility (private/scoped/public), shared skills with DRY "shared Nx · 0 duplicated" indicators, and meta-skills (meta-improve, skill-forge).
+  - **Projects view (new):** the spine — per-project context, its tasks, its assigned stack, and repo/API/MCP links (connects Work ↔ Capabilities).
+  - **Agents view (enhanced):** added a **Devices** section (machines syncing in realtime) and an **agent-bus** feed (cross-machine, cross-agent messages) — surfacing the realtime sync + agent-bus work that was previously invisible in the demo.
+  - **Brain (was Notes):** folded memories + goals into the vault and relabeled.
+- Verified the restructure visually (system Chromium): sectioned nav, Skills, Projects, and Agents/Devices all render cleanly. TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-18 — Desktop demo light/dark theme switch
 
 ### feat(web): visible theme toggle for `/desktop-demo`

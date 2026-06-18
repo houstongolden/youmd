@@ -9,8 +9,10 @@ import type { IconName } from "../_components/icons";
 export type ViewId =
   | "home"
   | "editor"
-  | "graph"
+  | "projects"
   | "tasks"
+  | "graph"
+  | "skills"
   | "apps"
   | "agents"
   | "terminal";
@@ -21,15 +23,41 @@ export type NavItem = {
   icon: IconName;
 };
 
-export const PRIMARY_NAV: NavItem[] = [
-  { id: "home", label: "Home", icon: "home" },
-  { id: "editor", label: "Notes", icon: "file" },
-  { id: "graph", label: "Graph", icon: "graph" },
-  { id: "tasks", label: "Tasks", icon: "check" },
-  { id: "apps", label: "Connections", icon: "plug" },
-  { id: "agents", label: "Sub-agents", icon: "agent" },
-  { id: "terminal", label: "Terminal", icon: "terminal" },
+// Sectioned navigation, mapped to the MECE product model:
+//   CONTEXT (who you are + what you know) · STACKS (what agents can do) ·
+//   RUNTIME (where work happens). Home sits above; Chat + Terminal are modes.
+export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
+  {
+    title: null,
+    items: [{ id: "home", label: "Home", icon: "home" }],
+  },
+  {
+    title: "Context",
+    items: [
+      { id: "editor", label: "Brain", icon: "brain" },
+      { id: "projects", label: "Projects", icon: "branch" },
+      { id: "tasks", label: "Tasks", icon: "check" },
+      { id: "graph", label: "Graph", icon: "graph" },
+    ],
+  },
+  {
+    title: "Stacks",
+    items: [
+      { id: "skills", label: "Skills", icon: "layers" },
+      { id: "apps", label: "Connections", icon: "plug" },
+    ],
+  },
+  {
+    title: "Runtime",
+    items: [
+      { id: "agents", label: "Agents", icon: "agent" },
+      { id: "terminal", label: "Terminal", icon: "terminal" },
+    ],
+  },
 ];
+
+// Flat list for title lookups, the command palette, and mobile tab labels.
+export const PRIMARY_NAV: NavItem[] = NAV_SECTIONS.flatMap((s) => s.items);
 
 // ── Workspace identity ────────────────────────────────────────────────────
 export const WORKSPACE = {
@@ -90,12 +118,12 @@ export const FILE_TREE: FileNode[] = [
     ],
   },
   {
-    id: "skills",
-    name: "skills",
+    id: "memories",
+    name: "memories",
     type: "folder",
     children: [
-      { id: "skills/portfolio-graph-auditor.md", name: "portfolio-graph-auditor.md", type: "file" },
-      { id: "skills/braindump-task-router.md", name: "braindump-task-router.md", type: "file" },
+      { id: "memories/recent.md", name: "recent.md", type: "file" },
+      { id: "memories/goals.md", name: "goals.md", type: "file" },
     ],
   },
   { id: "ideas.md", name: "ideas.md", type: "file" },
@@ -161,15 +189,21 @@ BAMF Media's site + internal OS. Powered by you.md identity context.
 Cosmology research exploring a cyclic / big-bounce universe model.
 Hosted at bigbounce.hubify.com.
 `,
-  "skills/portfolio-graph-auditor.md": `# portfolio-graph-auditor
+  "memories/recent.md": `# recent memories
 
-Audits the project portfolio graph: goals, API/MCP ownership, dependency
-edges, reusable patterns, and shared-skill propagation across targets.
+_Auto-captured by your agents, available to every machine._
+
+- You prefer **Tauri over React Native** for the native desktop build.
+- Definition of done = works end-to-end in production, verified.
+- Biggest pet peeve: having to repeat yourself.
+- Design language: terminal-native roots, modern-SaaS surface.
 `,
-  "skills/braindump-task-router.md": `# braindump-task-router
+  "memories/goals.md": `# goals
 
-Preserves raw brain dumps, summarizes insights, routes them to projects,
-and separates human-owned tasks from agent-owned tasks.
+- Make You.md the unified cross-machine, cross-agent context layer.
+- Minimal product surface area; powerful behind the scenes.
+- DRY skills — share, never duplicate; group into stacks.
+- Realtime sync so any agent on any machine has full context on me.
 `,
   "ideas.md": `# ideas
 
@@ -322,3 +356,93 @@ export const SESSION_SUMMARY = {
   tokens: "12.4k / 200k",
   model: "claude-sonnet-4.6",
 };
+
+// ── Skills & Stacks (capabilities layer — DRY, shared, grouped) ────────────
+export type Skill = {
+  name: string;
+  category: string;
+  sharedAcross: number; // # of machines/agents that use this ONE definition
+  projects: string[]; // projects that install it
+  meta?: boolean; // self-improving / skill-creating meta-skill
+};
+
+export const SKILLS: Skill[] = [
+  { name: "portfolio-graph-auditor", category: "Project intelligence", sharedAcross: 3, projects: ["you.md", "bamfsite", "bigbounce"] },
+  { name: "braindump-task-router", category: "Capture", sharedAcross: 3, projects: ["you.md", "creator.new"] },
+  { name: "machine-bootstrap", category: "Ops", sharedAcross: 3, projects: ["all"] },
+  { name: "youstack-maintainer", category: "Stacks", sharedAcross: 2, projects: ["you.md"] },
+  { name: "meta-improve", category: "Meta", sharedAcross: 3, projects: ["all"], meta: true },
+  { name: "skill-forge", category: "Meta", sharedAcross: 2, projects: ["all"], meta: true },
+  { name: "writing-voice", category: "Content", sharedAcross: 2, projects: ["creator.new", "bamfsite"] },
+];
+
+export type Stack = {
+  name: string;
+  domain: string;
+  visibility: "private" | "scoped" | "public";
+  skills: string[];
+  projects: string[];
+};
+
+export const STACKS: Stack[] = [
+  {
+    name: "YouStack",
+    domain: "coding",
+    visibility: "private",
+    skills: ["portfolio-graph-auditor", "braindump-task-router", "machine-bootstrap", "meta-improve"],
+    projects: ["you.md", "bamfsite"],
+  },
+  {
+    name: "ContentStack",
+    domain: "content creation",
+    visibility: "scoped",
+    skills: ["writing-voice", "braindump-task-router", "skill-forge"],
+    projects: ["creator.new"],
+  },
+  {
+    name: "ResearchStack",
+    domain: "scientific research",
+    visibility: "private",
+    skills: ["portfolio-graph-auditor", "meta-improve"],
+    projects: ["bigbounce"],
+  },
+  {
+    name: "BAMFStack",
+    domain: "growth marketing (lighthouse)",
+    visibility: "public",
+    skills: ["writing-voice", "youstack-maintainer"],
+    projects: ["bamfsite"],
+  },
+];
+
+// ── Devices (runtime layer — machines syncing in realtime) ─────────────────
+export type Device = {
+  name: string;
+  os: string;
+  status: "active" | "synced" | "idle";
+  lastSync: string;
+  agents: string[]; // sub-agents currently resident here
+  current: boolean;
+};
+
+export const DEVICES: Device[] = [
+  { name: "Houstons-MBP", os: "macOS · M3 Max", status: "active", lastSync: "just now", agents: ["coding-you", "ops-you"], current: true },
+  { name: "Mac-mini", os: "macOS · M2", status: "synced", lastSync: "30s ago", agents: ["research-you"], current: false },
+  { name: "studio-vm", os: "Linux · agent host", status: "idle", lastSync: "4m ago", agents: ["writing-you"], current: false },
+];
+
+// ── Agent bus (cross-machine, cross-agent realtime messages) ───────────────
+export type BusMessage = {
+  id: string;
+  from: string;
+  device: string;
+  channel: string;
+  text: string;
+  at: string;
+};
+
+export const AGENT_BUS: BusMessage[] = [
+  { id: "b1", from: "coding-you", device: "Houstons-MBP", channel: "you.md", text: "Pushed desktop-demo skills view, tests green.", at: "just now" },
+  { id: "b2", from: "research-you", device: "Mac-mini", channel: "bigbounce", text: "Synced 3 new sources, drafting section 3.", at: "1m ago" },
+  { id: "b3", from: "ops-you", device: "Houstons-MBP", channel: "machine-sync", text: "studio-vm online, identity + skills pulled.", at: "4m ago" },
+];

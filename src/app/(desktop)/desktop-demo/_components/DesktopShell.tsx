@@ -14,8 +14,10 @@ import { CommandPalette, type Command } from "./CommandPalette";
 import { Icon } from "./icons";
 import { HomeView } from "./views/HomeView";
 import { EditorView } from "./views/EditorView";
+import { ProjectsView } from "./views/ProjectsView";
 import { GraphView } from "./views/GraphView";
 import { TasksView } from "./views/TasksView";
+import { SkillsView } from "./views/SkillsView";
 import { AppsView } from "./views/AppsView";
 import { AgentsView } from "./views/AgentsView";
 import { TerminalView } from "./views/TerminalView";
@@ -36,10 +38,14 @@ function MainView({
       return <HomeView onNavigate={onNavigate} />;
     case "editor":
       return <EditorView activeId={editorFile} onSelect={onEditorSelect} />;
+    case "projects":
+      return <ProjectsView onNavigate={onNavigate} />;
     case "graph":
       return <GraphView />;
     case "tasks":
       return <TasksView />;
+    case "skills":
+      return <SkillsView />;
     case "apps":
       return <AppsView />;
     case "agents":
@@ -148,11 +154,11 @@ export function DesktopShell() {
 
     const projects: Command[] = PROJECTS.map((p) => ({
       id: `project:${p.slug}`,
-      label: `Open ${p.name} in graph`,
+      label: `Open project: ${p.name}`,
       group: "Projects",
-      icon: "graph",
+      icon: "branch",
       keywords: p.slug,
-      run: () => navigate("graph"),
+      run: () => navigate("projects"),
     }));
 
     const actions: Command[] = [

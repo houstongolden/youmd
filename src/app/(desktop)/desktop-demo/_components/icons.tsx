@@ -35,6 +35,10 @@ import {
   Boxes,
   Sun,
   Moon,
+  BrainCircuit,
+  Layers,
+  Laptop,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 
@@ -71,6 +75,10 @@ const MAP = {
   stack: Boxes,
   sun: Sun,
   moon: Moon,
+  brain: BrainCircuit,
+  layers: Layers,
+  device: Laptop,
+  sync: RefreshCw,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof MAP;

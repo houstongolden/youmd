@@ -1,6 +1,6 @@
 "use client";
 
-import { PRIMARY_NAV, PROJECTS, WORKSPACE, type ViewId } from "../_data/mock";
+import { NAV_SECTIONS, WORKSPACE, type ViewId } from "../_data/mock";
 import { Icon } from "./icons";
 import { Dot, SectionLabel } from "./primitives";
 import { cn } from "../_lib/cn";
@@ -43,47 +43,39 @@ export function Sidebar({
         )}
       </div>
 
-      {/* primary nav */}
-      <nav className="px-2 pt-1">
-        {PRIMARY_NAV.map((item) => {
-          const active = activeView === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              title={collapsed ? item.label : undefined}
-              className={cn(
-                "mb-0.5 flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] transition-colors",
-                collapsed && "justify-center px-0",
-                active
-                  ? "bg-[hsl(var(--bg-raised))] text-[hsl(var(--accent))]"
-                  : "text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]",
-              )}
-            >
-              <Icon name={item.icon} size={16} className={active ? "text-[hsl(var(--accent))]" : ""} />
-              {!collapsed && <span>{item.label}</span>}
-            </button>
-          );
-        })}
+      {/* sectioned primary nav (Context / Stacks / Runtime) */}
+      <nav className="min-h-0 flex-1 overflow-y-auto px-2 pt-1">
+        {NAV_SECTIONS.map((section, si) => (
+          <div key={section.title ?? `s${si}`} className={cn(section.title && "mt-4")}>
+            {section.title && !collapsed && (
+              <SectionLabel className="px-2.5 pb-1.5">{section.title}</SectionLabel>
+            )}
+            {section.title && collapsed && (
+              <div className="mx-auto mb-1.5 h-px w-5 bg-[hsl(var(--border))]" aria-hidden />
+            )}
+            {section.items.map((item) => {
+              const active = activeView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id)}
+                  title={collapsed ? item.label : undefined}
+                  className={cn(
+                    "mb-0.5 flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] transition-colors",
+                    collapsed && "justify-center px-0",
+                    active
+                      ? "bg-[hsl(var(--bg-raised))] text-[hsl(var(--accent))]"
+                      : "text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]",
+                  )}
+                >
+                  <Icon name={item.icon} size={16} className={active ? "text-[hsl(var(--accent))]" : ""} />
+                  {!collapsed && <span>{item.label}</span>}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
-
-      {/* projects */}
-      {!collapsed && (
-        <div className="mt-5 min-h-0 flex-1 overflow-y-auto px-2">
-          <SectionLabel className="px-2.5 pb-1.5">Projects</SectionLabel>
-          {PROJECTS.map((p) => (
-            <button
-              key={p.slug}
-              onClick={() => onNavigate("graph")}
-              className="flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-left text-[13px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]"
-            >
-              <Dot tone={p.focus === "focusing" ? "orange" : p.focus === "active" ? "green" : "dim"} size={6} />
-              <span className="truncate">{p.name}</span>
-            </button>
-          ))}
-        </div>
-      )}
-      {collapsed && <div className="flex-1" />}
 
       {/* footer */}
       <div className={cn("border-t border-[hsl(var(--border))] px-2 py-2", collapsed && "px-0")}>

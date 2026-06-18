@@ -66,9 +66,10 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
       >
         <div className="divide-y divide-[hsl(var(--border))]">
           {PROJECTS.map((p) => (
-            <div
+            <button
               key={p.slug}
-              className="group flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-[hsl(var(--bg))]"
+              onClick={() => onNavigate("projects")}
+              className="group flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-[hsl(var(--bg))]"
             >
               <Dot tone={p.focus === "focusing" ? "orange" : p.focus === "active" ? "green" : "dim"} />
               <div className="min-w-0 flex-1">
@@ -84,7 +85,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
                   7d
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </Panel>
@@ -94,8 +95,8 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {[
           { v: "agents" as ViewId, icon: "agent" as const, t: "Spawn a YOU sub-agent", d: "Clone yourself into a scoped agent" },
-          { v: "editor" as ViewId, icon: "file" as const, t: "Open your notes", d: "Identity, projects, ideas" },
-          { v: "tasks" as ViewId, icon: "check" as const, t: "Triage tasks", d: `${openTasks} open` },
+          { v: "skills" as ViewId, icon: "layers" as const, t: "Skills & stacks", d: "Shared, DRY, grouped by stack" },
+          { v: "editor" as ViewId, icon: "brain" as const, t: "Open your brain", d: "Identity, memories, goals" },
           { v: "terminal" as ViewId, icon: "terminal" as const, t: "Drop into the shell", d: "Run Claude Code / Codex" },
         ].map((a) => (
           <button

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SUB_AGENTS, type SubAgent } from "../../_data/mock";
+import { SUB_AGENTS, DEVICES, AGENT_BUS, type SubAgent } from "../../_data/mock";
 import { Icon } from "../icons";
 import { Dot, Chip, SectionLabel } from "../primitives";
 
@@ -116,6 +116,56 @@ export function AgentsView() {
           <Icon name="plus" size={14} /> Spawn a YOU sub-agent
         </button>
       )}
+
+      {/* Devices — the machines your agents run on, synced in realtime */}
+      <div className="mt-8 mb-2 flex items-center gap-2">
+        <Icon name="device" size={15} className="text-[hsl(var(--text-secondary))]" />
+        <SectionLabel>Devices</SectionLabel>
+        <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--success))]">
+          <Dot tone="green" pulse size={5} /> realtime sync live
+        </span>
+      </div>
+      <div className="mb-7 space-y-2">
+        {DEVICES.map((d) => (
+          <div key={d.name} className="flex items-center gap-3 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3.5 py-3">
+            <Icon name="device" size={16} className="text-[hsl(var(--text-secondary))]" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[13px]">{d.name}</span>
+                {d.current && <Chip>this device</Chip>}
+              </div>
+              <div className="truncate font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/50">
+                {d.os} · {d.agents.join(", ")}
+              </div>
+            </div>
+            <span className="flex shrink-0 items-center gap-1.5">
+              <Dot tone={d.status === "active" ? "green" : d.status === "synced" ? "green" : "dim"} size={6} pulse={d.status === "active"} />
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">{d.lastSync}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Agent bus — cross-machine, cross-agent collaboration feed */}
+      <div className="mb-2 flex items-center gap-2">
+        <Icon name="sync" size={14} className="text-[hsl(var(--text-secondary))]" />
+        <SectionLabel>Agent bus</SectionLabel>
+      </div>
+      <div className="space-y-2">
+        {AGENT_BUS.map((m) => (
+          <div key={m.id} className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3.5 py-2.5">
+            <div className="flex items-center gap-2">
+              <Icon name="agent" size={12} className="text-[hsl(var(--accent))]" />
+              <span className="font-mono text-[12px]">{m.from}</span>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/45">
+                {m.device} · #{m.channel}
+              </span>
+              <span className="ml-auto font-mono text-[10px] text-[hsl(var(--text-secondary))]/45">{m.at}</span>
+            </div>
+            <div className="mt-1 pl-5 text-[12px] text-[hsl(var(--text-secondary))]/80">{m.text}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
