@@ -7,6 +7,18 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-18 — Native desktop app design demo (`/desktop-demo`)
+- [x] Add a private, frontend-only `/desktop-demo` route (route group `(desktop)`, mock data, noindex, no SiteNav/Convex)
+- [x] macOS-style title bar (traffic lights, breadcrumb, ⌘K command bar, sidebar + chat-layout toggles)
+- [x] Collapsible full-height sidebar (workspace switcher, primary nav, projects)
+- [x] Split chat mode (1/3 agentic chat left + main view right) and full-chat mode (Codex-style sticky summary widget)
+- [x] Home/dashboard view, Notes view (file tree + tiny markdown reader/editor), Tasks kanban, Connections, Sub-agents spawn flow
+- [x] Obsidian-style interactive knowledge graph (SVG nodes/edges, hover-trace)
+- [x] Conductor/Cmux-style in-app terminal (Claude Code / Codex / shell tabs)
+- [x] Production build + TypeScript pass; radius lint pass; dev HTTP 200
+- [ ] Deploy to Vercel and get Houston's design review on `/desktop-demo`
+- [ ] Decide native stack (Tauri vs React Native) and start the real desktop app build
+
 ### 2026-06-18 — Realtime trusted-device sync daemon
 - [x] Add a short-lived, API-key-minted realtime sync session for trusted local daemons
 - [x] Add secret-safe Convex sync head data for identity bundle hashes, installed skills, portfolio graph state, repo mirror state, GitHub mirror state, machine proofs, and encrypted env-vault metadata

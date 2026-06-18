@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-18 — Native desktop app design demo (`/desktop-demo`)
+
+### feat(web): private, frontend-only desktop app UI/UX demo
+- Added a self-contained, non-functional design demo for the upcoming You.md native desktop app at `/desktop-demo` (route group `src/app/(desktop)/`). The goal is to lock the new lighter "second brain" aesthetic — Notion × Obsidian × Conductor × Claude — before building the real Tauri/RN app. All data is mocked locally; nothing touches Convex or the API. The route is `robots: noindex/nofollow` and renders with no SiteNav/marketing chrome.
+- Keeps the You.md design DNA (monochrome + burnt orange `#C46A3A`, JetBrains Mono labels, Inter body, 2px radius token, status dots) but trades the heavy CLI treatment for a calmer, zen, modern-SaaS surface.
+- Layout: macOS-style title bar (traffic lights, breadcrumb, ⌘K command bar, sidebar + chat-layout toggles); full-height collapsible left sidebar (workspace switcher, primary nav, projects); and a workspace that swaps between two chat modes — **split** (agentic chat at 1/3 left + main view 2/3 right, Lovable-style) and **full chat** (chat fills the workspace with a Codex-style sticky AI summary widget top-right).
+- Main views: Home/dashboard, Notes (Notion/Obsidian file tree + tiny dependency-free markdown reader/editor with read/edit toggle), an Obsidian-style interactive knowledge Graph (SVG nodes/edges, hover-trace), Tasks (kanban, click-to-advance), Connections (apps/crawlers/MCP), Sub-agents ("YOU sub-agents" — clone-yourself spawn flow with progress steps), and a Conductor/Cmux-style Terminal that runs Claude Code / Codex / shell tabs inside the app.
+- Verification: production `next build` compiled successfully and passed TypeScript for all new files; `node scripts/check-radius.mjs` passes; dev server serves `/desktop-demo` at HTTP 200 with expected content and no runtime errors. (Pre-existing `/auth` prerender failure in this sandbox is env/auth-related and unrelated to this route. Screenshots blocked — Playwright browser download is disallowed by the network policy.)
+
 ## 2026-06-18 — Realtime trusted-device sync daemon and CLI 0.8.4 prep
 
 ### feat(sync): add Convex websocket materialization for local agents
