@@ -33,6 +33,14 @@ export type RealtimeSyncHead = {
     brainDumps?: number;
     machineProofs?: number;
   };
+  agentBus?: {
+    status?: "active" | "idle" | string;
+    channelCount?: number;
+    recentCount?: number;
+    latestMessageAt?: number | null;
+    messages?: RealtimeAgentMessage[];
+    secretValuesExposed?: false;
+  };
   repoMirror?: {
     repoFullName?: string | null;
     commitSha?: string | null;
@@ -76,6 +84,35 @@ export type RealtimeSyncHead = {
 };
 
 export const REALTIME_SYNC_STATUS_PATH = path.join(os.homedir(), ".youmd", "realtime-sync-status.json");
+export const REALTIME_AGENT_INBOX_PATH = path.join(os.homedir(), ".youmd", "agent-bus", "inbox.json");
+
+export type RealtimeAgentMessage = {
+  id?: string;
+  messageId: string;
+  channel: string;
+  kind: string;
+  body: string;
+  sourceHost?: string | null;
+  sourceAgent: string;
+  sourceRuntime?: string | null;
+  targetHost?: string | null;
+  targetAgent?: string | null;
+  metadata?: unknown;
+  createdAt: number;
+  secretValuesExposed: false;
+};
+
+export type RealtimeAgentBusStatus = {
+  state: "active" | "idle" | "unknown";
+  summary: string;
+  channelCount: number;
+  recentCount: number;
+  latestMessageAt?: number | null;
+  messages: RealtimeAgentMessage[];
+  inboxPath: string;
+  sendCommand: string;
+  secretValuesExposed: false;
+};
 
 export type RealtimeSecretVaultStatus = {
   state: "ready" | "missing" | "scope-missing" | "unknown";
@@ -114,6 +151,7 @@ export type RealtimeSyncStatusFile = {
   identity?: RealtimeSyncHead["identity"];
   skills?: { installedCount?: number; latestInstalledAt?: number | null };
   portfolio?: RealtimeSyncHead["portfolio"];
+  agentBus: RealtimeAgentBusStatus;
   repoMirror?: RealtimeSyncHead["repoMirror"];
   github?: RealtimeSyncHead["github"];
   secretVault: RealtimeSecretVaultStatus;
@@ -210,6 +248,36 @@ export function describeRealtimeSecretVault(head: RealtimeSyncHead | null | unde
   };
 }
 
+export function describeRealtimeAgentBus(head: RealtimeSyncHead | null | undefined): RealtimeAgentBusStatus {
+  const bus = head?.agentBus;
+  const messages = (bus?.messages ?? [])
+    .filter((message): message is RealtimeAgentMessage => {
+      return Boolean(
+        message &&
+        typeof message.messageId === "string" &&
+        typeof message.body === "string" &&
+        message.secretValuesExposed === false,
+      );
+    })
+    .slice(-12);
+  const latest = bus?.latestMessageAt ?? (messages.length ? messages[messages.length - 1]?.createdAt : null);
+  const state = bus?.status === "active" || messages.length ? "active" : bus ? "idle" : "unknown";
+  const latestLabel = latest ? new Date(latest).toISOString() : "none yet";
+  return {
+    state,
+    summary: state === "unknown"
+      ? "Agent bus not observed yet"
+      : `${messages.length} recent agent message${messages.length === 1 ? "" : "s"} / latest ${latestLabel}`,
+    channelCount: bus?.channelCount ?? new Set(messages.map((message) => message.channel)).size,
+    recentCount: bus?.recentCount ?? messages.length,
+    latestMessageAt: latest,
+    messages,
+    inboxPath: REALTIME_AGENT_INBOX_PATH,
+    sendCommand: 'youmd agent send "hello from this Mac"',
+    secretValuesExposed: false,
+  };
+}
+
 export function realtimeSyncHeadSignature(head: RealtimeSyncHead | null | undefined): string {
   if (!head) return "none";
   return JSON.stringify({
@@ -225,6 +293,22 @@ export function realtimeSyncHeadSignature(head: RealtimeSyncHead | null | undefi
       names: head.skills?.names ?? [],
     },
     portfolio: head.portfolio ?? null,
+    agentBus: {
+      status: head.agentBus?.status ?? null,
+      latestMessageAt: head.agentBus?.latestMessageAt ?? null,
+      recentCount: head.agentBus?.recentCount ?? 0,
+      messages: (head.agentBus?.messages ?? []).map((message) => ({
+        messageId: message.messageId,
+        channel: message.channel,
+        kind: message.kind,
+        body: message.body,
+        sourceHost: message.sourceHost ?? null,
+        sourceAgent: message.sourceAgent,
+        targetHost: message.targetHost ?? null,
+        targetAgent: message.targetAgent ?? null,
+        createdAt: message.createdAt,
+      })),
+    },
     repoMirror: head.repoMirror ?? null,
     github: head.github ?? null,
     encryptedEnvVault: {
@@ -251,8 +335,9 @@ export function summarizeRealtimeSyncHead(head: RealtimeSyncHead): string {
   const skills = `${head.skills?.installedCount ?? 0} skills`;
   const projects = `${head.portfolio?.projects ?? 0} projects`;
   const tasks = `${head.portfolio?.tasks ?? 0} tasks`;
+  const agentMessages = `${head.agentBus?.recentCount ?? 0} agent msgs`;
   const vault = describeRealtimeSecretVault(head).summary;
-  return `${bundle}, ${skills}, ${projects}, ${tasks}, ${vault}`;
+  return `${bundle}, ${skills}, ${projects}, ${tasks}, ${agentMessages}, ${vault}`;
 }
 
 export function buildRealtimeSyncStatusFile(head: RealtimeSyncHead): RealtimeSyncStatusFile {
@@ -267,6 +352,7 @@ export function buildRealtimeSyncStatusFile(head: RealtimeSyncHead): RealtimeSyn
       latestInstalledAt: head.skills?.latestInstalledAt ?? null,
     },
     portfolio: head.portfolio,
+    agentBus: describeRealtimeAgentBus(head),
     repoMirror: head.repoMirror,
     github: head.github,
     secretVault: describeRealtimeSecretVault(head),
@@ -281,6 +367,7 @@ export function writeRealtimeSyncStatusFile(head: RealtimeSyncHead): void {
     JSON.stringify(buildRealtimeSyncStatusFile(head), null, 2),
     { mode: 0o600 },
   );
+  writeRealtimeAgentInboxFile(head);
 }
 
 export function readRealtimeSyncStatusFile(): RealtimeSyncStatusFile | null {
@@ -292,6 +379,24 @@ export function readRealtimeSyncStatusFile(): RealtimeSyncStatusFile | null {
   } catch {
     return null;
   }
+}
+
+export function writeRealtimeAgentInboxFile(head: RealtimeSyncHead): void {
+  const agentBus = describeRealtimeAgentBus(head);
+  fs.mkdirSync(path.dirname(REALTIME_AGENT_INBOX_PATH), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(
+    REALTIME_AGENT_INBOX_PATH,
+    JSON.stringify(
+      {
+        schemaVersion: "you-md/realtime-agent-bus-inbox/v1",
+        generatedAt: Date.now(),
+        ...agentBus,
+      },
+      null,
+      2,
+    ),
+    { mode: 0o600 },
+  );
 }
 
 export function shouldRunBoundedSync(

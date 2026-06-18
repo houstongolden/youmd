@@ -127,6 +127,7 @@ export const getHead = query({
       tasks,
       brainDumps,
       machineProofs,
+      agentMessages,
       repoMirror,
       githubConnection,
       vaultSnapshots,
@@ -140,6 +141,11 @@ export const getHead = query({
       ctx.db.query("portfolioTasks").withIndex("by_userId", (q) => q.eq("userId", session.userId)).collect(),
       ctx.db.query("brainDumpCaptures").withIndex("by_userId", (q) => q.eq("userId", session.userId)).collect(),
       ctx.db.query("machineProofReports").withIndex("by_userId", (q) => q.eq("userId", session.userId)).collect(),
+      ctx.db
+        .query("realtimeAgentMessages")
+        .withIndex("by_userId_createdAt", (q) => q.eq("userId", session.userId))
+        .order("desc")
+        .take(12),
       ctx.db.query("repoMirror").withIndex("by_userId", (q) => q.eq("userId", session.userId)).first(),
       ctx.db.query("githubConnections").withIndex("by_userId", (q) => q.eq("userId", session.userId)).first(),
       session.canReadVaultMetadata
@@ -162,6 +168,7 @@ export const getHead = query({
       newestFromRows(brainDumps),
       newestFromRows(machineProofs),
     ]);
+    const agentBusLatestAt = newestFromRows(agentMessages);
 
     const activeFocusedProjects = projects.filter(
       (project) =>
@@ -204,6 +211,31 @@ export const getHead = query({
         tasks: tasks.length,
         brainDumps: brainDumps.length,
         machineProofs: machineProofs.length,
+      },
+      agentBus: {
+        status: agentMessages.length ? "active" : "idle",
+        channelCount: new Set(agentMessages.map((message) => message.channel)).size,
+        recentCount: agentMessages.length,
+        latestMessageAt: agentBusLatestAt,
+        messages: agentMessages
+          .slice()
+          .sort((a, b) => a.createdAt - b.createdAt)
+          .map((message) => ({
+            id: String(message._id),
+            messageId: message.messageId,
+            channel: message.channel,
+            kind: message.kind,
+            body: message.body,
+            sourceHost: message.sourceHost ?? null,
+            sourceAgent: message.sourceAgent,
+            sourceRuntime: message.sourceRuntime ?? null,
+            targetHost: message.targetHost ?? null,
+            targetAgent: message.targetAgent ?? null,
+            metadata: message.metadata ?? null,
+            createdAt: message.createdAt,
+            secretValuesExposed: false,
+          })),
+        secretValuesExposed: false,
       },
       repoMirror: repoMirror
         ? {

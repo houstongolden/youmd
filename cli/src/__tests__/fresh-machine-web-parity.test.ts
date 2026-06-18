@@ -19,6 +19,10 @@ describe("web /new computer bootstrap prompt parity", () => {
     expect(source).toContain("YOUMD_CODE_ROOT");
     expect(source).toContain("YOUMD_REQUIRE_ENV_VAULT=1");
     expect(source).toContain("checking local prerequisites: Homebrew, Node 22/npm, git, gh, bun, pnpm");
+    expect(source).toContain("YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash");
+    expect(source).toContain('MIN_YOUMD_VERSION="\\${YOUMD_MIN_VERSION:-0.8.6}"');
+    expect(source).toContain("ensure_youmd_min_version");
+    expect(source).toContain("youmd \\${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, and fresh-machine restore");
     expect(source).toContain("require GitHub CLI auth before private shared-skill/project repos clone");
     expect(source).toContain("Behind-the-scenes operating rule");
     expect(source).toContain("use the You.md CLI and You Agent yourself before asking Houston");

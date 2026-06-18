@@ -224,6 +224,70 @@ export async function createRealtimeSyncSession(
   });
 }
 
+// ─── Agent bus — trusted-device realtime messages ───────────────────
+
+export interface AgentBusMessage {
+  id?: string;
+  messageId: string;
+  channel: string;
+  kind: string;
+  body: string;
+  sourceHost?: string | null;
+  sourceAgent: string;
+  sourceRuntime?: string | null;
+  targetHost?: string | null;
+  targetAgent?: string | null;
+  metadata?: unknown;
+  createdAt: number;
+  secretValuesExposed: false;
+}
+
+export interface AgentBusMessagesResponse {
+  success: boolean;
+  schemaVersion: "you-md/agent-bus/messages/v1";
+  messages: AgentBusMessage[];
+  count: number;
+  secretValuesExposed: false;
+}
+
+export async function sendAgentBusMessage(payload: {
+  body: string;
+  channel?: string;
+  kind?: string;
+  sourceHost?: string;
+  sourceAgent?: string;
+  sourceRuntime?: string;
+  targetHost?: string;
+  targetAgent?: string;
+  metadata?: unknown;
+}): Promise<ApiResponse<{
+  success: boolean;
+  schemaVersion: "you-md/agent-bus/message/v1";
+  message: AgentBusMessage;
+  secretValuesExposed: false;
+}>> {
+  return apiRequest("/api/v1/me/agent-bus/messages", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function listAgentBusMessages(opts: {
+  channel?: string;
+  since?: number;
+  limit?: number;
+} = {}): Promise<ApiResponse<AgentBusMessagesResponse>> {
+  const params = new URLSearchParams();
+  if (opts.channel) params.set("channel", opts.channel);
+  if (Number.isFinite(opts.since)) params.set("since", String(opts.since));
+  if (opts.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return apiRequest(`/api/v1/me/agent-bus/messages${qs ? `?${qs}` : ""}`, {
+    token: getToken(),
+  });
+}
+
 // ─── Device-flow auth (U7, RFC 8628-shaped) ──────────────────────────
 
 export interface DeviceStartData {

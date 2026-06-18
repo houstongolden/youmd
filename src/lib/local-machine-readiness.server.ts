@@ -64,6 +64,20 @@ export type LocalMachineProofSummary = {
   warnings: string[];
 };
 
+export type LocalAgentBusMessage = {
+  messageId: string;
+  channel: string;
+  kind: string;
+  body: string;
+  sourceHost?: string | null;
+  sourceAgent: string;
+  sourceRuntime?: string | null;
+  targetHost?: string | null;
+  targetAgent?: string | null;
+  createdAt: number;
+  secretValuesExposed: false;
+};
+
 export type LocalMachineReadiness = {
   generatedAt: string;
   hostName: string;
@@ -129,6 +143,17 @@ export type LocalMachineReadiness = {
     accountRestoreCommand?: string;
     secretValuesExposed: false;
     notes: string[];
+  };
+  agentBus: {
+    state: "active" | "idle" | "unknown";
+    summary?: string;
+    channelCount: number;
+    recentCount: number;
+    latestMessageAt?: string;
+    inboxPath: string;
+    sendCommand: string;
+    messages: LocalAgentBusMessage[];
+    secretValuesExposed: false;
   };
   projects: {
     rootDir: string;
@@ -588,6 +613,58 @@ function realtimeSecretVaultStatus(): Pick<LocalMachineReadiness["envVault"], "a
   };
 }
 
+function realtimeAgentBusStatus(): LocalMachineReadiness["agentBus"] {
+  const status = readJson("~/.youmd/realtime-sync-status.json");
+  const agentBus = status?.agentBus && typeof status.agentBus === "object"
+    ? status.agentBus as Record<string, unknown>
+    : null;
+  const state = stringField(agentBus?.state);
+  const safeState = state === "active" || state === "idle" || state === "unknown"
+    ? state
+    : "unknown";
+  const messagesRaw = Array.isArray(agentBus?.messages) ? agentBus.messages : [];
+  const messages = messagesRaw
+    .map((item): LocalAgentBusMessage | null => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      const messageId = stringField(row.messageId);
+      const body = stringField(row.body);
+      const channel = stringField(row.channel);
+      const kind = stringField(row.kind);
+      const sourceAgent = stringField(row.sourceAgent);
+      const createdAt = optionalNumberField(row.createdAt);
+      if (!messageId || !body || !channel || !kind || !sourceAgent || !createdAt) return null;
+      return {
+        messageId,
+        channel,
+        kind,
+        body,
+        sourceHost: stringField(row.sourceHost) ?? null,
+        sourceAgent,
+        sourceRuntime: stringField(row.sourceRuntime) ?? null,
+        targetHost: stringField(row.targetHost) ?? null,
+        targetAgent: stringField(row.targetAgent) ?? null,
+        createdAt,
+        secretValuesExposed: false,
+      };
+    })
+    .filter((message): message is LocalAgentBusMessage => Boolean(message))
+    .slice(-12);
+  const latest = optionalNumberField(agentBus?.latestMessageAt) ?? (messages.length ? messages[messages.length - 1]?.createdAt : undefined);
+
+  return {
+    state: safeState,
+    summary: stringField(agentBus?.summary),
+    channelCount: numberField(agentBus?.channelCount),
+    recentCount: numberField(agentBus?.recentCount) || messages.length,
+    latestMessageAt: latest ? new Date(latest).toISOString() : undefined,
+    inboxPath: stringField(agentBus?.inboxPath) ?? "~/.youmd/agent-bus/inbox.json",
+    sendCommand: stringField(agentBus?.sendCommand) ?? 'youmd agent send "hello from this Mac"',
+    messages,
+    secretValuesExposed: false,
+  };
+}
+
 export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadiness {
   const generatedAt = new Date().toISOString();
   const home = os.homedir();
@@ -626,6 +703,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     expectedLauncher: "npx --yes youmd@latest mcp",
   };
   const accountVault = realtimeSecretVaultStatus();
+  const agentBus = realtimeAgentBusStatus();
   const envVault = {
     status: statusFrom([
       exists("~/.agent-shared/bin/env-key-audit.py"),
@@ -679,6 +757,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     agentStack,
     mcp,
     envVault,
+    agentBus,
     projects,
     latestProof: latestMachineProof(),
     commands: {

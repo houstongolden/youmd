@@ -31,6 +31,14 @@ function envAssignment(
     if (stringValue.startsWith("~/")) {
       return `${name}="$HOME${stringValue.slice(1).replace(/["\\$`]/g, (char) => `\\${char}`)}"`;
     }
+    if (stringValue === "$HOME") return `${name}="$HOME"`;
+    if (stringValue.startsWith("$HOME/")) {
+      return `${name}="$HOME/${stringValue.slice("$HOME/".length).replace(/["\\$`]/g, (char) => `\\${char}`)}"`;
+    }
+    if (stringValue === "${HOME}") return `${name}="$HOME"`;
+    if (stringValue.startsWith("${HOME}/")) {
+      return `${name}="$HOME/${stringValue.slice("${HOME}/".length).replace(/["\\$`]/g, (char) => `\\${char}`)}"`;
+    }
   }
   return `${name}=${shellQuote(stringValue)}`;
 }
@@ -53,10 +61,47 @@ DAYS="\${YOUMD_ACTIVE_DAYS:-30}"
 EXPAND_DAYS="\${YOUMD_EXPAND_ACTIVE_DAYS:-90}"
 LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
 HYDRATE_TIMEOUT="\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"
+MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.6}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 node_major() { node -e 'console.log(process.versions.node.split(".")[0])' 2>/dev/null || echo 0; }
+version_at_least() {
+  local current="\${1#v}"
+  local required="\${2#v}"
+  local IFS=.
+  local current_parts=($current)
+  local required_parts=($required)
+  local i current_value required_value
+  for i in 0 1 2; do
+    current_value="\${current_parts[$i]:-0}"
+    required_value="\${required_parts[$i]:-0}"
+    current_value="\${current_value%%[^0-9]*}"
+    required_value="\${required_value%%[^0-9]*}"
+    current_value="\${current_value:-0}"
+    required_value="\${required_value:-0}"
+    if ((10#$current_value > 10#$required_value)); then return 0; fi
+    if ((10#$current_value < 10#$required_value)); then return 1; fi
+  done
+  return 0
+}
+ensure_youmd_min_version() {
+  local installed
+  installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+  echo "[you.md] installed version: \${installed:-unknown}"
+  if [ -n "$installed" ] && version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
+    return 0
+  fi
+  echo "[you.md] installed youmd is older than required \${MIN_YOUMD_VERSION}; forcing GitHub source install"
+  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash
+  export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+  echo "[you.md] installed version after forced source install: \${installed:-unknown}"
+  if [ -z "$installed" ] || ! version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
+    echo "[you.md] youmd \${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, and fresh-machine restore. npm latest may still be behind; rerun after this commit is deployed or install from GitHub main." >&2
+    exit 1
+  fi
+}
 run_with_timeout() {
   seconds="$1"
   shift
@@ -139,13 +184,14 @@ ensure_github_auth() {
 
 bootstrap_prereqs
 
-echo "[you.md] installing runtime"
-curl -fsSL https://you.md/install.sh | bash
+echo "[you.md] installing runtime from GitHub main"
+curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash
 export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 if ! command_exists youmd; then
   echo "[you.md] youmd was installed but is not on PATH. Try a new Terminal, then rerun this command." >&2
   exit 1
 fi
+ensure_youmd_min_version
 
 if [ -n "\${YOUMD_API_KEY:-}" ]; then
   echo "[you.md] logging in with bootstrap key"
@@ -158,10 +204,12 @@ fi
 echo "[you.md] pulling identity bundle and syncing local brain"
 youmd pull
 youmd sync
+youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) authenticated, pulled identity, and started setup" || true
 
 echo "[you.md] installing resident realtime/identity/skillstack/project-context daemons early"
 youmd stack daemon install || true
 youmd stack daemon status || true
+youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) installed resident realtime/skillstack daemons" || true
 
 GITHUB_READY=0
 if ensure_github_auth; then
@@ -179,9 +227,11 @@ youmd mcp --install claude --auto || true
 youmd mcp --install codex --auto || true
 youmd skill link claude || true
 youmd skill link codex || true
+youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored shared skills/stacks and MCP config" || true
 
 if [ "$GITHUB_READY" != "1" ]; then
   echo "[you.md] GitHub auth is still missing; project clone pass skipped. Rerun after gh auth login."
+  youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: GitHub auth required before private project clone" || true
   exit 2
 fi
 
@@ -209,6 +259,7 @@ echo "[you.md] previewing graph-backed 30-day project setup plan (ACTIVE + Top P
 run_machine_projects_recent_only "\${PROJECT_ARGS[@]}" --dry-run || true
 echo "[you.md] creating code workspace and cloning ACTIVE + Top Priority/Focusing 30-day project repos"
 run_machine_projects_recent_only "\${PROJECT_ARGS[@]}"
+youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) finished 30-day active/focused project clone pass into $ROOT" || true
 
 echo "[you.md] checking encrypted env-vault tooling without printing secrets"
 youmd env backup --root "$ROOT" --preflight || true
@@ -255,6 +306,7 @@ if [ -n "\${YOUMD_ENV_VAULT:-}" ]; then
   youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --list --map-existing --existing-only --skip-agent-auth
   echo "[you.md] restoring encrypted .env.local vault into existing cloned project dirs"
   youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --map-existing --existing-only --skip-agent-auth
+  youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored encrypted env vault into existing project dirs" || true
 else
   echo "[you.md] env vault not restored yet"
   echo "[you.md] On the old/source Mac, create the encrypted vault first:"
@@ -268,6 +320,7 @@ else
   echo "youmd env restore <vault> --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
   if [ "\${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]; then
     echo "[you.md] strict proof requires YOUMD_ENV_VAULT; stopping before readiness is marked complete" >&2
+    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: strict env vault restore still required" || true
     exit 1
   fi
 fi
@@ -275,6 +328,7 @@ echo "[you.md] rehydrating portfolio graph with local README/project-context/env
 run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true
 echo "[you.md] auditing cloned project readiness"
 youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report || true
+youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) synced machine readiness proof for $ROOT" || true
 FULL_PROJECT_SET_COMPLETE=0
 EXPAND_TO_90="\${YOUMD_EXPAND_TO_90_DAYS:-}"
 if [ -z "$EXPAND_TO_90" ] && [ "\${YOUMD_SKIP_90_DAY_EXPANSION_PROMPT:-}" != "1" ] && [ -t 0 ]; then
@@ -293,6 +347,7 @@ case "$EXPAND_TO_90" in
     run_machine_projects_recent_only "\${EXPAND_PROJECT_ARGS[@]}"
     run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate --root "$ROOT" --days "$EXPAND_DAYS" --limit "$LIMIT" || true
     youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report || true
+    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) expanded to active/focused \${EXPAND_DAYS}-day project set and synced proof" || true
     FULL_PROJECT_SET_COMPLETE=1
     ;;
   *)
@@ -324,8 +379,10 @@ youmd stack daemon status || true
 youmd status
 if [ "$FULL_PROJECT_SET_COMPLETE" = "1" ]; then
   echo "[you.md] fresh-machine full \${EXPAND_DAYS}-day project setup complete: $ROOT"
+  youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) complete: full \${EXPAND_DAYS}-day active/focused setup at $ROOT" || true
 else
   echo "[you.md] fresh-machine \${DAYS}-day setup pass complete; \${EXPAND_DAYS}-day expansion is still open: $ROOT"
+  youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) complete for \${DAYS}-day active/focused pass at $ROOT; \${EXPAND_DAYS}-day expansion still open" || true
 fi`;
 }
 
@@ -363,7 +420,7 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     "",
     authLine,
     "",
-    "Behind-the-scenes operating rule: use the You.md CLI and You Agent yourself before asking Houston to do anything. Run deterministic commands like `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`, `youmd skill install all`, `youmd skill sync`, `youmd env vault list`, `youmd env vault pull`, `youmd machine prompt`, `youmd machine verify`, and `youmd project portfolio-hydrate` as needed. Use `you` / `youmd chat` only when you need the You Agent to synthesize or route context, then turn its output into concrete shell actions. Interrupt Houston only for true human-gated steps: GitHub browser auth, macOS Keychain/passphrase entry, npm OTP, OS permissions, or an explicit choice such as the 90-day expansion.",
+    "Behind-the-scenes operating rule: use the You.md CLI and You Agent yourself before asking Houston to do anything. Run deterministic commands like `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`, `youmd skill install all`, `youmd skill sync`, `youmd env vault list`, `youmd env vault pull`, `youmd machine prompt`, `youmd machine verify`, `youmd project portfolio-hydrate`, and `youmd agent status` as needed. Use `youmd agent send --channel machine-sync --kind status \"...\"` to report setup milestones back to Houston's other trusted Macs over the realtime agent bus. Use `you` / `youmd chat` only when you need the You Agent to synthesize or route context, then turn its output into concrete shell actions. Interrupt Houston only for true human-gated steps: GitHub browser auth, macOS Keychain/passphrase entry, npm OTP, OS permissions, or an explicit choice such as the 90-day expansion.",
     "",
     "Exact setup command:",
     "",
@@ -380,6 +437,7 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     "- install/configure MCP for Claude Code and Codex",
     "- restore shared agent skills, stack config, Claude/Codex links, and agent host config",
     "- use the installed You.md CLI behind the scenes for status, skill sync, Secret Vault pull, portfolio graph hydration, machine verification, and You Agent context routing instead of making Houston manually drive those steps",
+    "- publish setup milestones through `youmd agent send` so Houston's source Mac and realtime daemon can see the Mac mini come online without clipboard babysitting",
     "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
     `- preview the graph-backed plan, create ${root}, and clone only projects marked ACTIVE plus Top Priority/Focusing from the last ${days} days first`,
     `- ask whether to expand to all ACTIVE plus Top Priority/Focusing projects from the last ${expandDays} days before calling the full project clone set complete`,

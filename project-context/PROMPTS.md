@@ -2,12 +2,14 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 112
-**Total messages:** 523
+**Total sessions:** 114
+**Total messages:** 525
 **Last updated:** 2026-06-18
 
 ## Table of Contents
 
+1. [2026-06-18 (realtime-agent-bus-two-mac-handshake)](#session-2026-06-18-realtime-agent-bus-two-mac-handshake) --- 1 message
+1. [2026-06-18 (mac-mini-vault-stale-cli-report)](#session-2026-06-18-mac-mini-vault-stale-cli-report) --- 1 message
 1. [2026-06-18 (desktop-demo-frontend)](#session-2026-06-18-desktop-demo-frontend) --- 1 message
 1. [2026-06-18 (secret-vault-realtime-daemon-status)](#session-2026-06-18-secret-vault-realtime-daemon-status) --- 1 message
 1. [2026-06-18 (realtime-trusted-device-sync)](#session-2026-06-18-realtime-trusted-device-sync) --- 1 message
@@ -221,6 +223,25 @@ _Manual archive note: current Codex desktop session JSONL was unavailable in `~/
 
 **2026-06-17 16:14:00 UTC**
 > k awesome - please ensure you have project detail pages clickable from the projects portfolio properly and that the project graph must include links to the exact API docs page url and curl command and stack associated with it etc. --- and more obviously! the SHIPPED stuff we talked about earlier please add that! so crucial! Shipped today, 7d, 30d, 90d, etc etc...! show what me and my agents are shipping on the main card and in more detail on the project pages etc ---  i need a quick way to see a more compact view of my projects portfolio list and need to have a quick way to give projects a quick status order of priority or focus etc... basically there are a lot and showing all details by default but should be able to click into the project by clicking the card or a view details next to the timeline option but even a dropdown button near the timeline one to the right of it maybe since i do think sorting by priority/focus is gonna be helpful and add filters/sorting/search above the PRojects list in the portfolio and i think some simple statuses or tags like: Top Priority, Focussing, Freeze/On Ice, Abandoned, Dead/Killed. with just a simple little single icon that if you hover or click it the different icons with simple one word labels that show on hover appear or something for the status even show a little number by it or something so you know 1 = top priority, 0 - dead/abandoned, etc.
+
+---
+
+## Session: 2026-06-18 (realtime-agent-bus-two-mac-handshake)
+
+**2026-06-18 09:50:53 UTC**
+> # In app browser:
+> - The user has the in-app browser open.
+> - Current URL: http://localhost:3100/shell?tab=machine
+>
+> ## My request for Codex:
+> ok pull down from remote main - and also im publishing the cli and gonna run the mac mini prompt again and report back - my new mini goal for the night is to ensure that these two macs can send and receive information/context/content/data to each other over our real-time protocol - i want to see my agents sending messages to eachother and staying in sync
+
+---
+
+## Session: 2026-06-18 (mac-mini-vault-stale-cli-report)
+
+**2026-06-18 10:00:00 UTC**
+> Houston reported the updated Mac mini setup run was still chasing the vault. Claude found no `youmd-env-vault` Keychain passphrase, checked the installed CLI, saw `youmd --version` was still `0.8.2`, launched the full setup, and later reported prereqs/login/sync/daemons/GitHub/skills/MCP/project clone were OK, but env restore was blocked by local vault decryption: account Secret Vault pull appeared empty, local/iCloud vault `env-vault-2026-06-18T0741Z.tar.enc` was found, and decrypt failed because there was no passphrase in Keychain/no TTY. Claude recommended the one human-gated command to store the vault passphrase in macOS Keychain service `youmd-env-vault`, then rerun restore headlessly.
 
 ---
 

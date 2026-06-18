@@ -23,6 +23,7 @@ import { decompileToFilesystem } from "../lib/decompile";
 import { mergeSections, decisionLabel } from "../lib/merge";
 import { BrailleSpinner } from "../lib/render";
 import {
+  describeRealtimeAgentBus,
   describeRealtimeSecretVault,
   realtimeSyncHeadSignature,
   shouldRunBoundedSync,
@@ -310,6 +311,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   let lastLocalRunAt = 0;
   let lastStackRunAt = 0;
   let lastContextRunAt = 0;
+  let lastAgentMessageAt = 0;
   let materializing = false;
   let pendingReason: string | null = null;
   let latestHead: RealtimeSyncHead | null = null;
@@ -345,6 +347,21 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
           console.log("");
           console.log(chalk.green("  live sync update: ") + chalk.dim(latestHead ? summarizeRealtimeSyncHead(latestHead) : activeReason));
           if (latestHead) {
+            const agentBus = describeRealtimeAgentBus(latestHead);
+            const unseenMessages = agentBus.messages.filter((message) => message.createdAt > lastAgentMessageAt);
+            if (unseenMessages.length > 0) {
+              lastAgentMessageAt = Math.max(lastAgentMessageAt, ...unseenMessages.map((message) => message.createdAt));
+              console.log(chalk.dim("  -- agent bus: ") + chalk.green(agentBus.summary));
+              for (const message of unseenMessages.slice(-5)) {
+                const when = new Date(message.createdAt).toISOString().slice(11, 19);
+                const from = [message.sourceAgent, message.sourceHost].filter(Boolean).join("@");
+                const target = message.targetHost || message.targetAgent
+                  ? chalk.dim(` -> ${[message.targetAgent, message.targetHost].filter(Boolean).join("@")}`)
+                  : "";
+                console.log(`     ${chalk.dim(when)} ${chalk.cyan(from || "agent")}${target}: ${message.body}`);
+              }
+              console.log(chalk.dim(`     inbox: ${agentBus.inboxPath}`));
+            }
             const vaultStatus = describeRealtimeSecretVault(latestHead);
             console.log(chalk.dim("  -- secret vault: ") + (vaultStatus.state === "ready" ? chalk.green(vaultStatus.summary) : chalk.yellow(vaultStatus.summary)));
             if (vaultStatus.state !== "ready") {

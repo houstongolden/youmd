@@ -31,7 +31,10 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("brew install node@22");
     expect(command).toContain("brew install gh");
     expect(command).toContain("brew install bun");
-    expect(command).toContain("curl -fsSL https://you.md/install.sh | bash");
+    expect(command).toContain("YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash");
+    expect(command).toContain('MIN_YOUMD_VERSION="${YOUMD_MIN_VERSION:-0.8.6}"');
+    expect(command).toContain("ensure_youmd_min_version");
+    expect(command).toContain("youmd ${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, and fresh-machine restore");
     expect(command).toContain('HYDRATE_TIMEOUT="${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"');
     expect(command).toContain('run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate');
     expect(command).toContain('youmd login --key "$YOUMD_API_KEY"');
@@ -106,6 +109,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("```bash");
     expect(prompt).toContain("install/configure MCP for Claude Code and Codex");
     expect(prompt).toContain("check/install the local prerequisites first");
+    expect(prompt).toContain("installing runtime from GitHub main");
     expect(prompt).toContain("require GitHub CLI auth before private shared-skill/project repos clone");
     expect(prompt).toContain("youmd mcp --install claude --auto");
     expect(prompt).toContain("youmd mcp --install codex --auto");
