@@ -506,10 +506,34 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                   <BooleanCell label="env backup script" value={report.envVault.backupScriptPresent} />
                   <BooleanCell label="env restore script" value={report.envVault.restoreScriptPresent} />
                   <BooleanCell label="private vault key" value={report.envVault.privateVaultKeyPresent} />
+                  <BooleanCell label="account vault" value={report.envVault.accountSnapshotStatus === "ready"} />
                 </div>
                 <p className="mt-3 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
                   launcher: {report.mcp.expectedLauncher}. secret values exposed: {String(report.envVault.secretValuesExposed)}.
                 </p>
+                <div className="mt-3 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--accent))]">
+                      secret vault
+                    </span>
+                    <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${report.envVault.accountSnapshotStatus === "ready" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}`}>
+                      {report.envVault.accountSnapshotStatus}
+                    </span>
+                  </div>
+                  <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+                    {report.envVault.accountSnapshotSummary ?? "realtime daemon has not published account Secret Vault status yet"}
+                  </p>
+                  {report.envVault.latestAccountSnapshot && (
+                    <div className="mt-2 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-45">
+                      {report.envVault.latestAccountSnapshot.fileName ?? "encrypted snapshot"} / {report.envVault.latestAccountSnapshot.projectCount ?? 0} projects / {report.envVault.latestAccountSnapshot.variableCount ?? 0} vars / {report.envVault.latestAccountSnapshot.sourceHost ?? "unknown host"} / {report.envVault.latestAccountSnapshot.sha256Short ?? "checksum pending"}
+                    </div>
+                  )}
+                  {report.envVault.accountSnapshotUpdatedAt && (
+                    <div className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                      realtime observed {formatTime(report.envVault.accountSnapshotUpdatedAt)}
+                    </div>
+                  )}
+                </div>
               </div>
             </section>
 
@@ -575,6 +599,8 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                 <CopyableCommand command={report.commands.daemonStatus} dimmed />
                 <CopyableCommand command={report.commands.envBackup} dimmed />
                 <CopyableCommand command={report.commands.envRestore} dimmed />
+                {report.envVault.accountPullCommand && <CopyableCommand command={report.envVault.accountPullCommand} dimmed />}
+                {report.envVault.accountRestoreCommand && <CopyableCommand command={report.envVault.accountRestoreCommand} dimmed />}
               </div>
             </section>
           </>

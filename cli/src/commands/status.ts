@@ -269,6 +269,10 @@ export async function statusCommand(): Promise<void> {
       if (daemon.warning) {
         console.log("      " + chalk.yellow("last warning: ") + DIM(daemon.warning.slice(0, 110)));
       }
+      if (daemon.secretVaultSummary) {
+        const color = daemon.secretVaultState === "ready" ? chalk.green : chalk.yellow;
+        console.log("      " + color("secret vault: ") + DIM(daemon.secretVaultSummary.slice(0, 140)));
+      }
     }
   } catch {
     // advisory only

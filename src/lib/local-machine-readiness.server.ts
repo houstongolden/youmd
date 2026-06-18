@@ -110,6 +110,23 @@ export type LocalMachineReadiness = {
     restoreScriptPresent: boolean;
     interactiveBackupPresent: boolean;
     privateVaultKeyPresent: boolean;
+    accountSnapshotStatus: "ready" | "missing" | "scope-missing" | "unknown";
+    accountSnapshotSummary?: string;
+    accountSnapshotUpdatedAt?: string;
+    latestAccountSnapshot?: {
+      fileName?: string | null;
+      createdAt?: number | null;
+      sizeBytes?: number | null;
+      projectCount?: number | null;
+      variableCount?: number | null;
+      sha256Short?: string | null;
+      encryptionTool?: string | null;
+      agentAuthIncluded?: boolean;
+      sourceHost?: string | null;
+      sourceRoot?: string | null;
+    };
+    accountPullCommand?: string;
+    accountRestoreCommand?: string;
     secretValuesExposed: false;
     notes: string[];
   };
@@ -253,6 +270,14 @@ function readJson(filePath: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function booleanField(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function optionalNumberField(value: unknown): number | null | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function sanitizeLine(line?: string): string | undefined {
@@ -525,6 +550,44 @@ function latestMachineProof(): LocalMachineProofSummary | undefined {
   };
 }
 
+function realtimeSecretVaultStatus(): Pick<LocalMachineReadiness["envVault"], "accountSnapshotStatus" | "accountSnapshotSummary" | "accountSnapshotUpdatedAt" | "latestAccountSnapshot" | "accountPullCommand" | "accountRestoreCommand"> {
+  const status = readJson("~/.youmd/realtime-sync-status.json");
+  const secretVault = status?.secretVault && typeof status.secretVault === "object"
+    ? status.secretVault as Record<string, unknown>
+    : null;
+  const state = stringField(secretVault?.state);
+  const latest = secretVault?.latestSnapshot && typeof secretVault.latestSnapshot === "object"
+    ? secretVault.latestSnapshot as Record<string, unknown>
+    : null;
+  const generatedAt = optionalNumberField(status?.generatedAt);
+  const safeState =
+    state === "ready" || state === "missing" || state === "scope-missing" || state === "unknown"
+      ? state
+      : "unknown";
+
+  return {
+    accountSnapshotStatus: safeState,
+    accountSnapshotSummary: stringField(secretVault?.summary),
+    accountSnapshotUpdatedAt: generatedAt ? new Date(generatedAt).toISOString() : undefined,
+    latestAccountSnapshot: latest
+      ? {
+          fileName: stringField(latest.fileName) ?? null,
+          createdAt: optionalNumberField(latest.createdAt),
+          sizeBytes: optionalNumberField(latest.sizeBytes),
+          projectCount: optionalNumberField(latest.projectCount),
+          variableCount: optionalNumberField(latest.variableCount),
+          sha256Short: stringField(latest.sha256Short) ?? null,
+          encryptionTool: stringField(latest.encryptionTool) ?? null,
+          agentAuthIncluded: booleanField(latest.agentAuthIncluded),
+          sourceHost: stringField(latest.sourceHost) ?? null,
+          sourceRoot: stringField(latest.sourceRoot) ?? null,
+        }
+      : undefined,
+    accountPullCommand: stringField(secretVault?.pullCommand),
+    accountRestoreCommand: stringField(secretVault?.restoreCommand),
+  };
+}
+
 export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadiness {
   const generatedAt = new Date().toISOString();
   const home = os.homedir();
@@ -562,21 +625,25 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     cursorConfigPresent: exists("~/.cursor/mcp.json") || exists("~/.cursor/config.json"),
     expectedLauncher: "npx --yes youmd@latest mcp",
   };
+  const accountVault = realtimeSecretVaultStatus();
   const envVault = {
     status: statusFrom([
       exists("~/.agent-shared/bin/env-key-audit.py"),
       exists("~/.agent-shared/bin/env-secure-backup.sh"),
       exists("~/.agent-shared/bin/env-secure-restore.sh"),
+      accountVault.accountSnapshotStatus === "ready",
     ]) as LocalReadinessStatus,
     auditToolPresent: exists("~/.agent-shared/bin/env-key-audit.py"),
     backupScriptPresent: exists("~/.agent-shared/bin/env-secure-backup.sh"),
     restoreScriptPresent: exists("~/.agent-shared/bin/env-secure-restore.sh"),
     interactiveBackupPresent: exists("~/.agent-shared/bin/env-backup-interactive.command"),
     privateVaultKeyPresent: exists("~/.youmd/vault-key.enc"),
+    ...accountVault,
     secretValuesExposed: false as const,
     notes: [
       "dashboard reports file presence and key-name readiness only",
       "raw .env.local values stay local and are not returned by this API",
+      "account Secret Vault status comes from the local realtime daemon sync head",
       "fresh hosts restore values through youmd env restore <vault> --root <dir>",
     ],
   };
@@ -587,6 +654,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     projects.scanned === 0 ? `no project directories found under ${rootDir}` : "",
     agentStack.status !== "ready" ? "local You.md agent stack is not fully ready" : "",
     envVault.status !== "ready" ? "env vault backup/restore tooling is incomplete" : "",
+    envVault.accountSnapshotStatus !== "ready" ? "account Secret Vault encrypted snapshot is not ready in realtime status" : "",
   ].filter(Boolean);
 
   return {

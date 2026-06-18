@@ -23,10 +23,12 @@ import { decompileToFilesystem } from "../lib/decompile";
 import { mergeSections, decisionLabel } from "../lib/merge";
 import { BrailleSpinner } from "../lib/render";
 import {
+  describeRealtimeSecretVault,
   realtimeSyncHeadSignature,
   shouldRunBoundedSync,
   summarizeRealtimeSyncHead,
   type RealtimeSyncHead,
+  writeRealtimeSyncStatusFile,
 } from "../lib/realtime-sync";
 
 export async function syncCommand(options: { watch?: boolean; force?: boolean; local?: boolean; daemon?: boolean; live?: boolean }) {
@@ -337,8 +339,18 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
 
         if (changed) {
           lastSignature = signature;
+          if (latestHead) {
+            writeRealtimeSyncStatusFile(latestHead);
+          }
           console.log("");
           console.log(chalk.green("  live sync update: ") + chalk.dim(latestHead ? summarizeRealtimeSyncHead(latestHead) : activeReason));
+          if (latestHead) {
+            const vaultStatus = describeRealtimeSecretVault(latestHead);
+            console.log(chalk.dim("  -- secret vault: ") + (vaultStatus.state === "ready" ? chalk.green(vaultStatus.summary) : chalk.yellow(vaultStatus.summary)));
+            if (vaultStatus.state !== "ready") {
+              console.log(chalk.dim("     source Mac: youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"));
+            }
+          }
         }
 
         if (changed && shouldRunBoundedSync(lastLocalRunAt, now, localMinMs)) {

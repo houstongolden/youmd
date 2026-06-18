@@ -512,6 +512,10 @@ export async function stackCommand(
         if (daemon.warning) {
           console.log("             " + chalk.yellow(`last warning: ${daemon.warning}`));
         }
+        if (daemon.secretVaultSummary) {
+          const color = daemon.secretVaultState === "ready" ? chalk.green : chalk.yellow;
+          console.log("             " + color("secret vault: ") + DIM(daemon.secretVaultSummary));
+        }
       }
       console.log("");
       return;
