@@ -176,6 +176,18 @@ Auto-maintained — new messages appended each session.
 
 ---
 
+## Session: 2026-06-18 (cli-publish-and-ystack-agent-autonomy)
+
+**2026-06-18 06:21:03 UTC**
+> # In app browser:
+> - The user has the in-app browser open.
+> - Current URL: http://localhost:3100/shell?tab=machine
+>
+> ## My request for Codex:
+> if youa re doing anything with the CLI ensure you tell me when i need to publish it to NPM and also ensure you include new skills in the ystack for claude code to get on how to use the you agent in the you CLI behind the scenes so the user doesn't even have to do  anything please
+
+---
+
 ## Session: 2026-06-18 (mac-mini-fresh-machine-setup-audit)
 
 **2026-06-18 05:01 UTC**

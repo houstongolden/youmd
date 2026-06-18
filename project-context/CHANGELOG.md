@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Fresh-machine agent autonomy and CLI 0.8.3 prep
+
+### fix(machine): teach setup agents to use You.md behind the scenes
+- Updated the CLI and web-shell fresh-machine prompts so Claude Code/Codex are explicitly instructed to run You.md CLI/You Agent commands themselves (`status`, `pull`, `sync`, `skill sync`, `env vault`, `portfolio-hydrate`, `machine verify`) before interrupting Houston.
+- Updated the bundled `machine-bootstrap` skill and hosted Convex seed content with the same behind-the-scenes operating rule, plus the 30-day strict env-vault setup prompt as the default handoff.
+- Updated shared `/machine-sync` in `.agent-shared` so Claude/Codex/Cursor/Pi skill mirrors treat You.md Secret Vault as the primary trusted-device env path and interrupt Houston only for GitHub auth, Keychain/passphrase, npm OTP, OS permissions, or the explicit 90-day expansion.
+- Bumped the CLI package to `0.8.3` for the next npm publish target. npm publish is now needed for `npx youmd@latest` and npm fallback installs; curl/source installs can track GitHub once this commit is on `main`.
+
 ## 2026-06-18 — You.md Secret Vault trusted-device env sync
 
 ### feat(machine): make env sync account-backed before local fallback

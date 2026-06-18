@@ -20,6 +20,9 @@ describe("web /new computer bootstrap prompt parity", () => {
     expect(source).toContain("YOUMD_REQUIRE_ENV_VAULT=1");
     expect(source).toContain("checking local prerequisites: Homebrew, Node 22/npm, git, gh, bun, pnpm");
     expect(source).toContain("require GitHub CLI auth before private shared-skill/project repos clone");
+    expect(source).toContain("Behind-the-scenes operating rule");
+    expect(source).toContain("use the You.md CLI and You Agent yourself before asking Houston");
+    expect(source).toContain("use the installed You.md CLI behind the scenes for status, skill sync, Secret Vault pull, portfolio graph hydration, machine verification, and You Agent context routing");
     expect(source).toContain("gh auth login -h github.com -p https -s repo");
     expect(source).toContain("checking You.md Secret Vault for the latest encrypted env vault");
     expect(source).toContain('youmd env vault pull --out "$SECRET_VAULT_DIR" --print-path');

@@ -98,6 +98,10 @@ describe("fresh machine bootstrap prompt", () => {
 
     expect(prompt).toContain("You are Claude Code or Codex running on my brand-new Mac.");
     expect(prompt).toContain("Do not just explain this. Execute the setup");
+    expect(prompt).toContain("Behind-the-scenes operating rule");
+    expect(prompt).toContain("use the You.md CLI and You Agent yourself before asking Houston");
+    expect(prompt).toContain("youmd env vault pull");
+    expect(prompt).toContain("Interrupt Houston only for true human-gated steps");
     expect(prompt).toContain("Exact setup command:");
     expect(prompt).toContain("```bash");
     expect(prompt).toContain("install/configure MCP for Claude Code and Codex");
@@ -105,6 +109,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("require GitHub CLI auth before private shared-skill/project repos clone");
     expect(prompt).toContain("youmd mcp --install claude --auto");
     expect(prompt).toContain("youmd mcp --install codex --auto");
+    expect(prompt).toContain("use the installed You.md CLI behind the scenes for status, skill sync, Secret Vault pull, portfolio graph hydration, machine verification, and You Agent context routing");
     expect(prompt).toContain("preview the graph-backed plan");
     expect(prompt).toContain("clone only projects marked ACTIVE plus Top Priority/Focusing from the last 30 days first");
     expect(prompt).toContain("ask whether to expand to all ACTIVE plus Top Priority/Focusing projects from the last 90 days");

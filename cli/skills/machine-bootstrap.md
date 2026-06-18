@@ -34,7 +34,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
    for Claude Code or Codex on the new machine, generate it first:
 
    ```bash
-   youmd machine prompt --root ~/Desktop/CODE_YOU --days 90
+   youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault
    ```
 
    If the web dashboard minted a scoped bootstrap key, the generated prompt may
@@ -72,31 +72,40 @@ You.md is the brain. The new machine should become a runnable local agent workst
 
 6. Hydrate the portfolio graph from You.md/GitHub records before cloning, then
    preview the graph-backed setup plan before creating the desktop code workspace
-   and syncing active projects:
+   and syncing truly active 30-day projects first:
+
+   ```bash
+   youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 30 --limit 80
+   youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only --dry-run
+   youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only
+   ```
+
+7. Ask whether Houston wants to expand the workspace to all active projects
+   from the last 90 days before calling the full project clone set complete:
 
    ```bash
    youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 90 --limit 80
-   youmd machine projects --root ~/Desktop/CODE_YOU --days 90 --dry-run
-   youmd machine projects --root ~/Desktop/CODE_YOU --days 90
+   youmd machine projects --root ~/Desktop/CODE_YOU --days 90 --recent-only --dry-run
+   youmd machine projects --root ~/Desktop/CODE_YOU --days 90 --recent-only
    ```
 
-7. If GitHub auth is missing, help the user log in and rerun only the project
+8. If GitHub auth is missing, help the user log in and rerun only the project
    clone step:
 
    ```bash
    gh auth login
-   youmd machine projects --root ~/Desktop/CODE_YOU --days 90
+   youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only
    ```
 
-8. After projects are cloned and any encrypted env vault is restored, hydrate the
+9. After projects are cloned and any encrypted env vault is restored, hydrate the
    portfolio graph again so local README, project-context, git, PR, and env-key
    evidence becomes visible to future agents:
 
    ```bash
-   youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 90 --limit 80
+   youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 30 --limit 80
    ```
 
-9. Run the secret-safe readiness audit and sync the proof summary:
+10. Run the secret-safe readiness audit and sync the proof summary:
 
    ```bash
    youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report --sync-report
@@ -109,7 +118,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
    summary to the You.md machine dashboard. It does not read secret values,
    upload raw logs, or launch every dev server.
 
-10. Only when Houston explicitly wants deeper local proof or the clean host has
+11. Only when Houston explicitly wants deeper local proof or the clean host has
     enough time/CPU, run bounded package checks and dev-server probes:
 
    ```bash
@@ -121,11 +130,34 @@ You.md is the brain. The new machine should become a runnable local agent workst
    and dev-server probes are capped by default; tune with
    `--max-install-projects`, `--max-server-projects`, and timeout flags.
 
+## Behind-the-Scenes Agent Operation
+
+- Use the You.md CLI and You Agent yourself before asking Houston to do manual
+  work. Prefer deterministic commands for setup and proof:
+  `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`,
+  `youmd machine prompt`, `youmd machine setup`,
+  `youmd skill install all`, `youmd skill sync`,
+  `youmd env vault list`, `youmd env vault pull`,
+  `youmd project portfolio-hydrate`, and `youmd machine verify`.
+- Use `you` / `youmd chat` when you need the You Agent to synthesize context,
+  route a natural-language request, or produce the setup artifact, then turn the
+  result into concrete shell actions.
+- Do not stop to ask "what next?" after each setup phase. Continue through the
+  command, verify the result, and report concise proof.
+- Interrupt Houston only for true human-gated steps: GitHub browser auth,
+  macOS Keychain/passphrase entry, npm OTP, OS permissions, or the explicit
+  90-day project expansion choice.
+- If the installed CLI is stale, run the curl installer/update path first, then
+  retry the You.md command. Tell Houston when npm publish is needed for
+  `npx youmd@latest` or npm fallback installs.
+
 ## Project Bootstrap Rules
 
 - Use repo directory names from GitHub URLs. `https://github.com/houstongolden/foldermd` becomes `foldermd`.
-- Default to projects active in the last 90 days plus projects marked active/current in You.md.
-- Ask before including older, archived, paused, or dormant projects.
+- Default to projects active in the last 30 days and marked active plus Top
+  Priority/Focusing in You.md. Ask before expanding to the 90-day active set.
+- Ask before including older, archived, paused, inactive, on-ice, abandoned,
+  killed, dormant, or unsorted projects.
 - Create the workspace root on the Desktop if it is missing. `CODE_YOU` is the default fresh-machine root.
 - Use the You.md Portfolio Graph as the strategic source of truth, then merge
   authenticated GitHub recent-repo data and local bundle project records so repo
@@ -202,7 +234,7 @@ on the trusted device, then rerun only the restore/setup command.
 Dry-run the project layout:
 
 ```bash
-youmd machine projects --root ~/Desktop/CODE_YOU --days 90 --dry-run
+youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only --dry-run
 ```
 
 Create directories only, without cloning:
@@ -238,13 +270,13 @@ youmd machine projects --root ~/Desktop/CODE_YOU --yes
 Generate the copy/paste prompt for a new Claude Code or Codex terminal:
 
 ```bash
-youmd machine prompt --root ~/Desktop/CODE_YOU --days 90 --limit 80
+youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault
 ```
 
 Generate the same prompt but cap clones for a clean-host proof run:
 
 ```bash
-youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 90 --limit 80 --max-clone-projects 2
+youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 --max-clone-projects 2 --require-env-vault
 ```
 
 Fetch the secret-safe project graph directly:
