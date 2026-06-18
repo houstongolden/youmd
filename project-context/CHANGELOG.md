@@ -1,5 +1,19 @@
 # You.md — Changelog
 
+## 2026-06-18 — You.md Secret Vault trusted-device env sync
+
+### feat(machine): make env sync account-backed before local fallback
+- Added account-backed Secret Vault v1 for encrypted `.env.local` transfer: owner-gated `secretVaultSnapshots` records, encrypted archive storage in Convex file storage, `GET/POST /api/v1/me/secret-vault/env`, checksum verification, safe manifest metadata, and activity logging for `vault_read` / `vault_write`.
+- Added CLI `youmd env vault push/list/pull`; `push` creates the encrypted local env vault, uploads ciphertext plus a safe manifest only, `pull` downloads the latest encrypted snapshot into `~/.youmd/secret-vault`, and `pull --restore` uses the fresh-machine defaults `--map-existing --existing-only --skip-agent-auth`.
+- Fresh-machine CLI/web prompts now mint bootstrap keys with `vault` scope, check You.md Secret Vault before local Desktop/iCloud fallback, and keep `.env.local` values out of browser prompts and logs.
+- Fixed the Mac mini path bug found in round 2: generated commands now assign `YOUMD_CODE_ROOT="$HOME/Desktop/CODE_YOU"` instead of single-quoting `~/Desktop/CODE_YOU`.
+- Updated the Machine pane and bundled `machine-bootstrap` skill so the source-machine command is `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, and Keychain service `youmd-env-vault` setup is documented as the headless restore gate.
+- Deployed the Convex backend so the live `.site` API now serves `GET /api/v1/me/secret-vault/env`; live CLI `youmd env vault list` returns a safe empty state with `secretValuesExposed: false`.
+- Added clearer CLI guidance for stale/non-vault auth failures so a local agent sees “refresh auth or use a vault-scoped key” instead of a vague Secret Vault failure.
+- Verification: `npx convex codegen`, `npx convex deploy`, focused fresh-machine parity tests, CLI build, root `npx tsc --noEmit --pretty false`, root `npm run build`, `npm run docs:check`, `npm run lint` (warnings only), compiled `youmd machine prompt --require-env-vault` smoke, live `youmd env vault list` safe empty-state smoke, and env-vault backup/restore bash syntax all passed.
+- Visual-testing note from Houston: future UI proof for this thread should use real Chrome, gstack/browser, or the Codex in-app browser, not headless Chrome or Playwright.
+- Remaining proof: run the real source-Mac `youmd env vault push`, rerun the generated command on the Mac mini, and verify Secret Vault pull, env restore, synced skills/stacks, active project clones, and the Machine pane proof row from that host.
+
 ## 2026-06-18 — Mac mini fresh-machine audit fixes
 
 ### fix(machine): make new-computer setup less trial-and-error

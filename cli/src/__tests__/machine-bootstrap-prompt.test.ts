@@ -18,14 +18,14 @@ describe("fresh machine bootstrap prompt", () => {
     });
 
     expect(command).toContain("YOUMD_API_KEY='ym_test'\"'\"'quoted'");
-    expect(command).toContain("YOUMD_CODE_ROOT='~/Desktop/CODE_2026'");
+    expect(command).toContain('YOUMD_CODE_ROOT="$HOME/Desktop/CODE_2026"');
     expect(command).toContain("YOUMD_ACTIVE_DAYS='120'");
     expect(command).toContain("YOUMD_PROJECT_LIMIT='44'");
     expect(command).toContain("YOUMD_MAX_CLONE_PROJECTS='3'");
-    expect(command).toContain("YOUMD_ENV_VAULT='~/Desktop/env-local-backup.tar.gz.gpg'");
+    expect(command).toContain('YOUMD_ENV_VAULT="$HOME/Desktop/env-local-backup.tar.gz.gpg"');
     expect(command).toContain("YOUMD_REQUIRE_ENV_VAULT='1'");
     expect(command).toContain("bash -lc");
-    expect(command).toContain("PATH='$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin");
+    expect(command).toContain('PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin');
     expect(command).toContain("bootstrap_prereqs");
     expect(command).toContain("checking local prerequisites: Homebrew, Node 22/npm, git, gh, bun, pnpm");
     expect(command).toContain("brew install node@22");
@@ -60,6 +60,10 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('fresh-machine full ${EXPAND_DAYS}-day project setup complete');
     expect(command).toContain('fresh-machine ${DAYS}-day setup pass complete');
     expect(command).toContain('youmd env backup --root "$ROOT" --preflight');
+    expect(command).toContain('checking You.md Secret Vault for the latest encrypted env vault');
+    expect(command).toContain('youmd env vault pull --out "$SECRET_VAULT_DIR" --print-path');
+    expect(command).toContain('using You.md Secret Vault snapshot');
+    expect(command).toContain("account-backed Secret Vault not available yet; falling back to local/iCloud vault discovery");
     expect(command).toContain('for DEFAULT_ENV_VAULT_DIR in "$HOME/Desktop/youmd-env-vault"');
     expect(command).toContain('com~apple~CloudDocs/Desktop/youmd-env-vault');
     expect(command).toContain('find "$DEFAULT_ENV_VAULT_DIR"');
@@ -72,6 +76,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("no env-vault Keychain item found; restore will prompt for the passphrase");
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --list --map-existing --existing-only --skip-agent-auth');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --map-existing --existing-only --skip-agent-auth');
+    expect(command).toContain("youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
     expect(command).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
     expect(command).toContain("YOUMD_ENV_VAULT=/path/to/env-vault-YYYYMMDDTHHMMZ.tar.enc YOUMD_REQUIRE_ENV_VAULT=1 <same command>");
     expect(command).toContain('strict proof requires YOUMD_ENV_VAULT');
@@ -106,8 +111,9 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("local project/env evidence");
     expect(prompt).toContain("sync a secret-safe machine proof report");
     expect(prompt).toContain("check env-vault tooling");
+    expect(prompt).toContain("account-backed You.md Secret Vault encrypted snapshot");
     expect(prompt).toContain("auto-detect the newest local Desktop or iCloud Desktop");
-    expect(prompt).toContain("The command auto-detects the newest vault there");
+    expect(prompt).toContain("The command checks Secret Vault first");
     expect(prompt).toContain("list the encrypted vault");
     expect(prompt).toContain("try macOS Keychain service `youmd-env-vault` for the passphrase");
     expect(prompt).toContain("If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically");
@@ -118,6 +124,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped");
     expect(prompt).toContain("First pass is 30 days");
     expect(prompt).toContain(".env.local values are never embedded here");
+    expect(prompt).toContain("youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
     expect(prompt).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
     expect(prompt).toContain("YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc");
     expect(prompt).toContain("variable names/counts and target paths only");
@@ -138,10 +145,12 @@ describe("fresh machine bootstrap prompt", () => {
       envVaultPath: `${os.homedir()}/Desktop/env-local-backup.tar.gz.gpg`,
     });
 
-    expect(command).toContain("YOUMD_CODE_ROOT='~/Desktop/CODE_YOU'");
-    expect(command).toContain("YOUMD_ENV_VAULT='~/Desktop/env-local-backup.tar.gz.gpg'");
+    expect(command).toContain('YOUMD_CODE_ROOT="$HOME/Desktop/CODE_YOU"');
+    expect(command).toContain('YOUMD_ENV_VAULT="$HOME/Desktop/env-local-backup.tar.gz.gpg"');
     expect(command).not.toContain(`YOUMD_CODE_ROOT='${os.homedir()}`);
     expect(command).not.toContain(`YOUMD_ENV_VAULT='${os.homedir()}`);
+    expect(command).not.toContain("YOUMD_CODE_ROOT='~/");
+    expect(command).not.toContain("YOUMD_ENV_VAULT='~/");
     expect(prompt).toContain("create ~/Desktop/CODE_YOU");
     expect(prompt).not.toContain(`creates ${os.homedir()}/Desktop/CODE_YOU`);
   });

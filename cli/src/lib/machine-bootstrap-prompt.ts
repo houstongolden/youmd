@@ -19,9 +19,20 @@ function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\"'\"'`)}'`;
 }
 
-function envAssignment(name: string, value: string | number | undefined): string | null {
+function envAssignment(
+  name: string,
+  value: string | number | undefined,
+  options: { expandHome?: boolean } = {}
+): string | null {
   if (value === undefined || value === null || `${value}`.trim() === "") return null;
-  return `${name}=${shellQuote(String(value))}`;
+  const stringValue = String(value);
+  if (options.expandHome) {
+    if (stringValue === "~") return `${name}="$HOME"`;
+    if (stringValue.startsWith("~/")) {
+      return `${name}="$HOME${stringValue.slice(1).replace(/["\\$`]/g, (char) => `\\${char}`)}"`;
+    }
+  }
+  return `${name}=${shellQuote(stringValue)}`;
 }
 
 function portableHomePath(value: string | undefined): string | undefined {
@@ -201,6 +212,18 @@ run_machine_projects_recent_only "\${PROJECT_ARGS[@]}"
 
 echo "[you.md] checking encrypted env-vault tooling without printing secrets"
 youmd env backup --root "$ROOT" --preflight || true
+if [ -z "\${YOUMD_ENV_VAULT:-}" ] && [ "\${YOUMD_SECRET_VAULT_PULL:-1}" = "1" ]; then
+  SECRET_VAULT_DIR="\${YOUMD_SECRET_VAULT_DIR:-$HOME/.youmd/secret-vault}"
+  echo "[you.md] checking You.md Secret Vault for the latest encrypted env vault"
+  if SECRET_VAULT_PATH="$(youmd env vault pull --out "$SECRET_VAULT_DIR" --print-path 2>/dev/null)"; then
+    if [ -n "$SECRET_VAULT_PATH" ] && [ -f "$SECRET_VAULT_PATH" ]; then
+      export YOUMD_ENV_VAULT="$SECRET_VAULT_PATH"
+      echo "[you.md] using You.md Secret Vault snapshot: $YOUMD_ENV_VAULT"
+    fi
+  else
+    echo "[you.md] account-backed Secret Vault not available yet; falling back to local/iCloud vault discovery"
+  fi
+fi
 if [ -z "\${YOUMD_ENV_VAULT:-}" ]; then
   for DEFAULT_ENV_VAULT_DIR in "$HOME/Desktop/youmd-env-vault" "$HOME/Library/Mobile Documents/com~apple~CloudDocs/Desktop/youmd-env-vault" "$HOME/Library/Mobile Documents/com~apple~CloudDocs/youmd-env-vault"; do
     if [ -d "$DEFAULT_ENV_VAULT_DIR" ]; then
@@ -235,6 +258,8 @@ if [ -n "\${YOUMD_ENV_VAULT:-}" ]; then
 else
   echo "[you.md] env vault not restored yet"
   echo "[you.md] On the old/source Mac, create the encrypted vault first:"
+  echo "youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"
+  echo "[you.md] Or create a transferable local copy without account sync:"
   echo "youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"
   echo "[you.md] The setup command also auto-detects vaults in local Desktop and iCloud Desktop: ~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/youmd-env-vault"
   echo "[you.md] Move the generated env-vault-*.tar.enc file to this Mac, then rerun this command with:"
@@ -307,15 +332,15 @@ fi`;
 export function buildFreshMachineBootstrapCommand(options: FreshMachineBootstrapOptions = {}): string {
   const assignments = [
     envAssignment("YOUMD_API_KEY", options.apiKey),
-    envAssignment("YOUMD_CODE_ROOT", portableHomePath(options.root)),
+    envAssignment("YOUMD_CODE_ROOT", portableHomePath(options.root), { expandHome: true }),
     envAssignment("YOUMD_ACTIVE_DAYS", options.days ?? DEFAULT_FRESH_MACHINE_DAYS),
     envAssignment("YOUMD_PROJECT_LIMIT", options.limit ?? DEFAULT_FRESH_MACHINE_LIMIT),
     envAssignment("YOUMD_MAX_CLONE_PROJECTS", options.maxCloneProjects),
-    envAssignment("YOUMD_ENV_VAULT", portableHomePath(options.envVaultPath)),
+    envAssignment("YOUMD_ENV_VAULT", portableHomePath(options.envVaultPath), { expandHome: true }),
     envAssignment("YOUMD_REQUIRE_ENV_VAULT", options.requireEnvVault ? "1" : undefined),
   ].filter((value): value is string => Boolean(value));
 
-  const pathPrefix = `PATH=${shellQuote("$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH")}`;
+  const pathPrefix = `PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"`;
   return `${[pathPrefix, ...assignments].join(" ")} bash -lc ${shellQuote(buildFreshMachineBootstrapScript())}`;
 }
 
@@ -355,12 +380,12 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
     `- preview the graph-backed plan, create ${root}, and clone only projects marked ACTIVE plus Top Priority/Focusing from the last ${days} days first`,
     `- ask whether to expand to all ACTIVE plus Top Priority/Focusing projects from the last ${expandDays} days before calling the full project clone set complete`,
-    "- check env-vault tooling, auto-detect the newest local Desktop or iCloud Desktop `youmd-env-vault/env-vault-*` file if `YOUMD_ENV_VAULT` is not set, list the encrypted vault, try macOS Keychain service `youmd-env-vault` for the passphrase, restore env files into existing cloned project dirs with `--map-existing --existing-only --skip-agent-auth`, then rehydrate local project/env evidence",
+    "- check env-vault tooling, pull the latest account-backed You.md Secret Vault encrypted snapshot when available, otherwise auto-detect the newest local Desktop or iCloud Desktop `youmd-env-vault/env-vault-*` file if `YOUMD_ENV_VAULT` is not set, list the encrypted vault, try macOS Keychain service `youmd-env-vault` for the passphrase, restore env files into existing cloned project dirs with `--map-existing --existing-only --skip-agent-auth`, then rehydrate local project/env evidence",
     "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
     "- bound portfolio hydration with `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
     "",
     `Project source: You.md portfolio graph + authenticated GitHub recent repos, capped at ${limit} tracked projects before local audit evidence is merged. When the graph exists, new-computer setup clones only projects with status ACTIVE and focus Top Priority/Focusing; inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped unless --include-inactive is explicitly used. First pass is ${days} days with out-of-window projects skipped; the ${expandDays}-day pass is explicit.`,
-    "Secret rule: .env.local values are never embedded here. On the old/source Mac, create a vault with `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to `~/Desktop/youmd-env-vault/` or the iCloud Desktop `youmd-env-vault/` on the new machine, then run this command. The command auto-detects the newest vault there; you can also override with `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically; otherwise it prompts. The restore path lists variable names/counts and target paths only, never values, maps old folder names onto cloned dirs, and skips agent auth config so it does not clobber the new machine's active Claude/Codex login.",
+    "Secret rule: .env.local values are never embedded here. Best path: on the old/source Mac, run `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` once. That uploads only encrypted archive bytes plus a safe manifest to You.md Secret Vault, so a trusted new Mac can pull it after login. Local fallback: run `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to `~/Desktop/youmd-env-vault/` or the iCloud Desktop `youmd-env-vault/` on the new machine, then run this command. The command checks Secret Vault first, then auto-detects the newest local vault; you can also override with `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically; otherwise it prompts. The restore path lists variable names/counts and target paths only, never values, maps old folder names onto cloned dirs, and skips agent auth config so it does not clobber the new machine's active Claude/Codex login.",
     "",
     "After the command finishes, report:",
     "- the `youmd status` sync state",

@@ -28,7 +28,7 @@ type MachineReadinessPaneProps = {
 
 const freshComputerPromptCommand = "youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault";
 const freshComputerShellCommand = "/new computer";
-const sourceEnvVaultBackupCommand = "youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault";
+const sourceEnvVaultBackupCommand = "youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault";
 
 function statusClass(status: LocalReadinessStatus | LocalProjectReadiness["status"]) {
   if (status === "ready") return "text-[hsl(var(--success))]";
@@ -148,14 +148,14 @@ function MachineSetupHero({
           Copy one Claude/Codex setup prompt into a blank Mac to rebuild this working context.
         </h2>
         <p className="mt-3 max-w-4xl font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">
-          The prompt tells the local agent exactly what to do, includes the curl runtime command, authenticates, pulls your identity bundle, syncs shared skills/stacks and MCP host config, creates {FRESH_MACHINE_BOOTSTRAP_ROOT}, restores encrypted env files from the transferred vault, clones active focused projects, writes a machine proof, and starts resident sync.
+          The prompt tells the local agent exactly what to do, includes the curl runtime command, authenticates, pulls your identity bundle, syncs shared skills/stacks and MCP host config, creates {FRESH_MACHINE_BOOTSTRAP_ROOT}, pulls encrypted env files from You.md Secret Vault or local fallback, clones active focused projects, writes a machine proof, and starts resident sync.
         </p>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-3">
           {[
             ["30d first", `${FRESH_MACHINE_BOOTSTRAP_DAYS}-day active + Top Priority/Focusing project pass`],
             ["90d optional", `asks before expanding to ${FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS}-day active project set`],
-            ["env vault", "requires ~/Desktop/youmd-env-vault/ on the new Mac for done-proof"],
+            ["secret vault", "pulls the encrypted account vault first, then falls back to local/iCloud files"],
           ].map(([label, detail]) => (
             <div key={label} className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg-raised))]/35 px-3 py-2">
               <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--accent))]">{label}</div>

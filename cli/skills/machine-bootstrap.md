@@ -40,6 +40,8 @@ You.md is the brain. The new machine should become a runnable local agent workst
    If the web dashboard minted a scoped bootstrap key, the generated prompt may
    include `YOUMD_API_KEY`. Treat that prompt as secret-bearing local setup
    material and do not paste it into public chats, tickets, or docs.
+   Fresh-machine bootstrap keys must include the `vault` scope so the trusted
+   device can pull encrypted Secret Vault snapshots after login.
    For bounded proof runs on a clean local root, add
    `--max-clone-projects 2` or set `YOUMD_MAX_CLONE_PROJECTS=2`; omit that cap
    on the real new machine.
@@ -133,7 +135,9 @@ You.md is the brain. The new machine should become a runnable local agent workst
   local bundle plus authenticated GitHub scan and say so.
 - Clone with `gh repo clone owner/repo <target>` when `gh` is authenticated; otherwise fall back to `git clone`.
 - Skip non-empty directories instead of overwriting them.
-- Never print secrets. If `.env.local` files are needed, use the shared encrypted env backup/restore path or a password manager.
+- Never print secrets. If `.env.local` files are needed, use You.md Secret Vault
+  or the shared encrypted env backup/restore path. Never paste raw env values
+  into chat.
 - After cloning, initialize missing per-repo agent context with `youmd skill init-project` from inside that repo.
 
 ## Secret-Safe Env Transfer
@@ -146,19 +150,52 @@ Audit local project env coverage before backup:
 youmd env backup --root ~/Desktop/CODE_2025 --preflight
 ```
 
-Create an encrypted archive from the old machine in an interactive macOS terminal:
+Primary path: from the old/source machine, create an encrypted archive and push
+only the ciphertext plus safe manifest metadata to You.md Secret Vault:
+
+```bash
+youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault
+youmd env vault list
+```
+
+The passphrase is still local/trusted-device material. If the new machine needs
+headless restore, store the passphrase in macOS Keychain once from a normal
+trusted Terminal. Input is silent and the value is not printed:
+
+```bash
+read -rs "PW?You.md vault passphrase: " && \
+security add-generic-password -a "$USER" -s youmd-env-vault -w "$PW" -U && \
+unset PW && echo "stored in Keychain"
+```
+
+On the new machine, pull the latest encrypted account snapshot and restore into
+already-cloned project directories without clobbering local agent auth:
+
+```bash
+youmd env vault pull --out ~/.youmd/secret-vault
+youmd env vault pull --restore --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
+```
+
+Fallback path: create an encrypted archive from the old machine in an
+interactive macOS terminal and transfer the encrypted file by iCloud, AirDrop,
+USB, or private password-manager attachment:
 
 ```bash
 open ~/.agent-shared/bin/env-backup-interactive.command
+youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault
 ```
 
 On the new machine, list the encrypted archive by path only before restore:
 
 ```bash
 ~/.agent-shared/bin/env-secure-restore.sh --archive ~/Desktop/env-local-backup.tar.gz.gpg --list
-youmd env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU --list
-youmd env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU
+youmd env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU --list --map-existing --existing-only --skip-agent-auth
+youmd env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
 ```
+
+If a headless agent reports that Keychain service `youmd-env-vault` is missing,
+do not make it guess. Print the Keychain command above, have Houston run it once
+on the trusted device, then rerun only the restore/setup command.
 
 ## Useful Variants
 

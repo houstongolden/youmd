@@ -1072,6 +1072,92 @@ export async function revokeApiKey(keyId: string): Promise<ApiResponse<{ success
   });
 }
 
+// ─── Secret Vault ──────────────────────────────────────────────────
+
+export interface SecretEnvVaultSnapshot {
+  id: string;
+  kind: "env-local" | string;
+  label?: string;
+  fileName: string;
+  contentType: string;
+  encryptionTool: string;
+  extension: string;
+  formatVersion: number;
+  sizeBytes: number;
+  sha256: string;
+  manifestText?: string;
+  manifestSha256?: string;
+  projectCount: number;
+  variableCount?: number;
+  agentAuthIncluded: boolean;
+  sourceHost?: string;
+  sourceRoot?: string;
+  createdAt: number;
+}
+
+export interface SecretEnvVaultUploadPayload {
+  label?: string;
+  fileName: string;
+  contentType?: string;
+  encryption: {
+    tool: string;
+    extension: string;
+    formatVersion: number;
+  };
+  encryptedArchiveBase64: string;
+  sha256: string;
+  manifestText?: string;
+  manifestSha256?: string;
+  projectCount: number;
+  variableCount?: number;
+  agentAuthIncluded: boolean;
+  sourceHost?: string;
+  sourceRoot?: string;
+}
+
+export async function uploadSecretEnvVaultSnapshot(
+  payload: SecretEnvVaultUploadPayload
+): Promise<ApiResponse<{
+  success: boolean;
+  kind: string;
+  snapshot: SecretEnvVaultSnapshot;
+  secretValuesExposed: false;
+}>> {
+  return apiRequest("/api/v1/me/secret-vault/env", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function listSecretEnvVaultSnapshots(opts?: {
+  limit?: number;
+}): Promise<ApiResponse<{
+  success: boolean;
+  kind: string;
+  snapshots: SecretEnvVaultSnapshot[];
+  secretValuesExposed: false;
+}>> {
+  const params = new URLSearchParams();
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return apiRequest(`/api/v1/me/secret-vault/env${qs ? `?${qs}` : ""}`, {
+    token: getToken(),
+  });
+}
+
+export async function downloadLatestSecretEnvVaultSnapshot(): Promise<ApiResponse<{
+  success: boolean;
+  kind: string;
+  snapshot: SecretEnvVaultSnapshot;
+  encryptedArchiveBase64: string;
+  secretValuesExposed: false;
+}>> {
+  return apiRequest("/api/v1/me/secret-vault/env?download=latest", {
+    token: getToken(),
+  });
+}
+
 // ─── Private context ────────────────────────────────────────────────
 
 export interface PrivateContext {

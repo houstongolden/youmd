@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "5502f870028b613da91ffe19d47c4f43e50b22cc29ea89b64c4264094bc5f834",
+  "sourceHash": "5ab8bb6f629c4000ecc71fe3e857629d455e16f67bb20af2bd7abeccc3bc8cc6",
   "cli": {
     "version": "0.8.2"
   },
   "counts": {
-    "endpoints": 93,
+    "endpoints": 95,
     "internalRoutes": 8,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 30,
-    "convexRoutes": 74,
+    "convexRoutes": 76,
     "nextRoutes": 27
   },
   "endpoints": [
@@ -359,6 +359,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Rollback to a previous version (authenticated)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/secret-vault/env",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Account-backed encrypted .env.local vault snapshots.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/secret-vault/env",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Convex HTTP action",
       "sources": [
         "convex"
       ]

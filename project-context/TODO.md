@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-18 — You.md Secret Vault trusted-device env sync
+- [x] Add owner-gated Convex `secretVaultSnapshots` records and `GET/POST /api/v1/me/secret-vault/env` for encrypted env-vault snapshots
+- [x] Require the new `vault` API key scope for Secret Vault upload/list/download
+- [x] Add CLI `youmd env vault push`, `youmd env vault list`, and `youmd env vault pull --restore`
+- [x] Update CLI/web fresh-machine setup to pull You.md Secret Vault first, then fall back to local/iCloud `youmd-env-vault` files
+- [x] Fix generated fresh-machine root/env paths to use `$HOME/Desktop/CODE_YOU` instead of a single-quoted literal `~/Desktop/CODE_YOU`
+- [x] Update the Machine pane and bundled `machine-bootstrap` skill so Keychain service `youmd-env-vault` setup is part of the trusted-device workflow
+- [x] Verify with Convex codegen, focused fresh-machine parity tests, CLI build, root typecheck, root production build, compiled prompt smoke, `youmd env vault` help smoke, and env-vault bash syntax
+- [ ] Run `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` with the real source vault/passphrase, then rerun the generated command on the Mac mini and verify the synced machine proof row
+
 ### 2026-06-18 — Machine setup prompt correction
 - [x] Fix Machine tab `copy setup` so it copies a Claude/Codex execution prompt, not only a raw shell command
 - [x] Include the curl install command inside the copied prompt with clear local-agent instructions, success checks, and strict env-vault done-ness language

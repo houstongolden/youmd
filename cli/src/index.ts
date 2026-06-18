@@ -51,7 +51,7 @@ import { logsCommand } from "./commands/logs";
 import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
-import { envBackupCommand, envRestoreCommand } from "./commands/env";
+import { envBackupCommand, envRestoreCommand, envVaultCommand } from "./commands/env";
 import { machineCommand } from "./commands/machine";
 import { readCliVersion } from "./lib/version";
 
@@ -685,7 +685,11 @@ program
   .option("--map-existing", "restore: map vault project names onto existing target-root directories")
   .option("--existing-only", "restore: skip vault projects that do not map to an existing target-root directory")
   .option("--skip-agent-auth", "restore: do not restore Claude/Codex/Cursor auth config from the vault")
-  .action((subcommand, args, options) => {
+  .option("--label <label>", "vault push: label the uploaded encrypted vault snapshot")
+  .option("--restore", "vault pull: restore after downloading the encrypted account vault")
+  .option("--print-path", "vault pull: print only the downloaded vault path")
+  .option("--json", "vault: print machine-readable JSON")
+  .action(async (subcommand, args, options) => {
     const a = args || [];
     if (subcommand === "backup") {
       envBackupCommand({ root: options.root, out: options.out, preflight: options.preflight });
@@ -702,14 +706,32 @@ program
         existingOnly: options.existingOnly,
         skipAgentAuth: options.skipAgentAuth,
       });
+    } else if (subcommand === "vault") {
+      const status = await envVaultCommand(a[0], {
+        root: options.root,
+        out: options.out,
+        preflight: options.preflight,
+        force: options.force,
+        list: options.list,
+        mapExisting: options.mapExisting,
+        existingOnly: options.existingOnly,
+        skipAgentAuth: options.skipAgentAuth,
+        label: options.label,
+        restore: options.restore,
+        printPath: options.printPath,
+        json: options.json,
+      });
+      process.exit(status);
     } else {
-      console.log("usage: youmd env <backup|restore> [options]");
+      console.log("usage: youmd env <backup|restore|vault> [options]");
       console.log("  backup              encrypt all .env.local files into a portable vault");
       console.log("  backup --preflight  verify env-vault readiness without writing a vault");
       console.log("  restore <vault>     decrypt and restore .env.local files from a vault");
       console.log("  restore --list      list vault contents without writing files");
       console.log("  restore --map-existing --existing-only --skip-agent-auth");
       console.log("                      safe fresh-machine env restore into cloned project dirs");
+      console.log("  vault push          upload encrypted env vault ciphertext to You.md Secret Vault");
+      console.log("  vault pull          download latest encrypted env vault from You.md Secret Vault");
     }
   });
 

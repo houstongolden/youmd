@@ -79,6 +79,7 @@ import type * as private_ from "../private.js";
 import type * as profileIndexing from "../profileIndexing.js";
 import type * as profiles from "../profiles.js";
 import type * as scrape from "../scrape.js";
+import type * as secretVault from "../secretVault.js";
 import type * as seed from "../seed.js";
 import type * as skills from "../skills.js";
 import type * as sourceRefresh from "../sourceRefresh.js";
@@ -166,6 +167,7 @@ declare const fullApi: ApiFromModules<{
   profileIndexing: typeof profileIndexing;
   profiles: typeof profiles;
   scrape: typeof scrape;
+  secretVault: typeof secretVault;
   seed: typeof seed;
   skills: typeof skills;
   sourceRefresh: typeof sourceRefresh;

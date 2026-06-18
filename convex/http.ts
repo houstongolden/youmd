@@ -51,6 +51,8 @@ const CORS_HEADERS = {
     "Content-Type, Authorization, If-None-Match, Idempotency-Key",
 };
 
+const SECRET_VAULT_MAX_BYTES = 8 * 1024 * 1024;
+
 // Helper for JSON responses
 function json(data: unknown, status = 200, extraHeaders?: Record<string, string>) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -916,6 +918,25 @@ function cleanOptionalString(value: unknown, limit = 1200): string | undefined {
 function cleanFiniteNumber(value: unknown, fallback = 0): number {
   const next = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
   return Number.isFinite(next) ? next : fallback;
+}
+
+function cleanFileName(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const cleaned = value
+    .replace(/[\\/]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/[^A-Za-z0-9._-]/g, "")
+    .slice(0, 180);
+  return cleaned || fallback;
+}
+
+async function sha256HexBytes(bytes: Uint8Array): Promise<string> {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  const digest = await crypto.subtle.digest("SHA-256", copy.buffer);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function cleanCompetitors(value: unknown): Array<{ name: string; url?: string; note?: string }> {
@@ -2412,6 +2433,208 @@ http.route({
       return json({ machines });
     } catch (err) {
       return serverErrorResponse("me/machines/proofs", err, "Failed to list machine proofs");
+    }
+  }),
+});
+
+// GET/POST /api/v1/me/secret-vault/env — Account-backed encrypted .env.local vault snapshots.
+http.route({
+  path: "/api/v1/me/secret-vault/env",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+
+    const url = new URL(request.url);
+    const wantsDownload =
+      url.searchParams.get("download") === "1" ||
+      url.searchParams.get("download") === "true" ||
+      url.searchParams.get("download") === "latest";
+    const limit = cleanFiniteNumber(url.searchParams.get("limit"), 8);
+
+    try {
+      if (!wantsDownload) {
+        const snapshots = await ctx.runQuery(api.secretVault.listEnvVaultSnapshots, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          limit,
+        });
+        return json({
+          success: true,
+          kind: "env-local",
+          snapshots,
+          secretValuesExposed: false,
+        });
+      }
+
+      const latest = await ctx.runQuery(api.secretVault.getLatestEnvVaultSnapshot, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      if (!latest) {
+        return errorResponse("not_found", "No encrypted env vault snapshot has been uploaded yet", 404);
+      }
+
+      const blob = await ctx.storage.get(latest.storageId);
+      if (!blob) {
+        return errorResponse("not_found", "Encrypted env vault storage object is missing", 404);
+      }
+
+      const arrayBuffer = await blob.arrayBuffer();
+      const encryptedArchiveBase64 = Buffer.from(arrayBuffer).toString("base64");
+      const computedSha256 = await sha256HexBytes(new Uint8Array(arrayBuffer));
+      if (computedSha256 !== latest.sha256) {
+        return errorResponse("conflict", "Encrypted env vault checksum mismatch", 409);
+      }
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "vault_read",
+          resource: "secret-vault/env",
+          scope: "vault",
+          apiKeyId: auth.apiKeyId,
+          connectedAppGrantId: auth.connectedAppGrantId,
+          status: "success",
+          details: {
+            fileName: latest.fileName,
+            sizeBytes: latest.sizeBytes,
+            projectCount: latest.projectCount,
+            sourceHost: latest.sourceHost,
+          },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return json({
+        success: true,
+        kind: "env-local",
+        snapshot: {
+          ...latest,
+          storageId: undefined,
+        },
+        encryptedArchiveBase64,
+        secretValuesExposed: false,
+      });
+    } catch (err) {
+      return serverErrorResponse("me/secret-vault/env", err, "Failed to load encrypted env vault");
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/secret-vault/env",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const startedAt = Date.now();
+    try {
+      const body = await request.json();
+      if (!body || typeof body.encryptedArchiveBase64 !== "string") {
+        return errorResponse("invalid_request", "encryptedArchiveBase64 must be a non-empty base64 string", 400);
+      }
+
+      const archiveBytes = Buffer.from(body.encryptedArchiveBase64, "base64");
+      if (archiveBytes.byteLength === 0) {
+        return errorResponse("invalid_request", "encryptedArchiveBase64 decoded to an empty archive", 400);
+      }
+      if (archiveBytes.byteLength > SECRET_VAULT_MAX_BYTES) {
+        return errorResponse(
+          "invalid_request",
+          `Encrypted env vault is too large for account sync v1 (${archiveBytes.byteLength} bytes > ${SECRET_VAULT_MAX_BYTES} bytes)`,
+          413,
+          { maxBytes: SECRET_VAULT_MAX_BYTES }
+        );
+      }
+
+      const sha256 = await sha256HexBytes(archiveBytes);
+      const declaredSha = cleanOptionalString(body.sha256, 90);
+      if (declaredSha && declaredSha !== sha256) {
+        return errorResponse("conflict", "Encrypted env vault checksum does not match upload body", 409);
+      }
+
+      const manifestText = cleanOptionalString(body.manifestText, 50_000);
+      const manifestSha256 = cleanOptionalString(body.manifestSha256, 90);
+      const encryption = body.encryption && typeof body.encryption === "object"
+        ? body.encryption as Record<string, unknown>
+        : {};
+      const extension = cleanOptionalString(encryption.extension ?? body.extension, 20) ?? "enc";
+      const fileName = cleanFileName(
+        body.fileName,
+        `env-vault-cloud-${new Date(startedAt).toISOString().replace(/[:.]/g, "-")}.tar.${extension}`
+      );
+      const contentType = cleanOptionalString(body.contentType, 120) ?? "application/octet-stream";
+      const storageId = await ctx.storage.store(new Blob([archiveBytes], { type: contentType }));
+
+      const snapshot = await ctx.runMutation(api.secretVault.createEnvVaultSnapshot, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        kind: "env-local",
+        label: cleanOptionalString(body.label, 160),
+        fileName,
+        storageId,
+        contentType,
+        encryptionTool: cleanOptionalString(encryption.tool ?? body.encryptionTool, 80) ?? "unknown",
+        extension,
+        formatVersion: cleanFiniteNumber(encryption.formatVersion ?? body.formatVersion, 1),
+        sizeBytes: archiveBytes.byteLength,
+        sha256,
+        manifestText,
+        manifestSha256,
+        projectCount: cleanFiniteNumber(body.projectCount),
+        variableCount: body.variableCount === undefined ? undefined : cleanFiniteNumber(body.variableCount),
+        agentAuthIncluded: body.agentAuthIncluded === true,
+        sourceHost: cleanOptionalString(body.sourceHost, 180),
+        sourceRoot: cleanOptionalString(body.sourceRoot, 700),
+      });
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "vault_write",
+          resource: "secret-vault/env",
+          scope: "vault",
+          apiKeyId: auth.apiKeyId,
+          connectedAppGrantId: auth.connectedAppGrantId,
+          status: "success",
+          durationMs: Date.now() - startedAt,
+          details: {
+            fileName,
+            sizeBytes: archiveBytes.byteLength,
+            projectCount: cleanFiniteNumber(body.projectCount),
+            variableCount: body.variableCount === undefined ? undefined : cleanFiniteNumber(body.variableCount),
+            sourceHost: cleanOptionalString(body.sourceHost, 180),
+          },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return guard.finish(json({
+        success: true,
+        kind: "env-local",
+        snapshot,
+        secretValuesExposed: false,
+      }));
+    } catch (err) {
+      return serverErrorResponse("me/secret-vault/env", err, "Failed to save encrypted env vault");
     }
   }),
 });
@@ -4146,6 +4369,7 @@ http.route({ path: "/api/v1/me/portfolio/tasks", method: "OPTIONS", handler: cor
 http.route({ path: "/api/v1/me/portfolio/tasks/triage", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks/update", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/secret-vault/env", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/build", method: "OPTIONS", handler: corsPreflight });

@@ -920,6 +920,30 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
 
+  secretVaultSnapshots: defineTable({
+    userId: v.id("users"),
+    kind: v.string(), // "env-local"
+    label: v.optional(v.string()),
+    fileName: v.string(),
+    storageId: v.id("_storage"),
+    contentType: v.string(),
+    encryptionTool: v.string(),
+    extension: v.string(),
+    formatVersion: v.number(),
+    sizeBytes: v.number(),
+    sha256: v.string(),
+    manifestText: v.optional(v.string()),
+    manifestSha256: v.optional(v.string()),
+    projectCount: v.number(),
+    variableCount: v.optional(v.number()),
+    agentAuthIncluded: v.boolean(),
+    sourceHost: v.optional(v.string()),
+    sourceRoot: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_kind_createdAt", ["userId", "kind", "createdAt"]),
+
   pipelineJobs: defineTable({
     userId: v.id("users"),
     sourceId: v.optional(v.id("sources")),
