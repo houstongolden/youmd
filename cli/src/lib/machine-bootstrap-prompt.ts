@@ -77,6 +77,8 @@ export function buildFreshMachineBootstrapScript(): string {
     "youmd machine setup",
     "youmd skill install all",
     "youmd skill sync",
+    "youmd mcp --install claude --auto || true",
+    "youmd mcp --install codex --auto || true",
     "youmd skill link claude || true",
     "youmd skill link codex || true",
     'if command -v gh >/dev/null 2>&1; then',
@@ -230,20 +232,48 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
   const expandDays = DEFAULT_FRESH_MACHINE_EXPAND_DAYS;
   const limit = options.limit ?? DEFAULT_FRESH_MACHINE_LIMIT;
   const command = buildFreshMachineBootstrapCommand(options);
+  const authLine = options.apiKey
+    ? "A scoped bootstrap key is embedded in the command. Treat this as secret local setup material."
+    : "If no bootstrap key is embedded, the command falls back to interactive You.md login.";
 
   return [
-    "Fresh computer bootstrap for Claude Code / Codex:",
+    "You are Claude Code or Codex running on my brand-new Mac.",
     "",
-    "Copy this whole command into the new machine terminal:",
+    "Goal: set up this blank computer so it has my You.md identity context, shared skills/stacks, MCP wiring, agent preferences/prompts, active project repos, encrypted `.env.local` files, machine proof sync, and resident sync behavior from my source Mac.",
+    "",
+    "Do not just explain this. Execute the setup, stream progress, and verify the result. Run the exact command below in the terminal first.",
+    "",
+    authLine,
+    "",
+    "Exact setup command:",
     "",
     "```bash",
     command,
     "```",
     "",
-    `What it does: installs You.md, authenticates, pulls/syncs identity, restores shared agent skills/stacks, fetches and hydrates the persisted portfolio graph, previews the graph-backed project setup plan, creates ${root}, clones projects that are both ACTIVE and Top Priority/Focusing from the last ${days} days first, asks before expanding the workspace to all active focused projects from the last ${expandDays} days, checks env-vault tooling, auto-detects the newest encrypted vault in \`~/Desktop/youmd-env-vault/\` when YOUMD_ENV_VAULT is not supplied, lists an encrypted env vault without writing files if supplied or detected, tries macOS Keychain service \`youmd-env-vault\` for the passphrase, restores that vault only after the list step passes, rehydrates local evidence, audits cloned project readiness without reading secret values, writes a secret-safe machine proof report, syncs the proof summary back to your You.md machine dashboard, bounds portfolio hydration with YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS, optionally requires env-vault restore before completion with YOUMD_REQUIRE_ENV_VAULT=1, optionally caps clone count for proof runs with YOUMD_MAX_CLONE_PROJECTS, optionally auto-expands to the ${expandDays}-day set with YOUMD_EXPAND_TO_90_DAYS=1, optionally runs bounded package checks with YOUMD_RUN_CHECKS=1, optionally runs clean-host dependency installs with YOUMD_INSTALL_DEPS=1, optionally smoke-probes local dev servers with YOUMD_PROBE_SERVERS=1, and starts resident sync daemons.`,
+    "What it will do:",
+    "- install You.md from the curl runtime",
+    "- authenticate and pull/sync your identity bundle",
+    "- install/configure MCP for Claude Code and Codex",
+    "- restore shared agent skills, stack config, Claude/Codex links, and resident sync daemons",
+    "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
+    `- preview the graph-backed plan, create ${root}, and clone only projects marked ACTIVE plus Top Priority/Focusing from the last ${days} days first`,
+    `- ask whether to expand to all ACTIVE plus Top Priority/Focusing projects from the last ${expandDays} days before calling the full project clone set complete`,
+    "- check env-vault tooling, auto-detect the newest `~/Desktop/youmd-env-vault/env-vault-*` file if `YOUMD_ENV_VAULT` is not set, list the encrypted vault, try macOS Keychain service `youmd-env-vault` for the passphrase, restore only after the list passes, then rehydrate local project/env evidence",
+    "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
+    "- bound portfolio hydration with `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
     "",
     `Project source: You.md portfolio graph + authenticated GitHub recent repos, capped at ${limit} tracked projects before local audit evidence is merged. When the graph exists, new-computer setup clones only projects with status ACTIVE and focus Top Priority/Focusing; inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped unless --include-inactive is explicitly used. First pass is ${days} days with out-of-window projects skipped; the ${expandDays}-day pass is explicit.`,
     "Secret rule: .env.local values are never embedded here. On the old/source Mac, create a vault with `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to `~/Desktop/youmd-env-vault/` on the new machine, then run this command. The command auto-detects the newest vault there; you can also override with `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically; otherwise it prompts. The restore path lists variable names/counts and target paths only, never values.",
+    "",
+    "After the command finishes, report:",
+    "- the `youmd status` sync state",
+    `- the \`${root}\` project count`,
+    "- whether the encrypted env vault restored",
+    "- whether Claude/Codex MCP config was installed",
+    "- the synced machine proof status",
+    "- whether I should expand to the 90-day active project set if I have not answered yet",
+    "",
     "Done-ness rule: for real fresh-computer proof, set YOUMD_REQUIRE_ENV_VAULT=1 or pass --require-env-vault so the command fails instead of pretending setup is complete when the encrypted env vault is missing.",
   ].join("\n");
 }

@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-18 — Machine setup prompt correction
+
+### fix(machine): copy a Claude/Codex setup prompt instead of a raw shell blob
+- Changed the Machine tab primary action from copying only the raw bootstrap shell command to copying a full Claude Code/Codex prompt with role, goal, execution instructions, fenced curl setup command, verification checklist, project gate, env-vault rules, and done-ness contract.
+- Added explicit `youmd mcp --install claude --auto` and `youmd mcp --install codex --auto` steps to both the web-shell and CLI fresh-machine bootstrap scripts.
+- Updated `youmd machine prompt` to match the web prompt shape so CLI-generated fresh-machine setup artifacts are agent-readable too.
+- Reworded the Machine tab hero/button from `copy setup command` to `copy setup prompt`.
+- Revoked unused fresh-machine bootstrap keys after a key was pasted into chat; future Machine tab copies mint a fresh 7-day scoped key.
+- Confirmed npm state: local CLI is `0.8.2`, npm latest is still `0.8.0`, and `0.8.2` is not published yet. The curl installer defaults to source-from-GitHub, but npm fallback / `npx youmd@latest` remain stale until publish.
+- Verification: focused CLI prompt tests, CLI build, root typecheck, root lint/radius, production Next build, `npm pack --dry-run`, and compiled prompt smoke passed. Local `next start -p 3100` was restarted from the fresh build.
+
 ## 2026-06-18 — Machine tab new-computer setup surface
 
 ### feat(machine): copy the fresh-Mac bootstrap command from Machine

@@ -17,7 +17,7 @@ import {
   FRESH_MACHINE_BOOTSTRAP_LIMIT,
   FRESH_MACHINE_BOOTSTRAP_ROOT,
   FRESH_MACHINE_BOOTSTRAP_SCOPES,
-  buildFreshMachineBootstrapCommand,
+  buildFreshMachineBootstrapMessage,
 } from "@/hooks/useYouAgent";
 
 type RootMode = "current" | "fresh";
@@ -115,8 +115,8 @@ function MachineSetupHero({
         scopes: FRESH_MACHINE_BOOTSTRAP_SCOPES,
         expiresInDays: 7,
       });
-      const command = buildFreshMachineBootstrapCommand(result.key);
-      await copyText(command, "copied setup command");
+      const prompt = buildFreshMachineBootstrapMessage(result.key);
+      await copyText(prompt, "copied Claude/Codex prompt");
       setCopyState("copied");
     } catch (err) {
       try {
@@ -145,10 +145,10 @@ function MachineSetupHero({
       <div className="border-l border-[hsl(var(--accent))]/70 pl-4">
         <PaneSectionLabel>new machine setup</PaneSectionLabel>
         <h2 className="font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
-          Copy one command into Claude Code or Codex on a blank Mac to rebuild this working context.
+          Copy one Claude/Codex setup prompt into a blank Mac to rebuild this working context.
         </h2>
         <p className="mt-3 max-w-4xl font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">
-          Installs You.md, authenticates, pulls your identity bundle, syncs shared skills/stacks and agent host config, creates {FRESH_MACHINE_BOOTSTRAP_ROOT}, restores encrypted env files from the transferred vault, clones active focused projects, writes a machine proof, and starts resident sync.
+          The prompt tells the local agent exactly what to do, includes the curl runtime command, authenticates, pulls your identity bundle, syncs shared skills/stacks and MCP host config, creates {FRESH_MACHINE_BOOTSTRAP_ROOT}, restores encrypted env files from the transferred vault, clones active focused projects, writes a machine proof, and starts resident sync.
         </p>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-3">
@@ -172,7 +172,7 @@ function MachineSetupHero({
             className="flex h-9 items-center gap-2 border border-[hsl(var(--border))] bg-[hsl(var(--accent))]/10 px-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]/50 disabled:cursor-wait disabled:opacity-60"
           >
             <Copy size={13} />
-            {copyState === "minting" ? "minting key" : copyState === "copied" ? "setup command copied" : "copy setup command"}
+            {copyState === "minting" ? "minting key" : copyState === "copied" ? "setup prompt copied" : "copy setup prompt"}
           </button>
           <button
             type="button"

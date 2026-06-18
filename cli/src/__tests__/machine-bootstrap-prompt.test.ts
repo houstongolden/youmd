@@ -29,6 +29,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('HYDRATE_TIMEOUT="${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"');
     expect(command).toContain('run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate');
     expect(command).toContain('youmd login --key "$YOUMD_API_KEY"');
+    expect(command).toContain("youmd mcp --install claude --auto || true");
+    expect(command).toContain("youmd mcp --install codex --auto || true");
     expect(command).toContain('youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT"');
     expect(command).toContain('DAYS="${YOUMD_ACTIVE_DAYS:-30}"');
     expect(command).toContain('EXPAND_DAYS="${YOUMD_EXPAND_ACTIVE_DAYS:-90}"');
@@ -79,26 +81,26 @@ describe("fresh machine bootstrap prompt", () => {
   it("renders a copyable agent prompt with secret-safe env-vault language", () => {
     const prompt = buildFreshMachineBootstrapPrompt({ root: "~/Desktop/CODE_YOU" });
 
-    expect(prompt).toContain("Fresh computer bootstrap for Claude Code / Codex");
+    expect(prompt).toContain("You are Claude Code or Codex running on my brand-new Mac.");
+    expect(prompt).toContain("Do not just explain this. Execute the setup");
+    expect(prompt).toContain("Exact setup command:");
     expect(prompt).toContain("```bash");
-    expect(prompt).toContain("previews the graph-backed project setup plan");
-    expect(prompt).toContain("clones projects that are both ACTIVE and Top Priority/Focusing from the last 30 days first");
-    expect(prompt).toContain("asks before expanding the workspace to all active focused projects from the last 90 days");
-    expect(prompt).toContain("audits cloned project readiness without reading secret values");
-    expect(prompt).toContain("writes a secret-safe machine proof report");
-    expect(prompt).toContain("syncs the proof summary back to your You.md machine dashboard");
-    expect(prompt).toContain("checks env-vault tooling");
-    expect(prompt).toContain("auto-detects the newest encrypted vault in `~/Desktop/youmd-env-vault/`");
+    expect(prompt).toContain("install/configure MCP for Claude Code and Codex");
+    expect(prompt).toContain("youmd mcp --install claude --auto");
+    expect(prompt).toContain("youmd mcp --install codex --auto");
+    expect(prompt).toContain("preview the graph-backed plan");
+    expect(prompt).toContain("clone only projects marked ACTIVE plus Top Priority/Focusing from the last 30 days first");
+    expect(prompt).toContain("ask whether to expand to all ACTIVE plus Top Priority/Focusing projects from the last 90 days");
+    expect(prompt).toContain("local project/env evidence");
+    expect(prompt).toContain("sync a secret-safe machine proof report");
+    expect(prompt).toContain("check env-vault tooling");
+    expect(prompt).toContain("auto-detect the newest `~/Desktop/youmd-env-vault/env-vault-*` file");
     expect(prompt).toContain("The command auto-detects the newest vault there");
-    expect(prompt).toContain("lists an encrypted env vault without writing files");
-    expect(prompt).toContain("tries macOS Keychain service `youmd-env-vault` for the passphrase");
+    expect(prompt).toContain("list the encrypted vault");
+    expect(prompt).toContain("try macOS Keychain service `youmd-env-vault` for the passphrase");
     expect(prompt).toContain("If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically");
     expect(prompt).toContain("YOUMD_MAX_CLONE_PROJECTS");
-    expect(prompt).toContain("YOUMD_RUN_CHECKS=1");
-    expect(prompt).toContain("YOUMD_INSTALL_DEPS=1");
-    expect(prompt).toContain("YOUMD_PROBE_SERVERS=1");
     expect(prompt).toContain("YOUMD_REQUIRE_ENV_VAULT=1");
-    expect(prompt).toContain("YOUMD_EXPAND_TO_90_DAYS=1");
     expect(prompt).toContain("You.md portfolio graph + authenticated GitHub recent repos");
     expect(prompt).toContain("clones only projects with status ACTIVE and focus Top Priority/Focusing");
     expect(prompt).toContain("inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped");
@@ -107,6 +109,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
     expect(prompt).toContain("YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc");
     expect(prompt).toContain("variable names/counts and target paths only");
+    expect(prompt).toContain("After the command finishes, report:");
+    expect(prompt).toContain("whether Claude/Codex MCP config was installed");
     expect(prompt).toContain("fails instead of pretending setup is complete");
   });
 
@@ -124,7 +128,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("YOUMD_ENV_VAULT='~/Desktop/env-local-backup.tar.gz.gpg'");
     expect(command).not.toContain(`YOUMD_CODE_ROOT='${os.homedir()}`);
     expect(command).not.toContain(`YOUMD_ENV_VAULT='${os.homedir()}`);
-    expect(prompt).toContain("creates ~/Desktop/CODE_YOU");
+    expect(prompt).toContain("create ~/Desktop/CODE_YOU");
     expect(prompt).not.toContain(`creates ${os.homedir()}/Desktop/CODE_YOU`);
   });
 });

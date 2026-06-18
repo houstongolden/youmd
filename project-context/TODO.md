@@ -7,6 +7,18 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-18 — Machine setup prompt correction
+- [x] Fix Machine tab `copy setup` so it copies a Claude/Codex execution prompt, not only a raw shell command
+- [x] Include the curl install command inside the copied prompt with clear local-agent instructions, success checks, and strict env-vault done-ness language
+- [x] Add Claude Code and Codex MCP install commands to the generated fresh-machine script
+- [x] Keep `youmd machine prompt` in parity with the web-shell Machine tab prompt
+- [x] Revoke unused fresh-machine bootstrap keys after the exposed pasted key incident
+- [x] Verify local CLI/npm publish state: local `0.8.2`, npm latest `0.8.0`, `0.8.2` unpublished
+- [x] Restart local `next start -p 3100` from the fresh build
+- [ ] Publish CLI `0.8.2` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
+- [ ] Re-run the Machine tab button in the signed-in Codex browser and verify the clipboard starts with `You are Claude Code or Codex running on my brand-new Mac.`
+- [ ] Run the corrected prompt on the Mac mini with the transferred env vault and verify `~/Desktop/CODE_YOU`, MCP config, skill sync, project clone count, env restore, and synced machine proof
+
 ### 2026-06-18 — Machine tab new-computer setup surface
 - [x] Add a top Machine pane setup panel matching the Skills tab intro style
 - [x] Add a primary `copy setup command` action that mints a 7-day scoped bootstrap key from the signed-in shell

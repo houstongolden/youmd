@@ -167,6 +167,8 @@ export function buildFreshMachineBootstrapCommand(apiKey?: string): string {
     "youmd machine setup",
     "youmd skill install all",
     "youmd skill sync",
+    "youmd mcp --install claude --auto || true",
+    "youmd mcp --install codex --auto || true",
     "youmd skill link claude || true",
     "youmd skill link codex || true",
     'if command -v gh >/dev/null 2>&1; then',
@@ -310,18 +312,22 @@ export function buildFreshMachineBootstrapCommand(apiKey?: string): string {
   return `${assignments.join(" ")} bash -lc ${shellQuote(script)}`;
 }
 
-function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: string): string {
+export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: string): string {
   const command = buildFreshMachineBootstrapCommand(apiKey);
   const authLine = apiKey
     ? "I minted a 7-day bootstrap key and embedded it in the command. Treat this as secret local setup material."
     : `I could not mint a bootstrap key${keyError ? ` (${keyError})` : ""}. The command will fall back to interactive You.md login.`;
 
   return [
-    "fresh-computer setup prompt ready.",
+    "You are Claude Code or Codex running on my brand-new Mac.",
+    "",
+    "Goal: set up this blank computer so it has my You.md identity context, shared skills/stacks, MCP wiring, agent preferences/prompts, active project repos, encrypted `.env.local` files, machine proof sync, and resident sync behavior from my source Mac.",
+    "",
+    "Do not just explain this. Execute the setup, stream progress, and verify the result. Run the exact command below in the terminal first.",
     "",
     authLine,
     "",
-    "Copy this whole command into Claude Code or Codex on the new machine:",
+    "Exact setup command:",
     "",
     "```bash",
     command,
@@ -330,6 +336,7 @@ function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: string): 
     "What it will do:",
     "- install You.md from the curl runtime",
     "- authenticate and pull/sync your identity bundle",
+    "- install/configure MCP for Claude Code and Codex",
     "- restore shared agent skills, stack config, Claude/Codex links, and resident sync daemons",
     "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
     `- preview the graph-backed plan, create \`${FRESH_MACHINE_BOOTSTRAP_ROOT}\`, and clone only projects marked ACTIVE plus Top Priority/Focusing from the last ${FRESH_MACHINE_BOOTSTRAP_DAYS} days first`,
@@ -337,6 +344,14 @@ function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: string): 
     "- check env-vault tooling, auto-detect the newest `~/Desktop/youmd-env-vault/env-vault-*` file if `YOUMD_ENV_VAULT` is not set, list the encrypted vault, try macOS Keychain service `youmd-env-vault` for the passphrase, restore only after the list passes, then rehydrate local project/env evidence",
     "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
     "- bound portfolio hydration with `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
+    "",
+    "After the command finishes, report:",
+    "- the `youmd status` sync state",
+    "- the `~/Desktop/CODE_YOU` project count",
+    "- whether the encrypted env vault restored",
+    "- whether Claude/Codex MCP config was installed",
+    "- the synced machine proof status",
+    "- whether I should expand to the 90-day active project set if I have not answered yet",
     "",
     "Secret rule: raw `.env.local` values are not embedded in this prompt. On the old/source Mac, create the vault with `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file into `~/Desktop/youmd-env-vault/` on the new machine, then run this command. It auto-detects the newest vault there; you can also override with `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically; otherwise it prompts. Vault listing prints variable names/counts and target paths only, never values.",
     "Project gate: inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default. Manually mark a project Active and Top Priority/Focusing in Portfolio before expecting it to clone on the new computer.",

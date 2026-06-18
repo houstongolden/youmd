@@ -409,6 +409,7 @@ Last Updated: 2026-06-18
 | Curl-first landing/docs/help install path | Done | Hero, footer, docs, and in-app help now teach `curl -fsSL https://you.md/install.sh | bash` first while keeping npm as the fallback |
 | Profile directory responsive controls | Done | `/profiles` create CTA, filters, sort, and list/grid toggles now use compact responsive app-control styling |
 | Local agent browser auth handoff | Done local / deploy pending | `youmd login` now uses an Enter-to-open `/auth` browser approval flow, `/auth` shows a branded portrait-aware success confirmation for web + local agent auth, the curl installer source-installs GitHub `main` by default before falling back to npm, and fresh `you` sessions now guide login/pull/init into sync/status/chat without guessing. CLI remains bumped/built as `0.8.2` pending npm OTP publish |
+| Fresh-machine Claude/Codex setup prompt | Done local / npm publish pending | Machine tab and `youmd machine prompt` now copy a full local-agent prompt with the curl command embedded, explicit execution/verification instructions, Claude/Codex MCP install steps, env-vault strictness, and active/focused project gates. Local CLI is `0.8.2`; npm latest is still `0.8.0` until OTP publish |
 
 ## Feature Requests (Backlog)
 

@@ -1798,3 +1798,17 @@ Last Updated: 2026-06-18
 ### 52. CLI YOU logo upgrade
 **Status:** DONE (58ba376)
 **Request:** Clean block art matching Vercel PLUGINS banner style. Just "YOU" — not YOU.MD.
+
+## June 18 Session Additions
+
+### 137. Machine tab fresh-computer setup prompt must be agent-readable
+**Status:** DONE LOCALLY / NPM PUBLISH + REAL MAC MINI PROOF PENDING
+**Verified:** PARTIAL (focused CLI prompt tests, CLI build, root typecheck, lint/radius, production Next build, package dry-run, compiled prompt smoke, and local server restart passed)
+**Source:** 2026-06-18 — Houston: "the copy setup command did not work at all... there were no tasks or instructions it was just the raw config file or something... it needs to include a proper claude code prompt structure with the curl install command..."
+**Actionable Scope:**
+1. Stop copying only the raw shell/config blob from the Machine tab. **DONE:** primary button now copies `buildFreshMachineBootstrapMessage(...)`, a Claude/Codex setup prompt with role, goal, "execute this" instruction, fenced bash command, verification checklist, project gate, env-vault contract, and done-ness rules.
+2. Add MCP setup to the fresh-machine command itself. **DONE:** web-shell and CLI prompt scripts now run `youmd mcp --install claude --auto || true` and `youmd mcp --install codex --auto || true`.
+3. Keep CLI prompt parity. **DONE:** `youmd machine prompt` now emits the same agent-readable prompt shape rather than the old "copy this command" wrapper.
+4. Secure exposed bootstrap material. **DONE:** unused fresh-machine bootstrap keys were revoked after a key was pasted into chat; future button clicks mint a new 7-day scoped key.
+5. Clarify npm status. **DONE:** local CLI is `0.8.2`, npm latest is `0.8.0`, and `0.8.2` is unpublished. Curl install defaults to GitHub source/main, but npm fallback and `npx youmd@latest` require publish.
+6. Prove on the actual Mac mini. **PENDING:** run the corrected prompt on the new computer with the transferred env vault, then verify `~/Desktop/CODE_YOU`, Claude/Codex MCP config, skill sync, env restore, active/focused project clones, and synced machine proof.
