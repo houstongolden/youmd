@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-17 — Fresh-machine command refreshed
+
+### chore(machine): restore immediate `/new computer` clipboard handoff
+- Re-ran the authenticated web-shell `/new computer` flow after finding the macOS clipboard empty during goal continuation.
+- Minted a fresh 7-day scoped bootstrap key and copied the full `8783` character setup command to the macOS clipboard without printing the key.
+- Redacted proof confirms the command targets `~/Desktop/CODE_YOU`, requires strict env-vault restore, auto-detects the newest `~/Desktop/youmd-env-vault/env-vault-*` archive, tries Keychain service `youmd-env-vault`, uses `--recent-only`, includes active + Top Priority/Focusing setup gate language, asks before 90-day expansion, runs the hosted install curl, and passes `bash -n`.
+- Re-verified the real vault inventory from `~/Desktop/youmd-env-vault/env-vault-2026-06-17T2317Z.tar.enc`: `17` `.env.local` files and `3` agent-auth files by variable names/counts only, no values printed.
+- Verification screenshot: `/tmp/youmd-new-computer-command-refresh-2026-06-17.png`.
+
 ## 2026-06-17 — Shell dedicated path detail pages
 
 ### fix(shell): route project, stack, and skill drill-ins to real sub-pages

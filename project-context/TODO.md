@@ -68,6 +68,7 @@ PRD Version: 2.3
 - [x] Add macOS Keychain passphrase pickup to generated env-vault restores: fresh-machine CLI/web commands try Keychain service `youmd-env-vault` for `ENV_VAULT_PASS` before prompting, covered by CLI/web parity tests
 - [x] Verify the real encrypted env vault at `~/Desktop/youmd-env-vault/env-vault-2026-06-17T2317Z.tar.enc`: permissions tightened to `600`, Keychain service `youmd-env-vault` supplies the passphrase, list mode shows `17` `.env.local` files plus `3` agent-auth files by names/counts only, and restore proof writes the env files into a disposable root without printing secret values
 - [x] Add fresh-machine env-vault auto-detection so pasted setup commands use the newest `~/Desktop/youmd-env-vault/env-vault-*` file if `YOUMD_ENV_VAULT` is not manually supplied
+- [x] Refill the immediate new-computer clipboard after it was found empty: authenticated `/new computer` web-shell flow minted a fresh scoped key, copied an `8783` character command to macOS clipboard, and verified `CODE_YOU`, strict env vault, Keychain lookup, `--recent-only`, active/focus setup gate, 90-day prompt, install curl, and `bash -n`
 - [ ] Run the generated command end-to-end on the actual brand-new computer / separate clean agent host with a real encrypted env vault and visually verify projects, skills, env vault restore, local servers, resident daemons, Machine pane proof row, and portfolio graph sync there
 
 ### 2026-06-17 — Shell sidebar expand/collapse regression
