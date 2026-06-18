@@ -12,6 +12,9 @@ PRD Version: 2.3
 - [x] Include the curl install command inside the copied prompt with clear local-agent instructions, success checks, and strict env-vault done-ness language
 - [x] Add Claude Code and Codex MCP install commands to the generated fresh-machine script
 - [x] Keep `youmd machine prompt` in parity with the web-shell Machine tab prompt
+- [x] Harden the generated setup script from Mac mini notes: prereq install/checks first, GitHub auth before private clones, daemon install early, recoverable `machine setup` warnings, and persistent You.md/Homebrew/Node 22 PATH handling
+- [x] Add safe fresh-machine env restore flags: `--map-existing --existing-only --skip-agent-auth`, with raw bash and compiled CLI fake-vault proofs
+- [x] Make terminal `you` chat handle `/new computer` deterministically instead of routing the slash command to the LLM
 - [x] Revoke unused fresh-machine bootstrap keys after the exposed pasted key incident
 - [x] Verify local CLI/npm publish state: local `0.8.2`, npm latest `0.8.0`, `0.8.2` unpublished
 - [x] Restart local `next start -p 3100` from the fresh build

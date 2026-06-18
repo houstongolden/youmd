@@ -58,6 +58,10 @@ Do NOT transfer via unencrypted email or public Slack.
 youmd env restore /path/to/env-vault-<date>.tar.<ext> --list
 youmd env restore /path/to/env-vault-<date>.tar.<ext>
 
+# Fresh-machine restore after repos have been cloned into CODE_YOU:
+youmd env restore /path/to/env-vault-<date>.tar.<ext> --root ~/Desktop/CODE_YOU --list --map-existing --existing-only --skip-agent-auth
+youmd env restore /path/to/env-vault-<date>.tar.<ext> --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
+
 # If files already exist on the new Mac:
 youmd env restore --force /path/to/env-vault-<date>.tar.<ext>
 
@@ -70,6 +74,9 @@ The script:
 1. Lists vault contents without writing files when `--list` is provided.
 2. Creates `<CODE_2025>/<project>/.env.local` for each project during restore.
 3. Restores agent-auth files to their absolute home paths (`~/.codex/auth.json`, `~/.cursor/mcp.json`, `~/.claude.json`), creating parent directories as needed.
+4. With `--map-existing`, maps archived project folder names onto existing target-root dirs by normalized name, e.g. `foldermd` -> `folder-md`.
+5. With `--existing-only`, skips archived projects that do not already have a mapped target dir. This prevents fresh-machine restores from creating stale duplicate folders.
+6. With `--skip-agent-auth`, restores only project `.env.local` files and leaves the new machine's active Claude/Codex/Cursor auth files untouched.
 
 Existing files are backed up to `<path>.bak.<timestamp>` before overwrite (or silently overwritten with `--force`).
 List mode prints project env target paths, variable names/counts, and agent-auth file presence only. It never prints secret values.
@@ -115,6 +122,8 @@ youmd env restore <vault>       # restore from an encrypted vault
 youmd env restore <vault> --list # list vault contents without writing
 youmd env restore --force       # overwrite existing .env.local files
 youmd env restore --root <dir>  # restore into a custom root
+youmd env restore <vault> --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
+                                # safe fresh-machine restore into cloned project dirs
 ```
 
 The CLI wrapper delegates directly to these bash scripts via `spawnSync` with

@@ -19,6 +19,7 @@ YOUMD_NPM_PREFIX="\${YOUMD_NPM_PREFIX:-$YOUMD_HOME_DIR/npm-global}"
 TMP_DIR=""
 NPM_GLOBAL_FLAGS=()
 USING_USER_NPM_PREFIX=0
+export PATH="$YOUMD_BIN_DIR:$YOUMD_NPM_PREFIX/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 cleanup() {
   if [ -n "$TMP_DIR" ] && [ -d "$TMP_DIR" ]; then
@@ -69,29 +70,27 @@ link_runtime_bins() {
 }
 
 persist_user_path_hint() {
-  if [ "$USING_USER_NPM_PREFIX" != "1" ]; then
-    return 0
+  PATH_LINE='export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"'
+  PROFILE_FILES=()
+
+  if [ -n "\${YOUMD_SHELL_PROFILE:-}" ]; then
+    PROFILE_FILES=("$YOUMD_SHELL_PROFILE")
+  else
+    PROFILE_FILES=("$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile")
   fi
 
-  PROFILE_FILE="\${YOUMD_SHELL_PROFILE:-}"
-  if [ -z "$PROFILE_FILE" ]; then
-    case "$(basename "\${SHELL:-}")" in
-      zsh) PROFILE_FILE="$HOME/.zshrc" ;;
-      bash) PROFILE_FILE="$HOME/.bashrc" ;;
-      *) PROFILE_FILE="$HOME/.profile" ;;
-    esac
-  fi
-
-  mkdir -p "$(dirname "$PROFILE_FILE")"
-  touch "$PROFILE_FILE"
-  if ! grep -Fq 'You.md runtime path' "$PROFILE_FILE" 2>/dev/null; then
-    {
-      echo ""
-      echo "# You.md runtime path"
-      echo 'export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:$PATH"'
-    } >> "$PROFILE_FILE"
-    echo "Added You.md runtime PATH to $PROFILE_FILE"
-  fi
+  for PROFILE_FILE in "\${PROFILE_FILES[@]}"; do
+    mkdir -p "$(dirname "$PROFILE_FILE")"
+    touch "$PROFILE_FILE"
+    if ! grep -Fq 'You.md runtime path' "$PROFILE_FILE" 2>/dev/null; then
+      {
+        echo ""
+        echo "# You.md runtime path"
+        echo "$PATH_LINE"
+      } >> "$PROFILE_FILE"
+      echo "Added You.md runtime PATH to $PROFILE_FILE"
+    fi
+  done
 }
 
 echo ""

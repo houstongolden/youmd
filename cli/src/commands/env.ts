@@ -51,7 +51,7 @@ export function envBackupCommand(opts: { root?: string; out?: string; preflight?
 
 export function envRestoreCommand(
   vault: string,
-  opts: { root?: string; force?: boolean; list?: boolean }
+  opts: { root?: string; force?: boolean; list?: boolean; mapExisting?: boolean; existingOnly?: boolean; skipAgentAuth?: boolean }
 ): void {
   const scriptPath = resolveScript("restore.sh");
   assertScriptExists(scriptPath);
@@ -60,6 +60,9 @@ export function envRestoreCommand(
   const args: string[] = [];
   if (opts.list) args.push("--list");
   if (opts.force) args.push("--force");
+  if (opts.mapExisting) args.push("--map-existing");
+  if (opts.existingOnly) args.push("--existing-only");
+  if (opts.skipAgentAuth) args.push("--skip-agent-auth");
   if (opts.root) args.push("--root", opts.root);
   args.push(vault);
 

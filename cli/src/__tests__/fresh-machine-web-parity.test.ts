@@ -17,11 +17,16 @@ describe("web /new computer bootstrap prompt parity", () => {
     expect(source).toContain("inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default");
     expect(source).toContain("YOUMD_CODE_ROOT");
     expect(source).toContain("YOUMD_REQUIRE_ENV_VAULT=1");
+    expect(source).toContain("checking local prerequisites: Homebrew, Node 22/npm, git, gh, bun, pnpm");
+    expect(source).toContain("require GitHub CLI auth before private shared-skill/project repos clone");
+    expect(source).toContain("gh auth login -h github.com -p https -s repo");
     expect(source).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
     expect(source).toContain("YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc");
-    expect(source).toContain('DEFAULT_ENV_VAULT_DIR="$HOME/Desktop/youmd-env-vault"');
+    expect(source).toContain('for DEFAULT_ENV_VAULT_DIR in "$HOME/Desktop/youmd-env-vault"');
+    expect(source).toContain("com~apple~CloudDocs/Desktop/youmd-env-vault");
     expect(source).toContain('export YOUMD_ENV_VAULT="$DETECTED_ENV_VAULT"');
-    expect(source).toContain("auto-detect the newest `~/Desktop/youmd-env-vault/env-vault-*`");
+    expect(source).toContain("auto-detect the newest local Desktop or iCloud Desktop");
+    expect(source).toContain("--map-existing --existing-only --skip-agent-auth");
     expect(source).toContain("YOUMD_ENV_VAULT_KEYCHAIN_SERVICE:-youmd-env-vault");
     expect(source).toContain("security find-generic-password");
     expect(source).toContain("try macOS Keychain service `youmd-env-vault` for the passphrase");

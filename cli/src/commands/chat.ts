@@ -52,6 +52,7 @@ import type { ChatMessage } from "../lib/onboarding";
 import { printPortraitEncounter, printSavedPortrait, printYouLogo, resolvePortraitLines } from "../lib/ascii";
 import { checkForCliUpdate } from "../lib/update";
 import { readCliVersion } from "../lib/version";
+import { buildFreshMachineBootstrapPrompt } from "../lib/machine-bootstrap-prompt";
 
 // ─── URL Detection + Scraping (mirrors web useYouAgent) ──────────────
 
@@ -427,6 +428,7 @@ const SLASH_COMMANDS: Record<string, string> = {
   "/memory": "show memory summary + stats",
   "/recall": "show recent memories (or /recall query)",
   "/private": "show private context (notes, links, projects)",
+  "/new computer": "print the fresh-machine setup prompt",
   "/image <path>": "attach an image or file",
   "/rebuild": "recompile the bundle",
   "/help": "show available commands",
@@ -460,6 +462,17 @@ function ask(rl: readline.Interface, question: string): Promise<string> {
       resolve(answer.trim());
     });
   });
+}
+
+function isFreshMachineSetupRequest(text: string): boolean {
+  const normalized = text.trim().toLowerCase();
+  if (!normalized) return false;
+  return (
+    /^\/(?:new[-\s]?computer|new[-\s]?machine|fresh[-\s]?machine|machine[-\s]?bootstrap)\b/.test(normalized) ||
+    /\b(set ?up|setup|bootstrap|install|hydrate)\b/.test(normalized) &&
+      /\b(new|fresh|brand new)\b/.test(normalized) &&
+      /\b(computer|machine|mac|macbook|mac mini|workstation|codex|claude code)\b/.test(normalized)
+  );
 }
 
 function loadCurrentBundle(bundleDir: string): string {
@@ -2186,6 +2199,13 @@ export async function chatCommand(): Promise<void> {
 
     if (lower === "/help") {
       showHelp();
+      continue;
+    }
+
+    if (isFreshMachineSetupRequest(userInput)) {
+      console.log("");
+      console.log(buildFreshMachineBootstrapPrompt({ requireEnvVault: true }));
+      console.log("");
       continue;
     }
 

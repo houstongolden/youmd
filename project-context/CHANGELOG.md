@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-06-18 — Mac mini fresh-machine audit fixes
+
+### fix(machine): make new-computer setup less trial-and-error
+- Hardened the generated CLI/web fresh-machine script from the actual Mac mini setup notes: prerequisite checks now run first for Homebrew, Node 22/npm, git, GitHub CLI, bun, and pnpm/corepack; the setup shell forces You.md/Homebrew/Node 22 paths; GitHub auth is required before private `agent-shared` and project clones; resident daemons install immediately after identity sync; and recoverable `youmd machine setup` warnings no longer abort the whole prompt.
+- The generated command now auto-detects env vaults in both local Desktop and iCloud Desktop, then restores project env files with `youmd env restore --map-existing --existing-only --skip-agent-auth` so archived names like `foldermd` map to cloned dirs like `folder-md` and active Claude/Codex auth files are not clobbered.
+- Added restore flags to the env-vault CLI/bash contract: `--map-existing`, `--existing-only`, and `--skip-agent-auth`, with docs for the fresh-machine restore path.
+- Hardened `youmd machine setup` itself so it exports the same PATH and verifies `gh auth` before cloning private shared-skill repos.
+- Made terminal `you` chat handle `/new computer` and natural fresh-machine setup requests deterministically by printing the setup prompt instead of sending the slash command to the remote agent.
+- Improved `https://you.md/install.sh` PATH persistence so You.md runtime paths are written for zsh and bash profiles, not only the user-npm-prefix case.
+- Verification: bash syntax checks, focused CLI/web parity tests, CLI build, root typecheck, production Next build, docs check, lint/radius, compiled prompt smoke, raw bash fake env-vault mapping proof, and compiled CLI fake env-vault mapping proof all passed. Local `next start -p 3100` is running from the fresh build.
+
 ## 2026-06-18 — Machine setup prompt correction
 
 ### fix(machine): copy a Claude/Codex setup prompt instead of a raw shell blob

@@ -682,22 +682,34 @@ program
   .option("--preflight", "backup: verify env-vault tooling/discovery without writing a vault")
   .option("--list", "restore: list encrypted vault contents without writing files")
   .option("-f, --force", "overwrite existing .env.local without backing them up")
+  .option("--map-existing", "restore: map vault project names onto existing target-root directories")
+  .option("--existing-only", "restore: skip vault projects that do not map to an existing target-root directory")
+  .option("--skip-agent-auth", "restore: do not restore Claude/Codex/Cursor auth config from the vault")
   .action((subcommand, args, options) => {
     const a = args || [];
     if (subcommand === "backup") {
       envBackupCommand({ root: options.root, out: options.out, preflight: options.preflight });
     } else if (subcommand === "restore") {
       if (!a[0]) {
-        console.log("usage: youmd env restore <vault> [--root <dir>] [--list] [--force]");
+        console.log("usage: youmd env restore <vault> [--root <dir>] [--list] [--force] [--map-existing] [--existing-only] [--skip-agent-auth]");
         return;
       }
-      envRestoreCommand(a[0], { root: options.root, force: options.force, list: options.list });
+      envRestoreCommand(a[0], {
+        root: options.root,
+        force: options.force,
+        list: options.list,
+        mapExisting: options.mapExisting,
+        existingOnly: options.existingOnly,
+        skipAgentAuth: options.skipAgentAuth,
+      });
     } else {
       console.log("usage: youmd env <backup|restore> [options]");
       console.log("  backup              encrypt all .env.local files into a portable vault");
       console.log("  backup --preflight  verify env-vault readiness without writing a vault");
       console.log("  restore <vault>     decrypt and restore .env.local files from a vault");
       console.log("  restore --list      list vault contents without writing files");
+      console.log("  restore --map-existing --existing-only --skip-agent-auth");
+      console.log("                      safe fresh-machine env restore into cloned project dirs");
     }
   });
 

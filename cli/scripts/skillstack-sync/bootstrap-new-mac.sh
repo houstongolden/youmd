@@ -10,6 +10,7 @@
 # Usage: bash bootstrap-new-mac.sh
 
 set -euo pipefail
+export PATH="${HOME}/.youmd/bin:${HOME}/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
 
 AGENT_SHARED="${HOME}/.agent-shared"
 SCISTACK="${HOME}/.claude/scistack"
@@ -33,6 +34,34 @@ warn() {
   echo "     WARN: $*"
 }
 
+ensure_github_auth() {
+  if ! command -v gh >/dev/null 2>&1; then
+    warn "GitHub CLI is missing. Install it with Homebrew first: brew install gh"
+    return 1
+  fi
+
+  if gh auth status >/dev/null 2>&1; then
+    info "GitHub auth ready."
+    return 0
+  fi
+
+  warn "GitHub auth is required before private skill/stack repos can clone."
+  if [ -t 0 ]; then
+    gh auth login -h github.com -p https -s repo || true
+  fi
+
+  if gh auth status >/dev/null 2>&1; then
+    info "GitHub auth ready."
+    return 0
+  fi
+
+  warn "GitHub auth still is not complete."
+  warn "Open a normal Terminal and run:"
+  warn "  $(command -v gh || echo gh) auth login -h github.com -p https -s repo"
+  warn "Then rerun: youmd machine setup"
+  return 1
+}
+
 # ---------------------------------------------------------------------------
 step "1. Install youmd CLI"
 # ---------------------------------------------------------------------------
@@ -47,6 +76,8 @@ fi
 # ---------------------------------------------------------------------------
 step "2. Clone agent-shared repo → ${AGENT_SHARED}"
 # ---------------------------------------------------------------------------
+ensure_github_auth
+
 if [ -d "${AGENT_SHARED}/.git" ]; then
   info "Already present: ${AGENT_SHARED} — skipping clone."
 else

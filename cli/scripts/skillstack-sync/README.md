@@ -145,19 +145,33 @@ rm ~/Library/LaunchAgents/com.youmd.context-sync.plist
 
 ## New Mac setup
 
+Preferred path: open the You.md Machine tab on an authenticated source computer,
+copy the fresh-machine Claude/Codex setup prompt, and paste it into Claude Code
+or Codex on the new Mac. That generated prompt checks/install Homebrew, Node 22,
+GitHub CLI, bun, and pnpm; authenticates You.md; requires GitHub auth before
+private clones; clones only setup-eligible active projects into
+`~/Desktop/CODE_YOU`; restores env files with `--map-existing --existing-only
+--skip-agent-auth`; and installs resident daemons.
+
+Fallback manual path:
+
 ```bash
 # 1. Install youmd CLI
 curl -fsSL https://you.md/install.sh | bash
 
-# 2. Clone this repo (youmd)
+# 2. Authenticate GitHub before private stack/project clones
+gh auth login -h github.com -p https -s repo
+
+# 3. Clone this repo (youmd)
 git clone https://github.com/houstongolden/youmd ~/Desktop/CODE_2025/youmd
 
-# 3. Run bootstrap (clones agent-shared + scistack)
+# 4. Run bootstrap (clones agent-shared + scistack)
 bash ~/Desktop/CODE_2025/youmd/cli/scripts/skillstack-sync/bootstrap-new-mac.sh
 
-# 4. Restore secrets from env-vault (manual step — see env-vault/README)
+# 5. Restore project env files from env-vault (manual step — see env-vault/README)
+youmd env restore <vault> --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
 
-# 5. Activate daemons
+# 6. Activate daemons
 youmd stack daemon install
 ```
 
