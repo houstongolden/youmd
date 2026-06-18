@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import { PROJECTS, TASKS, STACKS, type ViewId } from "../../_data/mock";
 import { Icon } from "../icons";
 import { Dot, Chip, SectionLabel } from "../primitives";
 import { cn } from "../../_lib/cn";
 
-export function ProjectsView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
-  const [selected, setSelected] = useState(PROJECTS[0].slug);
-  const project = PROJECTS.find((p) => p.slug === selected)!;
+export function ProjectsView({
+  selected,
+  onSelect,
+  onNavigate,
+}: {
+  selected: string;
+  onSelect: (slug: string) => void;
+  onNavigate: (v: ViewId) => void;
+}) {
+  const project = PROJECTS.find((p) => p.slug === selected) ?? PROJECTS[0];
   const tasks = TASKS.filter((t) => t.project === project.name);
   const stack = STACKS.find((s) => s.projects.includes(project.name));
 
@@ -20,7 +26,7 @@ export function ProjectsView({ onNavigate }: { onNavigate: (v: ViewId) => void }
         {PROJECTS.map((p) => (
           <button
             key={p.slug}
-            onClick={() => setSelected(p.slug)}
+            onClick={() => onSelect(p.slug)}
             className={cn(
               "flex w-full items-center gap-2.5 px-4 py-2 text-left text-[13px] transition-colors",
               selected === p.slug

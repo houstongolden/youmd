@@ -27,11 +27,15 @@ function MainView({
   onNavigate,
   editorFile,
   onEditorSelect,
+  selectedProject,
+  onProjectSelect,
 }: {
   view: ViewId;
   onNavigate: (v: ViewId) => void;
   editorFile: string;
   onEditorSelect: (id: string) => void;
+  selectedProject: string;
+  onProjectSelect: (slug: string) => void;
 }) {
   switch (view) {
     case "home":
@@ -39,7 +43,7 @@ function MainView({
     case "editor":
       return <EditorView activeId={editorFile} onSelect={onEditorSelect} />;
     case "projects":
-      return <ProjectsView onNavigate={onNavigate} />;
+      return <ProjectsView selected={selectedProject} onSelect={onProjectSelect} onNavigate={onNavigate} />;
     case "graph":
       return <GraphView />;
     case "tasks":
@@ -101,6 +105,7 @@ export function DesktopShell() {
   const [activeView, setActiveView] = useState<ViewId>("home");
   const [mobilePane, setMobilePane] = useState<"chat" | "view">("chat");
   const [editorFile, setEditorFile] = useState("identity/you.md");
+  const [selectedProject, setSelectedProject] = useState(PROJECTS[0].slug);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
 
@@ -119,6 +124,22 @@ export function DesktopShell() {
     setEditorFile(id);
     navigate("editor");
   };
+
+  const openProject = (slug: string) => {
+    setSelectedProject(slug);
+    navigate("projects");
+  };
+
+  // What the chat agent is "looking at" with you — the active context scope.
+  const chatScope = useMemo(() => {
+    if (activeView === "projects") {
+      const p = PROJECTS.find((x) => x.slug === selectedProject);
+      return { view: "projects", label: p?.name ?? "Projects", project: p?.name };
+    }
+    if (activeView === "editor") return { view: "editor", label: editorFile.split("/").pop() ?? "Brain" };
+    const item = PRIMARY_NAV.find((n) => n.id === activeView);
+    return { view: activeView, label: item?.label ?? "you.md" };
+  }, [activeView, selectedProject, editorFile]);
 
   // ⌘K / Ctrl+K toggles the command palette anywhere in the app.
   useEffect(() => {
@@ -158,7 +179,7 @@ export function DesktopShell() {
       group: "Projects",
       icon: "branch",
       keywords: p.slug,
-      run: () => navigate("projects"),
+      run: () => openProject(p.slug),
     }));
 
     const actions: Command[] = [
@@ -256,7 +277,7 @@ export function DesktopShell() {
             <div {...workspaceSwipe} className="flex min-w-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-hidden">
                 {mobilePane === "chat" ? (
-                  <ChatPanel full />
+                  <ChatPanel full scope={chatScope} />
                 ) : (
                   <div className="h-full overflow-y-auto bg-[hsl(var(--bg))]">
                     <MainView
@@ -264,6 +285,8 @@ export function DesktopShell() {
                       onNavigate={navigate}
                       editorFile={editorFile}
                       onEditorSelect={setEditorFile}
+                      selectedProject={selectedProject}
+                      onProjectSelect={setSelectedProject}
                     />
                   </div>
                 )}
@@ -284,7 +307,7 @@ export function DesktopShell() {
             {chatFull ? (
               // Full-chat: chat fills the workspace, summary widget floats.
               <div className="relative min-w-0 flex-1">
-                <ChatPanel full />
+                <ChatPanel full scope={chatScope} />
                 <div className="pointer-events-none absolute right-5 top-4">
                   <div className="pointer-events-auto">
                     <SummaryWidget />
@@ -295,7 +318,7 @@ export function DesktopShell() {
               // Split: chat 1/3 left, main view 2/3 right.
               <div className="flex min-w-0 flex-1">
                 <div className="flex w-[33%] min-w-[320px] max-w-[460px] flex-col border-r border-[hsl(var(--border))]">
-                  <ChatPanel />
+                  <ChatPanel scope={chatScope} />
                 </div>
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
                   <div className="h-full overflow-y-auto">
@@ -304,6 +327,8 @@ export function DesktopShell() {
                       onNavigate={navigate}
                       editorFile={editorFile}
                       onEditorSelect={setEditorFile}
+                      selectedProject={selectedProject}
+                      onProjectSelect={setSelectedProject}
                     />
                   </div>
                 </main>

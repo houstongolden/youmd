@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo: scope-aware chat + contextual agent actions
+
+### feat(web): make the `/desktop-demo` agent context-aware
+- The chat now knows what you're looking at. A `ChatScope` flows from `DesktopShell` into the chat: the active project (when in Projects), the open note (Brain), or the active view. The composer's context line now reads e.g. `you.md · bamfsite · claude-sonnet-4.6`, and agent replies acknowledge that scope ("using your **bamfsite** context plus your brain").
+- Added **contextual suggestion chips** above the composer that adapt to the active surface — Projects: "Spawn coding-you on {project}", "Triage {project} tasks"; Brain: "Promote an idea to a task"; Skills: "Forge a new skill from a pattern"; Agents: "Sync all machines now"; etc. Clicking one sends a scope-aware message. This is the "light-touch direction" layer (surfacing meta-skills and agent actions in the flow without a config surface).
+- Lifted the selected project into the shell so the Projects list, the ⌘K "Open project: X" commands, and the chat scope all stay in sync.
+- Verified end-to-end (system Chromium): selecting bamfsite updates the chips + context line, and a chip click produces a project-scoped agent reply. TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-18 — Desktop demo restructured around the MECE product model
 
 ### feat(web): audit-driven IA + Skills/Projects/Devices for `/desktop-demo`

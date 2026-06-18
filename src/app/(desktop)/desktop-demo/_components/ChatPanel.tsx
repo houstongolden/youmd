@@ -67,7 +67,39 @@ function Bubble({ m }: { m: ChatMessage }) {
   );
 }
 
-export function ChatPanel({ full = false }: { full?: boolean }) {
+export type ChatScope = {
+  view: string;
+  label: string; // what the agent is "looking at" with you
+  project?: string;
+};
+
+// Contextual agent actions per view — the "light-touch direction" layer.
+// Clicking one drops a prefilled, scope-aware message into the chat.
+function suggestionsFor(scope?: ChatScope): string[] {
+  const p = scope?.project;
+  switch (scope?.view) {
+    case "projects":
+      return p
+        ? [`Spawn coding-you on ${p}`, `Triage ${p} tasks`, `Summarize ${p} this week`]
+        : ["Which project needs me most?", "Summarize this week", "What should I build next?"];
+    case "editor":
+      return ["Capture a new memory", "Promote an idea to a task", "What are my goals again?"];
+    case "tasks":
+      return ["Delegate the top task to an agent", "What's blocking me?", "Group tasks by project"];
+    case "skills":
+      return ["Improve a skill from usage", "Forge a new skill from a pattern", "Any duplicated skills?"];
+    case "agents":
+      return ["Spawn a YOU sub-agent", "What are my agents doing?", "Sync all machines now"];
+    case "graph":
+      return ["What connects to you.md?", "Show isolated nodes", "Trace bamfsite dependencies"];
+    case "apps":
+      return ["What are my crawlers pulling?", "Summarize my GitHub activity", "Connect a new app"];
+    default:
+      return ["What needs my attention today?", "Summarize this week across projects", "What should I build next?"];
+  }
+}
+
+export function ChatPanel({ full = false, scope }: { full?: boolean; scope?: ChatScope }) {
   const [messages, setMessages] = useState<ChatMessage[]>(SEED_CHAT);
   const [input, setInput] = useState("");
   const [working, setWorking] = useState(false);
@@ -78,8 +110,8 @@ export function ChatPanel({ full = false }: { full?: boolean }) {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, working]);
 
-  const send = () => {
-    const text = input.trim();
+  const send = (override?: string) => {
+    const text = (override ?? input).trim();
     if (!text || working) return;
     setInput("");
     setMessages((m) => [...m, { id: `u${Date.now()}`, role: "user", text }]);
@@ -91,8 +123,9 @@ export function ChatPanel({ full = false }: { full?: boolean }) {
         {
           id: `a${Date.now()}`,
           role: "agent",
-          text:
-            "On it. I pulled the relevant context from your brain and lined up the next move.\n\n*(Demo response — the real desktop app streams this from your you.md agent.)*",
+          text: scope?.label
+            ? `On it — using your **${scope.label}** context plus your brain.\n\n*(Demo response — the real desktop app streams this from your you.md agent.)*`
+            : "On it. I pulled the relevant context from your brain and lined up the next move.\n\n*(Demo response — the real desktop app streams this from your you.md agent.)*",
         },
       ]);
     }, 2100);
@@ -126,6 +159,20 @@ export function ChatPanel({ full = false }: { full?: boolean }) {
       {/* composer */}
       <div className={cn("border-t border-[hsl(var(--border))] p-3", full && "px-6")}>
         <div className={cn("mx-auto", full && "max-w-2xl")}>
+          {/* contextual agent suggestions */}
+          {!working && (
+            <div className="mb-2 flex gap-1.5 overflow-x-auto pb-0.5">
+              {suggestionsFor(scope).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => send(s)}
+                  className="shrink-0 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-2.5 py-1 text-[12px] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--accent))]/40 hover:text-[hsl(var(--text-primary))]"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex items-end gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-2 focus-within:border-[hsl(var(--accent))]/40">
             <textarea
               rows={full ? 2 : 1}
@@ -141,7 +188,7 @@ export function ChatPanel({ full = false }: { full?: boolean }) {
               className="max-h-32 flex-1 resize-none bg-transparent px-1.5 py-1 text-[13px] outline-none placeholder:text-[hsl(var(--text-secondary))]/50"
             />
             <button
-              onClick={send}
+              onClick={() => send()}
               disabled={!input.trim()}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-sm bg-[hsl(var(--accent))] text-white transition-opacity disabled:opacity-30"
             >
@@ -149,7 +196,7 @@ export function ChatPanel({ full = false }: { full?: boolean }) {
             </button>
           </div>
           <div className="mt-1.5 flex items-center gap-2 px-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/45">
-            <Icon name="stack" size={11} /> you.md context · claude-sonnet-4.6
+            <Icon name="stack" size={11} /> you.md · {scope?.label ?? "all context"} · claude-sonnet-4.6
           </div>
         </div>
       </div>
