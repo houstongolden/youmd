@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import Link from "next/link";
 import {
   Archive,
   ArrowUpDown,
@@ -712,6 +713,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const routeProjectSlug = projectSlugFromPath(pathname);
+  const legacyProjectSlug = searchParams.get("project");
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const syncDashboardSeed = useMutation(api.portfolio.syncDashboardSeed);
   const syncTrackedProjects = useMutation(api.portfolio.syncTrackedProjects);
@@ -725,7 +727,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   const [focusUpdatingSlug, setFocusUpdatingSlug] = useState<string | null>(null);
   const [statusUpdatingSlug, setStatusUpdatingSlug] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
-  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(() => routeProjectSlug ?? searchParams.get("project"));
+  const [selectedProjectSlug, setSelectedProjectSlug] = useState<string | null>(() => routeProjectSlug ?? legacyProjectSlug);
   const [projectSearch, setProjectSearch] = useState("");
   const [projectStatusFilter, setProjectStatusFilter] = useState<ProjectStatusFilter>("all");
   const [projectFocusFilter, setProjectFocusFilter] = useState<ProjectFocusStatus | "all">("all");
@@ -954,6 +956,13 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
   };
 
   useEffect(() => {
+    if (routeProjectSlug || !legacyProjectSlug) return;
+    const anchor = window.location.hash.replace("#", "");
+    const hash = anchor === "strategy" || anchor === "timeline" ? `#${anchor}` : "";
+    router.replace(`${detailHref(legacyProjectSlug)}${hash}`, { scroll: false });
+  }, [legacyProjectSlug, routeProjectSlug, router]);
+
+  useEffect(() => {
     const projectSlug = projectSlugFromPath(pathname) ?? searchParams.get("project");
     setSelectedProjectSlug(projectSlug);
   }, [pathname, searchParams]);
@@ -1097,7 +1106,7 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
 
   return (
     <div className="h-full overflow-y-auto">
-      <PaneHeader>project portfolio graph</PaneHeader>
+      <PaneHeader>{isProjectDetailView ? "project detail" : "project portfolio graph"}</PaneHeader>
       <div className="max-w-6xl px-6 py-6">
         {!isProjectDetailView && (
           <>
@@ -1248,13 +1257,16 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           <PaneSectionLabel>{isProjectDetailView ? "project detail" : "projects"}</PaneSectionLabel>
           {isProjectDetailView && selectedProject && (
             <div className="mb-3 flex flex-wrap items-center gap-2 border-y border-[hsl(var(--border))]/55 py-3 font-mono text-[9px] uppercase tracking-[0.14em]">
-              <button
-                type="button"
-                onClick={returnToProjectList}
+              <Link
+                href="/shell?tab=portfolio"
+                onClick={(event) => {
+                  event.preventDefault();
+                  returnToProjectList();
+                }}
                 className="text-[hsl(var(--accent))] opacity-80 transition-opacity hover:opacity-100"
               >
                 {"<<"} back to projects
-              </button>
+              </Link>
               <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
               <span className="text-[hsl(var(--text-primary))] opacity-85">{selectedProject.name}</span>
               <span className="text-[hsl(var(--text-secondary))] opacity-35">/</span>
@@ -1292,13 +1304,16 @@ export function PortfolioGraphPane({ clerkId }: PortfolioGraphPaneProps) {
           )}
           {isProjectDetailView && !selectedProject && (
             <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
-              <button
-                type="button"
-                onClick={returnToProjectList}
+              <Link
+                href="/shell?tab=portfolio"
+                onClick={(event) => {
+                  event.preventDefault();
+                  returnToProjectList();
+                }}
                 className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-80 transition-opacity hover:opacity-100"
               >
                 {"<<"} back to projects
-              </button>
+              </Link>
               <h3 className="mt-3 font-mono text-[14px] text-[hsl(var(--text-primary))]">
                 {graph === undefined ? "loading project graph..." : "project not found"}
               </h3>

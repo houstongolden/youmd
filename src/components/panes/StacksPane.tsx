@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PaneDivider, PaneHeader, PaneSectionLabel } from "./shared";
 import { CopyableCommand } from "./CopyableCommand";
@@ -236,10 +237,17 @@ export function StacksPane() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const selectedStackSlug = stackSlugFromPath(pathname) ?? searchParams.get("stack");
+  const routeStackSlug = stackSlugFromPath(pathname);
+  const legacyStackSlug = searchParams.get("stack");
+  const selectedStackSlug = routeStackSlug ?? legacyStackSlug;
   const selectedStack = selectedStackSlug
     ? STACKS.find((stack) => stack.slug === selectedStackSlug)
     : undefined;
+
+  useEffect(() => {
+    if (routeStackSlug || !legacyStackSlug) return;
+    router.replace(stackDetailHref(legacyStackSlug), { scroll: false });
+  }, [legacyStackSlug, routeStackSlug, router]);
 
   const openStack = (stackSlug: string) => {
     router.push(stackDetailHref(stackSlug), { scroll: false });

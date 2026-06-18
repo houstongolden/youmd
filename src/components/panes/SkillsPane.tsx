@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { useUser } from "@/lib/you-auth";
@@ -367,7 +367,9 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
 
   const installedSkills = allSkills.filter((s) => installedNames.has(s.name));
   const availableSkills = allSkills.filter((s) => !installedNames.has(s.name));
-  const selectedSkillName = skillNameFromPath(pathname) ?? searchParams.get("skill");
+  const routeSkillName = skillNameFromPath(pathname);
+  const legacySkillName = searchParams.get("skill");
+  const selectedSkillName = routeSkillName ?? legacySkillName;
   const selectedSkill = selectedSkillName ? allSkills.find((skill) => skill.name === selectedSkillName) : undefined;
   const localSyncRows = [
     {
@@ -405,6 +407,11 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const returnToSkills = () => {
     router.push("/shell?tab=skills", { scroll: false });
   };
+
+  useEffect(() => {
+    if (routeSkillName || !legacySkillName) return;
+    router.replace(skillDetailHref(legacySkillName), { scroll: false });
+  }, [legacySkillName, routeSkillName, router]);
 
   if (selectedSkill) {
     return (

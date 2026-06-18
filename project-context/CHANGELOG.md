@@ -4,11 +4,13 @@
 
 ### fix(shell): route project, stack, and skill drill-ins to real sub-pages
 - Portfolio project details now open at dedicated shell paths such as `/shell/projects/bamfaiapp` instead of the older `/shell?tab=portfolio&project=bamfaiapp#project-detail` query/hash state.
+- Legacy detail URLs now upgrade in place: `/shell?tab=portfolio&project=bamfaiapp#project-detail` redirects to `/shell/projects/bamfaiapp`, while `#strategy` and `#timeline` are preserved as section anchors.
+- Legacy stack and skill query states now upgrade too: `?stack=youstack` -> `/shell/stacks/youstack`, and `?skill=portfolio-graph-auditor` -> `/shell/skills/portfolio-graph-auditor`.
 - The shell router recognizes `/shell/projects/<slug>`, `/shell/stacks/<slug>`, and `/shell/skills/<name>` and opens the correct right pane on hard refresh.
 - Top-level shell tab switches now return to `/shell?tab=...` from a detail route, so stale detail pathnames do not leak across panes.
 - Portfolio rows and timeline links now point to `/shell/projects/<slug>` and `/shell/projects/<slug>#timeline`; `#timeline` still scrolls the nested pane after graph hydration.
 - YouStacks and Skills now use `/shell/stacks/youstack` and `/shell/skills/portfolio-graph-auditor` for focused detail pages with `<< back` breadcrumbs.
-- Verification: `npx tsc --noEmit`; focused ESLint for dashboard/Portfolio/Stacks/Skills; authenticated Codex in-app Browser proof for direct project route, list click -> project route, breadcrumb back, direct timeline hash, stack detail/back, and skill detail/back. Screenshot: `/tmp/youmd-shell-project-dedicated-route-proof-2026-06-17.png`.
+- Verification: `npm run lint`, `npx tsc --noEmit`, `npm run build`, and authenticated Playwright QA for legacy project/stack/skill URL upgrades, breadcrumb back, hidden portfolio-wide sections on project detail, and route-backed detail links. Screenshots: `/tmp/youmd-dedicated-project-route-proof-2026-06-17.png`, `/tmp/youmd-dedicated-skill-route-proof-2026-06-17.png`.
 
 ## 2026-06-17 — Fresh-machine env-vault auto-detect proof
 
