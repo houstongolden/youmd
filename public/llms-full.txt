@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: bfa8e07de39ba7e5e4ceb8297918abd087916f405199d145954d2f7ca83b1bdb. CLI version: 0.8.5. Endpoints: 96 documented (8 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 10. CLI commands: 30. Reference intelligence: 2026-06-17T15:31:10.710Z.
+> Generated full agent context. Source hash: 77565d38e5a4f2bc62bc9e4119f3f7e266c17f930f91bc0e7442a8bdad3f5e29. CLI version: 0.8.6. Endpoints: 98 documented (8 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 10. CLI commands: 31. Reference intelligence: 2026-06-17T15:31:10.710Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -117,7 +117,7 @@ Use `you` for the live U conversation. Use `youmd` for non-interactive commands 
 
 ## CLI Commands
 
-All 30 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `youmd <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
+All 31 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `youmd <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
 
 ### AUTH
 
@@ -154,6 +154,7 @@ All 30 registered runtime commands, generated from the commander registrations i
 
 ### MONITORING
 
+- `youmd agent [subcommand] [message...]`: Send/receive trusted-device realtime agent messages
 - `youmd logs`: View agent activity log -- see what agents read/wrote and when
 - `youmd agents`: List connected agents and their activity summary
 

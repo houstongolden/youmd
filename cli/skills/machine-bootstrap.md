@@ -138,7 +138,18 @@ You.md is the brain. The new machine should become a runnable local agent workst
   `youmd machine prompt`, `youmd machine setup`,
   `youmd skill install all`, `youmd skill sync`,
   `youmd env vault list`, `youmd env vault pull`,
-  `youmd project portfolio-hydrate`, and `youmd machine verify`.
+  `youmd project portfolio-hydrate`, `youmd machine verify`,
+  `youmd agent status`, and `youmd agent inbox`.
+- Report setup milestones to Houston's other trusted Macs with the realtime
+  agent bus instead of relying on clipboard/manual status relays:
+
+  ```bash
+  youmd agent send --channel machine-sync --kind status "Mac mini completed identity + skill sync"
+  ```
+
+  This writes through Convex realtime and the receiving daemon materializes it
+  into `~/.youmd/agent-bus/inbox.json` without reading or exposing `.env.local`
+  values.
 - Use `you` / `youmd chat` when you need the You Agent to synthesize context,
   route a natural-language request, or produce the setup artifact, then turn the
   result into concrete shell actions.

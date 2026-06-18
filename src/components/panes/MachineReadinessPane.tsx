@@ -78,6 +78,50 @@ function BooleanCell({ label, value }: { label: string; value: boolean }) {
   );
 }
 
+function AgentBusPanel({ agentBus }: { agentBus: LocalMachineReadiness["agentBus"] }) {
+  return (
+    <div id="agent-bus" className="mt-4 border-l border-[hsl(var(--success))]/70 bg-[hsl(var(--bg))]/30 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
+          realtime agent bus
+        </span>
+        <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${agentBus.state === "active" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}`}>
+          {agentBus.state}
+        </span>
+      </div>
+      <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+        {agentBus.summary ?? "realtime daemon has not received an agent-bus message yet"}
+      </p>
+      <div className="mt-2 grid gap-2 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-45 lg:grid-cols-[1fr_1fr]">
+        <div>inbox: {agentBus.inboxPath}</div>
+        <div>latest: {formatTime(agentBus.latestMessageAt)}</div>
+      </div>
+      <div className="mt-3">
+        <CopyableCommand command={agentBus.sendCommand} dimmed />
+      </div>
+      {agentBus.messages.length > 0 && (
+        <div className="mt-3 divide-y divide-[hsl(var(--border))]/50 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35">
+          {agentBus.messages.slice(-5).map((message) => (
+            <div key={message.messageId} className="grid gap-2 px-3 py-2 lg:grid-cols-[0.7fr_1fr]">
+              <div className="min-w-0">
+                <div className="truncate font-mono text-[10px] text-[hsl(var(--text-primary))]">
+                  {message.sourceAgent}{message.sourceHost ? ` @ ${message.sourceHost}` : ""}
+                </div>
+                <div className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+                  {formatTime(message.createdAt)} / {message.channel} / {message.kind}
+                </div>
+              </div>
+              <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">
+                {message.body}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MachineSetupHero({
   clerkId,
   onCopied,
@@ -302,6 +346,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
             {copiedNotice}
           </div>
         )}
+        {report?.agentBus && <AgentBusPanel agentBus={report.agentBus} />}
 
         <PaneDivider />
 

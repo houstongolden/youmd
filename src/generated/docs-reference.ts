@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "bfa8e07de39ba7e5e4ceb8297918abd087916f405199d145954d2f7ca83b1bdb",
+  "sourceHash": "77565d38e5a4f2bc62bc9e4119f3f7e266c17f930f91bc0e7442a8bdad3f5e29",
   "cli": {
-    "version": "0.8.5"
+    "version": "0.8.6"
   },
   "counts": {
-    "endpoints": 96,
+    "endpoints": 98,
     "internalRoutes": 8,
     "mcpTools": 6,
     "hostedMcpTools": 10,
-    "cliCommands": 30,
-    "convexRoutes": 77,
+    "cliCommands": 31,
+    "convexRoutes": 79,
     "nextRoutes": 27
   },
   "endpoints": [
@@ -62,6 +62,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Get current user profile",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/agent-bus/messages",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "private realtime lane for trusted local agents/machines.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/agent-bus/messages",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Convex HTTP action",
       "sources": [
         "convex"
       ]
@@ -1472,6 +1494,13 @@ export const docsReference = {
       "group": "SKILLS",
       "summary": "local YouStack manifests (inspect/doctor/smoke/capabilities/route)",
       "description": "Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update, install)"
+    },
+    {
+      "name": "agent",
+      "usage": "agent [subcommand] [message...]",
+      "group": "MONITORING",
+      "summary": "send/receive trusted-device realtime agent messages",
+      "description": "Send/receive trusted-device realtime agent messages"
     },
     {
       "name": "logs",

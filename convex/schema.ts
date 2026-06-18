@@ -895,6 +895,24 @@ export default defineSchema({
     .index("by_tokenHash", ["tokenHash"])
     .index("by_userId_createdAt", ["userId", "createdAt"]),
 
+  realtimeAgentMessages: defineTable({
+    userId: v.id("users"),
+    messageId: v.string(),
+    channel: v.string(),
+    kind: v.string(), // "message" | "context" | "status" | "task"
+    body: v.string(),
+    sourceHost: v.optional(v.string()),
+    sourceAgent: v.string(),
+    sourceRuntime: v.optional(v.string()),
+    targetHost: v.optional(v.string()),
+    targetAgent: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_userId_channel_createdAt", ["userId", "channel", "createdAt"])
+    .index("by_userId_messageId", ["userId", "messageId"]),
+
   // ── Connected-app grants ───────────────────────────────────
   // Product/app-level grants are distinct from owner API keys. They let the
   // owner authorize a named app, host, or integration to read/write specific

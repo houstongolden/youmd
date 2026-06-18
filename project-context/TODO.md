@@ -7,6 +7,19 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-18 — Realtime agent bus for trusted Macs (`youmd@0.8.6`)
+- [x] Add owner-gated Convex realtime agent-bus records and HTTP `GET/POST /api/v1/me/agent-bus/messages`
+- [x] Add CLI `youmd agent send`, `youmd agent inbox`, and `youmd agent status`
+- [x] Include recent agent-bus messages in the realtime sync head and materialize safe local files at `~/.youmd/realtime-sync-status.json` and `~/.youmd/agent-bus/inbox.json`
+- [x] Teach generated fresh-machine CLI/web prompts to send setup milestones over `youmd agent send --channel machine-sync --kind status ...`
+- [x] Move `realtime agent bus` into the top Machine tab proof surface so the dashboard shows device-to-device messaging state
+- [x] Update and redeploy/reseed the hosted `machine-bootstrap` skill so production skill installs include the agent-bus workflow
+- [x] Harden generated fresh-machine roots so `$HOME/Desktop/CODE_YOU` expands correctly instead of becoming a literal `$HOME` directory
+- [x] Verify live source-Mac message send/inbox, websocket materialization, `secretValuesExposed: false`, and no raw `ym_` / `sk-` / env-key patterns in local status JSON
+- [x] Bump CLI to `0.8.6`
+- [ ] Houston publishes `youmd@0.8.6` to npm with OTP
+- [ ] Mac mini reruns the setup prompt on `0.8.6`, sends a `machine-sync` message back, and both Macs show the same agent-bus inbox/status
+
 ### 2026-06-18 — Native desktop app design demo (`/desktop-demo`)
 - [x] Add a private, frontend-only `/desktop-demo` route (route group `(desktop)`, mock data, noindex, no SiteNav/Convex)
 - [x] macOS-style title bar (traffic lights, breadcrumb, ⌘K command bar, sidebar + chat-layout toggles)
@@ -29,14 +42,14 @@ PRD Version: 2.3
 - [x] Add `com.youmd.realtime-sync` launchd daemon and show it as `live websocket` in CLI status, daemon status, and the Machine pane
 - [x] Deploy Convex production and smoke the websocket sync head without exposing secrets
 - [x] Install/reload local daemons on this Mac and verify the realtime daemon activity log
-- [x] Bump CLI to `0.8.5` for npm publish
-- [ ] Publish CLI `0.8.5` to npm with OTP so new machines and `npx youmd@latest` get the realtime daemon + Secret Vault status path
-- [ ] Verify the Mac mini fresh-machine setup after `0.8.5` publish and confirm its daemon status shows `realtime brain / live websocket` plus Secret Vault ready/missing state
+- [x] Bump CLI to `0.8.6` for npm publish
+- [ ] Publish CLI `0.8.6` to npm with OTP so new machines and `npx youmd@latest` get the realtime daemon + Secret Vault status path
+- [ ] Verify the Mac mini fresh-machine setup after `0.8.6` publish and confirm its daemon status shows `realtime brain / live websocket` plus Secret Vault ready/missing state
 
 ### 2026-06-18 — You.md Secret Vault trusted-device env sync
 - [x] Teach generated fresh-machine prompts and the bundled `machine-bootstrap` ystack skill that Claude/Codex should use `youmd` + `you` behind the scenes for status/sync/skill/vault/portfolio/verify work and only interrupt Houston for real auth/passphrase/OTP/permission/90-day-expansion gates
 - [x] Update shared `.agent-shared` `/machine-sync` so Claude/Codex/Cursor/Pi skill mirrors use You.md Secret Vault as the primary trusted-device env path
-- [x] Bump CLI package to `0.8.5` as the next npm publish target for the machine-bootstrap/Secret Vault/realtime sync updates
+- [x] Bump CLI package to `0.8.6` as the next npm publish target for the machine-bootstrap/Secret Vault/realtime sync updates
 - [x] Add owner-gated Convex `secretVaultSnapshots` records and `GET/POST /api/v1/me/secret-vault/env` for encrypted env-vault snapshots
 - [x] Require the new `vault` API key scope for Secret Vault upload/list/download
 - [x] Add CLI `youmd env vault push`, `youmd env vault list`, and `youmd env vault pull --restore`
@@ -56,9 +69,9 @@ PRD Version: 2.3
 - [x] Add safe fresh-machine env restore flags: `--map-existing --existing-only --skip-agent-auth`, with raw bash and compiled CLI fake-vault proofs
 - [x] Make terminal `you` chat handle `/new computer` deterministically instead of routing the slash command to the LLM
 - [x] Revoke unused fresh-machine bootstrap keys after the exposed pasted key incident
-- [x] Verify local CLI/npm publish state: local `0.8.5`, npm latest still behind, `0.8.5` unpublished until Houston runs npm publish with OTP
+- [x] Verify local CLI/npm publish state: local `0.8.6`, npm latest still behind, `0.8.6` unpublished until Houston runs npm publish with OTP
 - [x] Restart local `next start -p 3100` from the fresh build
-- [ ] Publish CLI `0.8.5` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
+- [ ] Publish CLI `0.8.6` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
 - [ ] Re-run the Machine tab button in the signed-in Codex browser and verify the clipboard starts with `You are Claude Code or Codex running on my brand-new Mac.`
 - [ ] Run the corrected prompt on the Mac mini with the transferred env vault and verify `~/Desktop/CODE_YOU`, MCP config, skill sync, project clone count, env restore, and synced machine proof
 

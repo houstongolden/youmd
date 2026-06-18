@@ -9,6 +9,7 @@
  */
 
 import type * as activity from "../activity.js";
+import type * as agentBus from "../agentBus.js";
 import type * as apiKeys from "../apiKeys.js";
 import type * as auth from "../auth.js";
 import type * as bundles from "../bundles.js";
@@ -98,6 +99,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   activity: typeof activity;
+  agentBus: typeof agentBus;
   apiKeys: typeof apiKeys;
   auth: typeof auth;
   bundles: typeof bundles;

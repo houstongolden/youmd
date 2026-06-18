@@ -48,6 +48,7 @@ import { promptsCommand } from "./commands/prompts";
 import { skillCommand } from "./commands/skill";
 import { mcpCommand } from "./commands/mcp";
 import { logsCommand } from "./commands/logs";
+import { agentCommand } from "./commands/agent";
 import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
@@ -115,6 +116,7 @@ const HELP_GROUPS: Array<{
   {
     title: "MONITORING",
     commands: [
+      { name: "agent", summary: "send/receive trusted-device realtime agent messages" },
       { name: "logs", summary: "view agent activity log (who read/wrote what, when)" },
       { name: "agents", summary: "list connected agents and their activity summary" },
     ],
@@ -658,6 +660,30 @@ program
   .option("--install <target>", "Show setup instructions for an agent (claude, codex, cursor)")
   .option("--auto", "Auto-write the MCP config into the target's settings file")
   .action(mcpCommand);
+
+program
+  .command("agent [subcommand] [message...]")
+  .description("Send/receive trusted-device realtime agent messages")
+  .option("--channel <name>", "Agent bus channel", "machine-sync")
+  .option("--kind <kind>", "Message kind: message, context, status, task", "message")
+  .option("--target-host <host>", "Target a specific host")
+  .option("--target-agent <name>", "Target a specific agent")
+  .option("--agent <name>", "Source agent name")
+  .option("--limit <n>", "Inbox messages to show", "20")
+  .option("--tail", "Inbox live mode")
+  .option("--json", "Print JSON")
+  .action((subcommand, message, options) => {
+    return agentCommand(subcommand, message || [], {
+      channel: options.channel,
+      kind: options.kind,
+      targetHost: options.targetHost,
+      targetAgent: options.targetAgent,
+      agent: options.agent,
+      limit: options.limit,
+      tail: options.tail,
+      json: options.json,
+    });
+  });
 
 program
   .command("logs")

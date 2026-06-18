@@ -2521,6 +2521,127 @@ http.route({
   }),
 });
 
+// GET/POST /api/v1/me/agent-bus/messages — private realtime lane for trusted local agents/machines.
+http.route({
+  path: "/api/v1/me/agent-bus/messages",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private", "activity");
+    if (denied) return denied;
+
+    const url = new URL(request.url);
+    const channel = url.searchParams.get("channel") || undefined;
+    const sinceRaw = url.searchParams.get("since");
+    const limitRaw = url.searchParams.get("limit");
+    const since = sinceRaw ? Number(sinceRaw) : undefined;
+    const limit = limitRaw ? Number(limitRaw) : undefined;
+
+    try {
+      const messages = await ctx.runQuery(api.agentBus.listMessages, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        channel,
+        since: Number.isFinite(since) ? since : undefined,
+        limit: Number.isFinite(limit) ? limit : undefined,
+      });
+      return json({
+        success: true,
+        schemaVersion: "you-md/agent-bus/messages/v1",
+        messages,
+        count: messages.length,
+        secretValuesExposed: false,
+      });
+    } catch (err) {
+      return serverErrorResponse("me/agent-bus/messages", err, "Failed to load agent bus messages");
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/agent-bus/messages",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:memories", "memories");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    let body: {
+      channel?: string;
+      kind?: string;
+      body?: string;
+      sourceHost?: string;
+      sourceAgent?: string;
+      sourceRuntime?: string;
+      targetHost?: string;
+      targetAgent?: string;
+      metadata?: unknown;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
+    }
+
+    if (!body.body || typeof body.body !== "string") {
+      return errorResponse("invalid_request", "body is required", 400);
+    }
+
+    try {
+      const message = await ctx.runMutation(api.agentBus.sendMessage, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        channel: body.channel,
+        kind: body.kind,
+        body: body.body,
+        sourceHost: body.sourceHost,
+        sourceAgent: body.sourceAgent,
+        sourceRuntime: body.sourceRuntime,
+        targetHost: body.targetHost,
+        targetAgent: body.targetAgent,
+        metadata: body.metadata,
+      });
+
+      try {
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: body.sourceAgent || detectAgent(request.headers.get("user-agent")).name,
+          agentSource: authAgentSource(auth, request),
+          action: "agent_message",
+          resource: `agent-bus/${message.channel}`,
+          scope: "write:memories",
+          apiKeyId: auth.apiKeyId,
+          connectedAppGrantId: auth.connectedAppGrantId,
+          status: "success",
+          details: {
+            messageId: message.messageId,
+            kind: message.kind,
+            sourceHost: message.sourceHost,
+            targetHost: message.targetHost,
+            targetAgent: message.targetAgent,
+            secretValuesExposed: false,
+          },
+        });
+      } catch {
+        // best-effort observability; the realtime message itself is saved.
+      }
+
+      return guard.finish(json({
+        success: true,
+        schemaVersion: "you-md/agent-bus/message/v1",
+        message,
+        secretValuesExposed: false,
+      }, 201));
+    } catch (err) {
+      return serverErrorResponse("me/agent-bus/messages", err, "Failed to send agent bus message");
+    }
+  }),
+});
+
 // GET/POST /api/v1/me/secret-vault/env — Account-backed encrypted .env.local vault snapshots.
 http.route({
   path: "/api/v1/me/secret-vault/env",
@@ -4454,6 +4575,7 @@ http.route({ path: "/api/v1/me/portfolio/tasks/triage", method: "OPTIONS", handl
 http.route({ path: "/api/v1/me/portfolio/tasks/update", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/realtime-sync/session", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/agent-bus/messages", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/secret-vault/env", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });
