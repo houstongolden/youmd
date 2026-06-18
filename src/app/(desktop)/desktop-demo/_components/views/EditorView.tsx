@@ -66,8 +66,13 @@ function FileTree({
   );
 }
 
-export function EditorView() {
-  const [activeId, setActiveId] = useState("identity/you.md");
+export function EditorView({
+  activeId,
+  onSelect,
+}: {
+  activeId: string;
+  onSelect: (id: string) => void;
+}) {
   const [mode, setMode] = useState<"read" | "edit">("read");
   const source = FILE_CONTENT[activeId] ?? "# Untitled\n\nEmpty note.";
 
@@ -79,7 +84,7 @@ export function EditorView() {
           <SectionLabel>Vault</SectionLabel>
           <Icon name="plus" size={13} className="cursor-pointer text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))]" />
         </div>
-        <FileTree nodes={FILE_TREE} depth={0} activeId={activeId} onSelect={setActiveId} />
+        <FileTree nodes={FILE_TREE} depth={0} activeId={activeId} onSelect={onSelect} />
       </aside>
 
       {/* Document */}

@@ -15,6 +15,7 @@ export function TitleBar({
   onToggleSidebar,
   chatFull,
   onToggleChatFull,
+  onOpenCommand,
 }: {
   title: string;
   isMobile: boolean;
@@ -22,6 +23,7 @@ export function TitleBar({
   onToggleSidebar: () => void;
   chatFull: boolean;
   onToggleChatFull: () => void;
+  onOpenCommand: () => void;
 }) {
   return (
     <div className="flex min-h-[44px] shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 pt-[env(safe-area-inset-top)] md:h-10 md:min-h-0 md:gap-3 md:pt-0">
@@ -52,7 +54,10 @@ export function TitleBar({
       </div>
 
       {/* center command bar — desktop only */}
-      <button className="mx-auto hidden w-72 items-center gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 py-1 text-[12px] text-[hsl(var(--text-secondary))]/60 transition-colors hover:border-[hsl(var(--accent))]/30 md:flex">
+      <button
+        onClick={onOpenCommand}
+        className="mx-auto hidden w-72 items-center gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 py-1 text-[12px] text-[hsl(var(--text-secondary))]/60 transition-colors hover:border-[hsl(var(--accent))]/30 md:flex"
+      >
         <Icon name="search" size={13} />
         <span>Search or run a command…</span>
         <span className="ml-auto font-mono text-[10px] tracking-wider opacity-60">⌘K</span>
@@ -61,6 +66,7 @@ export function TitleBar({
       {/* search icon — mobile only */}
       <button
         aria-label="Search"
+        onClick={onOpenCommand}
         className="ml-auto p-1 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))] md:hidden"
       >
         <Icon name="search" size={17} />

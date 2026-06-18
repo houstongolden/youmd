@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo ⌘K command palette
+
+### feat(web): real command palette for `/desktop-demo`
+- Built a working ⌘K / Ctrl+K command palette (`CommandPalette.tsx`) — the title bar's "Search or run a command…" button and the mobile search icon now both open it instead of being dead UI. The whole product surface in one input, Notion/Linear/Raycast-style.
+- Grouped commands: **Navigate** (every view), **Notes** (open any vault file directly), **Projects** (jump into the graph), and **Actions** (spawn a YOU sub-agent, toggle light/dark theme, focus/split chat).
+- Full keyboard control: ⌘K toggles, type to fuzzy-filter, ↑/↓ to move across groups, Enter to run, Esc/backdrop to close; mouse hover also selects and the active row auto-scrolls into view.
+- Lifted the Notes editor's active-file state into `DesktopShell` so the palette can open a specific note (verified: filtering "voice" + Enter opens `identity/voice.md`).
+- Verified end-to-end via Playwright (system Chromium): shortcut opens it, filtering works, Enter runs the command and routes to the editor. TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-18 — Desktop demo mobile polish (swipe + safe areas)
 
 ### feat(web): native-feeling mobile gestures and notch handling for `/desktop-demo`

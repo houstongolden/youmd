@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { PRIMARY_NAV, type ViewId } from "../_data/mock";
+import { useEffect, useMemo, useState } from "react";
+import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, type ViewId } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
 import { useSwipe } from "../_lib/useSwipe";
 import { cn } from "../_lib/cn";
@@ -9,6 +9,7 @@ import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
 import { ChatPanel } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
+import { CommandPalette, type Command } from "./CommandPalette";
 import { Icon } from "./icons";
 import { HomeView } from "./views/HomeView";
 import { EditorView } from "./views/EditorView";
@@ -21,15 +22,19 @@ import { TerminalView } from "./views/TerminalView";
 function MainView({
   view,
   onNavigate,
+  editorFile,
+  onEditorSelect,
 }: {
   view: ViewId;
   onNavigate: (v: ViewId) => void;
+  editorFile: string;
+  onEditorSelect: (id: string) => void;
 }) {
   switch (view) {
     case "home":
       return <HomeView onNavigate={onNavigate} />;
     case "editor":
-      return <EditorView />;
+      return <EditorView activeId={editorFile} onSelect={onEditorSelect} />;
     case "graph":
       return <GraphView />;
     case "tasks":
@@ -88,6 +93,8 @@ export function DesktopShell() {
   const [chatFull, setChatFull] = useState(false);
   const [activeView, setActiveView] = useState<ViewId>("home");
   const [mobilePane, setMobilePane] = useState<"chat" | "view">("chat");
+  const [editorFile, setEditorFile] = useState("identity/you.md");
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const navigate = (v: ViewId) => {
     setActiveView(v);
@@ -99,6 +106,83 @@ export function DesktopShell() {
       setChatFull(false);
     }
   };
+
+  const openNote = (id: string) => {
+    setEditorFile(id);
+    navigate("editor");
+  };
+
+  // ⌘K / Ctrl+K toggles the command palette anywhere in the app.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // The whole product surface as a flat command list for the palette.
+  const commands = useMemo<Command[]>(() => {
+    const nav: Command[] = PRIMARY_NAV.map((n) => ({
+      id: `nav:${n.id}`,
+      label: `Go to ${n.label}`,
+      group: "Navigate",
+      icon: n.icon,
+      run: () => navigate(n.id),
+    }));
+
+    const notes: Command[] = Object.keys(FILE_CONTENT).map((id) => ({
+      id: `note:${id}`,
+      label: id.split("/").pop() ?? id,
+      group: "Notes",
+      icon: "file",
+      hint: id.includes("/") ? id.split("/").slice(0, -1).join("/") : undefined,
+      keywords: id,
+      run: () => openNote(id),
+    }));
+
+    const projects: Command[] = PROJECTS.map((p) => ({
+      id: `project:${p.slug}`,
+      label: `Open ${p.name} in graph`,
+      group: "Projects",
+      icon: "graph",
+      keywords: p.slug,
+      run: () => navigate("graph"),
+    }));
+
+    const actions: Command[] = [
+      {
+        id: "action:spawn",
+        label: "Spawn a YOU sub-agent",
+        group: "Actions",
+        icon: "sparkles",
+        run: () => navigate("agents"),
+      },
+      {
+        id: "action:theme",
+        label: "Toggle light / dark theme",
+        group: "Actions",
+        icon: "sparkles",
+        keywords: "appearance mode color",
+        run: () => document.documentElement.classList.toggle("light"),
+      },
+      {
+        id: "action:focus-chat",
+        label: chatFull ? "Exit full-chat (split view)" : "Focus chat (full width)",
+        group: "Actions",
+        icon: "chat",
+        keywords: "layout split focus conversation",
+        run: () => (isMobile ? setMobilePane("chat") : setChatFull((f) => !f)),
+      },
+    ];
+
+    return [...nav, ...notes, ...projects, ...actions];
+    // navigate/openNote are stable enough for the demo; rebuild on layout flags.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatFull, isMobile]);
 
   const toggleSidebar = () => {
     if (isMobile) setDrawerOpen((o) => !o);
@@ -130,6 +214,7 @@ export function DesktopShell() {
         onToggleSidebar={toggleSidebar}
         chatFull={chatFull}
         onToggleChatFull={() => setChatFull((f) => !f)}
+        onOpenCommand={() => setPaletteOpen(true)}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -160,7 +245,12 @@ export function DesktopShell() {
                   <ChatPanel full />
                 ) : (
                   <div className="h-full overflow-y-auto bg-[hsl(var(--bg))]">
-                    <MainView view={activeView} onNavigate={navigate} />
+                    <MainView
+                      view={activeView}
+                      onNavigate={navigate}
+                      editorFile={editorFile}
+                      onEditorSelect={setEditorFile}
+                    />
                   </div>
                 )}
               </div>
@@ -189,7 +279,12 @@ export function DesktopShell() {
                 </div>
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
                   <div className="h-full overflow-y-auto">
-                    <MainView view={activeView} onNavigate={navigate} />
+                    <MainView
+                      view={activeView}
+                      onNavigate={navigate}
+                      editorFile={editorFile}
+                      onEditorSelect={setEditorFile}
+                    />
                   </div>
                 </main>
               </div>
@@ -197,6 +292,12 @@ export function DesktopShell() {
           </>
         )}
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        commands={commands}
+        onClose={() => setPaletteOpen(false)}
+      />
     </div>
   );
 }
