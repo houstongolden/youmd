@@ -247,7 +247,7 @@ echo "[you.md] pulling identity bundle and syncing local brain"
 youmd pull
 youmd sync
 
-echo "[you.md] installing resident identity/skillstack/project-context daemons early"
+echo "[you.md] installing resident realtime/identity/skillstack/project-context daemons early"
 youmd stack daemon install || true
 youmd stack daemon status || true
 
@@ -406,7 +406,7 @@ if [ "\${YOUMD_INSTALL_DEPS:-}" = "1" ] || [ "\${YOUMD_PROBE_SERVERS:-}" = "1" ]
 else
   echo "[you.md] clean-host install/server proof skipped; set YOUMD_INSTALL_DEPS=1 and YOUMD_PROBE_SERVERS=1 to install deps and smoke-probe local dev servers"
 fi
-echo "[you.md] confirming resident identity/skillstack/project-context daemons"
+echo "[you.md] confirming resident realtime/identity/skillstack/project-context daemons"
 youmd stack daemon install || true
 youmd stack daemon status || true
 youmd status
@@ -455,7 +455,7 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     "- check/install the local prerequisites first: Homebrew, Node 22/npm, git, GitHub CLI, bun, and pnpm/corepack",
     "- install You.md from the curl runtime and force the You.md/Homebrew/Node 22 paths into this setup shell",
     "- authenticate and pull/sync your identity bundle",
-    "- install resident sync daemons early so identity/skill/project-context sync is not deferred until the end",
+    "- install resident realtime sync daemons early so identity/skill/project-context sync is not deferred until the end",
     "- require GitHub CLI auth before private shared-skill/project repos clone; if browser auth fails inside Claude/Codex, it prints the exact Terminal command to run and stops cleanly",
     "- install/configure MCP for Claude Code and Codex",
     "- restore shared agent skills, stack config, Claude/Codex links, and agent host config",

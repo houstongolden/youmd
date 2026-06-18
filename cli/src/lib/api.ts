@@ -11,6 +11,17 @@ export interface ApiResponse<T = unknown> {
   data: T;
 }
 
+export interface RealtimeSyncSession {
+  success: boolean;
+  schemaVersion: "you-md/realtime-sync-session/v1";
+  convexUrl: string;
+  token: string;
+  expiresAt: number;
+  ttlSeconds: number;
+  canReadVaultMetadata: boolean;
+  secretValuesExposed: false;
+}
+
 /**
  * Extract the server's error message from a failed response payload.
  * Error responses are JSON objects with an `error` field regardless of the
@@ -196,6 +207,21 @@ export async function verifyEmailCode(
     "/api/auth/verify-code",
     { method: "POST", body: { email, code, issueApiKey: true } }
   );
+}
+
+// ─── Realtime sync session ──────────────────────────────────────────
+
+export async function createRealtimeSyncSession(
+  options: { clientName?: string; ttlSeconds?: number } = {}
+): Promise<ApiResponse<RealtimeSyncSession>> {
+  return apiRequest<RealtimeSyncSession>("/api/v1/me/realtime-sync/session", {
+    method: "POST",
+    token: getAuthToken(),
+    body: {
+      clientName: options.clientName,
+      ttlSeconds: options.ttlSeconds,
+    },
+  });
 }
 
 // ─── Device-flow auth (U7, RFC 8628-shaped) ──────────────────────────

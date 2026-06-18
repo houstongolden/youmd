@@ -180,6 +180,11 @@ Implementation slice shipped locally on 2026-06-17:
   `portfolio-graph-auditor`, `meta-improve`, `proactive-context-fill`, and
   `get_agent_brief + portfolio graph`, making shared/meta skill propagation
   visible to Houston in the web UI.
+- Trusted-device realtime sync is now part of the local runtime: Convex
+  websocket subscriptions carry account-state changes, local daemons
+  materialize identity files and installed skills, conflict-safe git scripts
+  mirror shared stacks/project context, GitHub remains the versioned audit
+  trail, and Secret Vault remains ciphertext-only for `.env.local` transfer.
 
 Implementation slice shipped and verified on 2026-06-17:
 

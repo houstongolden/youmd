@@ -1812,6 +1812,18 @@ Last Updated: 2026-06-18
 2. Add MCP setup to the fresh-machine command itself. **DONE:** web-shell and CLI prompt scripts now run `youmd mcp --install claude --auto || true` and `youmd mcp --install codex --auto || true`.
 3. Keep CLI prompt parity. **DONE:** `youmd machine prompt` now emits the same agent-readable prompt shape rather than the old "copy this command" wrapper.
 4. Secure exposed bootstrap material. **DONE:** unused fresh-machine bootstrap keys were revoked after a key was pasted into chat; future button clicks mint a new 7-day scoped key.
-5. Clarify npm status. **UPDATED:** local CLI is now `0.8.3`, npm latest is `0.8.2`, and the fresh-machine prompt/ystack changes require publishing `0.8.3` for npm fallback and `npx youmd@latest`. Curl install defaults to GitHub source/main once this commit is pushed.
+5. Clarify npm status. **UPDATED:** local CLI is now `0.8.4`, npm latest is still behind, and the fresh-machine prompt/ystack/realtime-daemon changes require publishing `0.8.4` for npm fallback and `npx youmd@latest`. Curl install defaults to GitHub source/main once this commit is pushed.
 6. Prove on the actual Mac mini. **PENDING:** run the corrected prompt on the new computer with the transferred env vault, then verify `~/Desktop/CODE_YOU`, Claude/Codex MCP config, skill sync, env restore, active/focused project clones, and synced machine proof.
 7. Ensure ystack teaches behind-the-scenes You CLI/You Agent use. **DONE / HOSTED VERIFIED:** CLI/web fresh-machine prompts, bundled `machine-bootstrap`, Convex hosted skill seed content, and shared `.agent-shared` `/machine-sync` now instruct Claude/Codex to run `youmd` status/sync/skill/vault/portfolio/verify commands themselves and interrupt Houston only for true human-gated steps. Live `/api/v1/skills?name=machine-bootstrap` verified the new section, 30-day-first commands, explicit 90-day expansion, and Secret Vault restore path.
+
+### 138. Make shared You.md skills, project context, and stacks sync Notion-like across trusted devices
+**Status:** DONE FIRST REALTIME SLICE / NPM PUBLISH + MAC MINI FOLLOW-UP PENDING
+**Verified:** PARTIAL (Convex prod deployed, production websocket sync-head smoke passed, local CLI `youmd sync --live --daemon` smoke passed, and this Mac's launchd daemon set now shows `com.youmd.realtime-sync` loaded)
+**Source:** 2026-06-18 — Houston: "all synced skills and you.md project context and shared local/global skills/stacks should sync real-time like Notion too ya know ? come on"
+**Actionable Scope:**
+1. Add an always-on realtime account-state lane instead of relying only on 5m/15m polling. **DONE:** `youmd sync --live --daemon` subscribes to Convex websocket updates through a short-lived `ys_` sync session.
+2. Keep `.env.local` secret handling safe. **DONE:** the sync head only exposes encrypted-vault metadata and explicitly returns `secretValuesExposed: false`; plaintext env restore remains local/Keychain/passphrase-gated.
+3. Materialize useful local state. **DONE:** live updates pull identity files, re-render installed You.md skills, and trigger bounded shared skillstack/project-context syncs.
+4. Make it visible in the Machine tab and CLI. **DONE:** `com.youmd.realtime-sync` is included in daemon install/status and Machine readiness as `realtime brain / live websocket`.
+5. Publish/install everywhere. **PENDING:** publish CLI `0.8.4` to npm and rerun the Mac mini setup so the new machine has the realtime daemon from the normal install path.
+6. Remaining architecture gap. **OPEN:** GitHub-backed shared skill repos still use conflict-safe git sync as the materialization layer; true instant cross-device sync for every non-Convex source should add GitHub webhook/change-event ingestion into the Convex sync head.

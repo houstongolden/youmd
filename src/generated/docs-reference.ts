@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "c66affc6f4939e58e24bb400a4f733bc461e6e13b6b5a2dbd4a39a99774b969d",
+  "sourceHash": "8fdda79e1fef4b7f42bd1e618bb836386c4504dfd94efccea13be9ceec8427ce",
   "cli": {
-    "version": "0.8.3"
+    "version": "0.8.4"
   },
   "counts": {
-    "endpoints": 95,
+    "endpoints": 96,
     "internalRoutes": 8,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 30,
-    "convexRoutes": 76,
+    "convexRoutes": 77,
     "nextRoutes": 27
   },
   "endpoints": [
@@ -326,6 +326,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Publish latest bundle",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/realtime-sync/session",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Mint a short-lived websocket credential for trusted local daemons.",
       "sources": [
         "convex"
       ]

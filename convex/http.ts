@@ -2437,6 +2437,54 @@ http.route({
   }),
 });
 
+// POST /api/v1/me/realtime-sync/session — Mint a short-lived websocket credential for trusted local daemons.
+http.route({
+  path: "/api/v1/me/realtime-sync/session",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
+
+    let body: Record<string, unknown> = {};
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      body = {};
+    }
+
+    const clientName = cleanOptionalString(body.clientName, 120);
+    const ttlSeconds = cleanFiniteNumber(body.ttlSeconds, 3600);
+    const hasVaultScope = auth.scopes === null || auth.declaredScopes.includes("vault");
+
+    try {
+      const session = await ctx.runMutation(api.realtimeSync.issueSession, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        clientName,
+        credentialType: auth.credentialType,
+        canReadVaultMetadata: hasVaultScope,
+        ttlSeconds,
+      });
+
+      const requestOrigin = new URL(request.url).origin;
+      const convexUrl = requestOrigin.replace(".convex.site", ".convex.cloud");
+
+      return json({
+        success: true,
+        schemaVersion: "you-md/realtime-sync-session/v1",
+        convexUrl,
+        ...session,
+        canReadVaultMetadata: hasVaultScope,
+        secretValuesExposed: false,
+      });
+    } catch (err) {
+      return serverErrorResponse("me/realtime-sync/session", err, "Failed to create realtime sync session");
+    }
+  }),
+});
+
 // GET/POST /api/v1/me/secret-vault/env — Account-backed encrypted .env.local vault snapshots.
 http.route({
   path: "/api/v1/me/secret-vault/env",
@@ -4369,6 +4417,7 @@ http.route({ path: "/api/v1/me/portfolio/tasks", method: "OPTIONS", handler: cor
 http.route({ path: "/api/v1/me/portfolio/tasks/triage", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks/update", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/realtime-sync/session", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/secret-vault/env", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });

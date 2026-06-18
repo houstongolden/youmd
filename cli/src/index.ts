@@ -565,6 +565,7 @@ program
   .command("sync")
   .description("Sync ~/.youmd/ files with you.md (pull + push)")
   .option("-w, --watch", "Watch for local changes and auto-push")
+  .option("--live", "Subscribe to You.md realtime sync updates and materialize local identity, skills, stacks, and project context")
   .option("-f, --force", "Sync even when local and remote have both changed")
   .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
   .option("--daemon", "Resident-safe sync: refresh local files/skills and skip unsafe lossy pushes")

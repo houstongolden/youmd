@@ -1,6 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as child_process from "child_process";
+import * as os from "os";
 import chalk from "chalk";
+import { ConvexClient } from "convex/browser";
+import { anyApi } from "convex/server";
 import {
   readGlobalConfig,
   readBundleConfig,
@@ -9,7 +13,7 @@ import {
   bundleResolutionNotice,
   bundleLooksInitialized,
 } from "../lib/config";
-import { getMe } from "../lib/api";
+import { apiErrorMessage, createRealtimeSyncSession, getMe } from "../lib/api";
 import { pushCommand } from "./push";
 import { pullCommand, detectLocalDirtyState, stableContentHash } from "./pull";
 import { syncAllSkills } from "../lib/skills";
@@ -18,12 +22,23 @@ import { compileBundle } from "../lib/compiler";
 import { decompileToFilesystem } from "../lib/decompile";
 import { mergeSections, decisionLabel } from "../lib/merge";
 import { BrailleSpinner } from "../lib/render";
+import {
+  realtimeSyncHeadSignature,
+  shouldRunBoundedSync,
+  summarizeRealtimeSyncHead,
+  type RealtimeSyncHead,
+} from "../lib/realtime-sync";
 
-export async function syncCommand(options: { watch?: boolean; force?: boolean; local?: boolean; daemon?: boolean }) {
+export async function syncCommand(options: { watch?: boolean; force?: boolean; local?: boolean; daemon?: boolean; live?: boolean }) {
   const config = readGlobalConfig();
 
   if (!config.token) {
     console.log(chalk.hex("#C46A3A")("  not authenticated. run: youmd login"));
+    return;
+  }
+
+  if (options.live) {
+    await runLiveSync(options);
     return;
   }
 
@@ -226,6 +241,189 @@ export async function syncCommand(options: { watch?: boolean; force?: boolean; l
     console.log(chalk.green("  sync complete."));
     console.log(chalk.dim("  tip: use --watch for auto-sync on file changes"));
   }
+}
+
+function envNumber(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const next = Number(raw);
+  return Number.isFinite(next) && next > 0 ? next : fallback;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+let wakeLiveSyncSleep: (() => void) | null = null;
+
+function liveSyncSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      if (wakeLiveSyncSleep === done) wakeLiveSyncSleep = null;
+      clearTimeout(timeout);
+      resolve();
+    };
+    const timeout = setTimeout(done, ms);
+    wakeLiveSyncSleep = done;
+  });
+}
+
+function runYoumdSubcommand(label: string, args: string[], timeoutMs: number): void {
+  const command = `youmd ${args.join(" ")}`;
+  console.log(chalk.dim(`  -- ${label}: ${command}`));
+  const run = (cmd: string, cmdArgs: string[]) =>
+    child_process.spawnSync(cmd, cmdArgs, {
+      stdio: "inherit",
+      env: process.env,
+      timeout: timeoutMs,
+    });
+
+  let result = run("youmd", args);
+  if (result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT" && process.argv[1]) {
+    result = run(process.execPath, [process.argv[1], ...args]);
+  }
+
+  if (result.error) {
+    console.log(chalk.yellow(`  ${label} warning: ${result.error.message}`));
+  } else if (typeof result.status === "number" && result.status !== 0) {
+    console.log(chalk.yellow(`  ${label} exited ${result.status}`));
+  }
+}
+
+async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Promise<void> {
+  const heartbeatMs = envNumber("YOUMD_LIVE_SYNC_HEARTBEAT_SECONDS", 60) * 1000;
+  const localMinMs = envNumber("YOUMD_LIVE_SYNC_LOCAL_INTERVAL_SECONDS", 5) * 1000;
+  const stackMinMs = envNumber("YOUMD_LIVE_SYNC_STACK_INTERVAL_SECONDS", 60) * 1000;
+  const contextMinMs = envNumber("YOUMD_LIVE_SYNC_CONTEXT_INTERVAL_SECONDS", 120) * 1000;
+  const commandTimeoutMs = envNumber("YOUMD_LIVE_SYNC_COMMAND_TIMEOUT_MS", 180) * 1000;
+  const ttlSeconds = envNumber("YOUMD_LIVE_SYNC_SESSION_TTL_SECONDS", 3600);
+  const stackSyncEnabled = process.env.YOUMD_LIVE_SYNC_STACK !== "0";
+  const contextSyncEnabled = process.env.YOUMD_LIVE_SYNC_CONTEXT !== "0";
+
+  let stopped = false;
+  let lastSignature = "";
+  let lastLocalRunAt = 0;
+  let lastStackRunAt = 0;
+  let lastContextRunAt = 0;
+  let materializing = false;
+  let pendingReason: string | null = null;
+  let latestHead: RealtimeSyncHead | null = null;
+
+  const stop = () => {
+    stopped = true;
+    wakeLiveSyncSleep?.();
+  };
+  process.once("SIGINT", stop);
+  process.once("SIGTERM", stop);
+
+  async function materialize(reason: string, head?: RealtimeSyncHead): Promise<void> {
+    if (head) latestHead = head;
+    if (materializing) {
+      pendingReason = reason;
+      return;
+    }
+
+    materializing = true;
+    try {
+      do {
+        const activeReason = pendingReason ?? reason;
+        pendingReason = null;
+        const now = Date.now();
+        const signature = realtimeSyncHeadSignature(latestHead);
+        const changed = signature !== lastSignature;
+
+        if (changed) {
+          lastSignature = signature;
+          console.log("");
+          console.log(chalk.green("  live sync update: ") + chalk.dim(latestHead ? summarizeRealtimeSyncHead(latestHead) : activeReason));
+        }
+
+        if (changed && shouldRunBoundedSync(lastLocalRunAt, now, localMinMs)) {
+          lastLocalRunAt = now;
+          console.log(chalk.dim("  -- identity/materialized skills"));
+          const pullResult = await pullCommand({ force: false, local: options.local });
+          if (pullResult === "dirty") {
+            console.log(chalk.yellow("  live sync skipped identity pull because local identity files are dirty"));
+          } else if (pullResult !== "auth-required") {
+            const skillResult = syncAllSkills();
+            if (skillResult.synced.length > 0) {
+              console.log(chalk.green("  ✓") + chalk.dim(` ${skillResult.synced.length} installed skills re-rendered`));
+            }
+          }
+        }
+
+        if (stackSyncEnabled && shouldRunBoundedSync(lastStackRunAt, now, stackMinMs)) {
+          lastStackRunAt = now;
+          runYoumdSubcommand("shared skill/stack git sync", ["stack", "sync"], commandTimeoutMs);
+        }
+
+        if (contextSyncEnabled && shouldRunBoundedSync(lastContextRunAt, now, contextMinMs)) {
+          lastContextRunAt = now;
+          runYoumdSubcommand("project-context git sync", ["stack", "context-sync"], commandTimeoutMs);
+        }
+      } while (pendingReason && !stopped);
+    } finally {
+      materializing = false;
+    }
+  }
+
+  console.log(chalk.hex("#C46A3A")("  starting realtime You.md sync daemon"));
+  console.log(chalk.dim("  Convex websocket drives account-state changes; git timers remain the conflict-safe repair layer."));
+  console.log(chalk.dim("  press ctrl+c to stop"));
+
+  while (!stopped) {
+    let client: ConvexClient | null = null;
+    let heartbeat: ReturnType<typeof setInterval> | null = null;
+    let unsubscribe: (() => void) | null = null;
+
+    try {
+      const session = await createRealtimeSyncSession({
+        clientName: `youmd sync --live on ${os.hostname()}`,
+        ttlSeconds,
+      });
+      if (!session.ok) {
+        const msg = apiErrorMessage(session.data) ?? `HTTP ${session.status}`;
+        console.log(chalk.yellow(`  realtime session failed: ${msg}`));
+        await liveSyncSleep(15_000);
+        continue;
+      }
+
+      client = new ConvexClient(session.data.convexUrl);
+      console.log(chalk.green("  subscribed ") + chalk.dim(`${session.data.convexUrl} as realtime sync session`));
+
+      unsubscribe = client.onUpdate(
+        anyApi.realtimeSync.getHead,
+        { token: session.data.token },
+        (head) => {
+          void materialize("remote update", head as RealtimeSyncHead);
+        },
+        (err) => {
+          console.log(chalk.yellow(`  realtime sync warning: ${err.message}`));
+        },
+      );
+
+      heartbeat = setInterval(() => {
+        void materialize("heartbeat");
+      }, heartbeatMs);
+
+      await materialize("startup");
+      const renewInMs = Math.max(30_000, session.data.expiresAt - Date.now() - 60_000);
+      await liveSyncSleep(renewInMs);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(chalk.yellow(`  realtime sync reconnecting after error: ${msg}`));
+      await liveSyncSleep(10_000);
+    } finally {
+      if (heartbeat) clearInterval(heartbeat);
+      if (unsubscribe) unsubscribe();
+      if (client) client.close();
+    }
+  }
+
+  console.log(chalk.dim("  realtime sync stopped"));
 }
 
 async function detectRemoteAheadOfPulledBundle(bundleDir: string): Promise<boolean> {

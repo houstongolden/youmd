@@ -143,6 +143,14 @@ export type LocalMachineReadiness = {
 
 const DAEMONS: LocalDaemonConfig[] = [
   {
+    label: "com.youmd.realtime-sync",
+    name: "realtime brain",
+    command: "youmd sync --live --daemon",
+    intervalSeconds: 0,
+    stdoutLog: "~/.youmd/logs/realtime-sync.out.log",
+    stderrLog: "~/.youmd/logs/realtime-sync.err.log",
+  },
+  {
     label: "com.youmd.skillstack-sync",
     name: "skills/stacks",
     command: "youmd stack sync",

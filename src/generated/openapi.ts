@@ -5,7 +5,7 @@ export const openApiSpec = {
   "openapi": "3.1.0",
   "info": {
     "title": "You.md API",
-    "version": "0.8.3",
+    "version": "0.8.4",
     "description": "Generated source-of-truth API inventory for the You.md identity context protocol."
   },
   "servers": [
@@ -958,6 +958,45 @@ export const openApiSpec = {
       "post": {
         "operationId": "post_api_v1_me_publish",
         "summary": "Publish latest bundle",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/realtime-sync/session": {
+      "post": {
+        "operationId": "post_api_v1_me_realtime_sync_session",
+        "summary": "Mint a short-lived websocket credential for trusted local daemons.",
         "tags": [
           "Account"
         ],

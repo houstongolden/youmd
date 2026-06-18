@@ -882,6 +882,19 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_keyHash", ["keyHash"]),
 
+  realtimeSyncSessions: defineTable({
+    userId: v.id("users"),
+    tokenHash: v.string(),
+    clientName: v.optional(v.string()),
+    credentialType: v.string(),
+    canReadVaultMetadata: v.boolean(),
+    expiresAt: v.number(),
+    revokedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_tokenHash", ["tokenHash"])
+    .index("by_userId_createdAt", ["userId", "createdAt"]),
+
   // ── Connected-app grants ───────────────────────────────────
   // Product/app-level grants are distinct from owner API keys. They let the
   // owner authorize a named app, host, or integration to read/write specific

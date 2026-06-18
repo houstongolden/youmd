@@ -465,7 +465,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                         </span>
                       </div>
                       <div className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-42">
-                        every {Math.round(daemon.intervalSeconds / 60)}m / {daemon.label}
+                        {daemon.intervalSeconds > 0 ? `every ${Math.round(daemon.intervalSeconds / 60)}m` : "live websocket"} / {daemon.label}
                       </div>
                     </div>
                     <div className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-50">

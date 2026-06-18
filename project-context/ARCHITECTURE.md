@@ -219,6 +219,13 @@ Local implementation slice:
   is the canonical shared agent skill for cross-project portfolio/env/API/MCP
   audits and now requires agents to verify `get_agent_brief` /
   `youmd://portfolio/graph`.
+- `convex/realtimeSync.ts` and `POST /api/v1/me/realtime-sync/session`
+  provide the trusted-device realtime plane. A normal API key mints a
+  short-lived websocket session; the sync head contains only hashes, counts,
+  timestamps, repo/mirror metadata, machine proof summaries, and encrypted
+  env-vault metadata. `youmd sync --live --daemon` subscribes to that head and
+  materializes identity, installed skills, shared stacks, and project context
+  locally while the older timer daemons remain repair/fallback paths.
 
 ### Writeback Rules
 

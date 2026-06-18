@@ -78,6 +78,7 @@ import type * as portrait from "../portrait.js";
 import type * as private_ from "../private.js";
 import type * as profileIndexing from "../profileIndexing.js";
 import type * as profiles from "../profiles.js";
+import type * as realtimeSync from "../realtimeSync.js";
 import type * as scrape from "../scrape.js";
 import type * as secretVault from "../secretVault.js";
 import type * as seed from "../seed.js";
@@ -166,6 +167,7 @@ declare const fullApi: ApiFromModules<{
   private: typeof private_;
   profileIndexing: typeof profileIndexing;
   profiles: typeof profiles;
+  realtimeSync: typeof realtimeSync;
   scrape: typeof scrape;
   secretVault: typeof secretVault;
   seed: typeof seed;

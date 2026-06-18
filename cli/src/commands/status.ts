@@ -253,6 +253,9 @@ export async function statusCommand(): Promise<void> {
     console.log("  " + chalk.bold("resident sync:"));
     for (const daemon of daemons) {
       const state = daemon.loaded ? chalk.green("loaded") : chalk.yellow("not loaded");
+      const cadence = daemon.intervalSeconds > 0
+        ? `every ${Math.round(daemon.intervalSeconds / 60)}m`
+        : "live websocket";
       const activity = daemon.lastActivityAt
         ? DIM(" -- " + timeSince(new Date(daemon.lastActivityAt)) + " ago")
         : DIM(" -- no log yet");
@@ -260,7 +263,7 @@ export async function statusCommand(): Promise<void> {
         "    " +
           state.padEnd(18) +
           chalk.cyan(daemon.name.padEnd(16)) +
-          DIM(` every ${Math.round(daemon.intervalSeconds / 60)}m`) +
+          DIM(` ${cadence}`) +
           activity
       );
       if (daemon.warning) {

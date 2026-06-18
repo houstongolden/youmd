@@ -1,6 +1,6 @@
 {
   "name": "youmd",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "Identity context protocol for the agent internet — an MCP where the context is you. CLI for the You.md platform.",
   "bin": {
     "you": "dist/you.js",
@@ -45,6 +45,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
+    "convex": "1.33.1",
     "gray-matter": "^4.0.3",
     "jimp": "^0.22.12",
     "js-yaml": "^4.1.1",

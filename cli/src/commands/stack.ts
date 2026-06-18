@@ -502,8 +502,10 @@ export async function stackCommand(
       console.log("");
       for (const daemon of getDaemonHealth()) {
         const state = daemon.loaded ? chalk.green("loaded") : chalk.dim("not loaded");
-        const interval = `${Math.round(daemon.intervalSeconds / 60)}m`;
-        console.log("  " + state + "   " + daemon.label + DIM(` (${daemon.name}, every ${interval})`));
+        const cadence = daemon.intervalSeconds > 0
+          ? `every ${Math.round(daemon.intervalSeconds / 60)}m`
+          : "live websocket";
+        console.log("  " + state + "   " + daemon.label + DIM(` (${daemon.name}, ${cadence})`));
         if (daemon.lastActivityAt) {
           console.log("             " + DIM(`last activity: ${daemon.lastActivityAt}`));
         }
