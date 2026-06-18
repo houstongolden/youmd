@@ -1225,9 +1225,9 @@ export const openApiSpec = {
         ]
       }
     },
-    "/api/v1/me/secret-vault/env": {
+    "/api/v1/me/secret-vault/devices": {
       "get": {
-        "operationId": "get_api_v1_me_secret_vault_env",
+        "operationId": "get_api_v1_me_secret_vault_devices",
         "summary": "Account-backed encrypted .env.local vault snapshots.",
         "tags": [
           "Account"
@@ -1264,7 +1264,159 @@ export const openApiSpec = {
         ]
       },
       "post": {
+        "operationId": "post_api_v1_me_secret_vault_devices",
+        "summary": "Convex HTTP action",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/secret-vault/env": {
+      "get": {
+        "operationId": "get_api_v1_me_secret_vault_env",
+        "summary": "Convex HTTP action",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
         "operationId": "post_api_v1_me_secret_vault_env",
+        "summary": "Convex HTTP action",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/secret-vault/envelopes": {
+      "get": {
+        "operationId": "get_api_v1_me_secret_vault_envelopes",
+        "summary": "Convex HTTP action",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "post_api_v1_me_secret_vault_envelopes",
         "summary": "Convex HTTP action",
         "tags": [
           "Account"

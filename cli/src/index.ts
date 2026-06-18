@@ -715,6 +715,7 @@ program
   .option("--label <label>", "vault push: label the uploaded encrypted vault snapshot")
   .option("--restore", "vault pull: restore after downloading the encrypted account vault")
   .option("--print-path", "vault pull: print only the downloaded vault path")
+  .option("--device-name <name>", "vault device-register/share: friendly name for this trusted device")
   .option("--json", "vault: print machine-readable JSON")
   .action(async (subcommand, args, options) => {
     const a = args || [];
@@ -746,6 +747,7 @@ program
         label: options.label,
         restore: options.restore,
         printPath: options.printPath,
+        deviceName: options.deviceName,
         json: options.json,
       });
       process.exit(status);
@@ -759,6 +761,10 @@ program
       console.log("                      safe fresh-machine env restore into cloned project dirs");
       console.log("  vault push          upload encrypted env vault ciphertext to You.md Secret Vault");
       console.log("  vault pull          download latest encrypted env vault from You.md Secret Vault");
+      console.log("  vault device-register");
+      console.log("                      register this Mac as a trusted Secret Vault device");
+      console.log("  vault device-list   list trusted devices without exposing secret values");
+      console.log("  vault share         share latest vault access to trusted devices");
     }
   });
 

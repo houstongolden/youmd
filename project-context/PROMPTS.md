@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 114
-**Total messages:** 525
+**Total sessions:** 115
+**Total messages:** 526
 **Last updated:** 2026-06-18
 
 ## Table of Contents
 
+1. [2026-06-18 (trusted-device-secret-vault-escrow-correction)](#session-2026-06-18-trusted-device-secret-vault-escrow-correction) --- 1 message
 1. [2026-06-18 (realtime-agent-bus-two-mac-handshake)](#session-2026-06-18-realtime-agent-bus-two-mac-handshake) --- 1 message
 1. [2026-06-18 (mac-mini-vault-stale-cli-report)](#session-2026-06-18-mac-mini-vault-stale-cli-report) --- 1 message
 1. [2026-06-18 (desktop-demo-frontend)](#session-2026-06-18-desktop-demo-frontend) --- 1 message
@@ -122,6 +123,20 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-18 (trusted-device-secret-vault-escrow-correction)
+
+_Manual archive note: current Codex desktop session JSONL was unavailable in `~/.codex/sessions`; latest user request captured exactly from the live thread._
+
+**2026-06-18 23:02:46 UTC**
+> # In app browser:
+> - The user has the in-app browser open.
+> - Current URL: http://localhost:3100/shell?tab=machine
+>
+> ## My request for Codex:
+> ok so you haven't finished yet? ie this is not ready for me to test and the mac mini is not going to have this stuff working as intended? is this what Notion does or what? - continue man! The Notion-like version after this is device-key escrow: each trusted Mac has its own local keypair, You.md stores encrypted data keys per device, and no raw env values ever hit the browser. Right now we have account-backed encrypted snapshots, but local decrypt still needs the passphrase/Keychain once.???
 
 ---
 

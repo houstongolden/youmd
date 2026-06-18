@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-18T22:37:55.014Z
+Last updated: 2026-06-18T22:52:02.362Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git. "No new commits since last sync" means no delta versus the previous local reference head, not "the upstream repo has been inactive."
 
@@ -27,11 +27,10 @@ Follow-through ledger:
 - Local path: `.reference-repos/garrytan/gstack`
 - Branch: `main`
 - Latest commit: `a861c00cfac6`
-- Latest upstream activity: 2026-06-18T10:45:05-07:00 (4h ago)
-- Mode: Changes since c7ae632
+- Latest upstream activity: 2026-06-18T10:45:05-07:00 (5h ago)
+- Mode: No new commits since last sync (a861c00)
 
-- `a861c00` 2026-06-18 — v1.58.3.0 feat: gbrowser anti-detection Layer C stealth (#2047)
-  Files: `BROWSER.md`, `CHANGELOG.md`, `TODOS.md`, `VERSION`, `browse/src/browser-manager.ts`, `browse/src/stealth.ts`, `browse/test/browser-manager-unit.test.ts`, `browse/test/stealth-extended.test.ts`, +3 more
+- No commits found.
 
 ## GBrain
 
@@ -68,5 +67,4 @@ Follow-through ledger:
 
 ## Candidate Tasks
 
-- [ ] YouStacks workflow quality gates: Consider adding or refining stack workflows, smoke tests, evals, or release-review loops based on this upstream quality pattern.
-  Source: GStack a861c00: v1.58.3.0 feat: gbrowser anti-detection Layer C stealth (#2047)
+- No task candidates generated.

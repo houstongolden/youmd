@@ -33,6 +33,18 @@
 - View-level responsiveness: Home metric grid/quick-actions reflow, Notes stacks the vault file tree above the document (was a side rail), Tasks kanban stacks vertically, Connections grids go single-column, the Graph legend collapses to dots and nodes reflow via percentage positions, padding tightens across views, and the terminal helper label hides on small screens.
 - Verified on a 390×844 phone viewport (system Chromium via Playwright): chat, drawer, Notes, Graph, and Tasks all render cleanly with proper tap targets. TypeScript passes for all new/changed files; `scripts/check-radius.mjs` passes; dev serves `/desktop-demo` at HTTP 200 with no runtime errors.
 
+## 2026-06-18 — Trusted-device Secret Vault envelopes
+
+### feat(vault): make fresh-machine env restore device-key based
+- Added trusted-device Secret Vault escrow on top of encrypted account snapshots: Convex now stores registered device public keys and per-device encrypted passphrase envelopes in `secretVaultDevices` and `secretVaultKeyEnvelopes`, with owner-gated `GET/POST /api/v1/me/secret-vault/devices` and `/envelopes`.
+- Added CLI commands `youmd env vault device-register`, `youmd env vault device-list`, and `youmd env vault share`. The local private key stays under `~/.youmd/secret-vault/devices/current-device-key.json`; only the public key and wrapped passphrase envelopes sync to You.md.
+- Updated `youmd env vault pull --restore` so trusted devices register first, fetch their key envelope, unwrap the vault passphrase locally, and restore without raw `.env.local` values touching browser/chat/server logs.
+- Hardened `youmd env vault share` so it validates the source passphrase against the latest encrypted snapshot with list-only local decrypt before writing envelopes, preventing bad Keychain/passphrase data from being shared.
+- Updated CLI/web `/new computer` setup prompts and the bundled/hosted `machine-bootstrap` skill to use the device-register -> source `vault share` -> pull/restore flow before local/iCloud fallback.
+- Extended realtime daemon status from snapshot-only readiness to `account-backed-encrypted-snapshot+trusted-device-envelopes`, including trusted device count and latest-snapshot envelope count with `secretValuesExposed: false`.
+- Verification: Convex codegen, CLI build, root TypeScript, focused machine/realtime tests, docs check, production build, Convex production deploy, hosted skill reseed, live source-Mac `device-register`, live `vault share` with passphrase validation, headless `vault pull --restore` proof into an empty temp root, and realtime status showing `Secret Vault ready: 16 projects / 451 vars ... / 1/1 device envelopes`.
+- npm latest is still `youmd@0.8.5`; publish `0.8.6` before rerunning the Mac mini setup through npm/npx fallback.
+
 ## 2026-06-18 — Reference-intelligence follow-through visibility
 
 ### chore(reference-intelligence): make daily upstream audits harder to misread

@@ -61,6 +61,9 @@ export type RealtimeSyncHead = {
     flow?: string;
     available?: boolean;
     snapshotCount?: number;
+    trustedDeviceCount?: number;
+    keyEnvelopeCount?: number;
+    latestSnapshotEnvelopeCount?: number;
     id?: string | null;
     label?: string | null;
     createdAt?: number | null;
@@ -116,9 +119,12 @@ export type RealtimeAgentBusStatus = {
 
 export type RealtimeSecretVaultStatus = {
   state: "ready" | "missing" | "scope-missing" | "unknown";
-  flow: "account-backed-encrypted-snapshot";
+  flow: "account-backed-encrypted-snapshot+trusted-device-envelopes";
   available: boolean;
   snapshotCount: number;
+  trustedDeviceCount: number;
+  keyEnvelopeCount: number;
+  latestSnapshotEnvelopeCount: number;
   summary: string;
   latestSnapshot?: {
     id?: string | null;
@@ -138,6 +144,8 @@ export type RealtimeSecretVaultStatus = {
     sourceHost?: string | null;
     sourceRoot?: string | null;
   };
+  deviceRegisterCommand: string;
+  shareCommand: string;
   pullCommand: string;
   restoreCommand: string;
   secretValuesExposed: false;
@@ -172,6 +180,8 @@ export function describeRealtimeSecretVault(head: RealtimeSyncHead | null | unde
       : vault
         ? "missing"
         : "unknown";
+  const deviceRegisterCommand = "youmd env vault device-register";
+  const shareCommand = "youmd env vault share";
   const pullCommand = "youmd env vault pull --out ~/.youmd/secret-vault";
   const restoreCommand = "youmd env vault pull --restore --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth";
 
@@ -180,12 +190,17 @@ export function describeRealtimeSecretVault(head: RealtimeSyncHead | null | unde
     const vars = vault?.variableCount ?? 0;
     const source = vault?.sourceHost ? ` from ${vault.sourceHost}` : "";
     const hash = shortSha(vault?.sha256);
+    const trustedDevices = vault?.trustedDeviceCount ?? 0;
+    const latestEnvelopes = vault?.latestSnapshotEnvelopeCount ?? 0;
     return {
       state,
-      flow: "account-backed-encrypted-snapshot",
+      flow: "account-backed-encrypted-snapshot+trusted-device-envelopes",
       available: true,
       snapshotCount: vault?.snapshotCount ?? 1,
-      summary: `Secret Vault ready: ${projects} projects / ${vars} vars${source}${hash ? ` / ${hash}` : ""}`,
+      trustedDeviceCount: trustedDevices,
+      keyEnvelopeCount: vault?.keyEnvelopeCount ?? latestEnvelopes,
+      latestSnapshotEnvelopeCount: latestEnvelopes,
+      summary: `Secret Vault ready: ${projects} projects / ${vars} vars${source} / ${latestEnvelopes}/${trustedDevices} device envelopes${hash ? ` / ${hash}` : ""}`,
       latestSnapshot: {
         id: vault?.id ?? null,
         label: vault?.label ?? null,
@@ -204,6 +219,8 @@ export function describeRealtimeSecretVault(head: RealtimeSyncHead | null | unde
         sourceHost: vault?.sourceHost ?? null,
         sourceRoot: vault?.sourceRoot ?? null,
       },
+      deviceRegisterCommand,
+      shareCommand,
       pullCommand,
       restoreCommand,
       secretValuesExposed: false,
@@ -213,10 +230,15 @@ export function describeRealtimeSecretVault(head: RealtimeSyncHead | null | unde
   if (state === "scope-missing") {
     return {
       state,
-      flow: "account-backed-encrypted-snapshot",
+      flow: "account-backed-encrypted-snapshot+trusted-device-envelopes",
       available: false,
       snapshotCount: 0,
+      trustedDeviceCount: 0,
+      keyEnvelopeCount: 0,
+      latestSnapshotEnvelopeCount: 0,
       summary: "Secret Vault unknown: current realtime key lacks vault scope",
+      deviceRegisterCommand,
+      shareCommand,
       pullCommand,
       restoreCommand,
       secretValuesExposed: false,
@@ -226,10 +248,15 @@ export function describeRealtimeSecretVault(head: RealtimeSyncHead | null | unde
   if (state === "missing") {
     return {
       state,
-      flow: "account-backed-encrypted-snapshot",
+      flow: "account-backed-encrypted-snapshot+trusted-device-envelopes",
       available: false,
       snapshotCount: vault?.snapshotCount ?? 0,
-      summary: "Secret Vault missing: upload encrypted snapshot from the source Mac with `youmd env vault push`",
+      trustedDeviceCount: vault?.trustedDeviceCount ?? 0,
+      keyEnvelopeCount: vault?.keyEnvelopeCount ?? 0,
+      latestSnapshotEnvelopeCount: vault?.latestSnapshotEnvelopeCount ?? 0,
+      summary: "Secret Vault missing: upload encrypted snapshot from the source Mac with `youmd env vault push`, then register/share trusted devices",
+      deviceRegisterCommand,
+      shareCommand,
       pullCommand,
       restoreCommand,
       secretValuesExposed: false,
@@ -238,10 +265,15 @@ export function describeRealtimeSecretVault(head: RealtimeSyncHead | null | unde
 
   return {
     state,
-    flow: "account-backed-encrypted-snapshot",
+    flow: "account-backed-encrypted-snapshot+trusted-device-envelopes",
     available: false,
     snapshotCount: 0,
+    trustedDeviceCount: 0,
+    keyEnvelopeCount: 0,
+    latestSnapshotEnvelopeCount: 0,
     summary: "Secret Vault not observed yet: realtime daemon has not received a vault-scoped sync head",
+    deviceRegisterCommand,
+    shareCommand,
     pullCommand,
     restoreCommand,
     secretValuesExposed: false,
@@ -315,6 +347,9 @@ export function realtimeSyncHeadSignature(head: RealtimeSyncHead | null | undefi
       status: head.encryptedEnvVault?.status ?? null,
       available: head.encryptedEnvVault?.available ?? false,
       snapshotCount: head.encryptedEnvVault?.snapshotCount ?? 0,
+      trustedDeviceCount: head.encryptedEnvVault?.trustedDeviceCount ?? 0,
+      keyEnvelopeCount: head.encryptedEnvVault?.keyEnvelopeCount ?? 0,
+      latestSnapshotEnvelopeCount: head.encryptedEnvVault?.latestSnapshotEnvelopeCount ?? 0,
       id: head.encryptedEnvVault?.id ?? null,
       createdAt: head.encryptedEnvVault?.createdAt ?? null,
       fileName: head.encryptedEnvVault?.fileName ?? null,

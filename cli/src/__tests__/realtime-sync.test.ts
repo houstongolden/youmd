@@ -20,6 +20,9 @@ describe("realtime sync helpers", () => {
         available: true,
         status: "ready",
         snapshotCount: 1,
+        trustedDeviceCount: 2,
+        keyEnvelopeCount: 2,
+        latestSnapshotEnvelopeCount: 2,
         id: "snap_1",
         fileName: "env-vault.tar.enc",
         createdAt: 90,
@@ -62,12 +65,14 @@ describe("realtime sync helpers", () => {
           available: true,
           projectCount: 17,
           variableCount: 120,
+          trustedDeviceCount: 2,
+          latestSnapshotEnvelopeCount: 2,
           sourceHost: "source-mac",
           sha256: "1234567890abcdef12345678",
           secretValuesExposed: false,
         },
       }),
-    ).toContain("Secret Vault ready: 17 projects / 120 vars from source-mac");
+    ).toContain("Secret Vault ready: 17 projects / 120 vars from source-mac / 2/2 device envelopes");
   });
 
   it("describes account-backed Secret Vault states without values", () => {
@@ -76,6 +81,9 @@ describe("realtime sync helpers", () => {
         status: "ready",
         available: true,
         snapshotCount: 2,
+        trustedDeviceCount: 2,
+        keyEnvelopeCount: 3,
+        latestSnapshotEnvelopeCount: 2,
         fileName: "env-vault-2026.tar.enc",
         projectCount: 17,
         variableCount: 120,
@@ -90,7 +98,10 @@ describe("realtime sync helpers", () => {
     expect(ready.state).toBe("ready");
     expect(ready.available).toBe(true);
     expect(ready.summary).toContain("17 projects / 120 vars");
+    expect(ready.summary).toContain("2/2 device envelopes");
     expect(JSON.stringify(ready)).not.toContain(".env.local=");
+    expect(ready.deviceRegisterCommand).toContain("device-register");
+    expect(ready.shareCommand).toContain("vault share");
     expect(ready.restoreCommand).toContain("--skip-agent-auth");
   });
 

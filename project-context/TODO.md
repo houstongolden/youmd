@@ -65,7 +65,14 @@ PRD Version: 2.3
 - [x] Fix generated fresh-machine root/env paths to use `$HOME/Desktop/CODE_YOU` instead of a single-quoted literal `~/Desktop/CODE_YOU`
 - [x] Update the Machine pane and bundled `machine-bootstrap` skill so Keychain service `youmd-env-vault` setup is part of the trusted-device workflow
 - [x] Verify with Convex codegen, focused fresh-machine parity tests, CLI build, root typecheck, root production build, compiled prompt smoke, `youmd env vault` help smoke, and env-vault bash syntax
-- [ ] Run `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` with the real source vault/passphrase, then rerun the generated command on the Mac mini and verify the synced machine proof row
+- [x] Add trusted-device key escrow on top of account snapshots: `secretVaultDevices`, `secretVaultKeyEnvelopes`, `/api/v1/me/secret-vault/devices`, and `/api/v1/me/secret-vault/envelopes`
+- [x] Add CLI `youmd env vault device-register`, `device-list`, and `share`; private keys stay local under `~/.youmd/secret-vault/devices/`
+- [x] Make `youmd env vault pull --restore` unlock through the local device key envelope before restore, with Keychain/passphrase fallback only when no envelope exists
+- [x] Update CLI/web fresh-machine prompts and hosted `machine-bootstrap` so the new Mac registers first and the source Mac runs `youmd env vault share` if an envelope is missing
+- [x] Extend realtime daemon Secret Vault status with trusted-device counts and envelope counts instead of treating snapshot presence as restore readiness
+- [x] Live source-Mac proof: registered device `svd_e87e4e3e4dc843ac1f8d73d7`, validated the source passphrase against `env-vault-2026-06-18T0741Z.tar.enc`, shared `1` envelope, proved headless `pull --restore` into an empty temp root, and refreshed realtime status to `1/1 device envelopes`
+- [ ] Publish CLI `0.8.6` to npm with OTP (`npm view youmd version` is still `0.8.5`)
+- [ ] Rerun the generated Mac mini setup after `0.8.6` publish/install; confirm the Mac mini registers a second device, rerun `youmd env vault share` on this source Mac, rerun restore on the Mac mini, and verify the synced machine proof row + agent-bus reply
 
 ### 2026-06-18 — Machine setup prompt correction
 - [x] Fix Machine tab `copy setup` so it copies a Claude/Codex execution prompt, not only a raw shell command

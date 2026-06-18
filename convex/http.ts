@@ -2644,6 +2644,199 @@ http.route({
 
 // GET/POST /api/v1/me/secret-vault/env — Account-backed encrypted .env.local vault snapshots.
 http.route({
+  path: "/api/v1/me/secret-vault/devices",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+
+    try {
+      const devices = await ctx.runQuery(api.secretVault.listDevices, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      return json({
+        success: true,
+        devices: devices.map((device) => ({
+          deviceId: device.deviceId,
+          deviceName: device.deviceName,
+          hostName: device.hostName,
+          platform: device.platform,
+          publicKeyPem: device.publicKeyPem,
+          keyAlgorithm: device.keyAlgorithm,
+          trusted: device.trusted,
+          revokedAt: device.revokedAt,
+          lastSeenAt: device.lastSeenAt,
+          createdAt: device.createdAt,
+          updatedAt: device.updatedAt,
+        })),
+        secretValuesExposed: false,
+      });
+    } catch (err) {
+      return serverErrorResponse("me/secret-vault/devices", err, "Failed to load Secret Vault devices");
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/secret-vault/devices",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      const body = await request.json();
+      const deviceId = cleanOptionalString(body.deviceId, 120);
+      const deviceName = cleanOptionalString(body.deviceName, 180) ?? "trusted device";
+      const publicKeyPem = typeof body.publicKeyPem === "string" ? body.publicKeyPem.trim().slice(0, 8000) : "";
+      const keyAlgorithm = cleanOptionalString(body.keyAlgorithm, 80) ?? "rsa-oaep-sha256";
+      if (!deviceId || !/^svd_[A-Za-z0-9_-]{12,}$/.test(deviceId)) {
+        return errorResponse("invalid_request", "deviceId must be a stable Secret Vault device id", 400);
+      }
+      if (!publicKeyPem.includes("BEGIN PUBLIC KEY") || !publicKeyPem.includes("END PUBLIC KEY")) {
+        return errorResponse("invalid_request", "publicKeyPem must be an SPKI public key PEM", 400);
+      }
+      if (keyAlgorithm !== "rsa-oaep-sha256") {
+        return errorResponse("invalid_request", "Only rsa-oaep-sha256 device keys are supported", 400);
+      }
+
+      const device = await ctx.runMutation(api.secretVault.registerDevice, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        deviceId,
+        deviceName,
+        hostName: cleanOptionalString(body.hostName, 180),
+        platform: cleanOptionalString(body.platform, 80),
+        publicKeyPem,
+        keyAlgorithm,
+      });
+
+      return guard.finish(json({
+        success: true,
+        device: {
+          deviceId: device.deviceId,
+          deviceName: device.deviceName,
+          hostName: device.hostName,
+          platform: device.platform,
+          publicKeyPem: device.publicKeyPem,
+          keyAlgorithm: device.keyAlgorithm,
+          trusted: device.trusted,
+          lastSeenAt: device.lastSeenAt,
+          createdAt: device.createdAt,
+          updatedAt: device.updatedAt,
+        },
+        secretValuesExposed: false,
+      }, 201));
+    } catch (err) {
+      return serverErrorResponse("me/secret-vault/devices", err, "Failed to register Secret Vault device");
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/secret-vault/envelopes",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+
+    const url = new URL(request.url);
+    const deviceId = cleanOptionalString(url.searchParams.get("deviceId"), 120);
+    if (!deviceId) {
+      return errorResponse("invalid_request", "deviceId is required", 400);
+    }
+
+    try {
+      const result = await ctx.runQuery(api.secretVault.getLatestKeyEnvelopeForDevice, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        deviceId,
+      });
+      if (!result) {
+        return errorResponse("not_found", "No Secret Vault key envelope exists for this device yet", 404);
+      }
+      return json({
+        success: true,
+        snapshot: omitSecretVaultManifest(result.snapshot),
+        envelope: {
+          deviceId: result.envelope.deviceId,
+          snapshotId: result.envelope.snapshotId,
+          wrappedPassphraseBase64: result.envelope.wrappedPassphraseBase64,
+          wrapAlgorithm: result.envelope.wrapAlgorithm,
+          sourceHost: result.envelope.sourceHost,
+          createdAt: result.envelope.createdAt,
+          updatedAt: result.envelope.updatedAt,
+        },
+        secretValuesExposed: false,
+      });
+    } catch (err) {
+      return serverErrorResponse("me/secret-vault/envelopes", err, "Failed to load Secret Vault key envelope");
+    }
+  }),
+});
+
+http.route({
+  path: "/api/v1/me/secret-vault/envelopes",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "vault");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      const body = await request.json();
+      const snapshotId = cleanOptionalString(body.snapshotId, 120);
+      const deviceId = cleanOptionalString(body.deviceId, 120);
+      const wrappedPassphraseBase64 = cleanOptionalString(body.wrappedPassphraseBase64, 12000);
+      const wrapAlgorithm = cleanOptionalString(body.wrapAlgorithm, 80) ?? "rsa-oaep-sha256";
+      if (!snapshotId || !deviceId || !wrappedPassphraseBase64) {
+        return errorResponse("invalid_request", "snapshotId, deviceId, and wrappedPassphraseBase64 are required", 400);
+      }
+      if (wrapAlgorithm !== "rsa-oaep-sha256") {
+        return errorResponse("invalid_request", "Only rsa-oaep-sha256 key envelopes are supported", 400);
+      }
+
+      const envelope = await ctx.runMutation(api.secretVault.upsertKeyEnvelope, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        snapshotId: snapshotId as Id<"secretVaultSnapshots">,
+        deviceId,
+        wrappedPassphraseBase64,
+        wrapAlgorithm,
+        sourceHost: cleanOptionalString(body.sourceHost, 180),
+      });
+
+      return guard.finish(json({
+        success: true,
+        envelope: envelope ? {
+          deviceId: envelope.deviceId,
+          snapshotId: envelope.snapshotId,
+          wrapAlgorithm: envelope.wrapAlgorithm,
+          sourceHost: envelope.sourceHost,
+          createdAt: envelope.createdAt,
+          updatedAt: envelope.updatedAt,
+        } : null,
+        secretValuesExposed: false,
+      }, 201));
+    } catch (err) {
+      return serverErrorResponse("me/secret-vault/envelopes", err, "Failed to save Secret Vault key envelope");
+    }
+  }),
+});
+
+http.route({
   path: "/api/v1/me/secret-vault/env",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
@@ -4576,6 +4769,8 @@ http.route({ path: "/api/v1/me/portfolio/tasks/update", method: "OPTIONS", handl
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/realtime-sync/session", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/agent-bus/messages", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/secret-vault/devices", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/secret-vault/envelopes", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/secret-vault/env", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/sources", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/analytics", method: "OPTIONS", handler: corsPreflight });

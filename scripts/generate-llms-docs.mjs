@@ -28,7 +28,7 @@ function parseReferenceIntelligence() {
   const source = read(REFERENCE_LATEST_FILE);
   const repos = [];
   const sectionRegex =
-    /## (GStack|GBrain|Agent Scripts|The Library)\n\n- URL: ([^\n]+)\n- Local path: `([^`]+)`\n- Branch: `([^`]+)`\n- Latest commit: `([^`]+)`\n- Mode: ([^\n]+)/g;
+    /## (GStack|GBrain|Agent Scripts|The Library)\n\n- URL: ([^\n]+)\n- Local path: `([^`]+)`\n- Branch: `([^`]+)`\n- Latest commit: `([^`]+)`\n(?:- Latest upstream activity: [^\n]+\n)?- Mode: ([^\n]+)/g;
   let match;
   while ((match = sectionRegex.exec(source))) {
     repos.push({

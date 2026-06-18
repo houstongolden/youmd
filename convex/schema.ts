@@ -975,6 +975,37 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_kind_createdAt", ["userId", "kind", "createdAt"]),
 
+  secretVaultDevices: defineTable({
+    userId: v.id("users"),
+    deviceId: v.string(),
+    deviceName: v.string(),
+    hostName: v.optional(v.string()),
+    platform: v.optional(v.string()),
+    publicKeyPem: v.string(),
+    keyAlgorithm: v.string(), // "rsa-oaep-sha256"
+    trusted: v.boolean(),
+    revokedAt: v.optional(v.number()),
+    lastSeenAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deviceId", ["userId", "deviceId"]),
+
+  secretVaultKeyEnvelopes: defineTable({
+    userId: v.id("users"),
+    snapshotId: v.id("secretVaultSnapshots"),
+    deviceId: v.string(),
+    wrappedPassphraseBase64: v.string(),
+    wrapAlgorithm: v.string(), // "rsa-oaep-sha256"
+    sourceHost: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_deviceId", ["userId", "deviceId"])
+    .index("by_userId_snapshotId_deviceId", ["userId", "snapshotId", "deviceId"]),
+
   pipelineJobs: defineTable({
     userId: v.id("users"),
     sourceId: v.optional(v.id("sources")),

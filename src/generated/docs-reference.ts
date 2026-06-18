@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "77565d38e5a4f2bc62bc9e4119f3f7e266c17f930f91bc0e7442a8bdad3f5e29",
+  "sourceHash": "abd88e7acd38b1d4ff6669739137c0c919d0111c90b3bfe2afb2f49622be6ee3",
   "cli": {
     "version": "0.8.6"
   },
   "counts": {
-    "endpoints": 98,
+    "endpoints": 102,
     "internalRoutes": 8,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 31,
-    "convexRoutes": 79,
+    "convexRoutes": 83,
     "nextRoutes": 27
   },
   "endpoints": [
@@ -398,7 +398,7 @@ export const docsReference = {
     },
     {
       "method": "GET",
-      "path": "/api/v1/me/secret-vault/env",
+      "path": "/api/v1/me/secret-vault/devices",
       "category": "Account",
       "auth": "Bearer API key",
       "source": "convex",
@@ -409,7 +409,51 @@ export const docsReference = {
     },
     {
       "method": "POST",
+      "path": "/api/v1/me/secret-vault/devices",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Convex HTTP action",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/me/secret-vault/env",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Convex HTTP action",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/secret-vault/env",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Convex HTTP action",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/secret-vault/envelopes",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Convex HTTP action",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/secret-vault/envelopes",
       "category": "Account",
       "auth": "Bearer API key",
       "source": "convex",
