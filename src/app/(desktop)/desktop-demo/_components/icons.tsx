@@ -33,6 +33,8 @@ import {
   Circle,
   GitBranch,
   Boxes,
+  Sun,
+  Moon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -67,6 +69,8 @@ const MAP = {
   dot: Circle,
   branch: GitBranch,
   stack: Boxes,
+  sun: Sun,
+  moon: Moon,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof MAP;

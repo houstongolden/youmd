@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo light/dark theme switch
+
+### feat(web): visible theme toggle for `/desktop-demo`
+- Added a discoverable light/dark switch in the sidebar footer (sun/moon, "Light mode" / "Dark mode"), backed by a `useTheme` hook that toggles the `.light` class and persists `localStorage.theme` exactly like the rest of the site's pre-hydration theme bootstrap.
+- Theme state lives in `DesktopShell` and is shared by both the sidebar toggle and the ⌘K palette "Toggle light / dark theme" action, so they stay in sync.
+- Verified the full demo in light mode (warm off-white canvas, white panels, burnt-orange accent preserved across nav, chips, metrics, and project dots) — the design system's light variant holds up across every view. Toggle verified dark → light → dark; TypeScript + radius lint pass; dev serves HTTP 200.
+- Note: this work and future desktop-demo polish lives on a new branch / PR (`claude/desktop-demo-polish`) since the original demo PR (#23) was already merged.
+
 ## 2026-06-18 — Desktop demo ⌘K command palette
 
 ### feat(web): real command palette for `/desktop-demo`

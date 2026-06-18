@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, type ViewId } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
 import { useSwipe } from "../_lib/useSwipe";
+import { useTheme } from "../_lib/useTheme";
 import { cn } from "../_lib/cn";
 import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
@@ -95,6 +96,7 @@ export function DesktopShell() {
   const [mobilePane, setMobilePane] = useState<"chat" | "view">("chat");
   const [editorFile, setEditorFile] = useState("identity/you.md");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const navigate = (v: ViewId) => {
     setActiveView(v);
@@ -167,7 +169,7 @@ export function DesktopShell() {
         group: "Actions",
         icon: "sparkles",
         keywords: "appearance mode color",
-        run: () => document.documentElement.classList.toggle("light"),
+        run: toggleTheme,
       },
       {
         id: "action:focus-chat",
@@ -235,7 +237,13 @@ export function DesktopShell() {
                 drawerOpen ? "translate-x-0" : "-translate-x-full",
               )}
             >
-              <Sidebar collapsed={false} activeView={activeView} onNavigate={navigate} />
+              <Sidebar
+                collapsed={false}
+                activeView={activeView}
+                onNavigate={navigate}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+              />
             </div>
 
             {/* Single-column workspace */}
@@ -259,7 +267,13 @@ export function DesktopShell() {
           </>
         ) : (
           <>
-            <Sidebar collapsed={sidebarCollapsed} activeView={activeView} onNavigate={navigate} />
+            <Sidebar
+              collapsed={sidebarCollapsed}
+              activeView={activeView}
+              onNavigate={navigate}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+            />
 
             {chatFull ? (
               // Full-chat: chat fills the workspace, summary widget floats.
