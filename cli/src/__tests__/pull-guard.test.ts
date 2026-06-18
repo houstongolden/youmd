@@ -191,6 +191,46 @@ describe("pull dirty-check guard", () => {
     expect(lc.lastPulledHash).not.toBe(DRAFT_HASH);
   });
 
+  it("prefers the authenticated published latest bundle over a stale public profile", async () => {
+    setupCleanLocalBundle();
+    const liveJson = {
+      schema: "you-md/v1",
+      identity: { name: "Fresh Live Person", headline: "published via /me" },
+    };
+    const liveMd = "# Fresh Live Person\n\npublished via /me\n";
+    const liveHash = hash.computeContentHash(liveJson, liveMd);
+    vi.mocked(api.getMe).mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        latestBundle: {
+          version: 4,
+          isPublished: true,
+          createdAt: 0,
+          contentHash: liveHash,
+          youJson: liveJson,
+          youMd: liveMd,
+        },
+        publishedBundle: { version: 4, contentHash: liveHash },
+        bundleCount: 4,
+      },
+    });
+    vi.mocked(api.getPublicProfile).mockResolvedValue({
+      youJson: REMOTE_YOU_JSON,
+      youMd: REMOTE_YOU_MD,
+      username: "tester",
+    });
+
+    const result = await pull.pullCommand({});
+
+    expect(result).toBe("ok");
+    expect(api.getPublicProfile).not.toHaveBeenCalled();
+    const youJson = JSON.parse(fs.readFileSync(path.join(bundleDir, "you.json"), "utf-8"));
+    expect(youJson.identity.name).toBe("Fresh Live Person");
+    const lc = JSON.parse(fs.readFileSync(path.join(bundleDir, "config.json"), "utf-8"));
+    expect(lc.lastPulledHash).toBe(liveHash);
+  });
+
   it("a pull immediately after a pull is considered clean", async () => {
     setupCleanLocalBundle();
 

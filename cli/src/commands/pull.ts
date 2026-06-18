@@ -95,13 +95,33 @@ export async function pullCommand(options: { force?: boolean; local?: boolean } 
 
   console.log(chalk.dim(`  pulling profile for @${username}...`));
 
-  // Fetch the published profile from the API
-  const profile = await getPublicProfile(username);
+  let youJsonSource: { youJson: unknown; youMd?: string | null } | null = null;
+  let initialMeRes: Awaited<ReturnType<typeof getMe>> | null = null;
+
+  // Prefer the authenticated latest bundle when it is already published. The
+  // public profile endpoint can lag behind the owner bundle endpoint, and
+  // `status` also uses /me, so using the same source keeps pull/sync/status
+  // from disagreeing immediately after publish.
+  try {
+    initialMeRes = await getMe();
+    const latest = initialMeRes.ok ? initialMeRes.data.latestBundle : null;
+    if (latest?.isPublished && latest.youJson) {
+      youJsonSource = {
+        youJson: latest.youJson,
+        youMd: latest.youMd ?? null,
+      };
+      console.log(chalk.dim(`  found live bundle v${latest.version}`));
+    }
+  } catch {
+    // Fall back to the public profile endpoint below.
+  }
+
+  // Fetch the public profile from the API when /me did not already provide
+  // the currently-published bundle.
+  const profile = youJsonSource ? null : await getPublicProfile(username);
 
   // If public profile has no youJson, fall back to /me endpoint (latest bundle)
-  let youJsonSource: { youJson: unknown; youMd?: string | null } | null = null;
-
-  if (profile && profile.youJson) {
+  if (!youJsonSource && profile && profile.youJson) {
     youJsonSource = { youJson: profile.youJson, youMd: profile.youMd };
 
     const avatarUrl = ((profile.youJson as Record<string, unknown>)._profile as Record<string, unknown> | undefined)?.avatarUrl;
@@ -110,10 +130,10 @@ export async function pullCommand(options: { force?: boolean; local?: boolean } 
       nextConfig.avatarUrl = avatarUrl;
       writeGlobalConfig(nextConfig);
     }
-  } else {
+  } else if (!youJsonSource) {
     console.log(chalk.dim("  no published profile found, checking your latest bundle..."));
     try {
-      const meRes = await getMe();
+      const meRes = initialMeRes ?? await getMe();
       if (meRes.ok && meRes.data?.latestBundle?.youJson) {
         youJsonSource = {
           youJson: meRes.data.latestBundle.youJson,
@@ -238,7 +258,7 @@ export async function pullCommand(options: { force?: boolean; local?: boolean } 
 
   // Track the remote hash we pulled so push/publish can detect divergence
   try {
-    const meRes = await getMe();
+    const meRes = initialMeRes ?? await getMe();
     if (meRes.ok) {
       const remoteVersion = meRes.data.publishedBundle?.version || meRes.data.latestBundle?.version || 0;
       // Record the hash of what we actually wrote to disk — NOT the newest
@@ -251,7 +271,7 @@ export async function pullCommand(options: { force?: boolean; local?: boolean } 
       writeBundleConfig(bundleDir, lc);
 
       const draftHash = meRes.data.latestBundle?.contentHash;
-      if (draftHash && draftHash !== writtenHash) {
+      if (meRes.data.latestBundle && !meRes.data.latestBundle.isPublished && draftHash && draftHash !== writtenHash) {
         console.log(chalk.dim("  note: a newer unpublished draft exists on you.md — pushing will overwrite it"));
       }
 

@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Portfolio graph hydrate and sync hash repair
+
+### fix(cli): keep pull/status in sync after publishing the latest bundle
+- Re-ran the real Portfolio Graph hydrate from `/Users/houstongolden/Desktop/CODE_2025`: `131` auditor projects scanned, `30` local hydration candidates, `40` GitHub tracked rows updated, `30` local audit rows upserted, and `9` reusable patterns refreshed from `8240` scanned files.
+- Re-verified the new-computer setup gate from the hydrated graph: 30-day first pass now selects `15` active + Top Priority/Focusing projects, while the explicit 90-day expansion selects `17`.
+- Published the latest owner bundle v137, then fixed `youmd pull` so it prefers the authenticated published latest bundle from `/api/v1/me` over a potentially stale public profile response.
+- Verification: focused CLI pull tests pass (`18`), CLI build passes, and live `node cli/dist/index.js pull --force && node cli/dist/index.js status` now reports local and remote hash `33b6cc43a67d` with status `in sync`.
+
 ## 2026-06-17 — Fresh-machine command refreshed
 
 ### chore(machine): restore immediate `/new computer` clipboard handoff

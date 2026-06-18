@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-17
+Last Updated: 2026-06-18
 PRD Version: 2.3
 
 ---
@@ -65,6 +65,8 @@ PRD Version: 2.3
 - [x] Fix the actual web-shell fresh-machine artifact copy path: fresh-machine command blocks now show a visible `copy command` control, keep the 7k+ setup command in a bounded scroll area, and authenticated in-app Browser QA clicked the real button and verified the clipboard contains the full redacted command shape (`ym_...` key, `~/Desktop/CODE_YOU`, `YOUMD_REQUIRE_ENV_VAULT=1`, install curl, `--recent-only`, 30-day first pass, interactive 90-day expansion prompt) without `.env.local=` or `sk-...` patterns
 - [x] Refresh the shared agent layer and direct-copy a fresh setup prompt outside the flaky browser clipboard path: `.agent-shared` was already up to date, shared mirrors synced, `youmd sync` pulled the latest remote draft and re-rendered all 10 skills, then a new scoped `ym_...` bootstrap key was minted through the authenticated API and the full 10,153-character fresh-machine prompt was placed on the macOS clipboard with redacted proof
 - [x] Fix local-agent Portfolio Graph hydration for new-machine agents: `youmd://portfolio/graph` and `get_agent_brief` now load the persisted authenticated graph instead of the static four-project fallback, `get_project_context` returns persisted project-scoped graph slices, and live MCP proof showed `56` projects / `40` tracked repos plus a ready `bamfaiapp` slice
+- [x] Re-run the local/GitHub Portfolio Graph hydrate from the real active code root and verify the current fresh-machine setup gate: `131` auditor projects scanned, `30` local candidates, `40` GitHub rows updated, `30` local rows upserted, `9` reusable patterns refreshed, 30-day setup selects `15` active/focused projects, and 90-day expansion selects `17`
+- [x] Fix CLI pull/status stale-sync mismatch after publishing v137: `youmd pull` now prefers the authenticated published latest bundle when available, and live status shows local/remote `33b6cc43a67d` `in sync`
 - [x] Add macOS Keychain passphrase pickup to generated env-vault restores: fresh-machine CLI/web commands try Keychain service `youmd-env-vault` for `ENV_VAULT_PASS` before prompting, covered by CLI/web parity tests
 - [x] Verify the real encrypted env vault at `~/Desktop/youmd-env-vault/env-vault-2026-06-17T2317Z.tar.enc`: permissions tightened to `600`, Keychain service `youmd-env-vault` supplies the passphrase, list mode shows `17` `.env.local` files plus `3` agent-auth files by names/counts only, and restore proof writes the env files into a disposable root without printing secret values
 - [x] Add fresh-machine env-vault auto-detection so pasted setup commands use the newest `~/Desktop/youmd-env-vault/env-vault-*` file if `YOUMD_ENV_VAULT` is not manually supplied
