@@ -16,6 +16,7 @@ PRD Version: 2.3
 - [x] Update and redeploy/reseed the hosted `machine-bootstrap` skill so production skill installs include the agent-bus workflow
 - [x] Harden generated fresh-machine roots so `$HOME/Desktop/CODE_YOU` expands correctly instead of becoming a literal `$HOME` directory
 - [x] Verify live source-Mac message send/inbox, websocket materialization, `secretValuesExposed: false`, and no raw `ym_` / `sk-` / env-key patterns in local status JSON
+- [x] Patch Mac mini stale-install regression: setup now source-installs from GitHub main and hard-gates `youmd >= 0.8.6` before login/vault/agent-bus work
 - [x] Bump CLI to `0.8.6`
 - [ ] Houston publishes `youmd@0.8.6` to npm with OTP
 - [ ] Mac mini reruns the setup prompt on `0.8.6`, sends a `machine-sync` message back, and both Macs show the same agent-bus inbox/status

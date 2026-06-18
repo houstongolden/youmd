@@ -2,13 +2,14 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 113
-**Total messages:** 524
+**Total sessions:** 114
+**Total messages:** 525
 **Last updated:** 2026-06-18
 
 ## Table of Contents
 
 1. [2026-06-18 (realtime-agent-bus-two-mac-handshake)](#session-2026-06-18-realtime-agent-bus-two-mac-handshake) --- 1 message
+1. [2026-06-18 (mac-mini-vault-stale-cli-report)](#session-2026-06-18-mac-mini-vault-stale-cli-report) --- 1 message
 1. [2026-06-18 (desktop-demo-frontend)](#session-2026-06-18-desktop-demo-frontend) --- 1 message
 1. [2026-06-18 (secret-vault-realtime-daemon-status)](#session-2026-06-18-secret-vault-realtime-daemon-status) --- 1 message
 1. [2026-06-18 (realtime-trusted-device-sync)](#session-2026-06-18-realtime-trusted-device-sync) --- 1 message
@@ -234,6 +235,13 @@ _Manual archive note: current Codex desktop session JSONL was unavailable in `~/
 >
 > ## My request for Codex:
 > ok pull down from remote main - and also im publishing the cli and gonna run the mac mini prompt again and report back - my new mini goal for the night is to ensure that these two macs can send and receive information/context/content/data to each other over our real-time protocol - i want to see my agents sending messages to eachother and staying in sync
+
+---
+
+## Session: 2026-06-18 (mac-mini-vault-stale-cli-report)
+
+**2026-06-18 10:00:00 UTC**
+> Houston reported the updated Mac mini setup run was still chasing the vault. Claude found no `youmd-env-vault` Keychain passphrase, checked the installed CLI, saw `youmd --version` was still `0.8.2`, launched the full setup, and later reported prereqs/login/sync/daemons/GitHub/skills/MCP/project clone were OK, but env restore was blocked by local vault decryption: account Secret Vault pull appeared empty, local/iCloud vault `env-vault-2026-06-18T0741Z.tar.enc` was found, and decrypt failed because there was no passphrase in Keychain/no TTY. Claude recommended the one human-gated command to store the vault passphrase in macOS Keychain service `youmd-env-vault`, then rerun restore headlessly.
 
 ---
 

@@ -35,6 +35,26 @@ prepend_path_once() {
   esac
 }
 
+version_at_least() {
+  local current="\${1#v}"
+  local required="\${2#v}"
+  local IFS=.
+  local current_parts=($current)
+  local required_parts=($required)
+  local i current_value required_value
+  for i in 0 1 2; do
+    current_value="\${current_parts[$i]:-0}"
+    required_value="\${required_parts[$i]:-0}"
+    current_value="\${current_value%%[^0-9]*}"
+    required_value="\${required_value%%[^0-9]*}"
+    current_value="\${current_value:-0}"
+    required_value="\${required_value:-0}"
+    if ((10#$current_value > 10#$required_value)); then return 0; fi
+    if ((10#$current_value < 10#$required_value)); then return 1; fi
+  done
+  return 0
+}
+
 can_write_npm_global_root() {
   GLOBAL_ROOT="$(npm root -g 2>/dev/null || true)"
   if [ -z "$GLOBAL_ROOT" ]; then
@@ -160,6 +180,17 @@ if ! command -v youmd >/dev/null 2>&1; then
   exit 0
 fi
 
+INSTALLED_VERSION="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+if [ -z "$INSTALLED_VERSION" ] || ! version_at_least "$INSTALLED_VERSION" "$CLI_VERSION"; then
+  echo ""
+  echo "Installed You.md runtime is too old: \${INSTALLED_VERSION:-unknown}"
+  echo "Required runtime is: $CLI_VERSION or newer"
+  echo "The npm package may still be behind. Re-run with the source channel after this commit is on main:"
+  echo "  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash"
+  echo ""
+  exit 1
+fi
+
 mkdir -p "$YOUMD_BIN_DIR"
 
 cat > "$YOUMD_BIN_DIR/youmd-auto-upgrade" <<'AUTOUPGRADE'
@@ -189,7 +220,7 @@ fi
 LOG_FILE="/tmp/youmd-auto-upgrade.log"
 PREV_VERSION="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
 
-curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-npm}" bash >"$LOG_FILE" 2>&1 || {
+curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-source}" bash >"$LOG_FILE" 2>&1 || {
   if [ "\${1:-}" != "--quiet" ]; then
     cat "$LOG_FILE"
   fi

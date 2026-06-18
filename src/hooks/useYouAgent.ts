@@ -148,10 +148,47 @@ DAYS="\${YOUMD_ACTIVE_DAYS:-30}"
 EXPAND_DAYS="\${YOUMD_EXPAND_ACTIVE_DAYS:-90}"
 LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
 HYDRATE_TIMEOUT="\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"
+MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.6}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 node_major() { node -e 'console.log(process.versions.node.split(".")[0])' 2>/dev/null || echo 0; }
+version_at_least() {
+  local current="\${1#v}"
+  local required="\${2#v}"
+  local IFS=.
+  local current_parts=($current)
+  local required_parts=($required)
+  local i current_value required_value
+  for i in 0 1 2; do
+    current_value="\${current_parts[$i]:-0}"
+    required_value="\${required_parts[$i]:-0}"
+    current_value="\${current_value%%[^0-9]*}"
+    required_value="\${required_value%%[^0-9]*}"
+    current_value="\${current_value:-0}"
+    required_value="\${required_value:-0}"
+    if ((10#$current_value > 10#$required_value)); then return 0; fi
+    if ((10#$current_value < 10#$required_value)); then return 1; fi
+  done
+  return 0
+}
+ensure_youmd_min_version() {
+  local installed
+  installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+  echo "[you.md] installed version: \${installed:-unknown}"
+  if [ -n "$installed" ] && version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
+    return 0
+  fi
+  echo "[you.md] installed youmd is older than required \${MIN_YOUMD_VERSION}; forcing GitHub source install"
+  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash
+  export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+  echo "[you.md] installed version after forced source install: \${installed:-unknown}"
+  if [ -z "$installed" ] || ! version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
+    echo "[you.md] youmd \${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, and fresh-machine restore. npm latest may still be behind; rerun after this commit is deployed or install from GitHub main." >&2
+    exit 1
+  fi
+}
 run_with_timeout() {
   seconds="$1"
   shift
@@ -234,13 +271,14 @@ ensure_github_auth() {
 
 bootstrap_prereqs
 
-echo "[you.md] installing runtime"
-curl -fsSL https://you.md/install.sh | bash
+echo "[you.md] installing runtime from GitHub main"
+curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash
 export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 if ! command_exists youmd; then
   echo "[you.md] youmd was installed but is not on PATH. Try a new Terminal, then rerun this command." >&2
   exit 1
 fi
+ensure_youmd_min_version
 
 if [ -n "\${YOUMD_API_KEY:-}" ]; then
   echo "[you.md] logging in with bootstrap key"

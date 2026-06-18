@@ -9,6 +9,7 @@
 - The Machine pane now surfaces `realtime agent bus` near the top of the Machine tab, including state, latest message time, inbox path, send command, and recent safe messages.
 - Updated and redeployed the hosted `machine-bootstrap` skill seed so the production skill catalog includes `youmd agent status`, `youmd agent inbox`, `youmd agent send`, and `machine-sync` guidance.
 - Hardened fresh-machine root generation so a literal `$HOME/Desktop/CODE_YOU` argument expands correctly instead of creating a literal `$HOME` directory.
+- Follow-up from the Mac mini run: fresh-machine setup now forces `YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main` and refuses to continue unless `youmd` is at least `0.8.6`, preventing stale npm installs such as `0.8.2` from attempting Secret Vault restore with missing commands/flags. The public `install.sh` route now has the same version gate and auto-upgrade defaults to source.
 - Bumped CLI package to `0.8.6`; Houston needs to publish `youmd@0.8.6` to npm before the Mac mini gets these commands through npm fallback / `npx youmd@latest`.
 - Verification: CLI build, root TypeScript, full production build, focused machine-bootstrap prompt tests, Convex production deploy, hosted skill reseed/read-back, live `youmd agent send`/`inbox`, live websocket materialization showing `2 agent msgs`, and secret-leak scans of the local status/inbox JSON all passed.
 
