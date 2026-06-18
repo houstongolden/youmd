@@ -4,6 +4,28 @@ Last Updated: 2026-06-18
 
 ---
 
+## 2026-06-18 — Native desktop app design demo (frontend only)
+
+### 138. Build a private, hosted, non-functional desktop-app frontend at `/desktop-demo` to lock the new UI/UX
+**Status:** DONE pending Houston verification (frontend-only design demo; intentionally non-functional)
+**Verified:** PARTIAL (production `next build` compiled + TypeScript passed for all new files; `scripts/check-radius.mjs` passes; dev server serves `/desktop-demo` HTTP 200 with expected content and no runtime errors. Visual screenshot proof blocked — Playwright browser binary download is disallowed by the sandbox network policy.)
+**Production Verified:** PENDING (needs Vercel deploy + Houston eyes on `https://www.you.md/desktop-demo`)
+**Source:** 2026-06-18 — Houston: "lets actually build out a private demo web version of the new desktop app front end only just to lock in the whole UI/UX ... just host the nonfunctional front end for this on /desktop-demo for now bc it will be much faster to iterate on the design"
+**Actionable Scope (every part of the message):**
+1. New consumer-friendly "second brain" surface, lighter than the CLI shell but rooted in the aesthetic (Notion/Obsidian/Claude/ChatGPT/Lovable feel). **DONE.**
+2. Host the non-functional frontend at `/desktop-demo`. **DONE** (`src/app/(desktop)/desktop-demo`).
+3. Zen, minimal, fully hideable/collapsible full-height left menu (project + file explorer / nav). **DONE** (collapsible `Sidebar`).
+4. Main area = Notion/Obsidian-style rich markdown reader/editor + custom view panes (apps, tasks, home/dashboard). **DONE** (Home, Notes editor, Tasks, Connections, Sub-agents views).
+5. Built-in interconnected Obsidian-style node graph across projects/skills/ideas/notes/agents. **DONE** (`GraphView`, SVG, hover-trace).
+6. Mostly agent-controlled; "clone yourself" by spawning YOU sub-agents. **DONE** (`AgentsView` spawn flow with progress steps; chat offers to spawn).
+7. Full-height clean agentic chat; toggle between full-chat (no main area) and 1/3-width chat + main area. **DONE** (split vs full-chat modes).
+8. Codex-style sticky AI summary widget top-right in full-chat. **DONE** (`SummaryWidget`).
+9. Toggle to shell/terminal mode running Claude Code / Codex / any CLI agent in-app (Notion × Conductor / Obsidian × Cmux). **DONE** (`TerminalView` with claude/codex/shell tabs).
+10. Global principle: most powerful tool, most minimal product surface area. **APPLIED** throughout.
+**Notes:** Stack recommendation for the real native build (Tauri vs RN etc.) was requested — to be answered in chat, not in code. Demo deliberately uses mock data and canned interactions.
+
+---
+
 ## 2026-06-17 — Fresh-computer You.md + active-project setup
 
 ### 137. Generate one-command setup for a brand-new computer and prove it on a real clean host
