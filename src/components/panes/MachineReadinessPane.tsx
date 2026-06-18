@@ -192,14 +192,14 @@ function MachineSetupHero({
           Copy one Claude/Codex setup prompt into a blank Mac to rebuild this working context.
         </h2>
         <p className="mt-3 max-w-4xl font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">
-          The prompt tells the local agent exactly what to do, includes the curl runtime command, authenticates, pulls your identity bundle, syncs shared skills/stacks and MCP host config, creates {FRESH_MACHINE_BOOTSTRAP_ROOT}, pulls encrypted env files from You.md Secret Vault or local fallback, clones active focused projects, writes a machine proof, and starts resident sync.
+          The prompt tells the local agent exactly what to do, includes the curl runtime command, authenticates, pulls your identity bundle, syncs shared skills/stacks and MCP host config, creates {FRESH_MACHINE_BOOTSTRAP_ROOT}, restores encrypted env files through a trusted-device Secret Vault envelope or local fallback, clones active focused projects, writes a machine proof, and starts resident sync.
         </p>
 
         <div className="mt-4 grid gap-3 lg:grid-cols-3">
           {[
             ["30d first", `${FRESH_MACHINE_BOOTSTRAP_DAYS}-day active + Top Priority/Focusing project pass`],
             ["90d optional", `asks before expanding to ${FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS}-day active project set`],
-            ["secret vault", "pulls the encrypted account vault first, then falls back to local/iCloud files"],
+            ["secret vault", "registers this Mac, unlocks the encrypted snapshot with its device envelope, then falls back to local/iCloud files"],
           ].map(([label, detail]) => (
             <div key={label} className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg-raised))]/35 px-3 py-2">
               <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--accent))]">{label}</div>
@@ -551,7 +551,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                   <BooleanCell label="env backup script" value={report.envVault.backupScriptPresent} />
                   <BooleanCell label="env restore script" value={report.envVault.restoreScriptPresent} />
                   <BooleanCell label="private vault key" value={report.envVault.privateVaultKeyPresent} />
-                  <BooleanCell label="account vault" value={report.envVault.accountSnapshotStatus === "ready"} />
+                  <BooleanCell label="vault snapshot" value={report.envVault.accountSnapshotStatus === "ready"} />
                 </div>
                 <p className="mt-3 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
                   launcher: {report.mcp.expectedLauncher}. secret values exposed: {String(report.envVault.secretValuesExposed)}.
@@ -566,7 +566,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                     </span>
                   </div>
                   <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
-                    {report.envVault.accountSnapshotSummary ?? "realtime daemon has not published account Secret Vault status yet"}
+                    {report.envVault.accountSnapshotSummary ?? "realtime daemon has not published trusted-device Secret Vault status yet"}
                   </p>
                   {report.envVault.latestAccountSnapshot && (
                     <div className="mt-2 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-45">
