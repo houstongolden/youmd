@@ -2,6 +2,7 @@ import * as child_process from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { readRealtimeSyncStatusFile } from "./realtime-sync";
 
 export interface YoumdDaemon {
   label: string;
@@ -19,6 +20,9 @@ export interface YoumdDaemonHealth extends YoumdDaemon {
   lastErrorLine?: string;
   lastActivityAt?: string;
   warning?: string;
+  statusSummary?: string;
+  secretVaultState?: string;
+  secretVaultSummary?: string;
 }
 
 export const YOUMD_DAEMONS: YoumdDaemon[] = [
@@ -143,6 +147,18 @@ export function getDaemonHealth(): YoumdDaemonHealth[] {
       lastErrorLine,
       lastActivityAt: newestMtimeIso(logs),
       warning,
+      ...(daemon.label === "com.youmd.realtime-sync"
+        ? (() => {
+            const status = readRealtimeSyncStatusFile();
+            return status
+              ? {
+                  statusSummary: status.summary,
+                  secretVaultState: status.secretVault.state,
+                  secretVaultSummary: status.secretVault.summary,
+                }
+              : {};
+          })()
+        : {}),
     };
   });
 }

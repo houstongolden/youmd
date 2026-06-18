@@ -10,23 +10,26 @@ PRD Version: 2.3
 ### 2026-06-18 — Realtime trusted-device sync daemon
 - [x] Add a short-lived, API-key-minted realtime sync session for trusted local daemons
 - [x] Add secret-safe Convex sync head data for identity bundle hashes, installed skills, portfolio graph state, repo mirror state, GitHub mirror state, machine proofs, and encrypted env-vault metadata
+- [x] Add account-backed Secret Vault snapshot readiness into the realtime sync head and local daemon status file
+- [x] Push a fresh encrypted account Secret Vault snapshot from this source Mac and verify realtime status reports it as ready
 - [x] Add CLI `youmd sync --live --daemon` using Convex websocket subscriptions
 - [x] Materialize realtime updates locally by pulling identity, re-rendering installed skills, and triggering bounded shared stack/project-context syncs
 - [x] Add `com.youmd.realtime-sync` launchd daemon and show it as `live websocket` in CLI status, daemon status, and the Machine pane
 - [x] Deploy Convex production and smoke the websocket sync head without exposing secrets
 - [x] Install/reload local daemons on this Mac and verify the realtime daemon activity log
-- [x] Bump CLI to `0.8.4` for npm publish
-- [ ] Publish CLI `0.8.4` to npm with OTP so new machines and `npx youmd@latest` get the realtime daemon
-- [ ] Verify the Mac mini fresh-machine setup after `0.8.4` publish and confirm its daemon status shows `realtime brain / live websocket`
+- [x] Bump CLI to `0.8.5` for npm publish
+- [ ] Publish CLI `0.8.5` to npm with OTP so new machines and `npx youmd@latest` get the realtime daemon + Secret Vault status path
+- [ ] Verify the Mac mini fresh-machine setup after `0.8.5` publish and confirm its daemon status shows `realtime brain / live websocket` plus Secret Vault ready/missing state
 
 ### 2026-06-18 — You.md Secret Vault trusted-device env sync
 - [x] Teach generated fresh-machine prompts and the bundled `machine-bootstrap` ystack skill that Claude/Codex should use `youmd` + `you` behind the scenes for status/sync/skill/vault/portfolio/verify work and only interrupt Houston for real auth/passphrase/OTP/permission/90-day-expansion gates
 - [x] Update shared `.agent-shared` `/machine-sync` so Claude/Codex/Cursor/Pi skill mirrors use You.md Secret Vault as the primary trusted-device env path
-- [x] Bump CLI package to `0.8.4` as the next npm publish target for the machine-bootstrap/Secret Vault/realtime sync updates
+- [x] Bump CLI package to `0.8.5` as the next npm publish target for the machine-bootstrap/Secret Vault/realtime sync updates
 - [x] Add owner-gated Convex `secretVaultSnapshots` records and `GET/POST /api/v1/me/secret-vault/env` for encrypted env-vault snapshots
 - [x] Require the new `vault` API key scope for Secret Vault upload/list/download
 - [x] Add CLI `youmd env vault push`, `youmd env vault list`, and `youmd env vault pull --restore`
 - [x] Update CLI/web fresh-machine setup to pull You.md Secret Vault first, then fall back to local/iCloud `youmd-env-vault` files
+- [x] Verify account Secret Vault contains the source-Mac encrypted snapshot (`16` projects / `451` variables) without returning manifest text, archive bytes, or secret values in list/realtime status
 - [x] Fix generated fresh-machine root/env paths to use `$HOME/Desktop/CODE_YOU` instead of a single-quoted literal `~/Desktop/CODE_YOU`
 - [x] Update the Machine pane and bundled `machine-bootstrap` skill so Keychain service `youmd-env-vault` setup is part of the trusted-device workflow
 - [x] Verify with Convex codegen, focused fresh-machine parity tests, CLI build, root typecheck, root production build, compiled prompt smoke, `youmd env vault` help smoke, and env-vault bash syntax
@@ -41,9 +44,9 @@ PRD Version: 2.3
 - [x] Add safe fresh-machine env restore flags: `--map-existing --existing-only --skip-agent-auth`, with raw bash and compiled CLI fake-vault proofs
 - [x] Make terminal `you` chat handle `/new computer` deterministically instead of routing the slash command to the LLM
 - [x] Revoke unused fresh-machine bootstrap keys after the exposed pasted key incident
-- [x] Verify local CLI/npm publish state: local `0.8.4`, npm latest still behind, `0.8.4` unpublished until Houston runs npm publish with OTP
+- [x] Verify local CLI/npm publish state: local `0.8.5`, npm latest still behind, `0.8.5` unpublished until Houston runs npm publish with OTP
 - [x] Restart local `next start -p 3100` from the fresh build
-- [ ] Publish CLI `0.8.4` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
+- [ ] Publish CLI `0.8.5` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
 - [ ] Re-run the Machine tab button in the signed-in Codex browser and verify the clipboard starts with `You are Claude Code or Codex running on my brand-new Mac.`
 - [ ] Run the corrected prompt on the Mac mini with the transferred env vault and verify `~/Desktop/CODE_YOU`, MCP config, skill sync, project clone count, env restore, and synced machine proof
 

@@ -53,6 +53,42 @@ const CORS_HEADERS = {
 
 const SECRET_VAULT_MAX_BYTES = 8 * 1024 * 1024;
 
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.slice(offset, offset + chunkSize);
+    for (let i = 0; i < chunk.length; i += 1) {
+      binary += String.fromCharCode(chunk[i]);
+    }
+  }
+  return btoa(binary);
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  return bytesToBase64(new Uint8Array(buffer));
+}
+
+function base64ToBytes(base64: string): Uint8Array<ArrayBuffer> {
+  const binary = atob(base64);
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const bytes = base64ToBytes(base64);
+  return bytes.buffer;
+}
+
+function omitSecretVaultManifest<T extends { manifestText?: unknown }>(snapshot: T): Omit<T, "manifestText"> & { manifestText?: undefined } {
+  const { manifestText: _manifestText, ...safe } = snapshot;
+  return { ...safe, manifestText: undefined };
+}
+
 // Helper for JSON responses
 function json(data: unknown, status = 200, extraHeaders?: Record<string, string>) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -2512,7 +2548,7 @@ http.route({
         return json({
           success: true,
           kind: "env-local",
-          snapshots,
+          snapshots: snapshots.map(omitSecretVaultManifest),
           secretValuesExposed: false,
         });
       }
@@ -2531,7 +2567,7 @@ http.route({
       }
 
       const arrayBuffer = await blob.arrayBuffer();
-      const encryptedArchiveBase64 = Buffer.from(arrayBuffer).toString("base64");
+      const encryptedArchiveBase64 = arrayBufferToBase64(arrayBuffer);
       const computedSha256 = await sha256HexBytes(new Uint8Array(arrayBuffer));
       if (computedSha256 !== latest.sha256) {
         return errorResponse("conflict", "Encrypted env vault checksum mismatch", 409);
@@ -2595,7 +2631,7 @@ http.route({
         return errorResponse("invalid_request", "encryptedArchiveBase64 must be a non-empty base64 string", 400);
       }
 
-      const archiveBytes = Buffer.from(body.encryptedArchiveBase64, "base64");
+      const archiveBytes = base64ToBytes(body.encryptedArchiveBase64);
       if (archiveBytes.byteLength === 0) {
         return errorResponse("invalid_request", "encryptedArchiveBase64 decoded to an empty archive", 400);
       }
@@ -2678,7 +2714,7 @@ http.route({
       return guard.finish(json({
         success: true,
         kind: "env-local",
-        snapshot,
+        snapshot: omitSecretVaultManifest(snapshot),
         secretValuesExposed: false,
       }));
     } catch (err) {
@@ -5519,14 +5555,9 @@ http.route({
       }
 
       // Convert base64 strings to ArrayBuffer for Convex bytes fields
-      const wrappedVaultKey = new ArrayBuffer(Buffer.from(body.wrappedVaultKey, "base64").length);
-      new Uint8Array(wrappedVaultKey).set(Buffer.from(body.wrappedVaultKey, "base64"));
-
-      const vaultSalt = new ArrayBuffer(Buffer.from(body.vaultSalt, "base64").length);
-      new Uint8Array(vaultSalt).set(Buffer.from(body.vaultSalt, "base64"));
-
-      const vaultKeyIv = new ArrayBuffer(Buffer.from(body.vaultKeyIv, "base64").length);
-      new Uint8Array(vaultKeyIv).set(Buffer.from(body.vaultKeyIv, "base64"));
+      const wrappedVaultKey = base64ToArrayBuffer(body.wrappedVaultKey);
+      const vaultSalt = base64ToArrayBuffer(body.vaultSalt);
+      const vaultKeyIv = base64ToArrayBuffer(body.vaultKeyIv);
 
       const result = await ctx.runMutation(api.vault.initVault, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -5561,14 +5592,9 @@ http.route({
         return errorResponse("invalid_request", "Missing encryptedMd, encryptedJson, or iv", 400);
       }
 
-      const encryptedMd = new ArrayBuffer(Buffer.from(body.encryptedMd, "base64").length);
-      new Uint8Array(encryptedMd).set(Buffer.from(body.encryptedMd, "base64"));
-
-      const encryptedJson = new ArrayBuffer(Buffer.from(body.encryptedJson, "base64").length);
-      new Uint8Array(encryptedJson).set(Buffer.from(body.encryptedJson, "base64"));
-
-      const iv = new ArrayBuffer(Buffer.from(body.iv, "base64").length);
-      new Uint8Array(iv).set(Buffer.from(body.iv, "base64"));
+      const encryptedMd = base64ToArrayBuffer(body.encryptedMd);
+      const encryptedJson = base64ToArrayBuffer(body.encryptedJson);
+      const iv = base64ToArrayBuffer(body.iv);
 
       const result = await ctx.runMutation(api.vault.saveEncryptedVault, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -5604,7 +5630,7 @@ http.route({
 
       // Convert ArrayBuffer fields to base64 for JSON transport
       const toB64 = (ab: ArrayBuffer | null) =>
-        ab ? Buffer.from(ab).toString("base64") : null;
+        ab ? arrayBufferToBase64(ab) : null;
 
       return json({
         initialized: true,

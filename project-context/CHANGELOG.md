@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-18 — Secret Vault realtime daemon status and CLI 0.8.5 prep
+
+### feat(sync): expose account-backed env snapshot readiness in realtime status
+- Extended `realtimeSync.getHead` so vault-scoped realtime sessions report the account-backed encrypted Secret Vault snapshot flow as `ready`, `missing`, or `scope-missing`, including snapshot count, safe file metadata, encryption tool, project/variable counts, source host/root, sha256 fingerprints, and `secretValuesExposed: false`.
+- Added a local secret-safe `~/.youmd/realtime-sync-status.json` written by `youmd sync --live --daemon`, so Claude/Codex and the Machine pane can inspect Secret Vault readiness without parsing logs or downloading/decrypting env files.
+- Updated `youmd status`, `youmd stack daemon status`, and the Machine pane to display the realtime Secret Vault state and copyable account pull/restore commands.
+- Bumped the CLI package to `0.8.5`; npm publish with OTP is now required before the Mac mini normal npm/npx install path has this Secret Vault realtime-status flow.
+- Fixed the Secret Vault HTTP route for the Convex runtime by replacing Node `Buffer` conversions with runtime-safe base64 helpers, then tightened list/upload responses so they do not return manifest text by default. Explicit download for restore remains the only path that returns the safe manifest.
+- Verification: CLI build, root typecheck, focused realtime/machine prompt tests, Convex codegen, docs regeneration/checks, agent-docs CI, production Next build, Convex production deploy, account Secret Vault push, safe list smoke (`manifestText` absent), production realtime websocket smoke (`vaultStatus: ready`, `16` projects, `451` variables, no archive bytes), and local `youmd stack daemon status` showing `secret vault: Secret Vault ready...` all passed. Remaining proof: publish `youmd@0.8.5` and rerun Mac mini setup.
+
 ## 2026-06-18 — Realtime trusted-device sync daemon and CLI 0.8.4 prep
 
 ### feat(sync): add Convex websocket materialization for local agents
@@ -7,7 +17,7 @@
 - Added CLI `youmd sync --live --daemon`, backed by the official Convex client. The live loop subscribes to Convex updates, pulls identity files, re-renders installed skills, and triggers bounded shared stack/project-context syncs while keeping timer daemons as repair/fallback.
 - Added `com.youmd.realtime-sync` LaunchAgent with `KeepAlive=true`; `youmd stack daemon install/status`, `youmd status`, the local Machine pane, and machine-readiness metadata now show `realtime brain / live websocket`.
 - Updated fresh-machine prompts to install/confirm resident realtime + identity + skillstack + project-context daemons early.
-- Bumped the CLI package to `0.8.4` and pinned the CLI Convex runtime to `1.33.1`. npm publish is required for npm fallback / `npx youmd@latest`; the local/global CLI on this Mac is already `0.8.4`.
+- Bumped the CLI package to `0.8.4` and pinned the CLI Convex runtime to `1.33.1`. Superseded by `0.8.5` after adding Secret Vault realtime-status support. npm publish is required for npm fallback / `npx youmd@latest`.
 - Verification: `npx convex codegen`, `npx convex deploy --yes --typecheck enable`, CLI build, focused CLI realtime + machine prompt tests, production Next build, agent-docs syntax, production websocket sync-head smoke (`56` projects / `10` skills / `14` tasks / `secretValuesExposed: false`), `youmd sync --live --daemon` CLI smoke, and local `youmd stack daemon install/status` proof all passed.
 
 ## 2026-06-18 — Fresh-machine agent autonomy and CLI 0.8.3 prep
@@ -16,7 +26,7 @@
 - Updated the CLI and web-shell fresh-machine prompts so Claude Code/Codex are explicitly instructed to run You.md CLI/You Agent commands themselves (`status`, `pull`, `sync`, `skill sync`, `env vault`, `portfolio-hydrate`, `machine verify`) before interrupting Houston.
 - Updated the bundled `machine-bootstrap` skill and hosted Convex seed content with the same behind-the-scenes operating rule, plus the 30-day strict env-vault setup prompt as the default handoff.
 - Updated shared `/machine-sync` in `.agent-shared` so Claude/Codex/Cursor/Pi skill mirrors treat You.md Secret Vault as the primary trusted-device env path and interrupt Houston only for GitHub auth, Keychain/passphrase, npm OTP, OS permissions, or the explicit 90-day expansion.
-- Bumped the CLI package to `0.8.3` in this slice; the later realtime sync slice supersedes the pending npm target to `0.8.4`. npm publish is now needed for `npx youmd@latest` and npm fallback installs; curl/source installs can track GitHub once this commit is on `main`.
+- Bumped the CLI package to `0.8.3` in this slice; later realtime + Secret Vault status slices supersede the pending npm target to `0.8.5`. npm publish is now needed for `npx youmd@latest` and npm fallback installs; curl/source installs can track GitHub once this commit is on `main`.
 
 ## 2026-06-18 — You.md Secret Vault trusted-device env sync
 
