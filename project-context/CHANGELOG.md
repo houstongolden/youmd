@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — Desktop demo: remove mobile bottom bar, drawer-driven mobile nav
+
+### fix(web): cleaner mobile model for `/desktop-demo` (no fixed bottom menu)
+- Removed the fixed bottom tab bar (Houston's request — no fixed bottom menu icons). Mobile is now a clean ChatGPT/Claude-style single surface: full-screen chat by default, with the hamburger drawer as the one navigation surface (nav sections + Chats + account).
+- Added a one-tap **return-to-chat** affordance: on mobile, the title-bar right action becomes a chat icon when you're on a view (and search/⌘K when you're on chat), so you never have to scroll the drawer to get back to the conversation.
+- Added safe-area bottom padding to the chat composer (now the bottom-most element on mobile) so it clears the home indicator.
+- Note: the live `www.you.md/desktop-demo` is still the pre-responsive build that merged in #24; all of this responsive work is in PR #25 and lands when that deploys.
+- Verified on a 390px phone (system Chromium): no bottom bar, full-screen chat, drawer nav, Projects/master-detail stacks, and the back-to-chat button returns to the conversation.
+
 ## 2026-06-18 — Desktop demo: tablet breakpoint + caught-up empty state
 
 ### polish(web): fix the desktop-split breakpoint for tablets/narrow windows

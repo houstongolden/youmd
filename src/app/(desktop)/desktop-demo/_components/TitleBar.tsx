@@ -16,6 +16,8 @@ export function TitleBar({
   chatFull,
   onToggleChatFull,
   onOpenCommand,
+  mobileOnView = false,
+  onGoToChat,
 }: {
   title: string;
   isMobile: boolean;
@@ -24,6 +26,8 @@ export function TitleBar({
   chatFull: boolean;
   onToggleChatFull: () => void;
   onOpenCommand: () => void;
+  mobileOnView?: boolean;
+  onGoToChat?: () => void;
 }) {
   return (
     <div className="flex min-h-[44px] shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 pt-[env(safe-area-inset-top)] lg:h-10 lg:min-h-0 lg:gap-3 lg:pt-0">
@@ -63,13 +67,13 @@ export function TitleBar({
         <span className="ml-auto font-mono text-[10px] tracking-wider opacity-60">⌘K</span>
       </button>
 
-      {/* search icon — mobile only */}
+      {/* mobile-only right action: return to chat when on a view, else search */}
       <button
-        aria-label="Search"
-        onClick={onOpenCommand}
+        aria-label={mobileOnView ? "Back to chat" : "Search"}
+        onClick={mobileOnView ? onGoToChat : onOpenCommand}
         className="ml-auto p-1 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))] lg:hidden"
       >
-        <Icon name="search" size={17} />
+        <Icon name={mobileOnView ? "chat" : "search"} size={17} />
       </button>
 
       {/* chat layout toggle — desktop only */}
