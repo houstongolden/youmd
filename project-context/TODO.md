@@ -15,7 +15,7 @@ PRD Version: 2.3
 - [x] Confirm npm latest is `youmd@0.8.7`
 - [x] Record the Mac mini trusted-device restore proof: device registered, env vault restored via envelope, machine proof synced, and raw secrets stayed local
 - [ ] Verify the user's 90-day Mac mini expansion result after Houston reports back
-- [ ] Verify production `https://you.md/install.sh` after deploy no longer contains `NPM_GLOBAL_FLAGS`
+- [x] Verify production `https://you.md/install.sh` after deploy no longer contains `NPM_GLOBAL_FLAGS`
 
 ### 2026-06-18 — Home dashboard and global task surface
 - [x] Make `/shell` default to a real Home dashboard instead of leaving the user in chat/profile-only mode
