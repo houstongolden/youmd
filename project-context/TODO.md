@@ -20,6 +20,13 @@ PRD Version: 2.3
 - [x] Add `youmd skill inventory diff` for comparing this Mac against the Mac mini or another trusted machine
 - [x] Bump CLI package to `0.8.10` for publishing the inventory commands
 - [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
+- [ ] Productize install-time inventory in `install.sh` and machine setup so curl setup runs the inventory and verifies skill/stack sync automatically
+- [ ] Add Convex persistence for safe machine inventory snapshots, sync events, drift summaries, and DRY review queues
+- [ ] Add `username-you-md` GitHub snapshot output for machine/skill/stack inventory markdown and JSON
+- [ ] Expose agent stack inventory topology through You.md API and MCP
+- [ ] Build the web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views
+- [ ] Add resident realtime reconciliation for skills/stacks/context metadata across trusted machines and agents
+- [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
 
 ### 2026-06-19 — Home DSI mesh and Tasks board

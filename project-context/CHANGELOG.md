@@ -2,6 +2,10 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### docs(sync): define productized skill mesh success gate
+- Added a concrete Definition of Success to `AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md`.
+- Reframed the active request so completion requires curl-install inventory, machine setup proof, Convex/GitHub persistence, API/MCP exposure, web/Tauri Skill Mesh rendering, resident realtime reconciliation, and second-Mac zero-unexpected-drift proof without secret exposure.
+
 ### chore(cli): prepare youmd 0.8.10 publish
 - Bumped the CLI package and lockfile to `0.8.10` so the new inventory commands have a clean npm publish target.
 - Confirmed npm latest is currently `0.8.7`; `npm pack --dry-run` passes for `youmd@0.8.10`.

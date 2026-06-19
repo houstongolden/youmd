@@ -11,6 +11,7 @@ Last Updated: 2026-06-19
 **Verified:** YES locally (`node scripts/local-agent-stack-inventory.mjs`, shared skill script proof under `/tmp/agent-stack-inventory-proof`, `youmd skill list`, `youmd skill use agent-stack-inventory`, shared-agent sync mirror check, compiled `youmd skill inventory`, compiled `youmd skill inventory diff`, CLI build, `npm pack --dry-run`)
 **Production Verified:** N/A
 **Source:** 2026-06-19 — Houston: "I am on my Mac Mini and just ran youmd skill sync and youmd skill list - and it only returned 10 skills ... help whip up a quick html visual + mermaid diagram showing ALL my local/global skills and shared prompts/preferences..."
+**Goal / Success Definition:** This is complete only when the inventory/report becomes a You.md platform capability: the initial curl install and fresh-machine setup automatically install the current CLI, pull/sync the shared skill and stack layers, run the full agent stack inventory, organize canonical vs external/public/plugin/project-scoped skills, persist safe inventory/drift/DRY metadata to Convex and the `username-you-md` GitHub repo, expose the topology through You.md API/MCP, render it in the web/Tauri Skill Mesh, keep it reconciled through resident sync, and prove on a second Mac that all intended skills/stacks/context/config are installed or referenced with zero unexpected drift and no secret exposure.
 **Actionable Scope:**
 1. Confirm why `youmd skill list` only shows the small catalog instead of the whole local/global stack. **DONE first pass:** CLI reads `~/.youmd/skills/youmd-skills.yaml` plus hard-coded default skills; it does not crawl Claude/Codex/GStack/SciStack/shared roots.
 2. Inventory local/global skills, stack ownership roots, symlinks, host exposure paths, prompts/preferences/context/memory/log buckets, and counts. **DONE first pass:** generated secret-safe JSON and HTML reports.
@@ -21,7 +22,13 @@ Last Updated: 2026-06-19
 7. Preserve the You.md/Tauri/Convex/repo-backed product architecture direction. **DONE memo:** `project-context/AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md`.
 8. Next, add a first-class `youmd skill inventory` CLI wrapper and a diff command for comparing two Macs. **DONE:** `youmd skill inventory --out-dir <dir>` generates the shared report and `youmd skill inventory diff <left.json> <right.json>` compares two machine snapshots.
 9. Prepare the CLI publish target so the Mac mini can install the new commands through normal `youmd` update/install. **DONE locally:** CLI package is bumped to `0.8.10`, build passes, and `npm pack --dry-run` passes. **PENDING:** npm publish/OTP and Mac mini install proof.
-10. Next, decide whether You.md should catalog all host-discoverable skills, only canonical personal-stack skills, or a typed union with public/private/syncable flags. **OPEN.**
+10. Productize install-time inventory in `install.sh` / machine setup so a new Mac automatically inventories and verifies the skill/stack system after install. **OPEN.**
+11. Add Convex persistence for safe machine inventory snapshots, sync events, drift summaries, and DRY review queues. **OPEN.**
+12. Add GitHub repo snapshots under the user's `username-you-md` repo for portable markdown/JSON machine/skill/stack inventory. **OPEN.**
+13. Expose inventory topology through You.md API and MCP so authorized agents can inspect and repair drift. **OPEN.**
+14. Build the web/Tauri Skill Mesh surface for diagram/report/ownership/DRY/catalog/machine drift views. **OPEN.**
+15. Add resident realtime reconciliation so skills/stacks/context metadata stay synced across trusted machines and agents. **OPEN.**
+16. Decide whether You.md should catalog all host-discoverable skills, only canonical personal-stack skills, or a typed union with public/private/syncable flags. **OPEN.**
 **Artifacts:** `project-context/local-agent-stack-inventory-2026-06-19.html`, `project-context/local-agent-stack-inventory-2026-06-19.json`, `scripts/local-agent-stack-inventory.mjs`, `project-context/AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md`, and shared skill `~/.agent-shared/claude-skills/agent-stack-inventory`.
 
 ## 2026-06-19 — DSI, custom Views/Widgets, and pixel machine/agent characters

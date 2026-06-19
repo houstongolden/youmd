@@ -84,10 +84,53 @@ Owned skills are never auto-deleted. Public/plugin/reference skills should not
 override Houston-owned skills, but they can inform consolidation, docs, aliases,
 or upstream-sync notes.
 
+## Definition Of Success
+
+This effort is complete only when the local/global inventory is a You.md product
+system, not a one-off report.
+
+Success means:
+
+1. The initial `curl -fsSL https://you.md/install.sh | bash` setup path installs
+   the current You.md CLI, authenticates or resumes the trusted user, pulls the
+   shared skill/stack layer, runs the agent stack inventory, and materializes the
+   expected Claude/Codex/Cursor/Pi host mirrors without Houston manually
+   discovering missing roots.
+2. Fresh-machine setup through the You.md prompt/CLI automatically restores and
+   verifies Houston-owned shared skills, SciStack/HubStack/AstroStack references,
+   GStack references, YouStacks, product stack catalogs, project-context signals,
+   agent config, prompt/log metadata, API/MCP readiness, and safe Secret Vault
+   metadata.
+3. Convex stores durable, owner-gated machine inventory snapshots, drift
+   summaries, sync events, DRY review queues, and repair recommendations without
+   storing raw secrets, private key material, decrypted env values, or private
+   skill bodies beyond explicit user-controlled sharing rules.
+4. The `username-you-md` GitHub repo stores portable markdown/JSON snapshots for
+   the user's agent stack state, including per-machine summaries, skill catalog
+   summaries, DRY audit notes, and project-context topology.
+5. You.md API and MCP expose the same safe machine/skill/stack topology to
+   authorized agents so Claude Code, Codex, Cursor, Pi, and the You Agent can
+   inspect drift, route to canonical owners, and repair sync gaps without reading
+   raw secrets.
+6. The You.md web app and future Tauri app render the full audit/diagram/report
+   as a live Skill Mesh surface with ownership, provenance, DRY, catalog gap,
+   sync health, machine drift, and project-context views.
+7. The resident sync/daemon path keeps skills, stacks, context metadata, and
+   machine inventory snapshots reconciled in near real time across trusted
+   machines and agent runtimes.
+8. The proof gate passes on another Mac: run the curl setup command, run or
+   observe automatic inventory, confirm all intended canonical/shared skills and
+   stack catalogs are installed or referenced, verify the Mac appears in Convex
+   and the GitHub snapshot, compare inventories with zero unexpected drift, and
+   make a small shared skill/catalog change on one machine that propagates to the
+   other without exposing secrets.
+
 ## Near-Term Build Plan
 
 1. Add `youmd skill inventory` as a CLI command that wraps the shared script.
+   **Done locally; pending npm publish on `youmd@0.8.10`.**
 2. Add `youmd skill inventory diff --left A.json --right B.json`.
+   **Done locally; pending npm publish on `youmd@0.8.10`.**
 3. Add Convex `agentStackInventories` summaries keyed by user + machine + root.
 4. Add web/Tauri `Skill Mesh` view with ownership, DRY, catalog gap, and machine
    drift tabs.
