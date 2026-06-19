@@ -7,7 +7,7 @@
 - Added authenticated API routes: `POST /api/v1/me/agent-stack/inventory` to upsert a safe snapshot and `GET /api/v1/me/agent-stack/inventories` to list recent machine summaries.
 - Added `youmd skill inventory --sync` to persist the generated report summary when authenticated, with offline/unauthenticated sync skips that do not break curl install or fresh-machine setup.
 - Updated curl install and machine bootstrap to run the inventory command with `--sync`.
-- Verified with Convex codegen, focused Convex and CLI tests, CLI build, root TypeScript, compiled unauthenticated CLI smoke, and CLI prepublish gate.
+- Verified with Convex codegen, focused Convex and CLI tests, CLI build, root TypeScript, compiled unauthenticated CLI smoke, CLI prepublish gate, production Next build, Convex production deploy, and a live production sync/read-back showing `427` unique skill names with `secretValuesExposed: false`.
 
 ### feat(machine): run agent stack inventory during install and bootstrap
 - Bundled `scripts/local-agent-stack-inventory.mjs` into the CLI package so fresh npm/source installs can run `youmd skill inventory` before shared skills are restored.

@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "18183a846b606d2331a06b624be93021b0207ecbfd478dc04b8e127b8672fd29",
+  "sourceHash": "935d5521c64ddd549630b66f5e223941aae1652709957e050f1bd207c87450f8",
   "cli": {
-    "version": "0.8.9"
+    "version": "0.8.10"
   },
   "counts": {
-    "endpoints": 103,
+    "endpoints": 105,
     "internalRoutes": 9,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 31,
-    "convexRoutes": 84,
+    "convexRoutes": 86,
     "nextRoutes": 27
   },
   "endpoints": [
@@ -84,6 +84,28 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Convex HTTP action",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/agent-stack/inventories",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "List synced safe agent stack inventory summaries.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/agent-stack/inventory",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Sync secret-safe local/global agent stack inventory metadata.",
       "sources": [
         "convex"
       ]
@@ -1545,8 +1567,8 @@ export const docsReference = {
       "name": "skill",
       "usage": "skill [subcommand] [args...]",
       "group": "SKILLS",
-      "summary": "identity-aware agent skills (list/install/use/sync)",
-      "description": "Identity-aware agent skills (list, install, use, sync, init-project)"
+      "summary": "identity-aware agent skills (list/install/use/sync/inventory)",
+      "description": "Identity-aware agent skills (list, install, use, sync, inventory, init-project)"
     },
     {
       "name": "stack",
