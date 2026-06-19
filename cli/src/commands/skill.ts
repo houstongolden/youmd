@@ -861,6 +861,7 @@ async function improveCmd(): Promise<void> {
 
   // ─── Live outcome insights (L10) ──────────────────────────────────
   let liveInsights: SkillInsight[] | null = null;
+  const lowPerformers: SkillInsight[] = [];
   if (isAuthenticated()) {
     const insightSpinner = new BrailleSpinner("fetching outcome telemetry");
     insightSpinner.start();
@@ -905,8 +906,6 @@ async function improveCmd(): Promise<void> {
       `last used`;
     console.log(DIM(headerStr));
     console.log(DIM("  " + "-".repeat(headerStr.length - 2)));
-
-    const lowPerformers: SkillInsight[] = [];
 
     for (const s of liveInsights) {
       const ratePct = Math.round(s.successRate * 100);
@@ -1093,6 +1092,53 @@ async function improveCmd(): Promise<void> {
       console.log(line);
     }
     console.log("");
+  }
+
+  if (isAuthenticated()) {
+    try {
+      await recordBrainActivity({
+        activityId: `skill-improve:${os.hostname()}`,
+        source: "skill-improve",
+        channel: "skills",
+        kind: proposals.length > 0 || lowPerformers.length > 0 ? "proposed" : "checked",
+        status: proposals.length > 0 || lowPerformers.length > 0 ? "warn" : "ok",
+        title: proposals.length > 0 || lowPerformers.length > 0
+          ? `skill improvement analysis found ${proposals.length + lowPerformers.length} signal${proposals.length + lowPerformers.length === 1 ? "" : "s"}`
+          : "skill improvement analysis clean",
+        detail: proposals.length > 0
+          ? proposals.slice(0, 3).join(" · ")
+          : lowPerformers.length > 0
+            ? `low performers: ${lowPerformers.map((s) => s.skill).slice(0, 5).join(", ")}`
+            : "no immediate skill improvements suggested",
+        entityType: "skillImprovementAnalysis",
+        entityId: os.hostname(),
+        sourceHost: os.hostname(),
+        sourceAgent: "youmd CLI",
+        sourceRuntime: process.version,
+        metadata: {
+          installedCount: installed.length,
+          notInstalledCount: notInstalled.length,
+          localUseCount: totalUses,
+          identityFieldCount: allFields.size,
+          missingIdentityFields: missing.slice(0, 20),
+          proposalCount: proposals.length,
+          proposals: proposals.slice(0, 12),
+          lowPerformerCount: lowPerformers.length,
+          lowPerformers: lowPerformers.slice(0, 12).map((skill) => ({
+            skill: skill.skill,
+            uses: skill.uses,
+            successRate: skill.successRate,
+            failure: skill.failure,
+            partial: skill.partial,
+          })),
+          liveInsightCount: liveInsights?.length ?? 0,
+          fleetLineCount: fleetLines.length,
+          secretValuesExposed: false,
+        },
+      });
+    } catch (err) {
+      if (process.env.DEBUG) console.error(`[skill improve] brain activity failed: ${err}`);
+    }
   }
 }
 

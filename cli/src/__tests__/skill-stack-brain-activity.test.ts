@@ -12,6 +12,8 @@ const recordBrainActivityMock = vi.fn(async () => ({
   status: 200,
   data: { success: true, secretValuesExposed: false },
 }));
+const getSkillInsightsMock = vi.fn(async () => ({ ok: true, status: 200, data: { insights: [] } }));
+const getFleetSnapshotMock = vi.fn(async () => ({ ok: true, status: 200, data: { skills: [] } }));
 
 vi.mock("../lib/api", () => ({
   apiErrorMessage: vi.fn(() => undefined),
@@ -19,8 +21,8 @@ vi.mock("../lib/api", () => ({
   publishSkill: vi.fn(async () => ({ ok: true, status: 200, data: {} })),
   getMySkills: vi.fn(async () => ({ ok: true, status: 200, data: { skills: [] } })),
   getRegistrySkill: vi.fn(async () => ({ ok: false, status: 404, data: {} })),
-  getSkillInsights: vi.fn(async () => ({ ok: true, status: 200, data: { insights: [] } })),
-  getFleetSnapshot: vi.fn(async () => ({ ok: true, status: 200, data: {} })),
+  getSkillInsights: getSkillInsightsMock,
+  getFleetSnapshot: getFleetSnapshotMock,
   listMaintainerProposals: vi.fn(async () => ({ ok: true, status: 200, data: { proposals: [] } })),
   setProposalDecision: vi.fn(async () => ({ ok: true, status: 200, data: {} })),
   listBrainConsent: vi.fn(async () => ({ ok: true, status: 200, data: { consents: [] } })),
@@ -48,6 +50,10 @@ describe("skill/stack brain activity producers", () => {
     process.env.YOUMD_API_KEY = "ym_test_activity_key";
     process.chdir(tmpHome);
     recordBrainActivityMock.mockClear();
+    getSkillInsightsMock.mockClear();
+    getSkillInsightsMock.mockResolvedValue({ ok: true, status: 200, data: { insights: [] } });
+    getFleetSnapshotMock.mockClear();
+    getFleetSnapshotMock.mockResolvedValue({ ok: true, status: 200, data: { skills: [] } });
     spawnSyncMock.mockReset();
     logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -168,5 +174,57 @@ describe("skill/stack brain activity producers", () => {
     const payload = JSON.stringify(recordBrainActivityMock.mock.calls[0]?.[0]);
     expect(payload).not.toContain("YOUMD_API_KEY");
     expect(payload).not.toContain("ym_test_activity_key");
+  });
+
+  it("records skill improvement analysis proposals without identity values", async () => {
+    seedSkillCatalog();
+    getSkillInsightsMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        insights: [
+          {
+            skill: "project-clarity-audit",
+            uses: 5,
+            success: 2,
+            failure: 2,
+            partial: 1,
+            successRate: 0.4,
+            lastUsedAt: Date.now(),
+          },
+        ],
+      },
+    });
+
+    const { skillCommand } = await import("../commands/skill");
+    await skillCommand("improve");
+
+    expect(recordBrainActivityMock).toHaveBeenCalledTimes(1);
+    expect(recordBrainActivityMock).toHaveBeenCalledWith(expect.objectContaining({
+      source: "skill-improve",
+      channel: "skills",
+      kind: "proposed",
+      status: "warn",
+      entityType: "skillImprovementAnalysis",
+      metadata: expect.objectContaining({
+        installedCount: 1,
+        proposalCount: 1,
+        lowPerformerCount: 1,
+        lowPerformers: [
+          expect.objectContaining({
+            skill: "project-clarity-audit",
+            uses: 5,
+            successRate: 0.4,
+            failure: 2,
+            partial: 1,
+          }),
+        ],
+        liveInsightCount: 1,
+        secretValuesExposed: false,
+      }),
+    }));
+    const payload = JSON.stringify(recordBrainActivityMock.mock.calls[0]?.[0]);
+    expect(payload).not.toContain("ym_test_activity_key");
+    expect(payload).not.toContain("houston");
   });
 });

@@ -2,9 +2,76 @@ import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireOwner } from "./lib/auth";
 import { pageArgs, clampPageSize } from "./lib/pagination";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 
 // ── L9: skill outcome telemetry ──────────────────────────────
+
+const ACTIVITY_FIELD_CHARS = 160;
+const ACTIVITY_TITLE_CHARS = 180;
+const ACTIVITY_DETAIL_CHARS = 800;
+
+function cleanActivityText(value: string | undefined, fallback: string, maxChars: number): string {
+  const cleaned = (value ?? fallback)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (cleaned || fallback).slice(0, maxChars);
+}
+
+function outcomeStatus(outcome: "success" | "failure" | "partial"): "ok" | "error" | "warn" {
+  if (outcome === "success") return "ok";
+  if (outcome === "failure") return "error";
+  return "warn";
+}
+
+async function recordSkillOutcomeActivity(
+  ctx: MutationCtx,
+  fields: {
+    userId: Id<"users">;
+    outcomeId: Id<"skillOutcomes">;
+    skillName: string;
+    outcome: "success" | "failure" | "partial";
+    agent?: string;
+    durationMs?: number;
+    note?: string;
+    occurredAt: number;
+  },
+) {
+  await ctx.db.insert("brainActivities", {
+    userId: fields.userId,
+    activityId: cleanActivityText(`skill-outcome:${fields.outcomeId}`, "skill-outcome", ACTIVITY_FIELD_CHARS),
+    source: "skill-outcome",
+    channel: "skills",
+    kind: `outcome-${fields.outcome}`,
+    title: cleanActivityText(`${fields.skillName} outcome: ${fields.outcome}`, "skill outcome", ACTIVITY_TITLE_CHARS),
+    detail: cleanActivityText(
+      fields.agent
+        ? `${fields.agent} reported ${fields.outcome}${typeof fields.durationMs === "number" ? ` in ${fields.durationMs}ms` : ""}`
+        : `reported ${fields.outcome}${typeof fields.durationMs === "number" ? ` in ${fields.durationMs}ms` : ""}`,
+      "skill outcome recorded",
+      ACTIVITY_DETAIL_CHARS,
+    ),
+    status: outcomeStatus(fields.outcome),
+    entityType: "skillOutcome",
+    entityId: String(fields.outcomeId),
+    sourceAgent: fields.agent ? cleanActivityText(fields.agent, "", ACTIVITY_FIELD_CHARS) : undefined,
+    metadata: {
+      skillName: cleanActivityText(fields.skillName, "skill", ACTIVITY_FIELD_CHARS),
+      outcome: fields.outcome,
+      agent: fields.agent ? cleanActivityText(fields.agent, "", ACTIVITY_FIELD_CHARS) : undefined,
+      durationMs: fields.durationMs,
+      hasNote: Boolean(fields.note),
+      noteLength: typeof fields.note === "string" ? fields.note.length : 0,
+      noteStoredInActivity: false,
+      secretValuesExposed: false,
+    },
+    occurredAt: fields.occurredAt,
+    createdAt: fields.occurredAt,
+    updatedAt: fields.occurredAt,
+    secretValuesExposed: false,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Bundled skill content — full templates, seeded on deploy
@@ -1352,16 +1419,30 @@ export const recordOutcome = mutation({
       .first();
     if (!user) throw new Error("User not found");
 
+    const createdAt = Date.now();
+    const skillName = args.skillName.trim().slice(0, 200);
+    const durationMs = typeof args.durationMs === "number" && args.durationMs >= 0
+      ? Math.round(args.durationMs)
+      : undefined;
     const id = await ctx.db.insert("skillOutcomes", {
       userId: user._id,
-      skillName: args.skillName.trim().slice(0, 200),
+      skillName,
       outcome: args.outcome,
       agent: typeof args.agent === "string" ? args.agent.slice(0, 100) : undefined,
       note: typeof args.note === "string" ? args.note.slice(0, 500) : undefined,
-      durationMs: typeof args.durationMs === "number" && args.durationMs >= 0
-        ? Math.round(args.durationMs)
-        : undefined,
-      createdAt: Date.now(),
+      durationMs,
+      createdAt,
+    });
+
+    await recordSkillOutcomeActivity(ctx, {
+      userId: user._id,
+      outcomeId: id,
+      skillName,
+      outcome: args.outcome,
+      agent: typeof args.agent === "string" ? args.agent.slice(0, 100) : undefined,
+      durationMs,
+      note: typeof args.note === "string" ? args.note.slice(0, 500) : undefined,
+      occurredAt: createdAt,
     });
 
     return { id, skillName: args.skillName, outcome: args.outcome };

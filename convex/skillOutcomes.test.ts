@@ -67,6 +67,39 @@ describe("skills.recordOutcome", () => {
     expect(row!.agent).toBe("claude-code");
     expect(row!.note).toBe("worked perfectly");
     expect(row!.durationMs).toBe(1200);
+
+    const activities = await t.withIdentity({ subject: ALICE_CLERK }).query(api.brainActivity.listRecent, {
+      clerkId: ALICE_CLERK,
+      source: "skill-outcome",
+      limit: 10,
+    });
+    expect(activities).toHaveLength(1);
+    expect(activities[0]).toMatchObject({
+      activityId: `skill-outcome:${result.id}`,
+      source: "skill-outcome",
+      channel: "skills",
+      kind: "outcome-success",
+      status: "ok",
+      title: "youstack-start outcome: success",
+      detail: "claude-code reported success in 1200ms",
+      entityType: "skillOutcome",
+      entityId: result.id,
+      sourceAgent: "claude-code",
+      secretValuesExposed: false,
+      metadata: {
+        skillName: "youstack-start",
+        outcome: "success",
+        agent: "claude-code",
+        durationMs: 1200,
+        hasNote: true,
+        noteLength: "worked perfectly".length,
+        noteStoredInActivity: false,
+        secretValuesExposed: false,
+      },
+    });
+    const serialized = JSON.stringify(activities);
+    expect(serialized).not.toContain("worked perfectly");
+    expect(serialized).not.toContain("sk-test-secret");
   });
 
   it("inserts a failure row without optional fields", async () => {

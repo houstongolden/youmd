@@ -43,7 +43,8 @@ PRD Version: 2.3
 - [x] Verify with root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser screenshots for `/shell` and `/desktop-demo`
 - [x] Route skill sync, portfolio hydration, source-crawl policy, realtime daemon, machine proof, Secret Vault, and GitHub repo-mirror state into `brainActivities` as first-class producers
 - [x] Upgrade CLI skill/stack sync rows so shared canonical skill propagation and `~/.agent-shared` sync are visible in `brainActivities`
-- [ ] Next pass: route explicit shared skill self-improvement proposals/outcomes and richer cross-agent coordination messages into `brainActivities` with project/skill/entity links
+- [x] Route explicit shared skill self-improvement proposals and API/MCP-reported skill outcomes into `brainActivities` with safe skill/outcome/entity metadata
+- [ ] Next pass: route richer cross-agent coordination messages into `brainActivities` with project/skill/entity links
 
 ### 2026-06-19 — Cross-machine skill sync proof UI
 - [x] Add local machine readiness metadata for shared skill sync proof

@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — Skill improvement and outcome activity producers
+
+### feat(activity): show skill outcomes and improvement analysis in the live brain stream
+- Added canonical `brainActivities` rows for `skills.recordOutcome` / `/api/v1/me/skills/outcomes` so API/MCP-reported skill outcomes appear in the Live Log.
+- Added `youmd skill improve` activity rows for safe proposal and low-performer summaries.
+- Kept skill notes, identity values, API keys, and env-like values out of browser-visible activity rows; outcome notes are represented only as `hasNote`, `noteLength`, and `noteStoredInActivity: false`.
+- Added focused Convex and CLI coverage for skill-outcome and skill-improvement activity payloads.
+- Verified with focused Convex tests, focused CLI tests, CLI build, docs check, root TypeScript, npm pack dry-run, production Next build, and Convex production deploy.
+
 ## 2026-06-19 — Shared skill sync activity producers
 
 ### feat(cli): show shared skill propagation in the live brain stream
