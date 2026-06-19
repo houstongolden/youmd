@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — Brain activity producer expansion
+
+### feat(convex): route portfolio work into the live brain stream
+- Routed repo update runs/steps, task create/update/detail/triage changes, brain-dump captures, and extracted brain-dump tasks into the canonical owner-gated `brainActivities` stream.
+- Reused deterministic activity ids for mutable task/run rows so the live log shows current state instead of duplicate noise where the entity is naturally stateful.
+- Redacted producer-written titles/details/source fields and kept all emitted rows on the `secretValuesExposed: false` contract.
+- Added focused Convex coverage proving repo-update and task mutations create safe brain activity rows.
+- Verified with focused Convex tests, root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser visual checks for `/shell?tab=tasks` plus the Live Log toggle.
+
 ## 2026-06-19 — Canonical brain activity stream + shell IA reduction
 
 ### feat(shell): back the live log with durable brain activity

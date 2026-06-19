@@ -17,8 +17,10 @@ PRD Version: 2.3
 - [x] Make the shell Live Log read `brainActivities` first, with local readiness and current UI state as safe supplementary rows
 - [x] Extract `LiveBrainLog` as a shared product primitive and reuse it in `/desktop-demo` System Status
 - [x] Collapse visible shell IA toward `Home`, `Brain`, `Projects`, and `Settings`, with APIs/Machine/Vault/Activity/Stats/Portrait hidden under Settings
+- [x] Route repo update runs/steps, global portfolio task changes, task triage/detail edits, brain-dump captures, and extracted brain-dump tasks directly into `brainActivities`
+- [x] Keep producer-written brain activity redacted and marked `secretValuesExposed: false`
 - [x] Verify with root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser screenshots for `/shell` and `/desktop-demo`
-- [ ] Next pass: route repo updates, skill self-improvements, task changes, portfolio hydrations, source crawls, and daemon checkpoints directly into `brainActivities` as first-class producers
+- [ ] Next pass: route skill self-improvements, portfolio hydrations, source crawls, and daemon checkpoints directly into `brainActivities` as first-class producers
 
 ### 2026-06-19 — Cross-machine skill sync proof UI
 - [x] Add local machine readiness metadata for shared skill sync proof

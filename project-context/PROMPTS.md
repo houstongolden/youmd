@@ -3,12 +3,12 @@ All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
 **Total sessions:** 122
-**Total messages:** 534
+**Total messages:** 535
 **Last updated:** 2026-06-19
 
 ## Table of Contents
 
-1. [2026-06-19 (shell-live-brain-log-minimal-surface)](#session-2026-06-19-shell-live-brain-log-minimal-surface) --- 2 messages
+1. [2026-06-19 (shell-live-brain-log-minimal-surface)](#session-2026-06-19-shell-live-brain-log-minimal-surface) --- 3 messages
 1. [2026-06-19 (mac-mini-project-clarity-skill-sync-proof)](#session-2026-06-19-mac-mini-project-clarity-skill-sync-proof) --- 1 message
 1. [2026-06-19 (project-clarity-audit-shared-skill)](#session-2026-06-19-project-clarity-audit-shared-skill) --- 1 message
 1. [2026-06-19 (mac-mini-trusted-device-restore-followup)](#session-2026-06-19-mac-mini-trusted-device-restore-followup) --- 1 message
@@ -158,6 +158,14 @@ Auto-maintained — new messages appended each session.
 > Reuse this same live-log primitive in /desktop-demo System Status so the demo and real app converge.
 >
 > then continue
+
+**2026-06-19 09:10:00 UTC**
+> # In app browser:
+> - The user has the in-app browser open with 1 tab.
+> - Current URL: http://localhost:3100/shell?tab=tasks
+>
+> ## My request for Codex:
+> continue
 
 ## Session: 2026-06-19 (mac-mini-secret-vault-feedback)
 

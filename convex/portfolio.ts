@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireOwner } from "./lib/auth";
+import { redactSecretLikeText } from "./agentBus";
 
 async function loadOwner(
   ctx: QueryCtx | MutationCtx,
@@ -56,6 +57,9 @@ const PROJECT_MANUAL_STATUSES = ["active", "inactive"] as const;
 const MACHINE_PROOF_STATUSES = ["ready", "warn", "failed"] as const;
 const UPDATE_RUN_STATUSES = ["running", "success", "failed"] as const;
 const UPDATE_STEP_STATUSES = ["running", "success", "failed", "skipped", "pending"] as const;
+const MAX_ACTIVITY_FIELD_CHARS = 120;
+const MAX_ACTIVITY_TITLE_CHARS = 180;
+const MAX_ACTIVITY_DETAIL_CHARS = 1_500;
 
 function normalizeTaskStatus(value: string | undefined, fallback: string): string {
   const next = value?.trim();
@@ -101,6 +105,90 @@ function normalizeUpdateRunStatus(value: string | undefined, fallback: string): 
 function normalizeUpdateStepStatus(value: string | undefined, fallback: string): string {
   const next = value?.trim();
   return next && UPDATE_STEP_STATUSES.includes(next as typeof UPDATE_STEP_STATUSES[number]) ? next : fallback;
+}
+
+function cleanActivityText(value: string | undefined, fallback: string, maxChars: number): string {
+  const cleaned = (value ?? fallback)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return redactSecretLikeText(cleaned || fallback).slice(0, maxChars);
+}
+
+function brainActivityStatus(value: string | undefined): "live" | "ok" | "warn" | "error" | "info" {
+  if (value === "running" || value === "in_progress" || value === "open") return "live";
+  if (value === "success" || value === "done" || value === "ready") return "ok";
+  if (value === "failed" || value === "error" || value === "cancelled") return "error";
+  if (value === "pending" || value === "proposed" || value === "snoozed" || value === "skipped") return "warn";
+  return "info";
+}
+
+async function recordBrainActivity(
+  ctx: MutationCtx,
+  fields: {
+    userId: Id<"users">;
+    activityId: string;
+    source: string;
+    kind: string;
+    title: string;
+    detail?: string;
+    status?: string;
+    projectSlug?: string;
+    entityType?: string;
+    entityId?: string;
+    sourceAgent?: string;
+    metadata?: Record<string, unknown>;
+    occurredAt?: number;
+  },
+) {
+  const now = Date.now();
+  const activityId = cleanActivityText(fields.activityId, "activity", MAX_ACTIVITY_FIELD_CHARS);
+  const existing = await ctx.db
+    .query("brainActivities")
+    .withIndex("by_userId_activityId", (q) => q.eq("userId", fields.userId).eq("activityId", activityId))
+    .first();
+  const patch = {
+    source: cleanActivityText(fields.source, "portfolio", MAX_ACTIVITY_FIELD_CHARS),
+    kind: cleanActivityText(fields.kind, "event", MAX_ACTIVITY_FIELD_CHARS),
+    title: cleanActivityText(fields.title, "portfolio activity", MAX_ACTIVITY_TITLE_CHARS),
+    detail: fields.detail ? cleanActivityText(fields.detail, "", MAX_ACTIVITY_DETAIL_CHARS) : undefined,
+    status: brainActivityStatus(fields.status ?? fields.kind),
+    projectSlug: fields.projectSlug ? slugify(fields.projectSlug) : undefined,
+    entityType: fields.entityType ? cleanActivityText(fields.entityType, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
+    entityId: fields.entityId ? cleanActivityText(fields.entityId, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
+    sourceAgent: fields.sourceAgent ? cleanActivityText(fields.sourceAgent, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
+    metadata: fields.metadata,
+    occurredAt: fields.occurredAt ?? now,
+    updatedAt: now,
+    secretValuesExposed: false,
+  };
+
+  if (existing) {
+    await ctx.db.patch(existing._id, patch);
+    return;
+  }
+
+  await ctx.db.insert("brainActivities", {
+    userId: fields.userId,
+    activityId,
+    ...patch,
+    createdAt: now,
+  });
+}
+
+function taskActivityDetail(task: {
+  ownerType: string;
+  ownerLabel?: string;
+  status: string;
+  priority: string;
+  projectSlug?: string;
+}) {
+  return [
+    `owner ${task.ownerType}${task.ownerLabel ? `:${task.ownerLabel}` : ""}`,
+    `status ${task.status}`,
+    `priority ${task.priority}`,
+    task.projectSlug ? `project ${task.projectSlug}` : "personal",
+  ].join(" · ");
 }
 
 const projectActivityValidator = v.object({
@@ -1182,12 +1270,52 @@ export const upsertTask = mutation({
       const existing = await ctx.db.get(args.taskId);
       if (!existing || existing.userId !== user._id) throw new Error("Task not found");
       await ctx.db.patch(args.taskId, row);
+      await recordBrainActivity(ctx, {
+        userId: user._id,
+        activityId: `task:${args.taskId}`,
+        source: "task",
+        kind: row.status,
+        title: `task updated: ${row.title}`,
+        detail: taskActivityDetail(row),
+        status: row.status,
+        projectSlug: row.projectSlug,
+        entityType: "portfolioTask",
+        entityId: String(args.taskId),
+        sourceAgent: row.sourceType,
+        metadata: {
+          taskId: String(args.taskId),
+          ownerType: row.ownerType,
+          priority: row.priority,
+          sourceType: row.sourceType,
+        },
+        occurredAt: now,
+      });
       return { taskId: args.taskId, created: false };
     }
 
     const taskId = await ctx.db.insert("portfolioTasks", {
       ...row,
       createdAt: now,
+    });
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `task:${taskId}`,
+      source: "task",
+      kind: row.status,
+      title: `task created: ${row.title}`,
+      detail: taskActivityDetail(row),
+      status: row.status,
+      projectSlug: row.projectSlug,
+      entityType: "portfolioTask",
+      entityId: String(taskId),
+      sourceAgent: row.sourceType,
+      metadata: {
+        taskId: String(taskId),
+        ownerType: row.ownerType,
+        priority: row.priority,
+        sourceType: row.sourceType,
+      },
+      occurredAt: now,
     });
     return { taskId, created: true };
   },
@@ -1222,6 +1350,32 @@ export const updateTaskTriage = mutation({
     }
 
     await ctx.db.patch(args.taskId, patch);
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `task:${args.taskId}`,
+      source: "task",
+      kind: status,
+      title: `task triaged: ${existing.title}`,
+      detail: taskActivityDetail({
+        ownerType: existing.ownerType,
+        ownerLabel: existing.ownerLabel,
+        status,
+        priority,
+        projectSlug: existing.projectSlug,
+      }),
+      status,
+      projectSlug: existing.projectSlug,
+      entityType: "portfolioTask",
+      entityId: String(args.taskId),
+      sourceAgent: "portfolio-triage",
+      metadata: {
+        taskId: String(args.taskId),
+        changedStatus: args.status !== undefined,
+        changedPriority: args.priority !== undefined,
+        ownerType: existing.ownerType,
+      },
+      occurredAt: now,
+    });
 
     return {
       taskId: args.taskId,
@@ -1303,6 +1457,27 @@ export const updateTaskDetails = mutation({
       _id: existing._id,
       _creationTime: existing._creationTime,
     };
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `task:${args.taskId}`,
+      source: "task",
+      kind: updated.status,
+      title: `task updated: ${updated.title}`,
+      detail: taskActivityDetail(updated),
+      status: updated.status,
+      projectSlug: updated.projectSlug,
+      entityType: "portfolioTask",
+      entityId: String(args.taskId),
+      sourceAgent: "portfolio-update",
+      metadata: {
+        taskId: String(args.taskId),
+        changedProject: args.projectSlug !== undefined,
+        changedOwner: args.ownerType !== undefined || args.ownerLabel !== undefined,
+        changedStatus: args.status !== undefined,
+        changedPriority: args.priority !== undefined,
+      },
+      occurredAt: now,
+    });
 
     return {
       taskId: args.taskId,
@@ -1375,7 +1550,54 @@ export const recordBrainDump = mutation({
         updatedAt: now,
       });
       taskIds.push(taskId);
+      await recordBrainActivity(ctx, {
+        userId: user._id,
+        activityId: `task:${taskId}`,
+        source: "task",
+        kind: task.status ?? "proposed",
+        title: `task proposed: ${task.title.trim()}`,
+        detail: taskActivityDetail({
+          ownerType: task.ownerType,
+          ownerLabel: task.ownerLabel,
+          status: task.status ?? "proposed",
+          priority: task.priority ?? "normal",
+          projectSlug: task.projectSlug ? slugify(task.projectSlug) : projectSlugs[0],
+        }),
+        status: task.status ?? "proposed",
+        projectSlug: task.projectSlug ? slugify(task.projectSlug) : projectSlugs[0],
+        entityType: "portfolioTask",
+        entityId: String(taskId),
+        sourceAgent: "braindump-router",
+        metadata: {
+          taskId: String(taskId),
+          captureId: String(captureId),
+          source: args.source,
+        },
+        occurredAt: now,
+      });
     }
+
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `braindump:${captureId}`,
+      source: "braindump",
+      kind: "capture",
+      title: `${args.source} brain dump captured`,
+      detail: args.summary ?? `${taskIds.length} proposed task${taskIds.length === 1 ? "" : "s"} extracted`,
+      status: taskIds.length > 0 ? "proposed" : "info",
+      projectSlug: projectSlugs[0],
+      entityType: "brainDumpCapture",
+      entityId: String(captureId),
+      sourceAgent: "braindump-router",
+      metadata: {
+        captureId: String(captureId),
+        source: args.source,
+        projectCount: projectSlugs.length,
+        taskCount: taskIds.length,
+        tagCount: optionalStrings(args.tags).length,
+      },
+      occurredAt: now,
+    });
 
     return { captureId, taskIds };
   },
@@ -1500,6 +1722,25 @@ export const startRepoUpdateRun = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `repo-update:${runId}`,
+      source: "repo",
+      kind: "running",
+      title: "repo update started",
+      detail: args.summary ?? `${args.trigger} from ${args.source}`,
+      status: "running",
+      entityType: "repoUpdateRun",
+      entityId: String(runId),
+      sourceAgent: args.actorLabel,
+      metadata: {
+        runId: String(runId),
+        trigger: args.trigger,
+        repoFullName: args.repoFullName,
+        branch: args.branch,
+      },
+      occurredAt: now,
+    });
     return { runId };
   },
 });
@@ -1536,6 +1777,27 @@ export const appendRepoUpdateStep = mutation({
       completedAt: args.completedAt,
       createdAt: now,
       updatedAt: now,
+    });
+    const status = normalizeUpdateStepStatus(args.status, "running");
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `repo-update:${args.runId}:step:${args.order}:${args.stepKey}`,
+      source: "repo",
+      kind: status,
+      title: args.label,
+      detail: args.detail,
+      status,
+      entityType: "repoUpdateStep",
+      entityId: String(stepId),
+      sourceAgent: run.actorLabel,
+      metadata: {
+        runId: String(args.runId),
+        stepId: String(stepId),
+        stepKey: args.stepKey,
+        order: args.order,
+        repoFullName: run.repoFullName,
+      },
+      occurredAt: args.completedAt ?? args.startedAt ?? now,
     });
     await ctx.db.patch(args.runId, { updatedAt: now });
     return { stepId };
@@ -1587,6 +1849,28 @@ export const completeRepoUpdateRun = mutation({
       updatedAt: now,
     };
     await ctx.db.patch(args.runId, patch);
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `repo-update:${args.runId}`,
+      source: "repo",
+      kind: status,
+      title: status === "success" ? "repo update complete" : status === "failed" ? "repo update failed" : "repo update finished",
+      detail: args.summary ?? args.error ?? run.summary,
+      status,
+      entityType: "repoUpdateRun",
+      entityId: String(args.runId),
+      sourceAgent: run.actorLabel,
+      metadata: {
+        runId: String(args.runId),
+        repoFullName: run.repoFullName,
+        publishVersion: args.publishVersion,
+        route: args.route,
+        prNumber: args.prNumber,
+        merged: args.merged,
+        mirrorFileCount: args.mirrorFileCount,
+      },
+      occurredAt: now,
+    });
     return { runId: args.runId, status, completedAt: now };
   },
 });

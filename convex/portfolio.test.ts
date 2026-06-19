@@ -196,6 +196,34 @@ describe("portfolio repo update history", () => {
       metadata: { prNumber: 11, checkState: "pending" },
     });
     expect(runs[0].steps[2].metadata).toEqual({ prNumber: 11 });
+
+    const activities = await asOwner.query(api.brainActivity.listRecent, {
+      clerkId: CLERK,
+      source: "repo",
+      limit: 10,
+    });
+
+    expect(activities.map((activity) => activity.title)).toEqual([
+      "publish current You.md bundle",
+      "check GitHub merge gate",
+      "push identity files",
+      "repo update complete",
+    ]);
+    expect(activities[0]).toMatchObject({
+      source: "repo",
+      kind: "success",
+      status: "ok",
+      entityType: "repoUpdateStep",
+      secretValuesExposed: false,
+    });
+    expect(activities[3]).toMatchObject({
+      source: "repo",
+      kind: "success",
+      status: "ok",
+      entityType: "repoUpdateRun",
+      detail: "merged PR #11 and refreshed mirror",
+      secretValuesExposed: false,
+    });
   });
 
   it("does not let another owner append to someone else's update run", async () => {
@@ -286,6 +314,25 @@ describe("portfolio repo update history", () => {
     expect(cleared.completedAt).toBeUndefined();
     expect(cleared.status).toBe("in_progress");
     expect(cleared.tags).toEqual([]);
+
+    const activities = await asOwner.query(api.brainActivity.listRecent, {
+      clerkId: CLERK,
+      source: "task",
+      limit: 5,
+    });
+    expect(activities).toHaveLength(1);
+    expect(activities[0]).toMatchObject({
+      source: "task",
+      kind: "in_progress",
+      status: "live",
+      title: "task updated: Verify task update surface",
+      projectSlug: null,
+      entityType: "portfolioTask",
+      entityId: String(taskId),
+      secretValuesExposed: false,
+    });
+    expect(activities[0].detail).toContain("owner human");
+    expect(activities[0].detail).toContain("personal");
 
     await expect(
       asOther.mutation(api.portfolio.updateTaskDetails, {
