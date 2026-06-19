@@ -60,6 +60,7 @@ accent-wash:     #271D16    subtle backgrounds              ░
 - Accent appears sparingly. Pages are 90%+ monochrome.
 - No full-bleed accent backgrounds.
 - No second accent color. Ever.
+- No orange gradient over solid black shell surfaces. Use warm charcoal/beige neutral fills and let orange appear as a thin accent, status, or label.
 
 ## Typography
 

@@ -46,7 +46,7 @@ export function PaneCallout({
       style={{
         borderRadius: "var(--radius)",
         background:
-          "linear-gradient(90deg, hsl(var(--accent) / 0.055), hsl(var(--bg)) 38%)",
+          "linear-gradient(90deg, hsl(var(--shell-callout-accent) / 0.42), hsl(var(--shell-callout)) 42%, hsl(var(--shell-callout)) 100%)",
       }}
     >
       <span

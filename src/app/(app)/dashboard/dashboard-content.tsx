@@ -479,7 +479,7 @@ function ShellSidebarButton({
         "group relative flex h-8 w-full items-center gap-2.5 px-2 text-left font-mono transition-[color,opacity,background] duration-150",
         collapsed ? "justify-center px-0" : "justify-start",
         active
-          ? "bg-[hsl(var(--accent))]/[0.055] text-[hsl(var(--text-primary))]"
+          ? "bg-[hsl(var(--shell-active))] text-[hsl(var(--text-primary))]"
           : "text-[hsl(var(--text-secondary))] opacity-55 hover:bg-[hsl(var(--bg))]/70 hover:opacity-95",
       ].join(" ")}
       style={{ borderRadius: "var(--radius)" }}
@@ -615,10 +615,10 @@ function ShellGitHubChrome({
         onClick={onClick}
         title={`${repoLabel} - ${status.detail}`}
         aria-label={`GitHub repository: ${repoLabel}. ${status.detail}.`}
-        className="flex h-8 cursor-pointer items-center gap-2 px-1.5 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] transition-[background,color,opacity] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]"
+        className="flex h-8 cursor-pointer items-center gap-2 px-1.5 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] transition-[background,color,opacity] hover:bg-[hsl(var(--shell-chrome-hover))] hover:text-[hsl(var(--text-primary))]"
         style={{ borderRadius: "var(--radius)" }}
       >
-        <span className="relative flex h-6 w-6 items-center justify-center bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-primary))] shadow-[inset_0_0_0_1px_hsl(var(--border)/0.62)]">
+        <span className="relative flex h-6 w-6 items-center justify-center bg-[hsl(var(--shell-chrome-hover))] text-[hsl(var(--text-primary))] shadow-[inset_0_0_0_1px_hsl(var(--border)/0.62)]">
           <GitHubMark className="h-4 w-4" />
           <span
             aria-hidden="true"
@@ -634,7 +634,7 @@ function ShellGitHubChrome({
         </span>
       </button>
       <div
-        className="pointer-events-none absolute right-0 top-[calc(100%+6px)] z-40 w-max max-w-[320px] translate-y-1 bg-[hsl(var(--bg-raised))] px-3 py-2 opacity-0 shadow-[0_12px_32px_rgba(0,0,0,0.3)] ring-1 ring-[hsl(var(--border))]/70 transition-[opacity,transform] group-hover:translate-y-0 group-hover:opacity-100"
+        className="pointer-events-none absolute right-0 top-[calc(100%+6px)] z-40 w-max max-w-[320px] translate-y-1 bg-[hsl(var(--shell-chrome-hover))] px-3 py-2 opacity-0 shadow-[0_12px_32px_rgba(0,0,0,0.3)] ring-1 ring-[hsl(var(--border))]/70 transition-[opacity,transform] group-hover:translate-y-0 group-hover:opacity-100"
         style={{ borderRadius: "var(--radius)" }}
       >
         <p className="font-mono text-[10px] text-[hsl(var(--text-primary))]">{repoLabel}</p>
@@ -947,7 +947,7 @@ function ShellSidebar({
                         className={[
                           "group relative flex min-h-8 w-full items-center gap-2 px-2 py-1 text-left font-mono transition-[background,color,opacity]",
                           isActive
-                            ? "bg-[hsl(var(--accent))]/[0.055] text-[hsl(var(--text-primary))]"
+                            ? "bg-[hsl(var(--shell-active))] text-[hsl(var(--text-primary))]"
                             : "text-[hsl(var(--text-secondary))] opacity-55 hover:bg-[hsl(var(--bg))]/70 hover:opacity-95",
                         ].join(" ")}
                         style={{ borderRadius: "var(--radius)" }}
@@ -2004,7 +2004,7 @@ export function DashboardContent() {
           onOpenChatSession={openChatSession}
         />
         <div className="flex min-w-0 flex-1 flex-col bg-[hsl(var(--bg))]">
-          <div className="hidden h-10 shrink-0 items-center justify-end border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))] px-3 md:flex">
+          <div className="hidden h-10 shrink-0 items-center justify-end border-b border-[hsl(var(--border))]/60 bg-[hsl(var(--shell-chrome))] px-3 md:flex">
             <div className="flex items-center gap-2">
               <ShellGitHubChrome
                 repoFullName={shellGitHubRepoName}
@@ -2017,7 +2017,7 @@ export function DashboardContent() {
               <button
                 type="button"
                 onClick={() => setPanelOpen((value) => !value)}
-                className="ml-1 hidden h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))] hover:opacity-95 lg:flex"
+                className="ml-1 hidden h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--shell-chrome-hover))] hover:text-[hsl(var(--text-primary))] hover:opacity-95 lg:flex"
                 style={{ borderRadius: "var(--radius)" }}
                 aria-label={panelOpen ? "Hide detail pane" : "Show detail pane"}
                 title={panelOpen ? "Hide detail pane" : "Show detail pane"}
@@ -2080,7 +2080,7 @@ export function DashboardContent() {
                     onClick={() => openPane(pane.key)}
                     className={`min-h-9 px-2 text-[10px] font-mono whitespace-nowrap transition-colors border ${
                       rightPane === pane.key
-                        ? "border-transparent bg-[hsl(var(--accent))]/[0.08] text-[hsl(var(--text-primary))]"
+                        ? "border-transparent bg-[hsl(var(--shell-active))] text-[hsl(var(--text-primary))]"
                         : "border-transparent text-[hsl(var(--text-secondary))] opacity-40 hover:opacity-75"
                     }`}
                     style={{ borderRadius: "var(--radius)" }}

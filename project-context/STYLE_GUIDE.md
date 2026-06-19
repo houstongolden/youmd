@@ -21,11 +21,11 @@ Dark mode default. Light mode via .light class.
 - border: #2E2E2E
 
 ### Light (.light)
-- bg: #F6F3EF
-- bg-raised: #FFFFFF
-- text-primary: #141414
-- text-secondary: #524A3E
-- border: #D9D1C5
+- bg: warm super-light beige / ivory gradient, not stark white
+- bg-raised: warm off-white beige
+- text-primary: warm charcoal
+- text-secondary: muted warm gray
+- border: soft warm gray
 
 ### Accent (burnt orange)
 - accent: #C46A3A (links, CTAs, beam, logo)
@@ -33,6 +33,11 @@ Dark mode default. Light mode via .light class.
 - accent-mid: #D27A4F
 - accent-light: #E3A17A
 - accent-wash: #271D16
+
+### Shell Surface Rule
+- Shell chrome and active fills should use warm charcoal / warm beige neutral surfaces, not pure black.
+- Avoid orange gradients fading over solid black; it reads seasonal/costume-like instead of sophisticated.
+- Burnt orange should stay a small accent line, label, status, or hover cue, never the dominant fill behind large shell surfaces.
 
 ## Typography
 - Headings/Brand: JetBrains Mono

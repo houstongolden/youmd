@@ -27,6 +27,7 @@ PRD Version: 2.3
 - [x] Simplify the shell chat history into an always-visible one-line list with no section icon, no toggle, no per-chat subtitles, and a 50-session first page
 - [x] Generate/backfill useful chat titles from first prompts or existing session summaries so the left rail reads like real chat history instead of raw ids
 - [x] Soften light mode with a subtle super-light beige gradient and warmer surface tokens instead of a stark white canvas
+- [x] Replace black/orange shell chrome and active fills with warm charcoal/beige shell tokens, and document the no orange-gradient-over-black design rule
 - [x] Verify with root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser screenshots for `/shell` and `/desktop-demo`
 - [ ] Next pass: route skill self-improvements, portfolio hydrations, source crawls, and daemon checkpoints directly into `brainActivities` as first-class producers
 

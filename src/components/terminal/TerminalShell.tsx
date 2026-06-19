@@ -239,7 +239,7 @@ export function TerminalShell({
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      <div className="flex min-h-10 items-center gap-1 border-b border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] px-3">
+      <div className="flex min-h-10 items-center gap-1 border-b border-[hsl(var(--border))]/70 bg-[hsl(var(--shell-chrome))] px-3">
         {(["chat", "log"] as const).map((nextMode) => (
           <button
             key={nextMode}
@@ -248,8 +248,8 @@ export function TerminalShell({
             className={[
               "h-7 px-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-[background,color,opacity]",
               mode === nextMode
-                ? "bg-[hsl(var(--accent))]/[0.07] text-[hsl(var(--text-primary))]"
-                : "text-[hsl(var(--text-secondary))] opacity-45 hover:opacity-80",
+                ? "bg-[hsl(var(--shell-active))] text-[hsl(var(--text-primary))]"
+                : "text-[hsl(var(--text-secondary))] opacity-45 hover:bg-[hsl(var(--shell-chrome-hover))] hover:opacity-80",
             ].join(" ")}
             style={{ borderRadius: "var(--radius)" }}
           >

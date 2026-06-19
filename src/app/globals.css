@@ -52,6 +52,14 @@
   --input: 0 0% 12%;
   --ring: var(--accent);
 
+  /* Shell surfaces: warm charcoal, not black. This keeps burnt orange from
+     reading seasonal/costume-like when used as a small accent. */
+  --shell-chrome: 25 12% 14%;
+  --shell-chrome-hover: 25 13% 17%;
+  --shell-active: 25 13% 16%;
+  --shell-callout: 25 12% 13%;
+  --shell-callout-accent: 22 30% 20%;
+
   /* PRD v2.3: border radius is 2px EVERYWHERE (rounded-full reserved for status dots) */
   --radius: 2px;
 
@@ -95,6 +103,12 @@
   --secondary: 38 15% 83%;
   --muted-val: 38 12% 81%;
   --input: 38 15% 84%;
+
+  --shell-chrome: 38 17% 85%;
+  --shell-chrome-hover: 38 16% 82%;
+  --shell-active: 38 18% 84%;
+  --shell-callout: 38 18% 91%;
+  --shell-callout-accent: 28 38% 86%;
 }
 
 /* ── Tailwind v4 theme tokens ──────────────────────────────── */

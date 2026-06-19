@@ -441,7 +441,13 @@ function MachineSetupHero({
 
   if (collapsed) {
     return (
-      <div className="border-l border-[hsl(var(--accent))]/70 bg-gradient-to-r from-[hsl(var(--accent))]/10 via-[hsl(var(--bg))]/35 to-transparent px-4 py-3">
+      <div
+        className="border-l border-[hsl(var(--accent))]/55 px-4 py-3"
+        style={{
+          background:
+            "linear-gradient(90deg, hsl(var(--shell-callout-accent) / 0.4), hsl(var(--shell-callout)) 42%, hsl(var(--shell-callout)) 100%)",
+        }}
+      >
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0">
             <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))]">

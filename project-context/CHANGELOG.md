@@ -7,6 +7,8 @@
 - Loaded the first 50 chat sessions in the sidebar and added deterministic first-prompt title fallbacks, while keeping the existing LLM session-summary path for longer chats.
 - Backfilled sidebar titles from saved chat messages when older Convex sessions have no summary.
 - Softened light mode with warmer beige tokens and a subtle radial/linear gradient so the canvas no longer reads as stark white.
+- Replaced black/orange shell active fills, top GitHub chrome, terminal chat/log tabs, and setup callout gradients with warmer neutral shell tokens so burnt orange stays a refined accent.
+- Added the durable branding/style rule: no orange gradient over solid black shell surfaces.
 - Verified with root TypeScript, production Next build, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser visual checks on `/shell?tab=apis`.
 
 ## 2026-06-19 — Machine sync mesh foregrounding
