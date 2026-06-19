@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "motion/react";
 import { Icon, type IconName } from "./icons";
 import { cn } from "../_lib/cn";
 
@@ -96,13 +97,23 @@ export function CommandPalette({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-[1px]" />
+      <motion.button
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-[1px]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.12 }}
+      />
 
-      <div
+      <motion.div
         role="dialog"
         aria-modal="true"
         className="relative z-10 w-full max-w-lg overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] shadow-2xl"
         onKeyDown={onKeyDown}
+        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.16, ease: "easeOut" }}
       >
         {/* search input */}
         <div className="flex items-center gap-2.5 border-b border-[hsl(var(--border))] px-4 py-3">
@@ -162,7 +173,7 @@ export function CommandPalette({
             ))
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

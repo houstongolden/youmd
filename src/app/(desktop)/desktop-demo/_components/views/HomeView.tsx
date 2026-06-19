@@ -1,6 +1,6 @@
 "use client";
 
-import { PROJECTS, TASKS, SUB_AGENTS, WORKSPACE, type ViewId } from "../../_data/mock";
+import { PROJECTS, SUB_AGENTS, WORKSPACE, DAILY_BRIEF, type Task, type ViewId } from "../../_data/mock";
 import { Panel, Dot, Chip, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
 
@@ -11,10 +11,14 @@ function greeting() {
   return "Good evening";
 }
 
-export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
+export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => void; tasks: Task[] }) {
   const shipped7d = PROJECTS.reduce((a, p) => a + p.shipped7d, 0);
-  const openTasks = TASKS.filter((t) => t.status !== "done").length;
+  const openTasks = tasks.filter((t) => t.status !== "done").length;
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
+  // Cross-project follow-ups that want a human: high-priority or you-owned.
+  const needsAttention = tasks.filter(
+    (t) => t.status !== "done" && (t.priority === "high" || t.owner === "you"),
+  ).slice(0, 4);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
@@ -28,9 +32,15 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
           </span>
         </span>
       </div>
-      <h1 className="mb-6 font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
+      <h1 className="mb-3 font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
         {greeting()}, Houston
       </h1>
+
+      {/* AI daily brief — your agent's read on the day */}
+      <div className="mb-6 flex items-start gap-2.5 rounded-sm border-l-2 border-[hsl(var(--accent))]/60 bg-[hsl(var(--bg-raised))] px-3.5 py-3">
+        <Icon name="sparkles" size={14} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" />
+        <p className="text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]">{DAILY_BRIEF}</p>
+      </div>
 
       {/* Metric row */}
       <div className="mb-7 grid grid-cols-3 gap-2 sm:gap-3">
@@ -50,6 +60,44 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
         ))}
       </div>
 
+      {/* Needs attention — cross-project follow-ups that want a human */}
+      <Panel
+        title="Needs attention"
+        right={
+          <button
+            onClick={() => onNavigate("tasks")}
+            className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]"
+          >
+            all tasks →
+          </button>
+        }
+        bodyClassName="p-0"
+        className="mb-5"
+      >
+        <div className="divide-y divide-[hsl(var(--border))]">
+          {needsAttention.length === 0 ? (
+            <div className="flex items-center gap-2 px-3.5 py-4 text-[13px] text-[hsl(var(--text-secondary))]/70">
+              <Dot tone="green" size={6} /> You&apos;re all caught up — agents have the rest.
+            </div>
+          ) : (
+            needsAttention.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => onNavigate("tasks")}
+              className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[hsl(var(--bg))]"
+            >
+              <Dot tone={t.priority === "high" ? "orange" : "green"} size={6} />
+              <span className="flex-1 truncate text-[13px]">{t.title}</span>
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">
+                {t.project}
+              </span>
+              <Chip tone={t.owner === "agent" ? "accent" : "default"}>{t.owner === "agent" ? "agent" : "you"}</Chip>
+            </button>
+            ))
+          )}
+        </div>
+      </Panel>
+
       {/* Projects */}
       <Panel
         title="Projects"
@@ -66,9 +114,10 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
       >
         <div className="divide-y divide-[hsl(var(--border))]">
           {PROJECTS.map((p) => (
-            <div
+            <button
               key={p.slug}
-              className="group flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-[hsl(var(--bg))]"
+              onClick={() => onNavigate("projects")}
+              className="group flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-[hsl(var(--bg))]"
             >
               <Dot tone={p.focus === "focusing" ? "orange" : p.focus === "active" ? "green" : "dim"} />
               <div className="min-w-0 flex-1">
@@ -84,7 +133,7 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
                   7d
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </Panel>
@@ -94,8 +143,8 @@ export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {[
           { v: "agents" as ViewId, icon: "agent" as const, t: "Spawn a YOU sub-agent", d: "Clone yourself into a scoped agent" },
-          { v: "editor" as ViewId, icon: "file" as const, t: "Open your notes", d: "Identity, projects, ideas" },
-          { v: "tasks" as ViewId, icon: "check" as const, t: "Triage tasks", d: `${openTasks} open` },
+          { v: "skills" as ViewId, icon: "layers" as const, t: "Skills & stacks", d: "Shared, DRY, grouped by stack" },
+          { v: "editor" as ViewId, icon: "brain" as const, t: "Open your brain", d: "Identity, memories, goals" },
           { v: "terminal" as ViewId, icon: "terminal" as const, t: "Drop into the shell", d: "Run Claude Code / Codex" },
         ].map((a) => (
           <button

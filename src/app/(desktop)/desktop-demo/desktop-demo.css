@@ -1,0 +1,38 @@
+/* Scoped polish for the desktop demo only (wrapper: .youmd-desktop).
+   Kept out of globals.css so it can't affect the rest of the site. */
+
+/* Thin, app-native scrollbars (Chromium + Firefox). */
+.youmd-desktop {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+.youmd-desktop ::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.youmd-desktop ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.youmd-desktop ::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 2px;
+}
+.youmd-desktop ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--text-secondary) / 0.45);
+}
+
+/* Consistent keyboard focus ring (accent) — pro/a11y polish.
+   Mouse clicks don't trigger :focus-visible, so it stays clean. */
+.youmd-desktop :focus-visible {
+  outline: 2px solid hsl(var(--accent) / 0.65);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+/* Honor reduced-motion: neutralize the demo's entrance animations. */
+@media (prefers-reduced-motion: reduce) {
+  .youmd-desktop * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

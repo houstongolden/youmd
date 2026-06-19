@@ -1,23 +1,29 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, type ViewId } from "../_data/mock";
+import { motion } from "motion/react";
+import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, CHATS, type Task, type ChatThread, type ViewId } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
 import { useSwipe } from "../_lib/useSwipe";
 import { useTheme } from "../_lib/useTheme";
 import { cn } from "../_lib/cn";
 import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
-import { ChatPanel } from "./ChatPanel";
+import { ChatPanel, type AgentAction, type ChatScope } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
+import { SystemStatus } from "./SystemStatus";
+import { useToast } from "./Toast";
 import { Icon } from "./icons";
 import { HomeView } from "./views/HomeView";
 import { EditorView } from "./views/EditorView";
+import { ProjectsView } from "./views/ProjectsView";
 import { GraphView } from "./views/GraphView";
 import { TasksView } from "./views/TasksView";
+import { SkillsView } from "./views/SkillsView";
 import { AppsView } from "./views/AppsView";
 import { AgentsView } from "./views/AgentsView";
+import { LoopsView } from "./views/LoopsView";
 import { TerminalView } from "./views/TerminalView";
 
 function MainView({
@@ -25,25 +31,39 @@ function MainView({
   onNavigate,
   editorFile,
   onEditorSelect,
+  selectedProject,
+  onProjectSelect,
+  tasks,
+  onAdvanceTask,
 }: {
   view: ViewId;
   onNavigate: (v: ViewId) => void;
   editorFile: string;
   onEditorSelect: (id: string) => void;
+  selectedProject: string;
+  onProjectSelect: (slug: string) => void;
+  tasks: Task[];
+  onAdvanceTask: (id: string) => void;
 }) {
   switch (view) {
     case "home":
-      return <HomeView onNavigate={onNavigate} />;
+      return <HomeView onNavigate={onNavigate} tasks={tasks} />;
     case "editor":
       return <EditorView activeId={editorFile} onSelect={onEditorSelect} />;
+    case "projects":
+      return <ProjectsView selected={selectedProject} onSelect={onProjectSelect} onNavigate={onNavigate} tasks={tasks} />;
     case "graph":
       return <GraphView />;
     case "tasks":
-      return <TasksView />;
+      return <TasksView tasks={tasks} onAdvance={onAdvanceTask} />;
+    case "skills":
+      return <SkillsView />;
     case "apps":
       return <AppsView />;
     case "agents":
       return <AgentsView />;
+    case "loops":
+      return <LoopsView />;
     case "terminal":
       return <TerminalView />;
   }
@@ -95,8 +115,70 @@ export function DesktopShell() {
   const [activeView, setActiveView] = useState<ViewId>("home");
   const [mobilePane, setMobilePane] = useState<"chat" | "view">("chat");
   const [editorFile, setEditorFile] = useState("identity/you.md");
+  const [selectedProject, setSelectedProject] = useState(PROJECTS[0].slug);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>(TASKS);
+  const [chats, setChats] = useState<ChatThread[]>(CHATS);
+  const [activeChat, setActiveChat] = useState(CHATS[0].id);
   const { theme, toggle: toggleTheme } = useTheme();
+  const toast = useToast();
+
+  const focusChatPane = () => {
+    if (isMobile) {
+      setMobilePane("chat");
+      setDrawerOpen(false);
+    }
+  };
+  const selectChat = (id: string) => {
+    setActiveChat(id);
+    focusChatPane();
+  };
+  const newChat = () => {
+    const id = `new-${Date.now()}`;
+    setChats((c) => [{ id, title: "New chat", at: "now" }, ...c]);
+    setActiveChat(id);
+    focusChatPane();
+  };
+  const activeChatTitle = chats.find((c) => c.id === activeChat)?.title;
+
+  const addTask = (title: string, project: string, owner: Task["owner"] = "you") =>
+    setTasks((t) => [
+      { id: `t${Date.now()}`, title, owner, status: "open", priority: "med", project },
+      ...t,
+    ]);
+
+  const advanceTask = (id: string) =>
+    setTasks((ts) =>
+      ts.map((t) => {
+        if (t.id !== id) return t;
+        const order: Task["status"][] = ["open", "in_progress", "done"];
+        return { ...t, status: order[(order.indexOf(t.status) + 1) % order.length] };
+      }),
+    );
+
+  // Real effects behind the contextual chat chips — the "light-touch
+  // direction" layer actually doing something + giving feedback.
+  const onAgentAction = (action: AgentAction, scope?: ChatScope) => {
+    switch (action) {
+      case "promote-task":
+        addTask("Follow up on the idea you promoted", "you.md", "you");
+        toast("Added to Tasks — open · you.md", "check");
+        break;
+      case "spawn":
+        toast(`Spawning a YOU sub-agent${scope?.project ? ` on ${scope.project}` : ""}…`, "agent");
+        break;
+      case "sync":
+        toast("Syncing all machines…", "sync");
+        break;
+      case "forge-skill":
+        toast("Forging a new skill from your patterns…", "layers");
+        break;
+      case "improve-skill":
+        toast("Improving a skill from recent usage…", "sparkles");
+        break;
+    }
+  };
 
   const navigate = (v: ViewId) => {
     setActiveView(v);
@@ -113,6 +195,22 @@ export function DesktopShell() {
     setEditorFile(id);
     navigate("editor");
   };
+
+  const openProject = (slug: string) => {
+    setSelectedProject(slug);
+    navigate("projects");
+  };
+
+  // What the chat agent is "looking at" with you — the active context scope.
+  const chatScope = useMemo(() => {
+    if (activeView === "projects") {
+      const p = PROJECTS.find((x) => x.slug === selectedProject);
+      return { view: "projects", label: p?.name ?? "Projects", project: p?.name };
+    }
+    if (activeView === "editor") return { view: "editor", label: editorFile.split("/").pop() ?? "Brain" };
+    const item = PRIMARY_NAV.find((n) => n.id === activeView);
+    return { view: activeView, label: item?.label ?? "you.md" };
+  }, [activeView, selectedProject, editorFile]);
 
   // ⌘K / Ctrl+K toggles the command palette anywhere in the app.
   useEffect(() => {
@@ -148,11 +246,11 @@ export function DesktopShell() {
 
     const projects: Command[] = PROJECTS.map((p) => ({
       id: `project:${p.slug}`,
-      label: `Open ${p.name} in graph`,
+      label: `Open project: ${p.name}`,
       group: "Projects",
-      icon: "graph",
+      icon: "branch",
       keywords: p.slug,
-      run: () => navigate("graph"),
+      run: () => openProject(p.slug),
     }));
 
     const actions: Command[] = [
@@ -243,6 +341,11 @@ export function DesktopShell() {
                 onNavigate={navigate}
                 theme={theme}
                 onToggleTheme={toggleTheme}
+                onOpenStatus={() => setStatusOpen(true)}
+                chats={chats}
+                activeChat={activeChat}
+                onSelectChat={selectChat}
+                onNewChat={newChat}
               />
             </div>
 
@@ -250,16 +353,26 @@ export function DesktopShell() {
             <div {...workspaceSwipe} className="flex min-w-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-hidden">
                 {mobilePane === "chat" ? (
-                  <ChatPanel full />
+                  <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
                 ) : (
-                  <div className="h-full overflow-y-auto bg-[hsl(var(--bg))]">
+                  <motion.div
+                    key={activeView}
+                    className="h-full overflow-y-auto bg-[hsl(var(--bg))]"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
                     <MainView
                       view={activeView}
                       onNavigate={navigate}
                       editorFile={editorFile}
                       onEditorSelect={setEditorFile}
+                      selectedProject={selectedProject}
+                      onProjectSelect={setSelectedProject}
+                      tasks={tasks}
+                      onAdvanceTask={advanceTask}
                     />
-                  </div>
+                  </motion.div>
                 )}
               </div>
               <MobileTabBar pane={mobilePane} activeView={activeView} onSelect={setMobilePane} />
@@ -273,12 +386,17 @@ export function DesktopShell() {
               onNavigate={navigate}
               theme={theme}
               onToggleTheme={toggleTheme}
+              onOpenStatus={() => setStatusOpen(true)}
+              chats={chats}
+              activeChat={activeChat}
+              onSelectChat={selectChat}
+              onNewChat={newChat}
             />
 
             {chatFull ? (
               // Full-chat: chat fills the workspace, summary widget floats.
               <div className="relative min-w-0 flex-1">
-                <ChatPanel full />
+                <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
                 <div className="pointer-events-none absolute right-5 top-4">
                   <div className="pointer-events-auto">
                     <SummaryWidget />
@@ -289,17 +407,27 @@ export function DesktopShell() {
               // Split: chat 1/3 left, main view 2/3 right.
               <div className="flex min-w-0 flex-1">
                 <div className="flex w-[33%] min-w-[320px] max-w-[460px] flex-col border-r border-[hsl(var(--border))]">
-                  <ChatPanel />
+                  <ChatPanel scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
                 </div>
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
-                  <div className="h-full overflow-y-auto">
+                  <motion.div
+                    key={activeView}
+                    className="h-full overflow-y-auto"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
                     <MainView
                       view={activeView}
                       onNavigate={navigate}
                       editorFile={editorFile}
                       onEditorSelect={setEditorFile}
+                      selectedProject={selectedProject}
+                      onProjectSelect={setSelectedProject}
+                      tasks={tasks}
+                      onAdvanceTask={advanceTask}
                     />
-                  </div>
+                  </motion.div>
                 </main>
               </div>
             )}
@@ -312,6 +440,7 @@ export function DesktopShell() {
         commands={commands}
         onClose={() => setPaletteOpen(false)}
       />
+      <SystemStatus open={statusOpen} onClose={() => setStatusOpen(false)} />
     </div>
   );
 }

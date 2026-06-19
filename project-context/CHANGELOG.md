@@ -1,5 +1,70 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo: tablet breakpoint + caught-up empty state
+
+### polish(web): fix the desktop-split breakpoint for tablets/narrow windows
+- Moved the desktop split (sidebar + 1/3 chat + main) from `md` (768px) up to `lg` (1024px). Below 1024 the app now uses the clean single-column layout (drawer + bottom tabs + stacked master-detail) instead of cramming the chat + main + master-detail panes into a narrow tablet width. Kept the JS (`useIsMobile`) and CSS breakpoints in lockstep at 1024 so the title-bar chrome and the layout structure always agree (no mismatched state between 768–1024).
+- Converted the structural `md:` breakpoints to `lg:` in TitleBar (desktop chrome) and the EditorView/ProjectsView master-detail stacking.
+- Added a "You're all caught up — agents have the rest" empty state to Home's Needs-attention (now that tasks are live shared state, this shows when nothing needs a human).
+- Verified: tablet (834px) renders single-column; desktop (1440px) renders the split. TypeScript + radius lint pass; dev serves HTTP 200.
+
+## 2026-06-18 — Desktop demo: typography/spacing rhythm sweep
+
+### polish(web): unify view headers across `/desktop-demo`
+- Added two shared header primitives — `ViewHeader` (title + description, for full-page scrolling views) and `ViewBar` (titled top bar + controls, for tool views) — so every screen shares one title treatment and vertical rhythm instead of ad-hoc per-view markup.
+- Applied `ViewHeader` to Skills, Connections, Agents, and Loops (consistent `text-xl` title + description + `mb-6`); applied `ViewBar` to Graph and Tasks (gives them a real title matching the Editor/Projects bar height/padding, replacing the tiny standalone section labels).
+- Net effect: page views and tool views are each internally consistent, and the whole app reads with one rhythm. Verified visually (Tasks/Graph bars match; Connections matches Skills/Agents/Loops). TypeScript + radius lint pass; dev serves HTTP 200.
+
+## 2026-06-18 — Desktop demo: Chats wired to the conversation + empty state
+
+### feat(web): the sidebar Chats list now actually drives the chat
+- Lifted chat threads + the active thread into `DesktopShell`. Clicking a chat in the sidebar **swaps the conversation** (each thread seeds its own short history from its title; the first thread keeps the demo's canned exchange). **New chat** prepends a fresh thread, makes it active, and (on mobile) jumps to the chat pane.
+- Added a proper **empty state** for a fresh chat — a centered "What can I help you with? — I'll use your full you.md context" prompt (mirrors the inspo screenshot), with the contextual suggestion chips still available below.
+- Verified end-to-end (system Chromium): selecting "Draft big-bounce paper" swaps the thread, "New chat" shows the empty state and adds the thread to the sidebar. TypeScript + radius lint pass; dev serves HTTP 200.
+
+## 2026-06-18 — Desktop demo: Loops, Chats sidebar, real task round-trip
+
+### feat(web): Loops + sidebar Chats/account + working agent actions for `/desktop-demo`
+- **Loops** (new RUNTIME view + nav): unifies recurring automations — scheduled workflows, the self-improvement loop, and the crawlers that feed the brain — each with trigger, scope, last-run, and a running/paused toggle. (Houston's request: a Loops section that holds workflows + crawlers.)
+- **Sidebar restructure**: workspace/sync trigger up top, the nav sections, then a reserved **Chats** list (truncated one-line history with timestamps, Claude/ChatGPT style), and a pinned **account row** at the very bottom with a popout (theme toggle, settings, sign out). (Houston's request.)
+- **Real "promote idea → task" round-trip**: lifted tasks into a single shared source of truth in `DesktopShell`, so creating one (via the Brain chat chip) shows up live in Tasks, Home "Needs attention", and the project's task list. Added a self-contained **toast** system for action feedback (task added, spawning agent, syncing machines, forging/improving a skill); the contextual chat chips now perform these real effects, not just send a message.
+- Verified end-to-end (system Chromium): the Brain chip creates a task that appears in Tasks with a toast; Loops, the Chats list, and the account popout all render. TypeScript + radius lint pass; dev serves HTTP 200.
+
+## 2026-06-18 — Desktop demo: detail-polish pass (native feel + motion)
+
+### polish(web): make `/desktop-demo` feel like a real app
+- Scoped `desktop-demo.css` (wrapper `.youmd-desktop`, kept out of globals): thin app-native scrollbars (Chromium + Firefox), a consistent accent keyboard `:focus-visible` ring, and a `prefers-reduced-motion` guard that neutralizes the demo's animations.
+- Active-nav **left accent bar** (Linear/Notion-style) on the selected sidebar item, plus a subtle press scale on nav items.
+- Tasteful entrance **motion** (Motion 12) — command palette and System Status fade/scale in, the main view fades on switch, and chat messages fade-up. Subtle and short (≤0.2s); reduced-motion users get none.
+- Verified the page renders (HTTP 200), TypeScript + radius lint pass (new CSS uses only 2px radii).
+
+## 2026-06-18 — Desktop demo: background-magic layer + daily-brief Home
+
+### feat(web): make the "it just works behind the scenes" layer visible (awareness only)
+- Decided and implemented the hard background/foreground line (documented in the audit, §7b). Everything that runs on its own — identity/skill/stack/project-context sync daemons, the realtime websocket, crawlers, machine sync — is now surfaced in a single **System Status popover** opened from the sidebar workspace header. It's awareness only: live daemon state + intervals + last-run, machines online, and recent background activity, footed with "managed by your daemons — nothing to configure." No controls, no config — that's the product line vs. the foreground screens you act on.
+- Reworked **Home into a daily-brief command center**: an AI brief line (your agent's read on the day), a **Needs attention** list of cross-project follow-ups (high-priority / you-owned tasks, click → Tasks), the metric row, and the projects glance.
+- Verified desktop + mobile render consistently (system Chromium): the status popover and the new Home reflow cleanly at 1440px and 390px. TypeScript + radius lint pass; dev serves HTTP 200.
+
+## 2026-06-18 — Desktop demo: scope-aware chat + contextual agent actions
+
+### feat(web): make the `/desktop-demo` agent context-aware
+- The chat now knows what you're looking at. A `ChatScope` flows from `DesktopShell` into the chat: the active project (when in Projects), the open note (Brain), or the active view. The composer's context line now reads e.g. `you.md · bamfsite · claude-sonnet-4.6`, and agent replies acknowledge that scope ("using your **bamfsite** context plus your brain").
+- Added **contextual suggestion chips** above the composer that adapt to the active surface — Projects: "Spawn coding-you on {project}", "Triage {project} tasks"; Brain: "Promote an idea to a task"; Skills: "Forge a new skill from a pattern"; Agents: "Sync all machines now"; etc. Clicking one sends a scope-aware message. This is the "light-touch direction" layer (surfacing meta-skills and agent actions in the flow without a config surface).
+- Lifted the selected project into the shell so the Projects list, the ⌘K "Open project: X" commands, and the chat scope all stay in sync.
+- Verified end-to-end (system Chromium): selecting bamfsite updates the chips + context line, and a chip click produces a project-scoped agent reply. TypeScript + radius lint pass; dev serves HTTP 200.
+
+## 2026-06-18 — Desktop demo restructured around the MECE product model
+
+### feat(web): audit-driven IA + Skills/Projects/Devices for `/desktop-demo`
+- Ran a full product-surface audit (saved to `project-context/DESKTOP_APP_AUDIT_2026-06-18.md`): mapped every feature across web/CLI/API/YouStacks/shared-skills/second-brain/realtime-sync into four MECE buckets — **Context · Work · Capabilities · Runtime** — and defined what the desktop daily-driver intentionally leaves out vs. the web control plane.
+- Restructured the demo's navigation into a sectioned rail matching the model: **Home**, then **Context** (Brain · Projects · Tasks · Graph), **Stacks** (Skills · Connections), **Runtime** (Agents · Terminal). Chat + Terminal are modes; everything else is reachable via ⌘K.
+- Closed the biggest vision gaps in the mockup:
+  - **Skills view (new):** stacks grouped by domain with visibility (private/scoped/public), shared skills with DRY "shared Nx · 0 duplicated" indicators, and meta-skills (meta-improve, skill-forge).
+  - **Projects view (new):** the spine — per-project context, its tasks, its assigned stack, and repo/API/MCP links (connects Work ↔ Capabilities).
+  - **Agents view (enhanced):** added a **Devices** section (machines syncing in realtime) and an **agent-bus** feed (cross-machine, cross-agent messages) — surfacing the realtime sync + agent-bus work that was previously invisible in the demo.
+  - **Brain (was Notes):** folded memories + goals into the vault and relabeled.
+- Verified the restructure visually (system Chromium): sectioned nav, Skills, Projects, and Agents/Devices all render cleanly. TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-19 — Fresh-machine Secret Vault fallback hardening
 
 ### fix(install): remove Bash 3.2 empty-array installer crash

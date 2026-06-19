@@ -88,7 +88,49 @@ export function Panel({
   );
 }
 
-// A tiny pill / chip.
+// Standard header for full-page (scrolling) views — Skills, Connections,
+// Agents, Loops. Guarantees one consistent title/description/rhythm everywhere.
+export function ViewHeader({
+  title,
+  description,
+  right,
+}: {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-6 flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h2 className="flex items-center gap-2 font-mono text-xl font-semibold tracking-tight text-[hsl(var(--text-primary))]">
+          {title}
+        </h2>
+        {description && (
+          <p className="mt-1.5 text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]/80">{description}</p>
+        )}
+      </div>
+      {right && <div className="shrink-0">{right}</div>}
+    </div>
+  );
+}
+
+// Standard top bar for tool views with their own internal chrome — Graph,
+// Tasks (and matching the Editor/Projects bar height/padding).
+export function ViewBar({
+  title,
+  right,
+}: {
+  title: React.ReactNode;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--border))] px-4 py-2.5 md:px-5">
+      <div className="flex items-center gap-2 font-mono text-[13px] text-[hsl(var(--text-primary))]">{title}</div>
+      {right}
+    </div>
+  );
+}
+
 export function Chip({
   children,
   tone = "default",
