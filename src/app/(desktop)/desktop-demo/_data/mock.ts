@@ -15,6 +15,7 @@ export type ViewId =
   | "skills"
   | "apps"
   | "agents"
+  | "loops"
   | "terminal";
 
 export type NavItem = {
@@ -51,6 +52,7 @@ export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
     title: "Runtime",
     items: [
       { id: "agents", label: "Agents", icon: "agent" },
+      { id: "loops", label: "Loops", icon: "loop" },
       { id: "terminal", label: "Terminal", icon: "terminal" },
     ],
   },
@@ -468,3 +470,39 @@ export const DAEMONS: Daemon[] = [
 // One-line AI brief for Home (like the Codex/assistant brief in the inspo).
 export const DAILY_BRIEF =
   "84 changes shipped across 4 projects this week — you.md leads with 41. Two follow-ups need you, and everything's synced across 3 machines.";
+
+// ── Loops (recurring automations — workflows + crawlers run on their own) ───
+// A loop is anything that runs on a schedule/trigger without you: scheduled
+// workflows, self-improvement loops, and the crawlers that feed your brain.
+export type Loop = {
+  id: string;
+  name: string;
+  kind: "workflow" | "crawler";
+  trigger: string;
+  does: string;
+  scope: string;
+  status: "running" | "paused";
+  lastRun: string;
+};
+
+export const LOOPS: Loop[] = [
+  { id: "l1", name: "Morning brief", kind: "workflow", trigger: "daily · 8am", does: "Compiles your day across projects, tasks, and machines.", scope: "all", status: "running", lastRun: "2h ago" },
+  { id: "l2", name: "Brain-dump router", kind: "workflow", trigger: "on capture", does: "Routes captures into the right project + proposes tasks.", scope: "all", status: "running", lastRun: "1m ago" },
+  { id: "l3", name: "Skill self-improve", kind: "workflow", trigger: "weekly", does: "meta-improve refines installed skills from usage.", scope: "all", status: "running", lastRun: "1d ago" },
+  { id: "l4", name: "GitHub crawler", kind: "crawler", trigger: "every 15 min", does: "Pulls commits/PRs into the portfolio graph.", scope: "all", status: "running", lastRun: "2m ago" },
+  { id: "l5", name: "Social enrich", kind: "crawler", trigger: "daily", does: "Refreshes X / LinkedIn context for your profile.", scope: "you.md", status: "running", lastRun: "4h ago" },
+  { id: "l6", name: "Stale-source check", kind: "crawler", trigger: "daily", does: "Flags sources older than 7 days for refresh.", scope: "all", status: "paused", lastRun: "—" },
+];
+
+// ── Recent chats (sidebar history — like Claude/ChatGPT) ───────────────────
+export type ChatThread = { id: string; title: string; at: string };
+
+export const CHATS: ChatThread[] = [
+  { id: "c1", title: "Lock the desktop app UI/UX", at: "now" },
+  { id: "c2", title: "Triage bamfsite tasks and follow-ups", at: "2h" },
+  { id: "c3", title: "Draft big-bounce paper section 3", at: "5h" },
+  { id: "c4", title: "Spawn writing-you for creator.new", at: "1d" },
+  { id: "c5", title: "Audit Lempod ownership across repos", at: "1d" },
+  { id: "c6", title: "Weekly portfolio review", at: "2d" },
+  { id: "c7", title: "New computer setup for the Mac mini", at: "3d" },
+];

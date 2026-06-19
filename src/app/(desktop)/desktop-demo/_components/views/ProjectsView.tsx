@@ -1,6 +1,6 @@
 "use client";
 
-import { PROJECTS, TASKS, STACKS, type ViewId } from "../../_data/mock";
+import { PROJECTS, STACKS, type Task, type ViewId } from "../../_data/mock";
 import { Icon } from "../icons";
 import { Dot, Chip, SectionLabel } from "../primitives";
 import { cn } from "../../_lib/cn";
@@ -9,13 +9,15 @@ export function ProjectsView({
   selected,
   onSelect,
   onNavigate,
+  tasks: allTasks,
 }: {
   selected: string;
   onSelect: (slug: string) => void;
   onNavigate: (v: ViewId) => void;
+  tasks: Task[];
 }) {
   const project = PROJECTS.find((p) => p.slug === selected) ?? PROJECTS[0];
-  const tasks = TASKS.filter((t) => t.project === project.name);
+  const tasks = allTasks.filter((t) => t.project === project.name);
   const stack = STACKS.find((s) => s.projects.includes(project.name));
 
   return (

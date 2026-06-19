@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DesktopShell } from "./_components/DesktopShell";
+import { ToastProvider } from "./_components/Toast";
 
 export const metadata: Metadata = {
   title: "you.md — desktop (private demo)",
@@ -21,5 +22,9 @@ export const viewport: Viewport = {
 // here talks to Convex or the real API. The goal is to lock the UI/UX of the
 // upcoming native desktop app (Tauri/RN target) before building it for real.
 export default function DesktopDemoPage() {
-  return <DesktopShell />;
+  return (
+    <ToastProvider>
+      <DesktopShell />
+    </ToastProvider>
+  );
 }

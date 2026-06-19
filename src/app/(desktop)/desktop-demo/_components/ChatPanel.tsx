@@ -74,33 +74,45 @@ export type ChatScope = {
   project?: string;
 };
 
+export type AgentAction = "promote-task" | "spawn" | "sync" | "forge-skill" | "improve-skill";
+type Suggestion = { label: string; action?: AgentAction };
+
 // Contextual agent actions per view — the "light-touch direction" layer.
-// Clicking one drops a prefilled, scope-aware message into the chat.
-function suggestionsFor(scope?: ChatScope): string[] {
+// Clicking one drops a scope-aware message into the chat; some also trigger a
+// real effect (create a task, spawn an agent, sync) via onAction.
+function suggestionsFor(scope?: ChatScope): Suggestion[] {
   const p = scope?.project;
   switch (scope?.view) {
     case "projects":
       return p
-        ? [`Spawn coding-you on ${p}`, `Triage ${p} tasks`, `Summarize ${p} this week`]
-        : ["Which project needs me most?", "Summarize this week", "What should I build next?"];
+        ? [{ label: `Spawn coding-you on ${p}`, action: "spawn" }, { label: `Triage ${p} tasks` }, { label: `Summarize ${p} this week` }]
+        : [{ label: "Which project needs me most?" }, { label: "Summarize this week" }, { label: "What should I build next?" }];
     case "editor":
-      return ["Capture a new memory", "Promote an idea to a task", "What are my goals again?"];
+      return [{ label: "Capture a new memory" }, { label: "Promote an idea to a task", action: "promote-task" }, { label: "What are my goals again?" }];
     case "tasks":
-      return ["Delegate the top task to an agent", "What's blocking me?", "Group tasks by project"];
+      return [{ label: "Delegate the top task to an agent", action: "spawn" }, { label: "What's blocking me?" }, { label: "Group tasks by project" }];
     case "skills":
-      return ["Improve a skill from usage", "Forge a new skill from a pattern", "Any duplicated skills?"];
+      return [{ label: "Improve a skill from usage", action: "improve-skill" }, { label: "Forge a new skill from a pattern", action: "forge-skill" }, { label: "Any duplicated skills?" }];
     case "agents":
-      return ["Spawn a YOU sub-agent", "What are my agents doing?", "Sync all machines now"];
+      return [{ label: "Spawn a YOU sub-agent", action: "spawn" }, { label: "What are my agents doing?" }, { label: "Sync all machines now", action: "sync" }];
     case "graph":
-      return ["What connects to you.md?", "Show isolated nodes", "Trace bamfsite dependencies"];
+      return [{ label: "What connects to you.md?" }, { label: "Show isolated nodes" }, { label: "Trace bamfsite dependencies" }];
     case "apps":
-      return ["What are my crawlers pulling?", "Summarize my GitHub activity", "Connect a new app"];
+      return [{ label: "What are my crawlers pulling?" }, { label: "Summarize my GitHub activity" }, { label: "Connect a new app" }];
     default:
-      return ["What needs my attention today?", "Summarize this week across projects", "What should I build next?"];
+      return [{ label: "What needs my attention today?" }, { label: "Summarize this week across projects" }, { label: "What should I build next?" }];
   }
 }
 
-export function ChatPanel({ full = false, scope }: { full?: boolean; scope?: ChatScope }) {
+export function ChatPanel({
+  full = false,
+  scope,
+  onAction,
+}: {
+  full?: boolean;
+  scope?: ChatScope;
+  onAction?: (action: AgentAction, scope?: ChatScope) => void;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>(SEED_CHAT);
   const [input, setInput] = useState("");
   const [working, setWorking] = useState(false);
@@ -172,11 +184,14 @@ export function ChatPanel({ full = false, scope }: { full?: boolean; scope?: Cha
             <div className="mb-2 flex gap-1.5 overflow-x-auto pb-0.5">
               {suggestionsFor(scope).map((s) => (
                 <button
-                  key={s}
-                  onClick={() => send(s)}
+                  key={s.label}
+                  onClick={() => {
+                    send(s.label);
+                    if (s.action) onAction?.(s.action, scope);
+                  }}
                   className="shrink-0 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-2.5 py-1 text-[12px] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--accent))]/40 hover:text-[hsl(var(--text-primary))]"
                 >
-                  {s}
+                  {s.label}
                 </button>
               ))}
             </div>

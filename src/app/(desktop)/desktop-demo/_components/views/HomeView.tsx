@@ -1,6 +1,6 @@
 "use client";
 
-import { PROJECTS, TASKS, SUB_AGENTS, WORKSPACE, DAILY_BRIEF, type ViewId } from "../../_data/mock";
+import { PROJECTS, SUB_AGENTS, WORKSPACE, DAILY_BRIEF, type Task, type ViewId } from "../../_data/mock";
 import { Panel, Dot, Chip, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
 
@@ -11,12 +11,12 @@ function greeting() {
   return "Good evening";
 }
 
-export function HomeView({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
+export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => void; tasks: Task[] }) {
   const shipped7d = PROJECTS.reduce((a, p) => a + p.shipped7d, 0);
-  const openTasks = TASKS.filter((t) => t.status !== "done").length;
+  const openTasks = tasks.filter((t) => t.status !== "done").length;
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
   // Cross-project follow-ups that want a human: high-priority or you-owned.
-  const needsAttention = TASKS.filter(
+  const needsAttention = tasks.filter(
     (t) => t.status !== "done" && (t.priority === "high" || t.owner === "you"),
   ).slice(0, 4);
 

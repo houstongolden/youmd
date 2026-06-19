@@ -39,6 +39,9 @@ import {
   Layers,
   Laptop,
   RefreshCw,
+  Repeat,
+  Workflow,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
 
@@ -79,6 +82,9 @@ const MAP = {
   layers: Layers,
   device: Laptop,
   sync: RefreshCw,
+  loop: Repeat,
+  workflow: Workflow,
+  logout: LogOut,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof MAP;

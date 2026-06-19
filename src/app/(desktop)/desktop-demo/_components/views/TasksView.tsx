@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { TASKS, type Task } from "../../_data/mock";
+import { type Task } from "../../_data/mock";
 import { Dot, Chip, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
 import { cn } from "../../_lib/cn";
@@ -12,20 +11,7 @@ const COLUMNS: { id: Task["status"]; label: string }[] = [
   { id: "done", label: "Done" },
 ];
 
-export function TasksView() {
-  const [tasks, setTasks] = useState<Task[]>(TASKS);
-
-  // Demo-only: clicking a task advances it through the columns.
-  const advance = (id: string) =>
-    setTasks((ts) =>
-      ts.map((t) => {
-        if (t.id !== id) return t;
-        const order: Task["status"][] = ["open", "in_progress", "done"];
-        const next = order[(order.indexOf(t.status) + 1) % order.length];
-        return { ...t, status: next };
-      }),
-    );
-
+export function TasksView({ tasks, onAdvance }: { tasks: Task[]; onAdvance: (id: string) => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--border))] px-4 py-2.5 md:px-5">
@@ -50,7 +36,7 @@ export function TasksView() {
                 {colTasks.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => advance(t.id)}
+                    onClick={() => onAdvance(t.id)}
                     className="w-full rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 text-left transition-colors hover:border-[hsl(var(--accent))]/40"
                   >
                     <div className={cn("text-[13px] leading-snug", t.status === "done" && "text-[hsl(var(--text-secondary))] line-through")}>

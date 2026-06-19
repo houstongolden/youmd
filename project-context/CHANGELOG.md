@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo: Loops, Chats sidebar, real task round-trip
+
+### feat(web): Loops + sidebar Chats/account + working agent actions for `/desktop-demo`
+- **Loops** (new RUNTIME view + nav): unifies recurring automations — scheduled workflows, the self-improvement loop, and the crawlers that feed the brain — each with trigger, scope, last-run, and a running/paused toggle. (Houston's request: a Loops section that holds workflows + crawlers.)
+- **Sidebar restructure**: workspace/sync trigger up top, the nav sections, then a reserved **Chats** list (truncated one-line history with timestamps, Claude/ChatGPT style), and a pinned **account row** at the very bottom with a popout (theme toggle, settings, sign out). (Houston's request.)
+- **Real "promote idea → task" round-trip**: lifted tasks into a single shared source of truth in `DesktopShell`, so creating one (via the Brain chat chip) shows up live in Tasks, Home "Needs attention", and the project's task list. Added a self-contained **toast** system for action feedback (task added, spawning agent, syncing machines, forging/improving a skill); the contextual chat chips now perform these real effects, not just send a message.
+- Verified end-to-end (system Chromium): the Brain chip creates a task that appears in Tasks with a toast; Loops, the Chats list, and the account popout all render. TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-18 — Desktop demo: detail-polish pass (native feel + motion)
 
 ### polish(web): make `/desktop-demo` feel like a real app
