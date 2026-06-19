@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 117
-**Total messages:** 528
+**Total sessions:** 118
+**Total messages:** 529
 **Last updated:** 2026-06-19
 
 ## Table of Contents
 
+1. [2026-06-19 (mac-mini-secret-vault-feedback)](#session-2026-06-19-mac-mini-secret-vault-feedback) --- 1 message
 1. [2026-06-18 (home-dashboard-global-tasks-surface)](#session-2026-06-18-home-dashboard-global-tasks-surface) --- 1 message
 1. [2026-06-18 (vault-passphrase-callout-logo-polish)](#session-2026-06-18-vault-passphrase-callout-logo-polish) --- 1 message
 1. [2026-06-18 (trusted-device-secret-vault-escrow-correction)](#session-2026-06-18-trusted-device-secret-vault-escrow-correction) --- 1 message
@@ -125,6 +126,15 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-19 (mac-mini-secret-vault-feedback)
+
+**2026-06-19 00:26:50 UTC**
+> ok feedback from the latest run on my mac mini:
+>
+> [Attachment referenced: pasted Claude Code Mac mini setup log reporting stale `youmd@0.8.2`, successful prereq/setup/clone stages, empty account-backed Secret Vault pull, fallback to iCloud env vault, and non-TTY passphrase failure.]
 
 ---
 
