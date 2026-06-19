@@ -7,6 +7,13 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-19 — Local/global agent stack inventory
+- [x] Confirm `youmd skill list` is catalog-driven, not a full local filesystem skill crawl
+- [x] Generate a secret-safe HTML + Mermaid visual of local/global skills, stacks, host exposure roots, prompts/preferences/context/log buckets, and counts
+- [x] Generate a companion JSON inventory for exact counts and full skill/path samples
+- [x] Record the current sync gap: 426 unique local skill names versus 11 You.md catalog skills on this Mac
+- [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
+
 ### 2026-06-19 — Home DSI mesh and Tasks board
 - [x] Convert Tasks into a board-first work surface with list mode retained for audits
 - [x] Add project/personal filtering, task search, owner/status/scope filters, and compact Kanban columns

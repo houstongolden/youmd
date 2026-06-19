@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — Local agent stack inventory
+
+### docs(sync): map local/global skills before expanding You.md sync
+- Added `scripts/local-agent-stack-inventory.mjs`, a repeatable secret-safe scanner for Houston's local agent skill/stack system.
+- Generated `project-context/local-agent-stack-inventory-2026-06-19.html` with a Mermaid topology diagram plus tables for canonical roots, Claude/Codex/Cursor/Pi exposure, shared instruction symlinks, prompts/preferences/context/log buckets, project-context coverage, and catalog gaps.
+- Generated `project-context/local-agent-stack-inventory-2026-06-19.json` with exact counts and sampled paths.
+- Confirmed the current mismatch: `youmd skill list` reads the You.md catalog (`11` skills here) while the broader machine has `426` unique local skill names and `823` unique real `SKILL.md` files across shared, GStack, SciStack, host, and plugin roots.
+- Noted that the globally installed `youmd` is `0.8.2` while the repo CLI package is `0.8.9`, which is relevant before debugging Mac-to-Mac/account sync behavior.
+
 ## 2026-06-19 — Home DSI mesh and task board
 
 ### feat(shell): make Home and Tasks more like working surfaces

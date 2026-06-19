@@ -4,6 +4,21 @@ Last Updated: 2026-06-19
 
 ---
 
+## 2026-06-19 — Local/global skill stack inventory and You.md catalog gap
+
+### 144. Map the whole local agent skill/prompt/context system before fixing account sync
+**Status:** FIRST INVENTORY COMPLETE / SYNC FIX NOT STARTED
+**Verified:** YES locally (`node scripts/local-agent-stack-inventory.mjs`, generated HTML opened locally, JSON counts inspected)
+**Production Verified:** N/A
+**Source:** 2026-06-19 — Houston: "I am on my Mac Mini and just ran youmd skill sync and youmd skill list - and it only returned 10 skills ... help whip up a quick html visual + mermaid diagram showing ALL my local/global skills and shared prompts/preferences..."
+**Actionable Scope:**
+1. Confirm why `youmd skill list` only shows the small catalog instead of the whole local/global stack. **DONE first pass:** CLI reads `~/.youmd/skills/youmd-skills.yaml` plus hard-coded default skills; it does not crawl Claude/Codex/GStack/SciStack/shared roots.
+2. Inventory local/global skills, stack ownership roots, symlinks, host exposure paths, prompts/preferences/context/memory/log buckets, and counts. **DONE first pass:** generated secret-safe JSON and HTML reports.
+3. Include a Mermaid visual showing canonical sources flowing into Claude Code, Codex, Cursor, Pi/.agents, and the You.md sync layer. **DONE.**
+4. Identify the sync gap before changing behavior. **DONE first pass:** this Mac has `426` unique local skill names, `823` unique real `SKILL.md` files, `405` direct host exposure records, and only `11` You.md catalog skills; installed global `youmd` is `0.8.2` while repo CLI is `0.8.9`.
+5. Next, decide whether You.md should catalog all host-discoverable skills, only canonical personal-stack skills, or a typed union with public/private/syncable flags. **OPEN.**
+**Artifacts:** `project-context/local-agent-stack-inventory-2026-06-19.html`, `project-context/local-agent-stack-inventory-2026-06-19.json`, and `scripts/local-agent-stack-inventory.mjs`.
+
 ## 2026-06-19 — DSI, custom Views/Widgets, and pixel machine/agent characters
 
 ### 143. Make Home, Tasks, skills, analytics, and shell IA feel like one focused product surface

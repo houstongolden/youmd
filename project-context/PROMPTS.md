@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 122
-**Total messages:** 550
+**Total sessions:** 123
+**Total messages:** 551
 **Last updated:** 2026-06-19
 
 ## Table of Contents
 
+1. [2026-06-19 (local-global-skill-stack-inventory)](#session-2026-06-19-local-global-skill-stack-inventory) --- 1 message
 1. [2026-06-19 (shell-live-brain-log-minimal-surface)](#session-2026-06-19-shell-live-brain-log-minimal-surface) --- 10 messages
 1. [2026-06-19 (mac-mini-project-clarity-skill-sync-proof)](#session-2026-06-19-mac-mini-project-clarity-skill-sync-proof) --- 1 message
 1. [2026-06-19 (project-clarity-audit-shared-skill)](#session-2026-06-19-project-clarity-audit-shared-skill) --- 1 message
@@ -132,6 +133,11 @@ Auto-maintained — new messages appended each session.
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
 
 ---
+
+## Session: 2026-06-19 (local-global-skill-stack-inventory)
+
+**2026-06-19 21:06:01 UTC**
+> I am on my Mac Mini and just ran youmd skill sync and youmd skill list - and it only returned 10 skills ... i don't think it is properly syncing my whole local global skill/stack system properly like it should unless there are other commands I should run ... but maybe also for clarity - you can help whip up a quick html visual + mermaid diagram showing ALL my local/global skills and shared prompts/preferences etc I want to see the full directory setup on my machine for this - all the prompts/skills/preferences that are synced between codex, claude code, cursor etc along with all the context, memory, prompt-logs, etc EVERYTHING... then once it matches what I believe it actually is and covers everything - we can dive into why it is not ALL syncing with my you.md account and other computer how it should - included all settings, symlinks, skills, stacks, shared skills or agent/platform specific versions of them etc and full counts for everything too please
 
 ## Session: 2026-06-19 (shell-live-brain-log-minimal-surface)
 
