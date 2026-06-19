@@ -88,6 +88,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("no env-vault Keychain item found; explicit local fallback may prompt for the passphrase");
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --list --map-existing --existing-only --skip-agent-auth');
     expect(command).toContain('youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --map-existing --existing-only --skip-agent-auth');
+    expect(command).toContain("reconciling identity/skills after env-vault and source-Mac updates");
+    expect(command).toContain("fresh machine $(hostname) reconciled You.md bundle after env-vault handling");
     expect(command).toContain("youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
     expect(command).toContain("youmd env vault share");
     expect(command).toContain("youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault");
@@ -138,6 +140,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("trusted-device key envelope");
     expect(prompt).toContain("stop with the exact source-Mac `youmd env vault share` action");
     expect(prompt).toContain("Local/iCloud passphrase fallback runs only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1`");
+    expect(prompt).toContain("reconcile `youmd pull && youmd sync` after env-vault handling");
+    expect(prompt).toContain("do not leave this Mac showing `remote ahead`");
     expect(prompt).toContain("local vault passphrase/Keychain only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1`");
     expect(prompt).toContain("after the new Mac registers itself run `youmd env vault share`");
     expect(prompt).toContain("per-device encrypted passphrase envelopes");

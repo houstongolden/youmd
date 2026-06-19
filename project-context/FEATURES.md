@@ -1,8 +1,10 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-06-18
+Last Updated: 2026-06-19
 
 ## 2026-06-17 Session Notes
+
+- 2026-06-19 Mac mini trusted-device setup follow-up: The real Mac mini run now proves the intended Secret Vault path instead of the old passphrase loop. `youmd@0.8.7` is published on npm, the Mac mini restored through trusted-device envelope `svd_248cb16f09ddcc0f04c909d1` from encrypted snapshot `env-vault-2026-06-18T0741Z`, restored `8` project `.env.local` files without exposing values, and synced machine proof with `secretValuesExposed: false`. Follow-up hardening fixes the public `install.sh` Bash 3.2 empty-array crash so fresh Macs no longer need `YOUMD_FORCE_USER_NPM_PREFIX=1`, adds a regression test for the generated installer, and adds a post-vault `youmd pull && youmd sync` reconcile checkpoint to CLI/web prompts plus hosted `machine-bootstrap` so new machines self-heal source-Mac bundle drift before readiness proof.
 
 - 2026-06-18 home dashboard + global tasks: `/shell` now opens to a real Home dashboard instead of a profile/chat-only default. The Home pane reads the existing Convex Portfolio Graph task system and surfaces Houston-owned tasks, agent-owned tasks, personal task count, focused projects, recent shipped/moved activity, and latest brain dumps. A dedicated Tasks pane provides global personal/project task triage with active/done, owner, and personal/project filters plus quick assignment controls (`me`, `agent`, `doing`, `done`, `personal`). Shell navigation is simplified around Home, Projects, APIs, Skillstacks, Connect, Identity, Stats, and Account, and slash commands now route `/home`, `/dashboard`, `/today`, `/tasks`, and `/taskboard`. Verified in the Codex in-app Browser on `/shell`, `/shell?tab=home`, and `/shell?tab=tasks` with clean browser logs.
 

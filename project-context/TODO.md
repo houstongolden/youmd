@@ -1,11 +1,21 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-18
+Last Updated: 2026-06-19
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-19 — Mac mini trusted-device setup follow-up
+- [x] Fix the `install.sh` Bash 3.2 empty-array crash so fresh Macs no longer need `YOUMD_FORCE_USER_NPM_PREFIX=1`
+- [x] Add a regression test that reads the generated install route and blocks reintroducing `NPM_GLOBAL_FLAGS=()`
+- [x] Add post-vault `youmd pull && youmd sync` reconciliation to CLI and web fresh-machine setup prompts
+- [x] Update hosted `machine-bootstrap` skill seed text so local agents run the post-vault reconcile before proofing readiness
+- [x] Confirm npm latest is `youmd@0.8.7`
+- [x] Record the Mac mini trusted-device restore proof: device registered, env vault restored via envelope, machine proof synced, and raw secrets stayed local
+- [ ] Verify the user's 90-day Mac mini expansion result after Houston reports back
+- [ ] Verify production `https://you.md/install.sh` after deploy no longer contains `NPM_GLOBAL_FLAGS`
 
 ### 2026-06-18 — Home dashboard and global task surface
 - [x] Make `/shell` default to a real Home dashboard instead of leaving the user in chat/profile-only mode
@@ -36,8 +46,9 @@ PRD Version: 2.3
 - [x] Verify live source-Mac message send/inbox, websocket materialization, `secretValuesExposed: false`, and no raw `ym_` / `sk-` / env-key patterns in local status JSON
 - [x] Patch Mac mini stale-install regression: setup now source-installs from GitHub main and hard-gates `youmd >= 0.8.6` before login/vault/agent-bus work
 - [x] Bump CLI to `0.8.6`
-- [ ] Houston publishes `youmd@0.8.6` to npm with OTP
-- [ ] Mac mini reruns the setup prompt on `0.8.6`, sends a `machine-sync` message back, and both Macs show the same agent-bus inbox/status
+- [x] Houston published `youmd@0.8.7` to npm with OTP
+- [x] Mac mini reran the setup prompt on `0.8.7`, restored env via trusted-device Secret Vault, and synced machine proof
+- [ ] Confirm the 90-day expansion sends a fresh `machine-sync` message back and both Macs show the same agent-bus inbox/status
 
 ### 2026-06-18 — Reference-intelligence follow-through visibility
 - [x] Verify whether `steipete/agent-scripts` really had recent upstream activity and stop describing "no delta since last sync" as "no activity"
@@ -68,8 +79,9 @@ PRD Version: 2.3
 - [x] Deploy Convex production and smoke the websocket sync head without exposing secrets
 - [x] Install/reload local daemons on this Mac and verify the realtime daemon activity log
 - [x] Bump CLI to `0.8.6` for npm publish
-- [ ] Publish CLI `0.8.6` to npm with OTP so new machines and `npx youmd@latest` get the realtime daemon + Secret Vault status path
-- [ ] Verify the Mac mini fresh-machine setup after `0.8.6` publish and confirm its daemon status shows `realtime brain / live websocket` plus Secret Vault ready/missing state
+- [x] Publish CLI `0.8.7` to npm with OTP so new machines and `npx youmd@latest` get the realtime daemon + Secret Vault status path
+- [x] Verify the Mac mini fresh-machine setup after `0.8.7` publish: trusted-device vault restore succeeded and machine proof synced
+- [ ] Confirm Mac mini daemon status shows `realtime brain / live websocket` after the 90-day expansion finishes
 
 ### 2026-06-18 — You.md Secret Vault trusted-device env sync
 - [x] Teach generated fresh-machine prompts and the bundled `machine-bootstrap` ystack skill that Claude/Codex should use `youmd` + `you` behind the scenes for status/sync/skill/vault/portfolio/verify work and only interrupt Houston for real auth/passphrase/OTP/permission/90-day-expansion gates
@@ -89,8 +101,9 @@ PRD Version: 2.3
 - [x] Update CLI/web fresh-machine prompts and hosted `machine-bootstrap` so the new Mac registers first and the source Mac runs `youmd env vault share` if an envelope is missing
 - [x] Extend realtime daemon Secret Vault status with trusted-device counts and envelope counts instead of treating snapshot presence as restore readiness
 - [x] Live source-Mac proof: registered device `svd_e87e4e3e4dc843ac1f8d73d7`, validated the source passphrase against `env-vault-2026-06-18T0741Z.tar.enc`, shared `1` envelope, proved headless `pull --restore` into an empty temp root, and refreshed realtime status to `1/1 device envelopes`
-- [ ] Publish CLI `0.8.6` to npm with OTP (`npm view youmd version` is still `0.8.5`)
-- [ ] Rerun the generated Mac mini setup after `0.8.6` publish/install; confirm the Mac mini registers a second device, rerun `youmd env vault share` on this source Mac, rerun restore on the Mac mini, and verify the synced machine proof row + agent-bus reply
+- [x] Publish CLI `0.8.7` to npm with OTP (`npm view youmd version` returns `0.8.7`)
+- [x] Rerun the generated Mac mini setup after `0.8.7` publish/install; the Mac mini registered a second device, source Mac shared envelopes, Mac mini restored via trusted-device pull, and synced machine proof
+- [ ] Confirm the 90-day expansion proof row + agent-bus reply after Houston reports back
 
 ### 2026-06-18 — Machine setup prompt correction
 - [x] Fix Machine tab `copy setup` so it copies a Claude/Codex execution prompt, not only a raw shell command
@@ -103,9 +116,9 @@ PRD Version: 2.3
 - [x] Revoke unused fresh-machine bootstrap keys after the exposed pasted key incident
 - [x] Verify local CLI/npm publish state: local `0.8.6`, npm latest still behind, `0.8.6` unpublished until Houston runs npm publish with OTP
 - [x] Restart local `next start -p 3100` from the fresh build
-- [ ] Publish CLI `0.8.6` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
+- [x] Publish CLI `0.8.7` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
 - [ ] Re-run the Machine tab button in the signed-in Codex browser and verify the clipboard starts with `You are Claude Code or Codex running on my brand-new Mac.`
-- [ ] Run the corrected prompt on the Mac mini with the transferred env vault and verify `~/Desktop/CODE_YOU`, MCP config, skill sync, project clone count, env restore, and synced machine proof
+- [x] Run the corrected prompt on the Mac mini with trusted-device Secret Vault and verify `~/Desktop/CODE_YOU`, MCP config, skill sync, project clone count, env restore, and synced machine proof
 
 ### 2026-06-18 — Machine tab new-computer setup surface
 - [x] Add a top Machine pane setup panel matching the Skills tab intro style

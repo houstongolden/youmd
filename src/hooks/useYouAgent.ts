@@ -432,6 +432,10 @@ else
     exit 1
   fi
 fi
+echo "[you.md] reconciling identity/skills after env-vault and source-Mac updates"
+youmd pull || true
+youmd sync || true
+youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) reconciled You.md bundle after env-vault handling" || true
 echo "[you.md] rehydrating portfolio graph with local README/project-context/env-key evidence"
 run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true
 echo "[you.md] auditing cloned project readiness"
@@ -542,6 +546,7 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     `- preview the graph-backed plan, create \`${FRESH_MACHINE_BOOTSTRAP_ROOT}\`, and clone only projects marked ACTIVE plus Top Priority/Focusing from the last ${FRESH_MACHINE_BOOTSTRAP_DAYS} days first`,
     `- ask whether to expand to all ACTIVE plus Top Priority/Focusing projects from the last ${FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS} days before calling the full project clone set complete`,
     "- check env-vault tooling, register this Mac as a trusted Secret Vault device, pull the latest account-backed You.md Secret Vault encrypted snapshot when available, unwrap the vault passphrase locally through a trusted-device key envelope, restore env files into existing cloned project dirs with `--map-existing --existing-only --skip-agent-auth`, or stop with the exact source-Mac `youmd env vault share` action instead of asking for a passphrase on the new Mac. Local/iCloud passphrase fallback runs only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOUMD_ENV_VAULT` is explicitly provided. After env handling, rehydrate local project/env evidence.",
+    "- reconcile `youmd pull && youmd sync` after env-vault handling so source-Mac bundle updates, new trusted-device envelopes, shared skills, and machine proof state do not leave this Mac showing `remote ahead`",
     "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
     "- bound portfolio hydration with `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
     "",

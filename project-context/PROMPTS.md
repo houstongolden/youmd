@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 118
-**Total messages:** 529
+**Total sessions:** 119
+**Total messages:** 530
 **Last updated:** 2026-06-19
 
 ## Table of Contents
 
+1. [2026-06-19 (mac-mini-trusted-device-restore-followup)](#session-2026-06-19-mac-mini-trusted-device-restore-followup) --- 1 message
 1. [2026-06-19 (mac-mini-secret-vault-feedback)](#session-2026-06-19-mac-mini-secret-vault-feedback) --- 1 message
 1. [2026-06-18 (home-dashboard-global-tasks-surface)](#session-2026-06-18-home-dashboard-global-tasks-surface) --- 1 message
 1. [2026-06-18 (vault-passphrase-callout-logo-polish)](#session-2026-06-18-vault-passphrase-callout-logo-polish) --- 1 message
@@ -16424,3 +16425,12 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 - `agent`: codex
 
 > k awesome - please ensure you have project detail pages clickable from the projects portfolio properly and that the project graph must include links to the exact API docs page url and curl command and stack associated with it etc. --- and more obviously! the SHIPPED stuff we talked about earlier please add that! so crucial! Shipped today, 7d, 30d, 90d, etc etc...! show what me and my agents are shipping on the main card and in more detail on the project pages etc ---  i need a quick way to see a more compact view of my projects portfolio list and need to have a quick way to give projects a quick status order of priority or focus etc... basically there are a lot and showing all details by default but should be able to click into the project by clicking the card or a view details next to the timeline option but even a dropdown button near the timeline one to the right of it maybe since i do think sorting by priority/focus is gonna be helpful and add filters/sorting/search above the PRojects list in the portfolio and i think some simple statuses or tags like: Top Priority, Focussing, Freeze/On Ice, Abandoned, Dead/Killed. with just a simple little single icon that if you hover or click it the different icons with simple one word labels that show on hover appear or something for the status even show a little number by it or something so you know 1 = top priority, 0 - dead/abandoned, etc.
+
+---
+
+## Session: 2026-06-19 (mac-mini-trusted-device-restore-followup)
+
+**2026-06-19 01:36:00 UTC**
+> yeah fix the issues you already identified - it seemed to work so i asked it to complete the 90 day project next and will report back fter that but here is also their latest responses:
+>
+> [Attachment summary, secret-safe: Mac mini installed youmd 0.8.7, restored the account-backed encrypted env snapshot through a trusted-device envelope, synced machine proof with secretValuesExposed false, and left the 90-day active-project expansion as the next step. The response also noted the source install Bash 3.2 workaround still needed to be committed/deployed.]

@@ -41,6 +41,9 @@ describe("skills.seedBundledSkills", () => {
     });
     expect(machine?.content).toContain("youmd machine projects");
     expect(machine?.content).toContain("persisted portfolio graph");
+    expect(machine?.content).toContain("youmd pull");
+    expect(machine?.content).toContain("youmd sync");
+    expect(machine?.content).toContain("new trusted-device envelopes");
 
     const auditor = await t.query(api.skills.getByName, {
       name: "portfolio-graph-auditor",

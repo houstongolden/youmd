@@ -1,6 +1,6 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-18
+Last Updated: 2026-06-19
 
 ---
 
@@ -1843,29 +1843,31 @@ Last Updated: 2026-06-18
 ## June 18 Session Additions
 
 ### 137. Machine tab fresh-computer setup prompt must be agent-readable
-**Status:** DONE LOCALLY / NPM PUBLISH + REAL MAC MINI PROOF PENDING
-**Verified:** PARTIAL (focused CLI prompt tests, CLI build, root typecheck, production Next build, package dry-run, compiled prompt smoke, and local server restart passed across the setup-prompt work)
+**Status:** DONE / 90-DAY EXPANSION FOLLOW-UP PENDING
+**Verified:** PARTIAL (focused CLI prompt tests, CLI build, root typecheck, production Next build, package dry-run, compiled prompt smoke, local server restart, npm `0.8.7` publish, and live Mac mini trusted-device vault restore proof passed; user-triggered 90-day expansion report pending)
 **Source:** 2026-06-18 — Houston: "the copy setup command did not work at all... there were no tasks or instructions it was just the raw config file or something... it needs to include a proper claude code prompt structure with the curl install command..."
 **Actionable Scope:**
 1. Stop copying only the raw shell/config blob from the Machine tab. **DONE:** primary button now copies `buildFreshMachineBootstrapMessage(...)`, a Claude/Codex setup prompt with role, goal, "execute this" instruction, fenced bash command, verification checklist, project gate, env-vault contract, and done-ness rules.
 2. Add MCP setup to the fresh-machine command itself. **DONE:** web-shell and CLI prompt scripts now run `youmd mcp --install claude --auto || true` and `youmd mcp --install codex --auto || true`.
 3. Keep CLI prompt parity. **DONE:** `youmd machine prompt` now emits the same agent-readable prompt shape rather than the old "copy this command" wrapper.
 4. Secure exposed bootstrap material. **DONE:** unused fresh-machine bootstrap keys were revoked after a key was pasted into chat; future button clicks mint a new 7-day scoped key.
-5. Clarify npm status. **UPDATED:** local CLI is now `0.8.7`, npm latest is still behind, and the fresh-machine prompt/ystack/realtime-daemon/Secret-Vault-status changes require publishing `0.8.7` for npm fallback and `npx youmd@latest`. Curl install defaults to GitHub source/main once this commit is pushed.
-6. Prove on the actual Mac mini. **PENDING:** run the corrected prompt on the new computer with the transferred env vault, then verify `~/Desktop/CODE_YOU`, Claude/Codex MCP config, skill sync, env restore, active/focused project clones, and synced machine proof.
+5. Clarify npm status. **UPDATED:** local CLI and npm latest are now `0.8.7`, so npm fallback and `npx youmd@latest` have the fresh-machine prompt/ystack/realtime-daemon/Secret-Vault-status changes. Curl install defaults to GitHub source/main once this commit is pushed.
+6. Prove on the actual Mac mini. **DONE for 30-day pass / 90-day expansion pending:** the corrected prompt installed `youmd@0.8.7`, restored env through trusted-device Secret Vault, verified project/env readiness, and synced machine proof. Houston has asked the Mac mini agent to continue the 90-day expansion and will report back.
 7. Ensure ystack teaches behind-the-scenes You CLI/You Agent use. **DONE / HOSTED VERIFIED:** CLI/web fresh-machine prompts, bundled `machine-bootstrap`, Convex hosted skill seed content, and shared `.agent-shared` `/machine-sync` now instruct Claude/Codex to run `youmd` status/sync/skill/vault/portfolio/verify commands themselves and interrupt Houston only for true human-gated steps. Live `/api/v1/skills?name=machine-bootstrap` verified the new section, 30-day-first commands, explicit 90-day expansion, and Secret Vault restore path.
 8. Fix latest Mac mini failure mode. **DONE LOCALLY:** strict fresh-machine setup now stops at the trusted-device Secret Vault share gate, sends a realtime machine-sync status, and prints `youmd env vault share` for the source Mac instead of auto-detecting iCloud/local vaults and asking for a passphrase in a non-TTY agent session. Local encrypted-file fallback is explicit only via `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOUMD_ENV_VAULT=/path/to/vault`.
+9. Fix Bash 3.2 installer workaround. **DONE LOCALLY:** `install.sh` no longer expands an empty Bash array under `set -u`; the generated route now uses `NPM_GLOBAL_PREFIX` + `npm_install_global()` and has a regression test. Production route verification remains pending after deploy.
+10. Reconcile source-Mac bundle drift. **DONE LOCALLY:** generated CLI/web prompts and hosted `machine-bootstrap` now run `youmd pull && youmd sync` after env-vault handling so the new Mac does not leave setup with a `remote ahead` state after source-Mac shares/envelope updates.
 
 ### 138. Make shared You.md skills, project context, and stacks sync Notion-like across trusted devices
-**Status:** DONE FIRST REALTIME SLICE / NPM PUBLISH + MAC MINI FOLLOW-UP PENDING
-**Verified:** PARTIAL (Convex prod deployed, production websocket sync-head smoke passed, local CLI `youmd sync --live --daemon` smoke passed, and this Mac's launchd daemon set now shows `com.youmd.realtime-sync` loaded)
+**Status:** DONE FIRST REALTIME SLICE / 90-DAY MAC MINI FOLLOW-UP PENDING
+**Verified:** PARTIAL (Convex prod deployed, production websocket sync-head smoke passed, local CLI `youmd sync --live --daemon` smoke passed, this Mac's launchd daemon set shows `com.youmd.realtime-sync` loaded, npm `0.8.7` is published, and Mac mini restored via trusted-device vault; 90-day expansion/device-message proof pending)
 **Source:** 2026-06-18 — Houston: "all synced skills and you.md project context and shared local/global skills/stacks should sync real-time like Notion too ya know ? come on"
 **Actionable Scope:**
 1. Add an always-on realtime account-state lane instead of relying only on 5m/15m polling. **DONE:** `youmd sync --live --daemon` subscribes to Convex websocket updates through a short-lived `ys_` sync session.
 2. Keep `.env.local` secret handling safe. **DONE:** the sync head only exposes encrypted-vault metadata and explicitly returns `secretValuesExposed: false`; plaintext env restore remains local/Keychain/passphrase-gated.
 3. Materialize useful local state. **DONE:** live updates pull identity files, re-render installed You.md skills, and trigger bounded shared skillstack/project-context syncs.
 4. Make it visible in the Machine tab and CLI. **DONE:** `com.youmd.realtime-sync` is included in daemon install/status and Machine readiness as `realtime brain / live websocket`.
-5. Publish/install everywhere. **PENDING:** publish CLI `0.8.7` to npm and rerun the Mac mini setup so the new machine has the realtime daemon, trusted-device Secret Vault share gate, and account Secret Vault status from the normal install path.
+5. Publish/install everywhere. **DONE for 30-day pass:** CLI `0.8.7` is published to npm, and the Mac mini setup ran with the realtime daemon, trusted-device Secret Vault share gate, and account Secret Vault status from the normal install path.
 6. Remaining architecture gap. **OPEN:** GitHub-backed shared skill repos still use conflict-safe git sync as the materialization layer; true instant cross-device sync for every non-Convex source should add GitHub webhook/change-event ingestion into the Convex sync head.
 
 ### 139. Main YOU home feed/dashboard plus global personal/project task tracking

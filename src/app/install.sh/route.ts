@@ -17,7 +17,7 @@ YOUMD_HOME_DIR="\${YOUMD_HOME:-$HOME/.youmd}"
 YOUMD_BIN_DIR="$YOUMD_HOME_DIR/bin"
 YOUMD_NPM_PREFIX="\${YOUMD_NPM_PREFIX:-$YOUMD_HOME_DIR/npm-global}"
 TMP_DIR=""
-NPM_GLOBAL_FLAGS=()
+NPM_GLOBAL_PREFIX=""
 USING_USER_NPM_PREFIX=0
 export PATH="$YOUMD_BIN_DIR:$YOUMD_NPM_PREFIX/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
@@ -66,11 +66,19 @@ can_write_npm_global_root() {
 configure_npm_target() {
   if [ "\${YOUMD_FORCE_USER_NPM_PREFIX:-0}" = "1" ] || ! can_write_npm_global_root; then
     mkdir -p "$YOUMD_NPM_PREFIX/bin" "$YOUMD_BIN_DIR"
-    NPM_GLOBAL_FLAGS=(--prefix "$YOUMD_NPM_PREFIX")
+    NPM_GLOBAL_PREFIX="$YOUMD_NPM_PREFIX"
     USING_USER_NPM_PREFIX=1
     prepend_path_once "$YOUMD_NPM_PREFIX/bin"
     prepend_path_once "$YOUMD_BIN_DIR"
     echo "Using user-writable npm prefix: $YOUMD_NPM_PREFIX"
+  fi
+}
+
+npm_install_global() {
+  if [ -n "$NPM_GLOBAL_PREFIX" ]; then
+    npm install -g --prefix "$NPM_GLOBAL_PREFIX" "$@"
+  else
+    npm install -g "$@"
   fi
 }
 
@@ -150,12 +158,12 @@ install_from_source() {
   npm ci >/dev/null
   npm run build >/dev/null
   TARBALL="$(npm pack --silent)"
-  npm install -g "\${NPM_GLOBAL_FLAGS[@]}" "$TARBALL" >/dev/null
+  npm_install_global "$TARBALL" >/dev/null
 }
 
 install_from_npm() {
   echo "Installing $PACKAGE globally..."
-  npm install -g "\${NPM_GLOBAL_FLAGS[@]}" "$PACKAGE"
+  npm_install_global "$PACKAGE"
 }
 
 if [ "$INSTALL_CHANNEL" = "source" ]; then

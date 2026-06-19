@@ -46,6 +46,9 @@ describe("web /new computer bootstrap prompt parity", () => {
     expect(source).toContain("com~apple~CloudDocs/Desktop/youmd-env-vault");
     expect(source).toContain('export YOUMD_ENV_VAULT="$DETECTED_ENV_VAULT"');
     expect(source).toContain("Local/iCloud passphrase fallback runs only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1`");
+    expect(source).toContain("reconciling identity/skills after env-vault and source-Mac updates");
+    expect(source).toContain("reconcile `youmd pull && youmd sync` after env-vault handling");
+    expect(source).toContain("fresh machine \\$(hostname) reconciled You.md bundle after env-vault handling");
     expect(source).toContain("--map-existing --existing-only --skip-agent-auth");
     expect(source).toContain("YOUMD_ENV_VAULT_KEYCHAIN_SERVICE:-youmd-env-vault");
     expect(source).toContain("security find-generic-password");
