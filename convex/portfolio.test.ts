@@ -97,6 +97,33 @@ describe("portfolio repo update history", () => {
       secretValuesExposed: false,
     });
 
+    const activities = await asOwner.query(api.brainActivity.listRecent, {
+      clerkId: CLERK,
+      source: "machine",
+      limit: 10,
+    });
+    expect(activities).toHaveLength(1);
+    expect(activities[0]).toMatchObject({
+      source: "machine",
+      channel: "machine-proof",
+      kind: "ready",
+      status: "ok",
+      title: "houston-mac-mini machine proof ready",
+      detail: "12/12 projects ready · 0 need env · 0 failures",
+      entityType: "machineProofReport",
+      entityId: String(first.proofId),
+      sourceHost: "houston-mac-mini",
+      sourceAgent: "youmd machine verify",
+      secretValuesExposed: false,
+    });
+    expect(activities[0].metadata).toMatchObject({
+      scanned: 12,
+      ready: 12,
+      needsEnv: 0,
+      failures: 0,
+      proofSecretValuesExposed: false,
+    });
+
     const otherProofs = await asOther.query(api.portfolio.listMachineProofs, {
       clerkId: OTHER_CLERK,
       limit: 10,

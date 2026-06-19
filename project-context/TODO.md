@@ -986,6 +986,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Make `youmd skill init-project` bootstrap both Claude and Codex skill discovery paths by default, then verify scaffold/additive flows through the installed local CLI
 - [x] Harden fresh-machine Secret Vault setup so strict Mac mini bootstraps wait for trusted-device `youmd env vault share` instead of defaulting into local/iCloud passphrase fallback; CLI bumped to 0.8.7
 - [x] Route skill sync, portfolio hydrate, realtime daemon checkpoints, and source crawl run-policy decisions into the canonical `brainActivities` live log; Convex deployed and endpoint smoke-tested with secrets redacted
+- [x] Route machine proof refreshes, Secret Vault trusted-device registrations, encrypted snapshot uploads, and device envelope shares into the canonical `brainActivities` live log without exposing key/vault/env material
 - [ ] Decide later whether You.md should ever store revealable API-key ciphertext for future keys, or keep the current hash-only model permanently
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current

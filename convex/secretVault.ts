@@ -18,6 +18,71 @@ async function loadOwner(
   return user;
 }
 
+function cleanActivityText(value: string | undefined, fallback: string, maxChars: number): string {
+  const cleaned = (value ?? fallback)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (cleaned || fallback).slice(0, maxChars);
+}
+
+function vaultActivityStatus(value: string): "live" | "ok" | "warn" | "error" | "info" {
+  if (value === "pulled" || value === "uploaded" || value === "registered" || value === "shared") return "ok";
+  if (value === "missing" || value === "blocked") return "warn";
+  return "info";
+}
+
+async function recordVaultActivity(
+  ctx: MutationCtx,
+  args: {
+    userId: Id<"users">;
+    activityId: string;
+    kind: string;
+    title: string;
+    detail?: string;
+    entityType?: string;
+    entityId?: string;
+    sourceHost?: string;
+    metadata?: Record<string, unknown>;
+    occurredAt?: number;
+  },
+) {
+  const now = Date.now();
+  const activityId = cleanActivityText(args.activityId, "secret-vault", 160);
+  const existing = await ctx.db
+    .query("brainActivities")
+    .withIndex("by_userId_activityId", (q) => q.eq("userId", args.userId).eq("activityId", activityId))
+    .first();
+  const patch = {
+    source: "vault",
+    channel: "secret-vault",
+    kind: cleanActivityText(args.kind, "event", 80),
+    title: cleanActivityText(args.title, "Secret Vault event", 180),
+    detail: args.detail ? cleanActivityText(args.detail, "", 800) : undefined,
+    status: vaultActivityStatus(args.kind),
+    entityType: args.entityType,
+    entityId: args.entityId,
+    sourceHost: args.sourceHost ? cleanActivityText(args.sourceHost, "", 120) : undefined,
+    sourceAgent: "youmd-secret-vault",
+    metadata: args.metadata,
+    occurredAt: args.occurredAt ?? now,
+    updatedAt: now,
+    secretValuesExposed: false,
+  };
+
+  if (existing) {
+    await ctx.db.patch(existing._id, patch);
+    return;
+  }
+
+  await ctx.db.insert("brainActivities", {
+    userId: args.userId,
+    activityId,
+    ...patch,
+    createdAt: now,
+  });
+}
+
 const snapshotArgs = {
   clerkId: v.string(),
   _internalAuthToken: v.optional(v.string()),
@@ -92,6 +157,30 @@ export const createEnvVaultSnapshot = mutation({
 
     const snapshot = await ctx.db.get(snapshotId);
     if (!snapshot) throw new Error("Secret vault snapshot failed to save");
+    await recordVaultActivity(ctx, {
+      userId: user._id,
+      activityId: `secret-vault:snapshot:${snapshotId}`,
+      kind: "uploaded",
+      title: "Secret Vault snapshot uploaded",
+      detail: `${snapshot.projectCount} projects / ${snapshot.variableCount ?? 0} vars · ${snapshot.fileName}`,
+      entityType: "secretVaultSnapshot",
+      entityId: String(snapshotId),
+      sourceHost: snapshot.sourceHost,
+      metadata: {
+        snapshotId: String(snapshotId),
+        fileName: snapshot.fileName,
+        sizeBytes: snapshot.sizeBytes,
+        projectCount: snapshot.projectCount,
+        variableCount: snapshot.variableCount,
+        encryptionTool: snapshot.encryptionTool,
+        extension: snapshot.extension,
+        formatVersion: snapshot.formatVersion,
+        agentAuthIncluded: snapshot.agentAuthIncluded,
+        sha256Short: snapshot.sha256.slice(0, 12),
+        secretValuesExposed: false,
+      },
+      occurredAt: snapshot.createdAt,
+    });
     return toMetadata(snapshot);
   },
 });
@@ -193,6 +282,27 @@ export const registerDevice = mutation({
       )
       .first();
     if (!device) throw new Error("Secret Vault device failed to save");
+    await recordVaultActivity(ctx, {
+      userId: user._id,
+      activityId: `secret-vault:device:${device.deviceId}`,
+      kind: "registered",
+      title: `Secret Vault trusted device registered: ${device.deviceName}`,
+      detail: [device.hostName, device.platform].filter(Boolean).join(" · ") || "trusted device ready",
+      entityType: "secretVaultDevice",
+      entityId: device.deviceId,
+      sourceHost: device.hostName,
+      metadata: {
+        deviceId: device.deviceId,
+        deviceName: device.deviceName,
+        hostName: device.hostName,
+        platform: device.platform,
+        keyAlgorithm: device.keyAlgorithm,
+        trusted: device.trusted,
+        revoked: Boolean(device.revokedAt),
+        secretValuesExposed: false,
+      },
+      occurredAt: device.updatedAt,
+    });
     return device;
   },
 });
@@ -251,7 +361,28 @@ export const upsertKeyEnvelope = mutation({
         sourceHost: args.sourceHost,
         updatedAt: now,
       });
-      return await ctx.db.get(existing._id);
+      const envelope = await ctx.db.get(existing._id);
+      await recordVaultActivity(ctx, {
+        userId: user._id,
+        activityId: `secret-vault:envelope:${args.snapshotId}:${args.deviceId}`,
+        kind: "shared",
+        title: "Secret Vault device envelope refreshed",
+        detail: `trusted-device envelope ready for ${device.deviceName}`,
+        entityType: "secretVaultKeyEnvelope",
+        entityId: String(existing._id),
+        sourceHost: args.sourceHost,
+        metadata: {
+          snapshotId: String(args.snapshotId),
+          deviceId: args.deviceId,
+          deviceName: device.deviceName,
+          targetHost: device.hostName,
+          wrapAlgorithm: args.wrapAlgorithm,
+          refreshed: true,
+          secretValuesExposed: false,
+        },
+        occurredAt: now,
+      });
+      return envelope;
     }
     const id = await ctx.db.insert("secretVaultKeyEnvelopes", {
       userId: user._id,
@@ -263,7 +394,28 @@ export const upsertKeyEnvelope = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    return await ctx.db.get(id);
+    const envelope = await ctx.db.get(id);
+    await recordVaultActivity(ctx, {
+      userId: user._id,
+      activityId: `secret-vault:envelope:${args.snapshotId}:${args.deviceId}`,
+      kind: "shared",
+      title: "Secret Vault device envelope shared",
+      detail: `trusted-device envelope ready for ${device.deviceName}`,
+      entityType: "secretVaultKeyEnvelope",
+      entityId: String(id),
+      sourceHost: args.sourceHost,
+      metadata: {
+        snapshotId: String(args.snapshotId),
+        deviceId: args.deviceId,
+        deviceName: device.deviceName,
+        targetHost: device.hostName,
+        wrapAlgorithm: args.wrapAlgorithm,
+        refreshed: false,
+        secretValuesExposed: false,
+      },
+      occurredAt: now,
+    });
+    return envelope;
   },
 });
 

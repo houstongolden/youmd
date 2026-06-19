@@ -136,7 +136,10 @@ async function recordBrainActivity(
     projectSlug?: string;
     entityType?: string;
     entityId?: string;
+    channel?: string;
+    sourceHost?: string;
     sourceAgent?: string;
+    sourceRuntime?: string;
     metadata?: Record<string, unknown>;
     occurredAt?: number;
   },
@@ -149,6 +152,7 @@ async function recordBrainActivity(
     .first();
   const patch = {
     source: cleanActivityText(fields.source, "portfolio", MAX_ACTIVITY_FIELD_CHARS),
+    channel: fields.channel ? cleanActivityText(fields.channel, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
     kind: cleanActivityText(fields.kind, "event", MAX_ACTIVITY_FIELD_CHARS),
     title: cleanActivityText(fields.title, "portfolio activity", MAX_ACTIVITY_TITLE_CHARS),
     detail: fields.detail ? cleanActivityText(fields.detail, "", MAX_ACTIVITY_DETAIL_CHARS) : undefined,
@@ -156,7 +160,9 @@ async function recordBrainActivity(
     projectSlug: fields.projectSlug ? slugify(fields.projectSlug) : undefined,
     entityType: fields.entityType ? cleanActivityText(fields.entityType, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
     entityId: fields.entityId ? cleanActivityText(fields.entityId, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
+    sourceHost: fields.sourceHost ? cleanActivityText(fields.sourceHost, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
     sourceAgent: fields.sourceAgent ? cleanActivityText(fields.sourceAgent, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
+    sourceRuntime: fields.sourceRuntime ? cleanActivityText(fields.sourceRuntime, "", MAX_ACTIVITY_FIELD_CHARS) : undefined,
     metadata: fields.metadata,
     occurredAt: fields.occurredAt ?? now,
     updatedAt: now,
@@ -1666,12 +1672,72 @@ export const upsertMachineProof = mutation({
 
     if (existing) {
       await ctx.db.patch(existing._id, row);
+      await recordBrainActivity(ctx, {
+        userId: user._id,
+        activityId: `machine-proof:${machineKey}`,
+        source: "machine",
+        channel: "machine-proof",
+        kind: row.status,
+        title: `${hostName} machine proof ${row.status}`,
+        detail: `${row.ready}/${row.scanned} projects ready · ${row.needsEnv} need env · ${row.failures} failures`,
+        status: row.status,
+        entityType: "machineProofReport",
+        entityId: String(existing._id),
+        sourceHost: hostName,
+        sourceAgent: row.agentName ?? row.source,
+        metadata: {
+          machineKey,
+          rootDir,
+          platform: row.platform,
+          scanned: row.scanned,
+          ready: row.ready,
+          needsEnv: row.needsEnv,
+          partial: row.partial,
+          installPassed: row.installPassed,
+          checksPassed: row.checksPassed,
+          serversPassed: row.serversPassed,
+          failures: row.failures,
+          warningCount: row.warnings.length,
+          proofSecretValuesExposed: row.secretValuesExposed === true,
+        },
+        occurredAt: row.generatedAt,
+      });
       return { proofId: existing._id, created: false };
     }
 
     const proofId = await ctx.db.insert("machineProofReports", {
       ...row,
       createdAt: now,
+    });
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `machine-proof:${machineKey}`,
+      source: "machine",
+      channel: "machine-proof",
+      kind: row.status,
+      title: `${hostName} machine proof ${row.status}`,
+      detail: `${row.ready}/${row.scanned} projects ready · ${row.needsEnv} need env · ${row.failures} failures`,
+      status: row.status,
+      entityType: "machineProofReport",
+      entityId: String(proofId),
+      sourceHost: hostName,
+      sourceAgent: row.agentName ?? row.source,
+      metadata: {
+        machineKey,
+        rootDir,
+        platform: row.platform,
+        scanned: row.scanned,
+        ready: row.ready,
+        needsEnv: row.needsEnv,
+        partial: row.partial,
+        installPassed: row.installPassed,
+        checksPassed: row.checksPassed,
+        serversPassed: row.serversPassed,
+        failures: row.failures,
+        warningCount: row.warnings.length,
+        proofSecretValuesExposed: row.secretValuesExposed === true,
+      },
+      occurredAt: row.generatedAt,
     });
     return { proofId, created: true };
   },

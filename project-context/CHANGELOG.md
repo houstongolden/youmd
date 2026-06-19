@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — Machine and vault activity producers
+
+### feat(activity): route machine proof and Secret Vault events into the live brain stream
+- Added canonical `brainActivities` rows for machine proof refreshes, keyed by machine/root so repeated proof sync updates the current machine state instead of creating noisy duplicates.
+- Added Secret Vault activity rows for trusted device registration, encrypted env snapshot uploads, and trusted-device envelope sharing/refreshes.
+- Kept vault events secret-safe: no public keys, wrapped passphrases, encrypted archive bytes, manifest text, or raw env values are written to the Live Log activity rows.
+- Added focused Convex coverage for machine proof activity and Secret Vault trusted-device activity.
+- Verified with focused Convex tests, CLI TypeScript build, root TypeScript, production Next build, and Convex production deploy.
+
 ## 2026-06-19 — Brain activity producer ingestion
 
 ### feat(activity): let local agents and daemons write the canonical live log
