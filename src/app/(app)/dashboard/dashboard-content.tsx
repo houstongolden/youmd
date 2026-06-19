@@ -15,7 +15,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import { useYouAgent, type RestorableChatSession, type RightPane } from "@/hooks/useYouAgent";
-import { TerminalShell } from "@/components/terminal/TerminalShell";
+import { TerminalShell, type LiveLogEntry } from "@/components/terminal/TerminalShell";
 import { EditPane, type EditSubTab } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
@@ -104,6 +104,7 @@ import { ApiEnvPane } from "@/components/panes/ApiEnvPane";
 import { MachineReadinessPane } from "@/components/panes/MachineReadinessPane";
 import { HomePane, TasksPane } from "@/components/panes/TaskPanes";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import type { LocalMachineReadiness } from "@/lib/local-machine-readiness.server";
 
 type PrimaryPaneGroup = "home" | "projects" | "workbench" | "integrations" | "identity" | "insights" | "account";
 
@@ -1204,6 +1205,10 @@ export function DashboardContent() {
       ? { clerkId: user.id, userId: convexUser._id, limit: 8 }
       : "skip"
   );
+  const realtimeAgentMessages = useQuery(
+    api.agentBus.listMessages,
+    isAuthenticated && user?.id ? { clerkId: user.id, limit: 50 } : "skip"
+  );
   const shellUsername =
     convexUser?.username ||
     user?.username ||
@@ -1226,6 +1231,8 @@ export function DashboardContent() {
   const [editInitialSubTab, setEditInitialSubTab] = useState<EditSubTab>("files");
   const [viewportWidth, setViewportWidth] = useState(0);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
+  const [machineReadiness, setMachineReadiness] = useState<LocalMachineReadiness | null>(null);
+  const [machineReadinessCheckedAt, setMachineReadinessCheckedAt] = useState<number | null>(null);
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Staleness nudge — derived once bundle data loads; guarded once per session
@@ -1276,6 +1283,35 @@ export function DashboardContent() {
     window.addEventListener("resize", updateViewportWidth);
     return () => window.removeEventListener("resize", updateViewportWidth);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+    let cancelled = false;
+
+    const loadMachineReadiness = async () => {
+      try {
+        const res = await fetch("/api/local/machine-readiness?root=current", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const next = (await res.json()) as LocalMachineReadiness;
+        if (!cancelled) {
+          setMachineReadiness(next);
+          setMachineReadinessCheckedAt(Date.now());
+        }
+      } catch {
+        // Localhost-only proof surface; stay silent if the browser cannot reach it.
+      }
+    };
+
+    loadMachineReadiness();
+    const interval = window.setInterval(loadMachineReadiness, 10000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [isAuthenticated, user?.id]);
 
   const createUser = useMutation(api.users.createUser);
   const claimProfile = useMutation(api.profiles.claimProfile);
@@ -1748,6 +1784,175 @@ export function DashboardContent() {
       );
   const shellGitHubRepoName = githubConnection?.repoFullName ?? repoMirror?.repoFullName ?? null;
   const shellGitHubSyncedAt = repoMirror?.syncedAt ?? githubConnection?.lastSyncedAt ?? null;
+  const liveLogEntries: LiveLogEntry[] = (() => {
+    const entries: LiveLogEntry[] = [];
+    const push = (entry: LiveLogEntry) => entries.push(entry);
+    const now = Date.now();
+
+    if (repoUpdateBusy) {
+      push({
+        id: "repo-update-running",
+        at: now,
+        source: "github",
+        channel: "repo",
+        kind: "sync",
+        title: "repo update running",
+        detail: shellGitHubStatus.detail,
+        status: "live",
+      });
+    } else if (shellGitHubRepoName || shellGitHubSyncedAt) {
+      push({
+        id: "repo-sync-state",
+        at: shellGitHubSyncedAt ?? now,
+        source: "github",
+        channel: "repo",
+        kind: shellGitHubStatus.label,
+        title: shellGitHubRepoName ?? "repo mirror",
+        detail: shellGitHubStatus.detail,
+        status: shellGitHubStatus.label === "synced" ? "ok" : shellGitHubStatus.label === "blocked" ? "error" : "warn",
+      });
+    }
+
+    if (latestBundle) {
+      push({
+        id: "identity-bundle",
+        at: latestBundle.publishedAt ?? latestBundle.createdAt,
+        source: "brain",
+        channel: "identity",
+        kind: isPublished ? "published" : "draft",
+        title: `identity bundle v${latestBundle.version}`,
+        detail: isPublished ? "live context available to agents" : "draft context awaiting publish",
+        status: isPublished ? "ok" : "warn",
+      });
+    }
+
+    for (const step of agent.progressSteps) {
+      push({
+        id: `agent-step-${step.id}`,
+        at: step.startedAt,
+        source: "agent",
+        channel: "shell",
+        kind: step.status,
+        title: step.label,
+        detail: step.detail,
+        status: step.status === "running" ? "live" : step.status === "error" ? "error" : "ok",
+      });
+    }
+
+    const busMessages =
+      realtimeAgentMessages && Array.isArray(realtimeAgentMessages)
+        ? realtimeAgentMessages
+        : machineReadiness?.agentBus.messages ?? [];
+    for (const message of busMessages.slice(-30)) {
+      push({
+        id: `bus-${message.messageId}`,
+        at: message.createdAt,
+        source: "bus",
+        channel: message.channel,
+        kind: message.kind,
+        title: `${message.sourceAgent}${message.sourceHost ? ` @ ${message.sourceHost}` : ""}`,
+        detail: message.body,
+        status: "live",
+      });
+    }
+
+    if (machineReadiness) {
+      const proof = machineReadiness.skillSync.highlightedSkill;
+      push({
+        id: "skill-mesh-proof",
+        at: proof.updatedAt ?? machineReadiness.generatedAt,
+        source: "skills",
+        channel: "skill-sync",
+        kind: machineReadiness.skillSync.status,
+        title: `${proof.name} synced across agents`,
+        detail: `${machineReadiness.skillSync.canonicalCount} shared / ${machineReadiness.skillSync.claudeMirrorCount} claude / ${machineReadiness.skillSync.codexMirrorCount} codex`,
+        status: machineReadiness.skillSync.status === "ready" ? "ok" : "warn",
+      });
+
+      for (const daemon of machineReadiness.daemons) {
+        push({
+          id: `daemon-${daemon.label}`,
+          at: daemon.lastActivityAt ?? machineReadiness.generatedAt,
+          source: "daemon",
+          channel: daemon.name,
+          kind: daemon.loaded ? "loaded" : "missing",
+          title: daemon.name,
+          detail: daemon.lastErrorLine ?? daemon.lastLogLine ?? daemon.command,
+          status: daemon.loaded ? "ok" : "warn",
+        });
+      }
+
+      push({
+        id: "machine-readiness-summary",
+        at: machineReadiness.generatedAt,
+        source: "machine",
+        channel: machineReadiness.hostName,
+        kind: machineReadiness.summary.status,
+        title: `${machineReadiness.summary.projectReady}/${machineReadiness.summary.projectScanned} projects ready`,
+        detail: `${machineReadiness.summary.daemonsLoaded}/${machineReadiness.summary.daemonsTotal} daemons · ${machineReadiness.summary.envLocal} env locals · ${machineReadiness.summary.projectContext} project contexts`,
+        status: machineReadiness.summary.status === "ready" ? "ok" : "warn",
+      });
+
+      push({
+        id: "vault-readiness",
+        at: machineReadiness.envVault.accountSnapshotUpdatedAt ?? machineReadiness.generatedAt,
+        source: "vault",
+        channel: "secrets",
+        kind: machineReadiness.envVault.accountSnapshotStatus,
+        title: "secret vault metadata",
+        detail: machineReadiness.envVault.accountSnapshotSummary ?? "no raw env values exposed",
+        status: machineReadiness.envVault.status === "ready" ? "ok" : "warn",
+      });
+
+      if (machineReadiness.latestProof) {
+        push({
+          id: "latest-machine-proof",
+          at: machineReadiness.latestProof.generatedAt,
+          source: "proof",
+          channel: machineReadiness.latestProof.hostName,
+          kind: machineReadiness.latestProof.status,
+          title: `machine proof ${machineReadiness.latestProof.status}`,
+          detail: `${machineReadiness.latestProof.ready}/${machineReadiness.latestProof.scanned} ready · ${machineReadiness.latestProof.failures} failures`,
+          status: machineReadiness.latestProof.status === "ready" ? "ok" : machineReadiness.latestProof.status === "failed" ? "error" : "warn",
+        });
+      }
+    }
+
+    for (const session of (recentSessions as ShellChatSession[] | undefined) ?? []) {
+      push({
+        id: `chat-${session.sessionId}`,
+        at: session.lastMessageAt ?? session.createdAt,
+        source: "chat",
+        channel: session.surface,
+        kind: "session",
+        title: chatSessionTitle(session),
+        detail: `${session.messageCount} messages`,
+        status: "info",
+      });
+    }
+
+    if (machineReadinessCheckedAt) {
+      push({
+        id: "local-poll",
+        at: machineReadinessCheckedAt,
+        source: "local",
+        channel: "readiness",
+        kind: "poll",
+        title: "local machine proof refreshed",
+        detail: "safe metadata only; secrets remain local/encrypted",
+        status: "info",
+      });
+    }
+
+    return entries
+      .filter((entry) => entry.title.trim().length > 0)
+      .sort((a, b) => {
+        const atA = a.at ? new Date(a.at).getTime() : 0;
+        const atB = b.at ? new Date(b.at).getTime() : 0;
+        return atA - atB;
+      });
+  })();
+  const liveLogStatus = `${liveLogEntries.length} events · ${machineReadiness?.agentBus.state ?? "bus pending"}`;
 
   // Which mobile tab is active?
   const activeMobileTab = mobileView === "terminal" ? "terminal" : activePreviewTab;
@@ -1896,6 +2101,8 @@ export function DashboardContent() {
                 textareaRef={agent.textareaRef}
                 sendMessage={agent.sendMessage}
                 staleNotice={staleNotice}
+                liveLogEntries={liveLogEntries}
+                liveLogStatus={liveLogStatus}
               />
             </div>
 

@@ -4,6 +4,23 @@ Last Updated: 2026-06-19
 
 ---
 
+## 2026-06-19 — Live brain log and minimum shell surface
+
+### 141. Make hidden cross-machine/agent activity visible as a terminal-style live log
+**Status:** DONE local first slice
+**Verified:** PARTIAL (root TypeScript passed; production build pending in this session)
+**Production Verified:** NO
+**Source:** 2026-06-19 — Houston: "we can also just make it look like a real live server logs in a terminal and just have it as a toggle tab on the shell chat area basically - showing all the activity and updates the full central log of all updates across projects, skills, synced apps, crons, new inputs/sources etc..."
+**Actionable Scope:**
+1. Add a shell-chat-area toggle for a terminal-style live log instead of adding another right-pane tab. **DONE locally.**
+2. Show high-signal realtime activity and sync proof as a product magic moment. **DONE local first slice:** realtime agent bus, shell agent progress, repo sync, identity bundle, local daemon health, skill mesh proof, Secret Vault metadata, machine proof, and recent chats.
+3. Keep secrets out of the browser. **DONE local first slice:** only safe readiness metadata is rendered; raw `.env.local` values remain local/encrypted.
+4. Use `minimal-surface` and the latest Project Clarity Audit direction to reduce the shell toward fewer core surfaces. **PARTIAL:** this change avoids a new pane and makes Chat/Live Log the left-column modes; broader IA reduction remains open.
+5. Make the actual brain graph the canonical source for all project/skill/source/task/sync events. **PENDING:** current UI assembles existing partial sources; next pass should persist all major events into one durable activity stream.
+**Progress (2026-06-19):** Added a `chat` / `live log` toggle inside `TerminalShell` and a terminal-style `central brain log` renderer. `DashboardContent` now subscribes to owner-gated `api.agentBus.listMessages`, polls authenticated local machine readiness every 10 seconds, and composes log entries from realtime bus messages, current agent progress, GitHub mirror/update state, identity bundle state, recent chat sessions, skill mesh proof, daemon health, Secret Vault metadata, machine readiness, and latest proof reports. The design intentionally keeps this in the chat column so it surfaces the magic moment without expanding the right-pane/navigation sprawl.
+
+---
+
 ## 2026-06-19 — Shared personal-stack clarity audit skill
 
 ### 140. Package Project Clarity Audit as a local global skill outside gstack

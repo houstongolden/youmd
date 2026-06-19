@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-19 — Shell live brain log
+
+### feat(shell): add a chat-column live log for realtime mesh proof
+- Added a `chat` / `live log` toggle directly inside the shell chat column so the central activity stream is visible without creating another right-pane destination.
+- The live log renders terminal-style events from the real realtime agent bus, current shell agent progress steps, repo mirror/update state, identity bundle state, recent chat sessions, and the local machine readiness poll.
+- The local machine layer contributes safe metadata for skill mesh proof, daemon health, machine readiness, Secret Vault metadata, and latest proof reports without exposing raw `.env.local` values or secret material.
+- This is the first product-surface slice of the central brain graph log: visible proof now; durable all-event graph persistence remains the next architecture pass.
+
 ## 2026-06-19 — Desktop demo: remove mobile bottom bar, drawer-driven mobile nav
 
 ### fix(web): cleaner mobile model for `/desktop-demo` (no fixed bottom menu)

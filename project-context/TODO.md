@@ -7,6 +7,14 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-19 — Shell live brain log
+- [x] Add a `chat` / `live log` toggle inside the shell chat column instead of creating another top-level pane
+- [x] Render a terminal-style central log of realtime agent-bus messages, shell agent progress, repo/identity state, local daemon health, skill sync proof, Secret Vault metadata, machine proof, and recent chats
+- [x] Poll the authenticated local machine readiness endpoint for safe metadata only
+- [x] Keep raw `.env.local` values and secret material out of the browser log (`secretValuesExposed: false` remains the contract)
+- [ ] Next pass: persist all significant skill/project/source/task/sync updates into one durable brain-graph activity stream instead of assembling the view from existing partial sources
+- [ ] Next pass: fold desktop-demo System Status and shell Live Log into one shared product primitive
+
 ### 2026-06-19 — Cross-machine skill sync proof UI
 - [x] Add local machine readiness metadata for shared skill sync proof
 - [x] Highlight `project-clarity-audit` across canonical shared source, rendered skill, Claude mirror, Codex mirror, You.md catalog, and Stack Map

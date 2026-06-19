@@ -7,6 +7,17 @@ import { ThinkingIndicator } from "./ThinkingIndicator";
 import { TerminalInput } from "./TerminalInput";
 import { CommandPalette } from "./CommandPalette";
 
+export type LiveLogEntry = {
+  id: string;
+  at?: number | string | null;
+  source: string;
+  channel?: string;
+  kind?: string;
+  title: string;
+  detail?: string;
+  status?: "live" | "ok" | "warn" | "error" | "info";
+};
+
 interface TerminalShellProps {
   displayMessages: DisplayMessage[];
   input: string;
@@ -21,6 +32,8 @@ interface TerminalShellProps {
   className?: string;
   /** One-off dim line rendered after the messages (e.g. staleness nudge). Not part of chat history. */
   staleNotice?: string | null;
+  liveLogEntries?: LiveLogEntry[];
+  liveLogStatus?: string;
 }
 
 const MAX_HISTORY = 50;
@@ -38,9 +51,12 @@ export function TerminalShell({
   sendMessage,
   className = "",
   staleNotice,
+  liveLogEntries = [],
+  liveLogStatus = "brain mesh",
 }: TerminalShellProps) {
   const [pastedImageUrl, setPastedImageUrl] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [mode, setMode] = useState<"chat" | "log">("chat");
 
   // --- Cmd+K / Ctrl+K command palette ---
   useEffect(() => {
@@ -232,10 +248,32 @@ export function TerminalShell({
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
+      <div className="flex min-h-10 items-center gap-1 border-b border-[hsl(var(--border))]/70 bg-[hsl(var(--bg-raised))] px-3">
+        {(["chat", "log"] as const).map((nextMode) => (
+          <button
+            key={nextMode}
+            type="button"
+            onClick={() => setMode(nextMode)}
+            className={[
+              "h-7 px-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-[background,color,opacity]",
+              mode === nextMode
+                ? "bg-[hsl(var(--accent))]/[0.07] text-[hsl(var(--text-primary))]"
+                : "text-[hsl(var(--text-secondary))] opacity-45 hover:opacity-80",
+            ].join(" ")}
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            {nextMode === "chat" ? "chat" : "live log"}
+          </button>
+        ))}
+        <span className="ml-auto hidden truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-35 sm:block">
+          {mode === "log" ? liveLogStatus : "you agent"}
+        </span>
+      </div>
+
       {/* Messages area */}
       <div className="relative flex-1 min-h-0">
         {/* Scroll-up indicator — dim gradient at top when scrolled */}
-        {hasScrolledDown && (
+        {mode === "chat" && hasScrolledDown && (
           <div
             className="absolute top-0 left-0 right-0 h-8 z-10 pointer-events-none"
             style={{
@@ -243,27 +281,31 @@ export function TerminalShell({
             }}
           />
         )}
-        <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="h-full overflow-y-auto px-5 py-5"
-          role="group"
-          aria-label="conversation"
-          aria-busy={isThinking || !streamSettled}
-        >
-          <div className="space-y-3">
-            {displayMessages.map((msg) => (
-              <MessageBubble key={msg.id} message={msg} isLatest={msg.id === latestAssistantId} />
-            ))}
-            {staleNotice && (
-              <div className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-50">
-                {staleNotice}
-              </div>
-            )}
-            {isThinking && <ThinkingIndicator phrase={thinkingPhrase} category={thinkingCategory} progressSteps={progressSteps} />}
-            <div ref={messagesEndRef} />
+        {mode === "chat" ? (
+          <div
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+            className="h-full overflow-y-auto px-5 py-5"
+            role="group"
+            aria-label="conversation"
+            aria-busy={isThinking || !streamSettled}
+          >
+            <div className="space-y-3">
+              {displayMessages.map((msg) => (
+                <MessageBubble key={msg.id} message={msg} isLatest={msg.id === latestAssistantId} />
+              ))}
+              {staleNotice && (
+                <div className="font-mono text-[11px] text-[hsl(var(--text-secondary))] opacity-50">
+                  {staleNotice}
+                </div>
+              )}
+              {isThinking && <ThinkingIndicator phrase={thinkingPhrase} category={thinkingCategory} progressSteps={progressSteps} />}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
-        </div>
+        ) : (
+          <LiveBrainLog entries={liveLogEntries} />
+        )}
       </div>
 
       {/* Screen-reader live region — announces each agent message once it has
@@ -290,6 +332,82 @@ export function TerminalShell({
         onClose={() => setPaletteOpen(false)}
         onSelect={handlePaletteSelect}
       />
+    </div>
+  );
+}
+
+function formatLogTime(value?: number | string | null): string {
+  if (!value) return "--:--:--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--:--:--";
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+function logStatusClass(status: LiveLogEntry["status"] = "info") {
+  if (status === "live") return "text-[hsl(var(--success))]";
+  if (status === "ok") return "text-[hsl(var(--success))] opacity-80";
+  if (status === "warn") return "text-[hsl(var(--accent))]";
+  if (status === "error") return "text-red-400";
+  return "text-[hsl(var(--text-secondary))] opacity-45";
+}
+
+function LiveBrainLog({ entries }: { entries: LiveLogEntry[] }) {
+  const endRef = useRef<HTMLDivElement | null>(null);
+  const visibleEntries = useMemo(() => entries.slice(-80), [entries]);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [visibleEntries.length]);
+
+  return (
+    <div
+      className="h-full overflow-y-auto px-4 py-4 font-mono text-[11px] leading-relaxed"
+      role="log"
+      aria-label="live You.md activity log"
+    >
+      <div className="mb-4 border-l border-[hsl(var(--accent))]/60 bg-[hsl(var(--bg))]/35 px-3 py-2">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-80">
+          central brain log
+        </div>
+        <div className="mt-1 text-[10px] text-[hsl(var(--text-secondary))] opacity-55">
+          realtime agent messages, local daemon proof, skill syncs, vault status, repo sync, tasks, and chat activity belong here.
+        </div>
+      </div>
+
+      {visibleEntries.length === 0 ? (
+        <div className="text-[hsl(var(--text-secondary))] opacity-45">
+          waiting for the first brain event...
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {visibleEntries.map((entry) => (
+            <div key={entry.id} className="grid grid-cols-[72px_76px_1fr] gap-2">
+              <span className="text-[hsl(var(--text-secondary))] opacity-38 tabular-nums">
+                {formatLogTime(entry.at)}
+              </span>
+              <span className={["truncate uppercase tracking-[0.12em]", logStatusClass(entry.status)].join(" ")}>
+                {entry.source}
+              </span>
+              <span className="min-w-0">
+                <span className="text-[hsl(var(--text-primary))] opacity-88">{entry.title}</span>
+                {entry.detail && (
+                  <span className="text-[hsl(var(--text-secondary))] opacity-48"> {entry.detail}</span>
+                )}
+                {(entry.channel || entry.kind) && (
+                  <span className="ml-1 text-[hsl(var(--text-secondary))] opacity-32">
+                    [{[entry.channel, entry.kind].filter(Boolean).join(" / ")}]
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div ref={endRef} />
     </div>
   );
 }
