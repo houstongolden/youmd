@@ -95,6 +95,43 @@ function truncateAtWord(text: string, max: number): string {
   return (lastSpace > max * 0.5 ? truncated.slice(0, lastSpace) : truncated) + "...";
 }
 
+function sourcePrefix(source: string): string {
+  const idx = source.indexOf(":");
+  return idx > 0 ? source.slice(0, idx) : "path";
+}
+
+function buildSkillSyncActivityMetadata(synced: string[], errors: string[]) {
+  const catalog = readSkillCatalog();
+  const entries = [];
+  for (const name of synced) {
+    const entry = findSkill(catalog, name);
+    if (entry) entries.push(entry);
+  }
+  const sharedSkills = entries
+    .filter((entry) => entry.source.startsWith("shared:"))
+    .map((entry) => entry.name)
+    .sort();
+  const sourcePrefixes: Record<string, number> = {};
+  const scopes: Record<string, number> = {};
+  for (const entry of entries) {
+    const prefix = sourcePrefix(entry.source);
+    sourcePrefixes[prefix] = (sourcePrefixes[prefix] ?? 0) + 1;
+    scopes[entry.scope] = (scopes[entry.scope] ?? 0) + 1;
+  }
+
+  return {
+    syncedCount: synced.length,
+    errorCount: errors.length,
+    skills: synced.slice(0, 20),
+    sharedSkillCount: sharedSkills.length,
+    sharedSkills: sharedSkills.slice(0, 20),
+    sourcePrefixes,
+    scopes,
+    canonicalSharedRoot: "~/.agent-shared/claude-skills",
+    secretValuesExposed: false,
+  };
+}
+
 // ─── Subcommands ──────────────────────────────────────────────────────
 
 const RECOMMENDED_SKILLS = new Set([
@@ -468,24 +505,28 @@ async function syncSkillsCmd(): Promise<void> {
 
   if (isAuthenticated()) {
     try {
+      const metadata = buildSkillSyncActivityMetadata(result.synced, result.errors);
+      const sharedSkillCount = metadata.sharedSkillCount;
       await recordBrainActivity({
         activityId: `skill-sync:${os.hostname()}`,
         source: "skill-sync",
         channel: "skills",
-        kind: result.errors.length > 0 ? "warn" : "synced",
+        kind: result.errors.length > 0 ? "warn" : sharedSkillCount > 0 ? "shared-skill-sync" : "synced",
         status: result.errors.length > 0 ? "warn" : "ok",
-        title: `${result.synced.length} skills synced`,
+        title: sharedSkillCount > 0
+          ? `${result.synced.length} skills synced · ${sharedSkillCount} shared`
+          : `${result.synced.length} skills synced`,
         detail: result.errors.length > 0
           ? `${result.errors.length} sync warning${result.errors.length === 1 ? "" : "s"}`
-          : "installed skills re-rendered against the latest identity bundle",
+          : sharedSkillCount > 0
+            ? `shared skills propagated from ~/.agent-shared: ${metadata.sharedSkills.slice(0, 5).join(", ")}`
+            : "installed skills re-rendered against the latest identity bundle",
         sourceHost: os.hostname(),
         sourceAgent: "youmd CLI",
         sourceRuntime: process.version,
-        metadata: {
-          syncedCount: result.synced.length,
-          errorCount: result.errors.length,
-          skills: result.synced.slice(0, 20),
-        },
+        entityType: sharedSkillCount > 0 ? "sharedSkillSync" : "skillSync",
+        entityId: os.hostname(),
+        metadata,
       });
     } catch (err) {
       if (process.env.DEBUG) console.error(`[skill sync] brain activity failed: ${err}`);

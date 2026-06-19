@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — Shared skill sync activity producers
+
+### feat(cli): show shared skill propagation in the live brain stream
+- Upgraded `youmd skill sync` brain activity rows so shared canonical skills are visible as `shared-skill-sync` events with shared skill names, source prefixes, scope counts, host/runtime metadata, and `secretValuesExposed: false`.
+- Added `youmd stack sync` brain activity rows so canonical `~/.agent-shared` propagation shows up in the Live Log with shared skill counts, Stack Map presence, safe git head/branch/dirty state, and no command logs or secrets.
+- Added focused CLI coverage for shared skill sync and shared stack sync activity payloads.
+- Bumped CLI to `0.8.9` for npm publish readiness.
+- Verified with focused CLI tests, CLI TypeScript build, and generated docs check.
+
 ## 2026-06-19 — GitHub mirror and vault pull activity producers
 
 ### feat(activity): show repo mirror refreshes and vault pulls in the live brain stream

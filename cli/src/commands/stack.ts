@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
 import * as child_process from "child_process";
 import {
   listMaintainerProposals,
@@ -8,7 +9,9 @@ import {
   listBrainConsent,
   setBrainConsent,
   apiErrorMessage,
+  recordBrainActivity,
 } from "../lib/api";
+import { isAuthenticated } from "../lib/config";
 import { detectShadowing } from "../lib/projectContext";
 import { SkillDiscoveryCheck, verifySkillDiscovery } from "../lib/host-link";
 import {
@@ -54,6 +57,98 @@ interface StackCommandOptions {
   apply?: boolean;
   force?: boolean;
   dir?: string;
+}
+
+function runGitText(repoDir: string, args: string[]): string | null {
+  const result = child_process.spawnSync("git", ["-C", repoDir, ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+  if (result.status !== 0) return null;
+  return String(result.stdout ?? "").trim();
+}
+
+function sharedAgentStackSnapshot() {
+  const home = process.env.HOME || "";
+  const root = path.join(home, ".agent-shared");
+  const skillsRoot = path.join(root, "claude-skills");
+  const skillNames = fs.existsSync(skillsRoot)
+    ? fs.readdirSync(skillsRoot)
+        .filter((name) => {
+          try {
+            return fs.statSync(path.join(skillsRoot, name)).isDirectory() &&
+              fs.existsSync(path.join(skillsRoot, name, "SKILL.md"));
+          } catch {
+            return false;
+          }
+        })
+        .sort()
+    : [];
+  const gitHead = fs.existsSync(path.join(root, ".git"))
+    ? runGitText(root, ["rev-parse", "--short=12", "HEAD"])
+    : null;
+  const gitBranch = fs.existsSync(path.join(root, ".git"))
+    ? runGitText(root, ["branch", "--show-current"])
+    : null;
+  const dirtyOutput = fs.existsSync(path.join(root, ".git"))
+    ? runGitText(root, ["status", "--porcelain"])
+    : null;
+
+  return {
+    rootExists: fs.existsSync(root),
+    stackMapPresent: fs.existsSync(path.join(root, "STACK-MAP.md")),
+    sharedSkillCount: skillNames.length,
+    recentSharedSkills: skillNames.slice(-12),
+    gitHead,
+    gitBranch,
+    dirty: Boolean(dirtyOutput),
+  };
+}
+
+async function recordStackSyncActivity(options: {
+  dryRun?: boolean;
+  exitCode: number;
+  scriptPath: string;
+}): Promise<void> {
+  if (!isAuthenticated()) return;
+
+  try {
+    const snapshot = sharedAgentStackSnapshot();
+    await recordBrainActivity({
+      activityId: `stack-sync:${os.hostname()}`,
+      source: "stack-sync",
+      channel: "skills",
+      kind: options.exitCode === 0 ? "shared-stack-sync" : "warn",
+      status: options.exitCode === 0 ? "ok" : "warn",
+      title: options.exitCode === 0
+        ? `${snapshot.sharedSkillCount} shared skills indexed`
+        : "shared stack sync reported a warning",
+      detail: options.dryRun
+        ? "dry-run shared agent stack sync completed"
+        : "canonical ~/.agent-shared skills/stacks synced across local agent hosts",
+      entityType: "sharedAgentStack",
+      entityId: "~/.agent-shared",
+      sourceHost: os.hostname(),
+      sourceAgent: "youmd CLI",
+      sourceRuntime: process.version,
+      metadata: {
+        dryRun: Boolean(options.dryRun),
+        exitCode: options.exitCode,
+        script: path.basename(options.scriptPath),
+        sharedSkillCount: snapshot.sharedSkillCount,
+        recentSharedSkills: snapshot.recentSharedSkills,
+        stackMapPresent: snapshot.stackMapPresent,
+        rootExists: snapshot.rootExists,
+        gitHead: snapshot.gitHead,
+        gitBranch: snapshot.gitBranch,
+        dirty: snapshot.dirty,
+        canonicalSharedRoot: "~/.agent-shared/claude-skills",
+        secretValuesExposed: false,
+      },
+    });
+  } catch (err) {
+    if (process.env.DEBUG) console.error(`[stack sync] brain activity failed: ${err}`);
+  }
 }
 
 function printHelp(): void {
@@ -414,7 +509,13 @@ export async function stackCommand(
       process.exitCode = 1;
       return;
     }
-    process.exitCode = result.status ?? 0;
+    const exitCode = result.status ?? 0;
+    await recordStackSyncActivity({
+      dryRun: options.dryRun,
+      exitCode,
+      scriptPath,
+    });
+    process.exitCode = exitCode;
     return;
   }
 
