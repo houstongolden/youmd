@@ -2,12 +2,17 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 114
-**Total messages:** 525
-**Last updated:** 2026-06-18
+**Total sessions:** 119
+**Total messages:** 530
+**Last updated:** 2026-06-19
 
 ## Table of Contents
 
+1. [2026-06-19 (mac-mini-trusted-device-restore-followup)](#session-2026-06-19-mac-mini-trusted-device-restore-followup) --- 1 message
+1. [2026-06-19 (mac-mini-secret-vault-feedback)](#session-2026-06-19-mac-mini-secret-vault-feedback) --- 1 message
+1. [2026-06-18 (home-dashboard-global-tasks-surface)](#session-2026-06-18-home-dashboard-global-tasks-surface) --- 1 message
+1. [2026-06-18 (vault-passphrase-callout-logo-polish)](#session-2026-06-18-vault-passphrase-callout-logo-polish) --- 1 message
+1. [2026-06-18 (trusted-device-secret-vault-escrow-correction)](#session-2026-06-18-trusted-device-secret-vault-escrow-correction) --- 1 message
 1. [2026-06-18 (realtime-agent-bus-two-mac-handshake)](#session-2026-06-18-realtime-agent-bus-two-mac-handshake) --- 1 message
 1. [2026-06-18 (mac-mini-vault-stale-cli-report)](#session-2026-06-18-mac-mini-vault-stale-cli-report) --- 1 message
 1. [2026-06-18 (desktop-demo-frontend)](#session-2026-06-18-desktop-demo-frontend) --- 1 message
@@ -122,6 +127,60 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-19 (mac-mini-secret-vault-feedback)
+
+**2026-06-19 00:26:50 UTC**
+> ok feedback from the latest run on my mac mini:
+>
+> [Attachment referenced: pasted Claude Code Mac mini setup log reporting stale `youmd@0.8.2`, successful prereq/setup/clone stages, empty account-backed Secret Vault pull, fallback to iCloud env vault, and non-TTY passphrase failure.]
+
+---
+
+## Session: 2026-06-18 (home-dashboard-global-tasks-surface)
+
+**2026-06-19 00:26:50 UTC**
+> # In app browser:
+> - The user has the in-app browser open.
+> - Current URL: http://localhost:3100/shell?tab=machine
+>
+> ## My request for Codex:
+> ok why haven't you added anything for my main YOU home feed/dashboard etc and Task tracking globally across projects and personal/non-project scoped - and tasks which need YOU (ie need you/me need me as the human to complete) vs tasks that just need an agent assigned etc etc. i know we have talked about these things before but not seeing any progress on things ... and frankly the navigation and organization of everything feels super confusing and not intuitive or standard how it should look and be organized and needs to really be assessed on how we can use design-review and minimal-surface to have simple intuitive product surface and ui/ux that is familiar and makes all our important core solutions/functionality easy to understand and utilize without flooding the ui with too many similar or redundant tabs and pages and things ...
+
+---
+
+## Session: 2026-06-18 (vault-passphrase-callout-logo-polish)
+
+_Manual archive note: current Codex desktop session JSONL was unavailable in `~/.codex/sessions`; latest user request captured from the live thread. Message included 2 screenshots: an unreadable solid-orange Vault explainer and the preferred Skills tab callout treatment._
+
+**2026-06-18 UTC**
+> # In app browser:
+> - The user has the in-app browser open.
+> - Current URL: http://localhost:3100/shell?tab=vault
+>
+> ## My request for Codex:
+> ok i am going to publish the CLI and test out the new mac mini code thing  do I need to set up vault passphrase for this to work first tho?
+>
+>
+> also can you make sure that all quote blocks or whatever you want to call these blocks at the top of sections with their copyable prompts etc or any custom blocks like this please make sure they all look consistent like the one on the Skills tab which as the very nice left border and gradient fade on the left border etc ... i want them to all be consistent.
+>
+> also the YOU logo on top of sidebar is cut off on smalle rscreens and mobile style and collabsed style please ensure the YOU logo is always contained within a little parent div that maintains a proper square aspect ratio with very small padding inner and small margin around it just so it always shows as a perfect size ...
+
+---
+
+## Session: 2026-06-18 (trusted-device-secret-vault-escrow-correction)
+
+_Manual archive note: current Codex desktop session JSONL was unavailable in `~/.codex/sessions`; latest user request captured exactly from the live thread._
+
+**2026-06-18 23:02:46 UTC**
+> # In app browser:
+> - The user has the in-app browser open.
+> - Current URL: http://localhost:3100/shell?tab=machine
+>
+> ## My request for Codex:
+> ok so you haven't finished yet? ie this is not ready for me to test and the mac mini is not going to have this stuff working as intended? is this what Notion does or what? - continue man! The Notion-like version after this is device-key escrow: each trusted Mac has its own local keypair, You.md stores encrypted data keys per device, and no raw env values ever hit the browser. Right now we have account-backed encrypted snapshots, but local decrypt still needs the passphrase/Keychain once.???
 
 ---
 
@@ -16366,3 +16425,12 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 - `agent`: codex
 
 > k awesome - please ensure you have project detail pages clickable from the projects portfolio properly and that the project graph must include links to the exact API docs page url and curl command and stack associated with it etc. --- and more obviously! the SHIPPED stuff we talked about earlier please add that! so crucial! Shipped today, 7d, 30d, 90d, etc etc...! show what me and my agents are shipping on the main card and in more detail on the project pages etc ---  i need a quick way to see a more compact view of my projects portfolio list and need to have a quick way to give projects a quick status order of priority or focus etc... basically there are a lot and showing all details by default but should be able to click into the project by clicking the card or a view details next to the timeline option but even a dropdown button near the timeline one to the right of it maybe since i do think sorting by priority/focus is gonna be helpful and add filters/sorting/search above the PRojects list in the portfolio and i think some simple statuses or tags like: Top Priority, Focussing, Freeze/On Ice, Abandoned, Dead/Killed. with just a simple little single icon that if you hover or click it the different icons with simple one word labels that show on hover appear or something for the status even show a little number by it or something so you know 1 = top priority, 0 - dead/abandoned, etc.
+
+---
+
+## Session: 2026-06-19 (mac-mini-trusted-device-restore-followup)
+
+**2026-06-19 01:36:00 UTC**
+> yeah fix the issues you already identified - it seemed to work so i asked it to complete the 90 day project next and will report back fter that but here is also their latest responses:
+>
+> [Attachment summary, secret-safe: Mac mini installed youmd 0.8.7, restored the account-backed encrypted env snapshot through a trusted-device envelope, synced machine proof with secretValuesExposed false, and left the 90-day active-project expansion as the next step. The response also noted the source install Bash 3.2 workaround still needed to be committed/deployed.]

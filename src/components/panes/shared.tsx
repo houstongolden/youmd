@@ -28,6 +28,43 @@ export function PaneHeader({ children }: { children: ReactNode }) {
   );
 }
 
+export function PaneCallout({
+  label,
+  children,
+  className,
+}: {
+  label?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "relative overflow-hidden border border-[hsl(var(--border))]/80 p-4",
+        className
+      )}
+      style={{
+        borderRadius: "var(--radius)",
+        background:
+          "linear-gradient(90deg, hsl(var(--accent) / 0.055), hsl(var(--bg)) 38%)",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        className="absolute left-0 top-0 h-full w-px bg-[hsl(var(--accent))]/70"
+      />
+      <div className="space-y-3">
+        {label && (
+          <div className="font-mono text-[11px] uppercase tracking-wider text-[hsl(var(--accent))]">
+            {label}
+          </div>
+        )}
+        {children}
+      </div>
+    </section>
+  );
+}
+
 export function PaneEmptyState({ children }: { children: ReactNode }) {
   return (
     <div className="flex items-center justify-center h-full">

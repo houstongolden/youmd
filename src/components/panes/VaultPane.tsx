@@ -13,7 +13,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState, useCallback, useEffect, useRef } from "react";
-import { PaneHeader, PaneSectionLabel as SectionLabel, PaneDivider as Divider } from "./shared";
+import { PaneCallout, PaneHeader, PaneSectionLabel as SectionLabel, PaneDivider as Divider } from "./shared";
 
 interface VaultPaneProps {
   clerkId: string;
@@ -404,13 +404,7 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
 
       <div className="px-6 py-4 space-y-4">
         {/* ── Always-visible explainer ─────────────────────────── */}
-        <div
-          className="border border-[hsl(var(--accent))] border-opacity-40 bg-[hsl(var(--accent))] bg-opacity-[0.03] p-4 space-y-3"
-          style={{ borderRadius: "var(--radius)" }}
-        >
-          <div className="text-[11px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider">
-            the vault
-          </div>
+        <PaneCallout label="the vault">
           <p className="text-[11px] font-mono text-[hsl(var(--text-primary))] opacity-80 leading-relaxed">
             Encrypted private notes that NEVER leave your control unencrypted.
             Only you can read them — even you.md servers can&apos;t.
@@ -451,7 +445,7 @@ export function VaultPane({ clerkId }: VaultPaneProps) {
             Vault is separate from &quot;private context&quot; (which IS shared
             with full-scope agents).
           </p>
-        </div>
+        </PaneCallout>
 
         {error && (
           <div className="text-[11px] font-mono text-[hsl(var(--destructive))] border border-[hsl(var(--destructive))] border-opacity-30 rounded-sm px-2 py-1">

@@ -29,6 +29,13 @@ The sync writes:
 
 - `project-context/reference-intelligence/LATEST.md`: latest upstream commits, local clone paths, and candidate tasks.
 - `project-context/reference-intelligence/TASKS.md`: a review queue for YouStacks and You.md brain/context improvements.
+- `project-context/reference-intelligence/FOLLOW_THROUGH.md`: the durable ledger of what actually changed in You.md because of accepted reference-derived work.
+
+Operating rule:
+
+1. Run the sync.
+2. Promote only the high-signal items into tracked work.
+3. Record shipped outcomes in `FOLLOW_THROUGH.md` so the loop compounds instead of resetting to a fresh queue every day.
 
 ## What To Copy From GStack
 

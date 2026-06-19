@@ -1,11 +1,39 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-18
+Last Updated: 2026-06-19
 PRD Version: 2.3
 
 ---
 
 ## COMPLETED
+
+### 2026-06-19 — Mac mini trusted-device setup follow-up
+- [x] Fix the `install.sh` Bash 3.2 empty-array crash so fresh Macs no longer need `YOUMD_FORCE_USER_NPM_PREFIX=1`
+- [x] Add a regression test that reads the generated install route and blocks reintroducing `NPM_GLOBAL_FLAGS=()`
+- [x] Add post-vault `youmd pull && youmd sync` reconciliation to CLI and web fresh-machine setup prompts
+- [x] Update hosted `machine-bootstrap` skill seed text so local agents run the post-vault reconcile before proofing readiness
+- [x] Confirm npm latest is `youmd@0.8.7`
+- [x] Record the Mac mini trusted-device restore proof: device registered, env vault restored via envelope, machine proof synced, and raw secrets stayed local
+- [ ] Verify the user's 90-day Mac mini expansion result after Houston reports back
+- [x] Verify production `https://you.md/install.sh` after deploy no longer contains `NPM_GLOBAL_FLAGS`
+
+### 2026-06-18 — Home dashboard and global task surface
+- [x] Make `/shell` default to a real Home dashboard instead of leaving the user in chat/profile-only mode
+- [x] Add a Home pane that summarizes Houston-owned tasks, agent-owned tasks, personal tasks, focused projects, shipped/moved activity, and recent brain dumps
+- [x] Add a dedicated Tasks pane for global personal/project task triage
+- [x] Keep task ownership explicit: `me` / `agent`, project-scoped / personal, active / done
+- [x] Add `/home`, `/dashboard`, `/today`, `/tasks`, and `/taskboard` shell slash command routing
+- [x] Simplify the shell navigation taxonomy around Home, Projects, APIs, Skillstacks, Connect, Identity, Stats, and Account
+- [x] Verify with root TypeScript, full production build, local server restart, and Codex in-app Browser checks for `/shell`, `/shell?tab=home`, and `/shell?tab=tasks`
+- [ ] Next pass: continue reducing duplicate long panes by moving project/stack/API drill-ins to dedicated pages with breadcrumbs and compact list/detail modes
+
+### 2026-06-18 — Shell callout and logo polish
+- [x] Clarify Mac mini Secret Vault flow: the new Mac does not need the vault passphrase first; it registers as a trusted device, then the source Mac runs `youmd env vault share` once using the source vault passphrase locally
+- [x] Add shared `PaneCallout` styling so top explainer/copy-prompt blocks match the Skills tab left-border + gradient treatment
+- [x] Convert Skills, Machine setup, and Vault explainer blocks to the shared callout
+- [x] Replace the unreadable bright-orange Vault explainer with a dark, readable callout
+- [x] Contain the top sidebar YOU logo in a fixed square parent for expanded and collapsed sidebar states
+- [x] Verify with root TypeScript, full production build, local server restart, and Codex in-app Browser screenshots for Vault, Skills, Machine, and collapsed sidebar
 
 ### 2026-06-18 — Realtime agent bus for trusted Macs (`youmd@0.8.6`)
 - [x] Add owner-gated Convex realtime agent-bus records and HTTP `GET/POST /api/v1/me/agent-bus/messages`
@@ -18,8 +46,15 @@ PRD Version: 2.3
 - [x] Verify live source-Mac message send/inbox, websocket materialization, `secretValuesExposed: false`, and no raw `ym_` / `sk-` / env-key patterns in local status JSON
 - [x] Patch Mac mini stale-install regression: setup now source-installs from GitHub main and hard-gates `youmd >= 0.8.6` before login/vault/agent-bus work
 - [x] Bump CLI to `0.8.6`
-- [ ] Houston publishes `youmd@0.8.6` to npm with OTP
-- [ ] Mac mini reruns the setup prompt on `0.8.6`, sends a `machine-sync` message back, and both Macs show the same agent-bus inbox/status
+- [x] Houston published `youmd@0.8.7` to npm with OTP
+- [x] Mac mini reran the setup prompt on `0.8.7`, restored env via trusted-device Secret Vault, and synced machine proof
+- [ ] Confirm the 90-day expansion sends a fresh `machine-sync` message back and both Macs show the same agent-bus inbox/status
+
+### 2026-06-18 — Reference-intelligence follow-through visibility
+- [x] Verify whether `steipete/agent-scripts` really had recent upstream activity and stop describing "no delta since last sync" as "no activity"
+- [x] Teach `npm run references:sync` to show the latest upstream commit timestamp/age for each tracked repo
+- [x] Add a durable `project-context/reference-intelligence/FOLLOW_THROUGH.md` ledger for shipped reference-derived improvements
+- [ ] Keep promoting accepted high-signal reference tasks into tracked implementation work instead of leaving them only in `TASKS.md`
 
 ### 2026-06-18 — Native desktop app design demo (`/desktop-demo`)
 - [x] Add a private, frontend-only `/desktop-demo` route (route group `(desktop)`, mock data, noindex, no SiteNav/Convex)
@@ -44,8 +79,9 @@ PRD Version: 2.3
 - [x] Deploy Convex production and smoke the websocket sync head without exposing secrets
 - [x] Install/reload local daemons on this Mac and verify the realtime daemon activity log
 - [x] Bump CLI to `0.8.6` for npm publish
-- [ ] Publish CLI `0.8.6` to npm with OTP so new machines and `npx youmd@latest` get the realtime daemon + Secret Vault status path
-- [ ] Verify the Mac mini fresh-machine setup after `0.8.6` publish and confirm its daemon status shows `realtime brain / live websocket` plus Secret Vault ready/missing state
+- [x] Publish CLI `0.8.7` to npm with OTP so new machines and `npx youmd@latest` get the realtime daemon + Secret Vault status path
+- [x] Verify the Mac mini fresh-machine setup after `0.8.7` publish: trusted-device vault restore succeeded and machine proof synced
+- [ ] Confirm Mac mini daemon status shows `realtime brain / live websocket` after the 90-day expansion finishes
 
 ### 2026-06-18 — You.md Secret Vault trusted-device env sync
 - [x] Teach generated fresh-machine prompts and the bundled `machine-bootstrap` ystack skill that Claude/Codex should use `youmd` + `you` behind the scenes for status/sync/skill/vault/portfolio/verify work and only interrupt Houston for real auth/passphrase/OTP/permission/90-day-expansion gates
@@ -59,7 +95,15 @@ PRD Version: 2.3
 - [x] Fix generated fresh-machine root/env paths to use `$HOME/Desktop/CODE_YOU` instead of a single-quoted literal `~/Desktop/CODE_YOU`
 - [x] Update the Machine pane and bundled `machine-bootstrap` skill so Keychain service `youmd-env-vault` setup is part of the trusted-device workflow
 - [x] Verify with Convex codegen, focused fresh-machine parity tests, CLI build, root typecheck, root production build, compiled prompt smoke, `youmd env vault` help smoke, and env-vault bash syntax
-- [ ] Run `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` with the real source vault/passphrase, then rerun the generated command on the Mac mini and verify the synced machine proof row
+- [x] Add trusted-device key escrow on top of account snapshots: `secretVaultDevices`, `secretVaultKeyEnvelopes`, `/api/v1/me/secret-vault/devices`, and `/api/v1/me/secret-vault/envelopes`
+- [x] Add CLI `youmd env vault device-register`, `device-list`, and `share`; private keys stay local under `~/.youmd/secret-vault/devices/`
+- [x] Make `youmd env vault pull --restore` unlock through the local device key envelope before restore, with Keychain/passphrase fallback only when no envelope exists
+- [x] Update CLI/web fresh-machine prompts and hosted `machine-bootstrap` so the new Mac registers first and the source Mac runs `youmd env vault share` if an envelope is missing
+- [x] Extend realtime daemon Secret Vault status with trusted-device counts and envelope counts instead of treating snapshot presence as restore readiness
+- [x] Live source-Mac proof: registered device `svd_e87e4e3e4dc843ac1f8d73d7`, validated the source passphrase against `env-vault-2026-06-18T0741Z.tar.enc`, shared `1` envelope, proved headless `pull --restore` into an empty temp root, and refreshed realtime status to `1/1 device envelopes`
+- [x] Publish CLI `0.8.7` to npm with OTP (`npm view youmd version` returns `0.8.7`)
+- [x] Rerun the generated Mac mini setup after `0.8.7` publish/install; the Mac mini registered a second device, source Mac shared envelopes, Mac mini restored via trusted-device pull, and synced machine proof
+- [ ] Confirm the 90-day expansion proof row + agent-bus reply after Houston reports back
 
 ### 2026-06-18 — Machine setup prompt correction
 - [x] Fix Machine tab `copy setup` so it copies a Claude/Codex execution prompt, not only a raw shell command
@@ -72,9 +116,9 @@ PRD Version: 2.3
 - [x] Revoke unused fresh-machine bootstrap keys after the exposed pasted key incident
 - [x] Verify local CLI/npm publish state: local `0.8.6`, npm latest still behind, `0.8.6` unpublished until Houston runs npm publish with OTP
 - [x] Restart local `next start -p 3100` from the fresh build
-- [ ] Publish CLI `0.8.6` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
+- [x] Publish CLI `0.8.7` to npm with OTP so `npx youmd@latest` and npm fallback installs are current
 - [ ] Re-run the Machine tab button in the signed-in Codex browser and verify the clipboard starts with `You are Claude Code or Codex running on my brand-new Mac.`
-- [ ] Run the corrected prompt on the Mac mini with the transferred env vault and verify `~/Desktop/CODE_YOU`, MCP config, skill sync, project clone count, env restore, and synced machine proof
+- [x] Run the corrected prompt on the Mac mini with trusted-device Secret Vault and verify `~/Desktop/CODE_YOU`, MCP config, skill sync, project clone count, env restore, and synced machine proof
 
 ### 2026-06-18 — Machine tab new-computer setup surface
 - [x] Add a top Machine pane setup panel matching the Skills tab intro style
@@ -887,6 +931,7 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Fix the blocked npm publish retry by bumping the CLI to `0.6.2` and normalizing package metadata npm was auto-correcting during publish
 - [x] Make bare `youmd` and `youmd chat` feel more like meeting U: logo-first, contextual greeting, proactive repo guidance, and no duplicate first streamed reply
 - [x] Make `youmd skill init-project` bootstrap both Claude and Codex skill discovery paths by default, then verify scaffold/additive flows through the installed local CLI
+- [x] Harden fresh-machine Secret Vault setup so strict Mac mini bootstraps wait for trusted-device `youmd env vault share` instead of defaulting into local/iCloud passphrase fallback; CLI bumped to 0.8.7
 - [ ] Decide later whether You.md should ever store revealable API-key ciphertext for future keys, or keep the current hash-only model permanently
 - [ ] Add an explicit preview + approval workflow if You.md ever introduces non-additive instruction-file rewrites or cleanup operations
 - [ ] Remove or rewrite remaining Clerk-specific docs/comments/webhooks/password endpoints so the repo no longer describes the old auth model as current

@@ -1248,6 +1248,89 @@ export async function downloadLatestSecretEnvVaultSnapshot(): Promise<ApiRespons
   });
 }
 
+export interface SecretVaultDevice {
+  deviceId: string;
+  deviceName: string;
+  hostName?: string | null;
+  platform?: string | null;
+  publicKeyPem: string;
+  keyAlgorithm: "rsa-oaep-sha256" | string;
+  trusted: boolean;
+  revokedAt?: number | null;
+  lastSeenAt?: number | null;
+  createdAt: number;
+  updatedAt?: number | null;
+}
+
+export interface SecretVaultKeyEnvelope {
+  deviceId: string;
+  snapshotId: string;
+  wrappedPassphraseBase64: string;
+  wrapAlgorithm: "rsa-oaep-sha256" | string;
+  sourceHost?: string | null;
+  createdAt: number;
+  updatedAt?: number | null;
+}
+
+export async function registerSecretVaultDevice(payload: {
+  deviceId: string;
+  deviceName: string;
+  hostName?: string;
+  platform?: string;
+  publicKeyPem: string;
+  keyAlgorithm: "rsa-oaep-sha256";
+}): Promise<ApiResponse<{
+  success: boolean;
+  device: SecretVaultDevice;
+  secretValuesExposed: false;
+}>> {
+  return apiRequest("/api/v1/me/secret-vault/devices", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function listSecretVaultDevices(): Promise<ApiResponse<{
+  success: boolean;
+  devices: SecretVaultDevice[];
+  secretValuesExposed: false;
+}>> {
+  return apiRequest("/api/v1/me/secret-vault/devices", {
+    token: getToken(),
+  });
+}
+
+export async function upsertSecretVaultKeyEnvelope(payload: {
+  snapshotId: string;
+  deviceId: string;
+  wrappedPassphraseBase64: string;
+  wrapAlgorithm: "rsa-oaep-sha256";
+  sourceHost?: string;
+}): Promise<ApiResponse<{
+  success: boolean;
+  envelope: Omit<SecretVaultKeyEnvelope, "wrappedPassphraseBase64"> | null;
+  secretValuesExposed: false;
+}>> {
+  return apiRequest("/api/v1/me/secret-vault/envelopes", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function getSecretVaultKeyEnvelope(deviceId: string): Promise<ApiResponse<{
+  success: boolean;
+  snapshot: SecretEnvVaultSnapshot;
+  envelope: SecretVaultKeyEnvelope;
+  secretValuesExposed: false;
+}>> {
+  const params = new URLSearchParams({ deviceId });
+  return apiRequest(`/api/v1/me/secret-vault/envelopes?${params.toString()}`, {
+    token: getToken(),
+  });
+}
+
 // ─── Private context ────────────────────────────────────────────────
 
 export interface PrivateContext {

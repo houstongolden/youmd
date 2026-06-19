@@ -131,6 +131,8 @@ export const getHead = query({
       repoMirror,
       githubConnection,
       vaultSnapshots,
+      vaultDevices,
+      vaultKeyEnvelopes,
     ] = await Promise.all([
       ctx.db.query("portfolioProjects").withIndex("by_userId", (q) => q.eq("userId", session.userId)).collect(),
       ctx.db.query("portfolioApiSurfaces").withIndex("by_userId", (q) => q.eq("userId", session.userId)).collect(),
@@ -154,9 +156,19 @@ export const getHead = query({
             .withIndex("by_userId_kind_createdAt", (q) => q.eq("userId", session.userId).eq("kind", "env-local"))
             .collect()
         : Promise.resolve([] as Doc<"secretVaultSnapshots">[]),
+      session.canReadVaultMetadata
+        ? ctx.db.query("secretVaultDevices").withIndex("by_userId", (q) => q.eq("userId", session.userId)).collect()
+        : Promise.resolve([] as Doc<"secretVaultDevices">[]),
+      session.canReadVaultMetadata
+        ? ctx.db.query("secretVaultKeyEnvelopes").withIndex("by_userId", (q) => q.eq("userId", session.userId)).collect()
+        : Promise.resolve([] as Doc<"secretVaultKeyEnvelopes">[]),
     ]);
 
     const latestVault = vaultSnapshots.sort((a, b) => b.createdAt - a.createdAt)[0] ?? null;
+    const trustedVaultDevices = vaultDevices.filter((device) => device.trusted && !device.revokedAt);
+    const latestVaultEnvelopeCount = latestVault
+      ? vaultKeyEnvelopes.filter((envelope) => String(envelope.snapshotId) === String(latestVault._id)).length
+      : 0;
     const portfolioUpdatedAt = newest([
       newestFromRows(projects),
       newestFromRows(apiSurfaces),
@@ -259,9 +271,12 @@ export const getHead = query({
       encryptedEnvVault: session.canReadVaultMetadata
         ? {
             status: latestVault ? "ready" : "missing",
-            flow: "account-backed-encrypted-snapshot",
+            flow: "account-backed-encrypted-snapshot+trusted-device-envelopes",
             available: !!latestVault,
             snapshotCount: vaultSnapshots.length,
+            trustedDeviceCount: trustedVaultDevices.length,
+            keyEnvelopeCount: vaultKeyEnvelopes.length,
+            latestSnapshotEnvelopeCount: latestVaultEnvelopeCount,
             id: latestVault ? String(latestVault._id) : null,
             label: latestVault?.label ?? null,
             createdAt: latestVault?.createdAt ?? null,
@@ -278,12 +293,12 @@ export const getHead = query({
             agentAuthIncluded: latestVault?.agentAuthIncluded ?? false,
             sourceHost: latestVault?.sourceHost ?? null,
             sourceRoot: latestVault?.sourceRoot ?? null,
-            restoreMode: "pull-then-restore-with-map-existing",
+            restoreMode: "trusted-device-envelope-pull-restore",
             secretValuesExposed: false,
           }
         : {
             status: "scope-missing",
-            flow: "account-backed-encrypted-snapshot",
+            flow: "account-backed-encrypted-snapshot+trusted-device-envelopes",
             available: false,
             scope: "vault-not-granted",
             restoreMode: "requires-vault-scoped-key",

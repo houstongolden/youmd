@@ -8,6 +8,16 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 
 ## What's Deployed and Working
 
+### Trusted-Device Secret Vault
+- Account-backed encrypted `.env.local` snapshots now have a trusted-device layer instead of relying on snapshot presence alone.
+- Convex production is deployed with owner-gated `secretVaultDevices` and `secretVaultKeyEnvelopes`, plus `GET/POST /api/v1/me/secret-vault/devices` and `/api/v1/me/secret-vault/envelopes`.
+- CLI local build `youmd@0.8.6` adds `youmd env vault device-register`, `youmd env vault device-list`, and `youmd env vault share`.
+- The source Mac has registered a local device key at `~/.youmd/secret-vault/devices/current-device-key.json`; the private key stays local and only the public key syncs.
+- Source-Mac proof passed: `youmd env vault share` validated the latest encrypted snapshot passphrase locally, wrote `1` trusted-device envelope, and `youmd env vault pull --restore` unlocked through that envelope without prompting or exposing raw values.
+- Realtime daemon status now reports snapshot + envelope readiness, currently `Secret Vault ready: 16 projects / 451 vars from Houstons-MBP.lan / 1/1 device envelopes`.
+- Mac mini path now should be: publish/install `youmd@0.8.6`, rerun the setup prompt so the Mac mini registers as a second device, run `youmd env vault share` on this source Mac, then rerun/continue Mac mini restore.
+- npm latest is still `0.8.5`; do not expect npm/npx fallback installs to have the trusted-device envelope commands until `0.8.6` is published.
+
 ### Realtime Agent Bus
 - Trusted devices can now exchange local-agent status/context messages through owner-gated Convex realtime records and HTTP `GET/POST /api/v1/me/agent-bus/messages`.
 - CLI `youmd agent send`, `youmd agent inbox`, and `youmd agent status` are implemented in local `youmd@0.8.6`; npm publish is still required before new machines get this through npm fallback / `npx youmd@latest`.

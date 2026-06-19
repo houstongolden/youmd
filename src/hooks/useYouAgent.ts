@@ -148,7 +148,7 @@ DAYS="\${YOUMD_ACTIVE_DAYS:-30}"
 EXPAND_DAYS="\${YOUMD_EXPAND_ACTIVE_DAYS:-90}"
 LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
 HYDRATE_TIMEOUT="\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"
-MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.6}"
+MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.7}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -350,31 +350,46 @@ youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname
 
 echo "[you.md] checking encrypted env-vault tooling without printing secrets"
 youmd env backup --root "$ROOT" --preflight || true
+SECRET_VAULT_RESTORED=0
+ALLOW_LOCAL_ENV_VAULT_FALLBACK="\${YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK:-0}"
 if [ -z "\${YOUMD_ENV_VAULT:-}" ] && [ "\${YOUMD_SECRET_VAULT_PULL:-1}" = "1" ]; then
   SECRET_VAULT_DIR="\${YOUMD_SECRET_VAULT_DIR:-$HOME/.youmd/secret-vault}"
-  echo "[you.md] checking You.md Secret Vault for the latest encrypted env vault"
-  if SECRET_VAULT_PATH="$(youmd env vault pull --out "$SECRET_VAULT_DIR" --print-path 2>/dev/null)"; then
-    if [ -n "$SECRET_VAULT_PATH" ] && [ -f "$SECRET_VAULT_PATH" ]; then
-      export YOUMD_ENV_VAULT="$SECRET_VAULT_PATH"
-      echo "[you.md] using You.md Secret Vault snapshot: $YOUMD_ENV_VAULT"
-    fi
+  echo "[you.md] registering this Mac as a trusted Secret Vault device"
+  youmd env vault device-register || true
+  echo "[you.md] checking You.md Secret Vault for the latest encrypted env vault and trusted-device envelope"
+  if youmd env vault pull --out "$SECRET_VAULT_DIR" --restore --root "$ROOT" --map-existing --existing-only --skip-agent-auth; then
+    SECRET_VAULT_RESTORED=1
+    echo "[you.md] restored env vault through trusted-device Secret Vault"
+    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored encrypted env vault through trusted-device Secret Vault" || true
   else
-    echo "[you.md] account-backed Secret Vault not available yet; falling back to local/iCloud vault discovery"
+    echo "[you.md] account-backed Secret Vault restore is waiting for a trusted-device share"
+    echo "[you.md] source Mac action: youmd env vault share"
+    echo "[you.md] new Mac retry: youmd env vault pull --restore --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
+    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) registered Secret Vault device and is waiting for source Mac trusted-device share" || true
   fi
 fi
-if [ -z "\${YOUMD_ENV_VAULT:-}" ]; then
-  for DEFAULT_ENV_VAULT_DIR in "$HOME/Desktop/youmd-env-vault" "$HOME/Library/Mobile Documents/com~apple~CloudDocs/Desktop/youmd-env-vault" "$HOME/Library/Mobile Documents/com~apple~CloudDocs/youmd-env-vault"; do
-    if [ -d "$DEFAULT_ENV_VAULT_DIR" ]; then
-      DETECTED_ENV_VAULT="$(find "$DEFAULT_ENV_VAULT_DIR" -maxdepth 1 -type f \\( -name "env-vault-*.tar.enc" -o -name "env-vault-*.tar.age" -o -name "env-vault-*.tar.gpg" \\) -print 2>/dev/null | sort | tail -n 1 || true)"
-      if [ -n "$DETECTED_ENV_VAULT" ]; then
-        export YOUMD_ENV_VAULT="$DETECTED_ENV_VAULT"
-        echo "[you.md] using detected env vault: $YOUMD_ENV_VAULT"
-        break
+if [ "$SECRET_VAULT_RESTORED" != "1" ] && [ -z "\${YOUMD_ENV_VAULT:-}" ]; then
+  if [ "$ALLOW_LOCAL_ENV_VAULT_FALLBACK" = "1" ]; then
+    echo "[you.md] opt-in local/iCloud passphrase vault fallback enabled"
+    for DEFAULT_ENV_VAULT_DIR in "$HOME/Desktop/youmd-env-vault" "$HOME/Library/Mobile Documents/com~apple~CloudDocs/Desktop/youmd-env-vault" "$HOME/Library/Mobile Documents/com~apple~CloudDocs/youmd-env-vault"; do
+      if [ -d "$DEFAULT_ENV_VAULT_DIR" ]; then
+        DETECTED_ENV_VAULT="$(find "$DEFAULT_ENV_VAULT_DIR" -maxdepth 1 -type f \\( -name "env-vault-*.tar.enc" -o -name "env-vault-*.tar.age" -o -name "env-vault-*.tar.gpg" \\) -print 2>/dev/null | sort | tail -n 1 || true)"
+        if [ -n "$DETECTED_ENV_VAULT" ]; then
+          export YOUMD_ENV_VAULT="$DETECTED_ENV_VAULT"
+          echo "[you.md] using detected env vault: $YOUMD_ENV_VAULT"
+          break
+        fi
       fi
-    fi
-  done
+    done
+  else
+    echo "[you.md] local/iCloud passphrase vault fallback disabled by default"
+    echo "[you.md] set YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1 or YOUMD_ENV_VAULT=/path/to/env-vault only if you intentionally want the older passphrase flow"
+  fi
 fi
-if [ -n "\${YOUMD_ENV_VAULT:-}" ]; then
+if [ "$SECRET_VAULT_RESTORED" = "1" ]; then
+  :
+elif [ -n "\${YOUMD_ENV_VAULT:-}" ]; then
+  echo "[you.md] using explicit/opt-in local encrypted vault fallback"
   if [ ! -f "$YOUMD_ENV_VAULT" ]; then
     echo "[you.md] env vault path does not exist: $YOUMD_ENV_VAULT" >&2
     exit 1
@@ -386,7 +401,7 @@ if [ -n "\${YOUMD_ENV_VAULT:-}" ]; then
       unset ENV_VAULT_PASS_FROM_KEYCHAIN
       echo "[you.md] loaded env-vault passphrase from macOS Keychain service: $KEYCHAIN_SERVICE"
     else
-      echo "[you.md] no env-vault Keychain item found; restore will prompt for the passphrase"
+      echo "[you.md] no env-vault Keychain item found; explicit local fallback may prompt for the passphrase"
     fi
   fi
   echo "[you.md] listing encrypted .env.local vault before restore"
@@ -398,19 +413,29 @@ else
   echo "[you.md] env vault not restored yet"
   echo "[you.md] On the old/source Mac, create the encrypted vault first:"
   echo "youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"
-  echo "[you.md] Or create a transferable local copy without account sync:"
+  echo "[you.md] Then share local decrypt access to registered trusted Macs:"
+  echo "youmd env vault share"
+  echo "[you.md] Then retry on this Mac:"
+  echo "youmd env vault pull --restore --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
+  echo "[you.md] This strict fresh-machine flow intentionally does not ask for a local vault passphrase on the new Mac by default."
+  echo "[you.md] Optional fallback: create a transferable local copy without account sync:"
   echo "youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"
-  echo "[you.md] The setup command also auto-detects vaults in local Desktop and iCloud Desktop: ~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/youmd-env-vault"
+  echo "[you.md] Local/iCloud auto-detect is opt-in only. Rerun with:"
+  echo "YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1 YOUMD_REQUIRE_ENV_VAULT=1 <same command>"
   echo "[you.md] Move the generated env-vault-*.tar.enc file to this Mac, then rerun this command with:"
   echo "YOUMD_ENV_VAULT=/path/to/env-vault-YYYYMMDDTHHMMZ.tar.enc YOUMD_REQUIRE_ENV_VAULT=1 <same command>"
   echo "[you.md] Or restore manually after clone:"
   echo "youmd env restore <vault> --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
   if [ "\${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]; then
-    echo "[you.md] strict proof requires YOUMD_ENV_VAULT; stopping before readiness is marked complete" >&2
-    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: strict env vault restore still required" || true
+    echo "[you.md] strict proof is waiting for trusted-device Secret Vault share or an explicitly provided local vault; stopping before readiness is marked complete" >&2
+    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: waiting for trusted-device Secret Vault share or explicit local vault fallback" || true
     exit 1
   fi
 fi
+echo "[you.md] reconciling identity/skills after env-vault and source-Mac updates"
+youmd pull || true
+youmd sync || true
+youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) reconciled You.md bundle after env-vault handling" || true
 echo "[you.md] rehydrating portfolio graph with local README/project-context/env-key evidence"
 run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true
 echo "[you.md] auditing cloned project readiness"
@@ -499,7 +524,7 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     "",
     authLine,
     "",
-    "Behind-the-scenes operating rule: use the You.md CLI and You Agent yourself before asking Houston to do anything. Run deterministic commands like `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`, `youmd skill install all`, `youmd skill sync`, `youmd env vault list`, `youmd env vault pull`, `youmd machine prompt`, `youmd machine verify`, `youmd project portfolio-hydrate`, and `youmd agent status` as needed. Use `youmd agent send --channel machine-sync --kind status \"...\"` to report setup milestones back to Houston's other trusted Macs over the realtime agent bus. Use `you` / `youmd chat` only when you need the You Agent to synthesize or route context, then turn its output into concrete shell actions. Interrupt Houston only for true human-gated steps: GitHub browser auth, macOS Keychain/passphrase entry, npm OTP, OS permissions, or an explicit choice such as the 90-day expansion.",
+    "Behind-the-scenes operating rule: use the You.md CLI and You Agent yourself before asking Houston to do anything. Run deterministic commands like `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`, `youmd skill install all`, `youmd skill sync`, `youmd env vault list`, `youmd env vault device-register`, `youmd env vault pull --restore`, `youmd machine prompt`, `youmd machine verify`, `youmd project portfolio-hydrate`, and `youmd agent status` as needed. Use `youmd agent send --channel machine-sync --kind status \"...\"` to report setup milestones back to Houston's other trusted Macs over the realtime agent bus. Use `you` / `youmd chat` only when you need the You Agent to synthesize or route context, then turn its output into concrete shell actions. Interrupt Houston only for true human-gated steps: GitHub browser auth, source-Mac Secret Vault share if the trusted-device envelope has not been created yet, local vault passphrase/Keychain only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOUMD_ENV_VAULT` is explicitly provided, npm OTP, OS permissions, or an explicit choice such as the 90-day expansion.",
     "",
     "Exact setup command:",
     "",
@@ -520,7 +545,8 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
     `- preview the graph-backed plan, create \`${FRESH_MACHINE_BOOTSTRAP_ROOT}\`, and clone only projects marked ACTIVE plus Top Priority/Focusing from the last ${FRESH_MACHINE_BOOTSTRAP_DAYS} days first`,
     `- ask whether to expand to all ACTIVE plus Top Priority/Focusing projects from the last ${FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS} days before calling the full project clone set complete`,
-    "- check env-vault tooling, pull the latest account-backed You.md Secret Vault encrypted snapshot when available, otherwise auto-detect the newest local Desktop or iCloud Desktop `youmd-env-vault/env-vault-*` file if `YOUMD_ENV_VAULT` is not set, list the encrypted vault, try macOS Keychain service `youmd-env-vault` for the passphrase, restore env files into existing cloned project dirs with `--map-existing --existing-only --skip-agent-auth`, then rehydrate local project/env evidence",
+    "- check env-vault tooling, register this Mac as a trusted Secret Vault device, pull the latest account-backed You.md Secret Vault encrypted snapshot when available, unwrap the vault passphrase locally through a trusted-device key envelope, restore env files into existing cloned project dirs with `--map-existing --existing-only --skip-agent-auth`, or stop with the exact source-Mac `youmd env vault share` action instead of asking for a passphrase on the new Mac. Local/iCloud passphrase fallback runs only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOUMD_ENV_VAULT` is explicitly provided. After env handling, rehydrate local project/env evidence.",
+    "- reconcile `youmd pull && youmd sync` after env-vault handling so source-Mac bundle updates, new trusted-device envelopes, shared skills, and machine proof state do not leave this Mac showing `remote ahead`",
     "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
     "- bound portfolio hydration with `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
     "",
@@ -532,7 +558,7 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     "- the synced machine proof status",
     "- whether I should expand to the 90-day active project set if I have not answered yet",
     "",
-    "Secret rule: raw `.env.local` values are not embedded in this prompt. Best path: on the old/source Mac, run `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` once. That uploads only encrypted archive bytes plus a safe manifest to You.md Secret Vault, so a trusted new Mac can pull it after login. Local fallback: run `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file into `~/Desktop/youmd-env-vault/` or the iCloud Desktop `youmd-env-vault/` on the new machine, then run this command. It checks Secret Vault first, then auto-detects the newest local vault; you can also override with `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. If macOS Keychain contains service `youmd-env-vault` for the current user, restore uses it automatically; otherwise it prompts. Vault listing prints variable names/counts and target paths only, never values, maps old folder names onto cloned dirs, and skips agent auth config so it does not clobber the new machine's active Claude/Codex login.",
+    "Secret rule: raw `.env.local` values are not embedded in this prompt. Best path: on the old/source Mac, run `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` once, then after the new Mac registers itself run `youmd env vault share` on the source Mac. That uploads only encrypted archive bytes plus safe manifest metadata, and stores only per-device encrypted passphrase envelopes. A trusted new Mac pulls the encrypted snapshot after login and decrypts locally with its private device key; raw env values never hit the browser, chat, or You.md servers. If the envelope is missing, the command stops and sends a machine-sync status telling the source Mac to run `youmd env vault share`. Local fallback is opt-in only: run `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to the new machine, then rerun with `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or explicit `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. Vault listing prints variable names/counts and target paths only, never values, maps old folder names onto cloned dirs, and skips agent auth config so it does not clobber the new machine's active Claude/Codex login.",
     "Project gate: inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default. Manually mark a project Active and Top Priority/Focusing in Portfolio before expecting it to clone on the new computer.",
     "Done-ness rule: this web-shell command includes `YOUMD_REQUIRE_ENV_VAULT=1`, so it fails instead of pretending setup is complete when the encrypted env vault is missing.",
   ].join("\n");
@@ -2671,6 +2697,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // Pane-switching commands
       // Note: /publish and /help are handled separately below with special logic
       const paneCommands: Record<string, RightPane> = {
+        "/home": "home",
+        "/dashboard": "home",
+        "/today": "home",
+        "/tasks": "tasks",
+        "/taskboard": "tasks",
         "/preview": "profile",
         "/profile": "profile",
         "/portfolio": "portfolio",
