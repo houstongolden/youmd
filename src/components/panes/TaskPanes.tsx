@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Bot, Check, Clock3, FolderGit2, ListTodo, UserRound } from "lucide-react";
+import { Bot, Check, Clock3, Columns3, FolderGit2, List, ListTodo, UserRound } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { LocalMachineReadiness } from "@/lib/local-machine-readiness.server";
@@ -73,6 +73,16 @@ const STATUS_WEIGHT: Record<string, number> = {
   proposed: 2,
   snoozed: 3,
 };
+const ACTIVE_TASK_COLUMNS = [
+  { key: "in_progress", label: "doing", empty: "nothing actively moving" },
+  { key: "open", label: "ready", empty: "no ready work" },
+  { key: "proposed", label: "proposed", empty: "no untriaged ideas" },
+  { key: "snoozed", label: "later", empty: "no parked work" },
+] as const;
+const DONE_TASK_COLUMNS = [
+  { key: "done", label: "done", empty: "nothing completed in this filter" },
+  { key: "cancelled", label: "killed", empty: "nothing killed in this filter" },
+] as const;
 
 function relativeTime(ts?: number): string {
   if (!ts) return "no timestamp";
@@ -111,6 +121,17 @@ function priorityLabel(priority: string) {
 
 function taskScope(task: PortfolioTask) {
   return task.projectSlug ? task.projectSlug : "personal";
+}
+
+function projectDisplayName(projectSlug: string | undefined, projectsBySlug: Map<string, PortfolioProject>) {
+  if (!projectSlug) return "personal";
+  return projectsBySlug.get(projectSlug)?.name ?? projectSlug;
+}
+
+function normalizedBoardStatus(status: string, statusFilter: "active" | "done") {
+  if (statusFilter === "done") return status === "cancelled" ? "cancelled" : "done";
+  if (status === "in_progress" || status === "open" || status === "proposed" || status === "snoozed") return status;
+  return "open";
 }
 
 function MiniStat({ value, label }: { value: number | string; label: string }) {
@@ -160,6 +181,8 @@ function TaskRow({
   onOwner,
   onPersonal,
   compact,
+  surface = "row",
+  projectName,
 }: {
   task: PortfolioTask;
   busy: boolean;
@@ -167,9 +190,17 @@ function TaskRow({
   onOwner: (ownerType: "human" | "agent", ownerLabel: string) => void;
   onPersonal: () => void;
   compact?: boolean;
+  surface?: "row" | "card";
+  projectName?: string;
 }) {
+  const isCard = surface === "card";
   return (
-    <div className="grid gap-3 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+    <div
+      className={[
+        "border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35",
+        isCard ? "space-y-3 px-3 py-3" : "grid gap-3 px-4 py-3 lg:grid-cols-[minmax(0,1fr)_auto]",
+      ].join(" ")}
+    >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-[11px] leading-5 text-[hsl(var(--text-primary))]">{task.title}</span>
@@ -187,12 +218,12 @@ function TaskRow({
         )}
         <div className="mt-2 flex flex-wrap gap-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-40">
           <span>{task.ownerType}{task.ownerLabel ? ` / ${task.ownerLabel}` : ""}</span>
-          <span>{taskScope(task)}</span>
+          <span>{projectName ?? taskScope(task)}</span>
           <span>{task.dueAt ? `due ${new Date(task.dueAt).toLocaleDateString()}` : "no due date"}</span>
           <span>updated {relativeTime(task.updatedAt)}</span>
         </div>
       </div>
-      <div className="flex flex-wrap items-start gap-1.5 lg:justify-end">
+      <div className={["flex flex-wrap items-start gap-1.5", isCard ? "" : "lg:justify-end"].join(" ")}>
         <TaskActionButton active={task.ownerType === "human"} disabled={busy || task.ownerType === "human"} onClick={() => onOwner("human", "Houston")}>
           me
         </TaskActionButton>
@@ -222,6 +253,7 @@ function TaskQueue({
   onOwner,
   onPersonal,
   compact,
+  projectsBySlug,
 }: {
   label: string;
   tasks: PortfolioTask[];
@@ -231,6 +263,7 @@ function TaskQueue({
   onOwner: (taskId: Id<"portfolioTasks">, ownerType: "human" | "agent", ownerLabel: string) => void;
   onPersonal: (taskId: Id<"portfolioTasks">) => void;
   compact?: boolean;
+  projectsBySlug?: Map<string, PortfolioProject>;
 }) {
   return (
     <section>
@@ -247,6 +280,55 @@ function TaskQueue({
               task={task}
               busy={busyTaskId === String(task._id)}
               compact={compact}
+              projectName={projectsBySlug ? projectDisplayName(task.projectSlug, projectsBySlug) : undefined}
+              onStatus={(status) => onStatus(task._id, status)}
+              onOwner={(ownerType, ownerLabel) => onOwner(task._id, ownerType, ownerLabel)}
+              onPersonal={() => onPersonal(task._id)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TaskBoardColumn({
+  label,
+  empty,
+  tasks,
+  busyTaskId,
+  projectsBySlug,
+  onStatus,
+  onOwner,
+  onPersonal,
+}: {
+  label: string;
+  empty: string;
+  tasks: PortfolioTask[];
+  busyTaskId: string | null;
+  projectsBySlug: Map<string, PortfolioProject>;
+  onStatus: (taskId: Id<"portfolioTasks">, status: string) => void;
+  onOwner: (taskId: Id<"portfolioTasks">, ownerType: "human" | "agent", ownerLabel: string) => void;
+  onPersonal: (taskId: Id<"portfolioTasks">) => void;
+}) {
+  return (
+    <section className="min-w-0 bg-[hsl(var(--bg-raised))]/22 px-2 py-2">
+      <div className="mb-2 flex items-center justify-between gap-2 border-b border-[hsl(var(--border))]/45 pb-2">
+        <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-75">{label}</div>
+        <div className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">{tasks.length}</div>
+      </div>
+      {tasks.length === 0 ? (
+        <div className="px-2 py-3 font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-38">{empty}</div>
+      ) : (
+        <div className="space-y-2">
+          {tasks.map((task) => (
+            <TaskRow
+              key={task._id}
+              task={task}
+              busy={busyTaskId === String(task._id)}
+              compact
+              surface="card"
+              projectName={projectDisplayName(task.projectSlug, projectsBySlug)}
               onStatus={(status) => onStatus(task._id, status)}
               onOwner={(ownerType, ownerLabel) => onOwner(task._id, ownerType, ownerLabel)}
               onPersonal={() => onPersonal(task._id)}
@@ -472,6 +554,8 @@ function HomeSkillSyncProof({
 function HomeDsiViewProof({
   dsiView,
   onOpenMachine,
+  onOpenTasks,
+  onOpenSkills,
 }: {
   dsiView:
     | {
@@ -482,6 +566,8 @@ function HomeDsiViewProof({
     | null
     | undefined;
   onOpenMachine?: () => void;
+  onOpenTasks?: () => void;
+  onOpenSkills?: () => void;
 }) {
   const widgets = dsiView?.widgets ?? [];
   const visibleWidgets = widgets.slice(0, 6);
@@ -518,6 +604,22 @@ function HomeDsiViewProof({
           >
             mesh proof
           </button>
+          <button
+            type="button"
+            onClick={onOpenTasks}
+            className="h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-65 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            task board
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSkills}
+            className="h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-65 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            skills
+          </button>
         </div>
       </div>
       {visibleWidgets.length > 0 && (
@@ -533,6 +635,87 @@ function HomeDsiViewProof({
         </div>
       )}
     </div>
+  );
+}
+
+function HomeOperatingMesh({
+  readiness,
+  projects,
+  openTasks,
+  activities,
+  onOpenMachine,
+  onOpenAgents,
+}: {
+  readiness: LocalMachineReadiness | null;
+  projects: PortfolioProject[];
+  openTasks: PortfolioTask[];
+  activities: PortfolioActivity[];
+  onOpenMachine?: () => void;
+  onOpenAgents?: () => void;
+}) {
+  const summary = readiness?.summary;
+  const agentBus = readiness?.agentBus;
+  const envVault = readiness?.envVault;
+  const machineLabel = readiness?.hostName ?? "this Mac";
+  const liveState = agentBus?.state === "active" ? "live" : readiness ? "checking" : "loading";
+  const focusedCount = projects.filter((project) => {
+    const focus = project.focusStatus ?? "";
+    return project.status === "active" || focus === "top-priority" || focus === "focusing";
+  }).length;
+  const meshStats = [
+    { label: "machines", value: readiness ? "1 local" : "loading" },
+    { label: "daemons", value: summary ? `${summary.daemonsLoaded}/${summary.daemonsTotal}` : "--" },
+    { label: "skills", value: readiness ? readiness.skillSync.canonicalCount : "--" },
+    { label: "agent bus", value: agentBus ? `${agentBus.recentCount} msgs` : "--" },
+    { label: "focus projects", value: focusedCount },
+    { label: "open tasks", value: openTasks.length },
+  ];
+
+  return (
+    <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-75">
+              machine you sync mesh
+            </span>
+            <span className={`font-mono text-[8.5px] uppercase tracking-[0.14em] ${liveState === "live" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-45"}`}>
+              {liveState}
+            </span>
+          </div>
+          <div className="mt-3 font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
+            {machineLabel} is materializing your brain into agents, skills, projects, env vault, and logs.
+          </div>
+          <p className="mt-2 max-w-4xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+            This is the living proof surface: project changes, skill syncs, trusted-device vault state, and agent messages should all flow through one brain activity stream.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 xl:justify-end">
+          <button type="button" onClick={onOpenAgents} className="h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]" style={{ borderRadius: "var(--radius)" }}>
+            agents
+          </button>
+          <button type="button" onClick={onOpenMachine} className="h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-65 transition-colors hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]" style={{ borderRadius: "var(--radius)" }}>
+            machine
+          </button>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+        {meshStats.map((stat) => (
+          <div key={stat.label} className="border-l border-[hsl(var(--border))]/55 bg-[hsl(var(--bg-raised))]/22 px-3 py-2">
+            <div className="font-mono text-[14px] leading-none text-[hsl(var(--text-primary))]">{stat.value}</div>
+            <div className="mt-2 font-mono text-[8px] uppercase tracking-[0.15em] text-[hsl(var(--text-secondary))] opacity-42">{stat.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 grid gap-2 xl:grid-cols-[1fr_1fr]">
+        <div className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
+          vault: {envVault?.accountSnapshotStatus ?? "unknown"}{envVault?.latestAccountSnapshot?.projectCount ? ` / ${envVault.latestAccountSnapshot.projectCount} projects` : ""}
+        </div>
+        <div className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50 xl:text-right">
+          latest shipping signal: {activities[0] ? `${activities[0].projectSlug} / ${relativeTime(activities[0].occurredAt)}` : "waiting for brain activity"}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -606,10 +789,10 @@ export function HomePane({
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <h2 className="max-w-4xl font-mono text-[22px] leading-tight text-[hsl(var(--text-primary))]">
-                Tasks, project focus, and agent handoffs in one place.
+                Your live operating system for projects, tasks, machines, skills, and agents.
               </h2>
               <p className="mt-3 max-w-4xl font-mono text-[11px] leading-5 text-[hsl(var(--text-secondary))] opacity-60">
-                Human-owned work stays separate from agent-owned work, with personal tasks and project-scoped tasks visible together.
+                Home is becoming a DSI surface: ask the You Agent to add widgets, scope them to projects or machines, and keep the live brain stream close to the work.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -631,7 +814,20 @@ export function HomePane({
         </div>
 
         <HomeSkillSyncProof readiness={machineReadiness} onOpenMachine={() => onOpenPane?.("machine")} />
-        <HomeDsiViewProof dsiView={dsiView} onOpenMachine={() => onOpenPane?.("machine")} />
+        <HomeDsiViewProof
+          dsiView={dsiView}
+          onOpenMachine={() => onOpenPane?.("machine")}
+          onOpenTasks={() => onOpenPane?.("tasks")}
+          onOpenSkills={() => onOpenPane?.("skills")}
+        />
+        <HomeOperatingMesh
+          readiness={machineReadiness}
+          projects={projects}
+          openTasks={openTasks}
+          activities={recentActivity}
+          onOpenMachine={() => onOpenPane?.("machine")}
+          onOpenAgents={() => onOpenPane?.("agents")}
+        />
 
         {statusLine && (
           <div className="border-l border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/[0.035] px-4 py-2 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[hsl(var(--accent))]">
@@ -681,12 +877,36 @@ export function HomePane({
 export function TasksPane({ clerkId }: { clerkId?: string }) {
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId, includeDoneTasks: true } : "skip");
   const { busyTaskId, statusLine, setStatus, setOwner, setPersonal } = useTaskActions(clerkId);
+  const [viewMode, setViewMode] = useState<"board" | "list">("board");
   const [ownerFilter, setOwnerFilter] = useState<"all" | "human" | "agent">("all");
   const [scopeFilter, setScopeFilter] = useState<"all" | "personal" | "project">("all");
   const [statusFilter, setStatusFilter] = useState<"active" | "done">("active");
+  const [projectFilter, setProjectFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const tasks = useMemo(() => (graph?.tasks ?? []) as PortfolioTask[], [graph?.tasks]);
+  const projects = useMemo(() => (graph?.projects ?? []) as PortfolioProject[], [graph?.projects]);
+  const projectsBySlug = useMemo(() => {
+    const next = new Map<string, PortfolioProject>();
+    for (const project of projects) next.set(project.slug, project);
+    return next;
+  }, [projects]);
+  const projectOptions = useMemo(() => {
+    const projectMap = new Map<string, Pick<PortfolioProject, "slug" | "name" | "status" | "focusStatus" | "focusRank" | "lastActivityAt" | "updatedAt">>();
+    for (const project of projects) projectMap.set(project.slug, project);
+    for (const task of tasks) {
+      if (task.projectSlug && !projectMap.has(task.projectSlug)) {
+        projectMap.set(task.projectSlug, { slug: task.projectSlug, name: task.projectSlug, status: "unknown" });
+      }
+    }
+    return Array.from(projectMap.values()).sort((a, b) => {
+      const focusA = a.focusStatus === "top-priority" ? 0 : a.focusStatus === "focusing" ? 1 : a.status === "active" ? 2 : 3;
+      const focusB = b.focusStatus === "top-priority" ? 0 : b.focusStatus === "focusing" ? 1 : b.status === "active" ? 2 : 3;
+      return focusA - focusB || (a.focusRank ?? 99) - (b.focusRank ?? 99) || a.name.localeCompare(b.name);
+    });
+  }, [projects, tasks]);
   const filteredTasks = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
     return tasks
       .filter((task) => {
         if (statusFilter === "active" && DONE_STATUSES.has(task.status)) return false;
@@ -694,11 +914,33 @@ export function TasksPane({ clerkId }: { clerkId?: string }) {
         if (ownerFilter !== "all" && task.ownerType !== ownerFilter) return false;
         if (scopeFilter === "personal" && task.projectSlug) return false;
         if (scopeFilter === "project" && !task.projectSlug) return false;
+        if (projectFilter === "personal" && task.projectSlug) return false;
+        if (projectFilter !== "all" && projectFilter !== "personal" && task.projectSlug !== projectFilter) return false;
+        if (normalizedSearch) {
+          const haystack = [
+            task.title,
+            task.description,
+            task.ownerLabel,
+            task.projectSlug,
+            ...task.tags,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          if (!haystack.includes(normalizedSearch)) return false;
+        }
         return true;
       })
       .sort(taskSort);
-  }, [ownerFilter, scopeFilter, statusFilter, tasks]);
+  }, [ownerFilter, projectFilter, scopeFilter, searchQuery, statusFilter, tasks]);
   const { humanTasks, agentTasks, personalTasks } = useMemo(() => partitionTasks(tasks), [tasks]);
+  const taskColumns = useMemo(() => {
+    const columns = statusFilter === "done" ? DONE_TASK_COLUMNS : ACTIVE_TASK_COLUMNS;
+    return columns.map((column) => ({
+      ...column,
+      tasks: filteredTasks.filter((task) => normalizedBoardStatus(task.status, statusFilter) === column.key),
+    }));
+  }, [filteredTasks, statusFilter]);
 
   const filters = [
     { key: "active", label: "active", onClick: () => setStatusFilter("active"), active: statusFilter === "active" },
@@ -719,10 +961,10 @@ export function TasksPane({ clerkId }: { clerkId?: string }) {
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
             <div>
               <h2 className="font-mono text-[22px] leading-tight text-[hsl(var(--text-primary))]">
-                Project tasks and personal tasks share one queue.
+                Board, list, personal work, and project work share one task router.
               </h2>
               <p className="mt-3 max-w-4xl font-mono text-[11px] leading-5 text-[hsl(var(--text-secondary))] opacity-60">
-                Route work to Houston or the agent, keep personal braindump tasks visible, and avoid losing execution items inside one project page.
+                Use the board for execution state, list for audits, and project filters when you need a founder-level slice without losing personal or agent-owned work.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2 xl:min-w-[320px]">
@@ -732,6 +974,62 @@ export function TasksPane({ clerkId }: { clerkId?: string }) {
             </div>
           </div>
         </PaneCallout>
+
+        <div className="grid gap-3 xl:grid-cols-[auto_minmax(220px,320px)_minmax(220px,1fr)] xl:items-center">
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setViewMode("board")}
+              className={[
+                "flex h-8 cursor-pointer items-center gap-1.5 border px-2.5 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-colors",
+                viewMode === "board"
+                  ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
+                  : "border-[hsl(var(--border))]/60 text-[hsl(var(--text-secondary))] opacity-60 hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]",
+              ].join(" ")}
+              style={{ borderRadius: "var(--radius)" }}
+            >
+              <Columns3 size={12} aria-hidden="true" />
+              board
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={[
+                "flex h-8 cursor-pointer items-center gap-1.5 border px-2.5 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-colors",
+                viewMode === "list"
+                  ? "border-[hsl(var(--accent))] text-[hsl(var(--accent))]"
+                  : "border-[hsl(var(--border))]/60 text-[hsl(var(--text-secondary))] opacity-60 hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--text-primary))]",
+              ].join(" ")}
+              style={{ borderRadius: "var(--radius)" }}
+            >
+              <List size={12} aria-hidden="true" />
+              list
+            </button>
+          </div>
+          <select
+            aria-label="filter tasks by project"
+            value={projectFilter}
+            onChange={(event) => setProjectFilter(event.target.value)}
+            className="h-8 w-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))]/70 px-2.5 font-mono text-[9px] uppercase tracking-[0.1em] text-[hsl(var(--text-secondary))] outline-none transition-colors focus:border-[hsl(var(--accent))]"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            <option value="all">all projects + personal</option>
+            <option value="personal">personal only</option>
+            {projectOptions.map((project) => (
+              <option key={project.slug} value={project.slug}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          <input
+            aria-label="search tasks"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="search tasks, tags, projects..."
+            className="h-8 w-full border border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))]/70 px-2.5 font-mono text-[9px] text-[hsl(var(--text-primary))] outline-none placeholder:text-[hsl(var(--text-secondary))] placeholder:opacity-35 focus:border-[hsl(var(--accent))]"
+            style={{ borderRadius: "var(--radius)" }}
+          />
+        </div>
 
         <div className="flex flex-wrap gap-1.5">
           {filters.map((filter) => (
@@ -762,6 +1060,25 @@ export function TasksPane({ clerkId }: { clerkId?: string }) {
           <PaneEmptyState>loading tasks...</PaneEmptyState>
         ) : filteredTasks.length === 0 ? (
           <PaneEmptyState>no tasks match this view</PaneEmptyState>
+        ) : viewMode === "board" ? (
+          <section>
+            <PaneSectionLabel>{filteredTasks.length} tasks / {projectFilter === "all" ? "all scopes" : projectFilter === "personal" ? "personal" : projectDisplayName(projectFilter, projectsBySlug)}</PaneSectionLabel>
+            <div className={statusFilter === "done" ? "grid gap-3 xl:grid-cols-2" : "grid gap-3 xl:grid-cols-4"}>
+              {taskColumns.map((column) => (
+                <TaskBoardColumn
+                  key={column.key}
+                  label={column.label}
+                  empty={column.empty}
+                  tasks={column.tasks}
+                  busyTaskId={busyTaskId}
+                  projectsBySlug={projectsBySlug}
+                  onStatus={setStatus}
+                  onOwner={setOwner}
+                  onPersonal={setPersonal}
+                />
+              ))}
+            </div>
+          </section>
         ) : (
           <TaskQueue
             label={`${filteredTasks.length} task${filteredTasks.length === 1 ? "" : "s"}`}
@@ -771,6 +1088,7 @@ export function TasksPane({ clerkId }: { clerkId?: string }) {
             onStatus={setStatus}
             onOwner={setOwner}
             onPersonal={setPersonal}
+            projectsBySlug={projectsBySlug}
           />
         )}
 

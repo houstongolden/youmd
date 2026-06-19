@@ -6,6 +6,22 @@ Last Updated: 2026-06-19
 
 ## 2026-06-19 — DSI, custom Views/Widgets, and pixel machine/agent characters
 
+### 143. Make Home, Tasks, skills, analytics, and shell IA feel like one focused product surface
+**Status:** IN PROGRESS / FIRST HOME + TASKS SURFACE SLICE COMPLETE
+**Verified:** PARTIAL (`npx tsc --noEmit`, `git diff --check`, production Next build, dev-server logs, and localhost `/shell` route responses passed; authenticated in-app visual review by Houston still pending)
+**Production Verified:** NO
+**Source:** 2026-06-19 — Houston: "Home and Tasks views are not good or functional really... tasks needs to be a more proper project management type of structure notion style kan-ban board view vs list view with filters by project... home page needs to be more customizable too... left side bar menu groupings are kinda still too cluttered..."
+**Actionable Scope:**
+1. Make Tasks a proper project-management surface, not only a list. **DONE first slice:** board/list modes, project/personal filter, search, owner/status/scope filters, and Kanban columns for doing/ready/proposed/later/done/killed.
+2. Keep personal tasks and project tasks in one router with explicit human/agent ownership. **DONE existing + preserved:** board cards and list rows keep `me`, `agent`, `doing`, `done`, and `personal` actions.
+3. Make Home more customizable and DSI-oriented. **DONE first slice:** Home now frames itself as the default saved live View and links into task board, mesh proof, and skills.
+4. Foreground the Machine You sync mesh and agent/machine activity on Home. **DONE first slice:** Home shows daemon count, shared skill count, agent-bus messages, vault snapshot status, focused projects, open tasks, and latest shipping signal from safe local readiness/portfolio data.
+5. Clean up the left IA so core surfaces are obvious and advanced/system details do not create tab soup. **OPEN.**
+6. Build a clean custom skills view showing skills by project, stack, machine/environment, and latest activity. **OPEN.**
+7. Consolidate Analytics, Activity, Stats, Live Log, history, and feed surfaces into one clearer Brain Activity surface. **OPEN.**
+8. Add an actual DSI widget catalog/editor so the You Agent can create/modify Home Views from chat. **OPEN.**
+**Progress (2026-06-19):** Upgraded `TasksPane` to board-first Kanban with list mode retained, project/personal filtering, search, owner/status/scope filters, project display names, and compact task cards. Added `HomeOperatingMesh` so Home foregrounds real local readiness and brain/activity signals instead of burying machines/agents under Settings. Production build and type checks pass.
+
 ### 142. Add personality to the sync mesh and define You.md as a Dynamic Software Interface
 **Status:** IN PROGRESS / FIRST UI + PERSISTED HOME VIEW SLICE COMPLETE
 **Verified:** PARTIAL (focused Convex test, Convex codegen, root TypeScript, `git diff --check`, production Next build, Convex production deploy, in-app Browser pixel mesh proof, and `/desktop-demo` System Status live-log character proof complete; Home DSI visual proof still pending because the browser bridge lacks the authenticated shell session cookie)
@@ -23,6 +39,7 @@ Last Updated: 2026-06-19
 **Progress (2026-06-19):** Added an original `PixelCharacter` UI primitive and wired it into Machine's live sync mesh for this Mac, trusted machines, agent bus, skill mesh, project graph, and Secret Vault status. Added quiet blink/signal animation and documented the DSI architecture: core primitives, View shape, Widget contracts, security boundaries, navigation implications, and near-term build plan.
 **Progress (2026-06-19 continuation):** Added Convex `dsiViews` / `dsiViewWidgets`, idempotent `ensureDefaultHomeView`, owner-gated `getDefaultHomeView`, and a Home pane DSI proof strip. The default View persists six live widgets and keeps browser secret exposure false. Focused Convex test, Convex codegen, root TypeScript, `git diff --check`, and production Next build passed. The initial `npx convex deploy` hung because `.env.local` was not shell-sourceable; the deploy completed after loading env values as dotenv data and running Convex deploy with `--yes --typecheck disable --codegen disable`.
 **Progress (2026-06-19 continuation 2):** Added a tiny `xs` `PixelCharacter` size, wired deterministic source emitters into `LiveBrainLog`, and replaced anonymous connected-agent/activity dots with agent characters. Verified with TypeScript, production build, restarted local server, and Codex in-app Browser visual proof on `/desktop-demo` System Status showing the shared live-log primitive with 18px character emitters.
+**Progress (2026-06-19 continuation 3):** Home now makes the DSI direction more explicit with direct task-board/skills/mesh actions and a new `machine you sync mesh` section backed by local readiness, portfolio tasks/projects, Secret Vault status, agent-bus status, and latest shipping activity.
 
 ---
 

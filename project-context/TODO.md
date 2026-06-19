@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-19 — Home DSI mesh and Tasks board
+- [x] Convert Tasks into a board-first work surface with list mode retained for audits
+- [x] Add project/personal filtering, task search, owner/status/scope filters, and compact Kanban columns
+- [x] Keep task routing actions available in both board cards and list rows
+- [x] Foreground the Machine You sync mesh on Home with live local readiness, skill, agent-bus, vault, project, task, and shipping signals
+- [x] Reframe Home as the default DSI View surface rather than a static dashboard tab
+- [ ] Next pass: consolidate Analytics/Activity/Stats/Live Log into one clearer Brain Activity surface with project/skill/entity click targets
+- [ ] Next pass: add a cleaner Skills matrix showing custom skills by project, stack, machine/environment, and latest activity
+- [ ] Next pass: add the actual DSI widget catalog/editor so the You Agent can persist custom Home widgets from chat
+
 ### 2026-06-19 — DSI views and pixel sync characters
 - [x] Add a reusable original retro pixel character primitive for Machines, Agents, and Shell/session surfaces
 - [x] Surface stable machine/agent characters inside the Machine `you sync mesh` so connected computers and agents feel alive without adding another tab

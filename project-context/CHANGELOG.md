@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-19 — Home DSI mesh and task board
+
+### feat(shell): make Home and Tasks more like working surfaces
+- Upgraded Tasks from a single filtered list into a board-first project management surface with board/list modes, project/personal filtering, owner/status/scope filters, search, and compact Kanban columns for doing/ready/proposed/later.
+- Kept the existing quick-routing actions (`me`, `agent`, `doing`, `done`, `personal`) available from both list rows and board cards.
+- Added project display names into task rows so cross-project work reads like a portfolio board instead of raw slugs.
+- Added a Home `machine you sync mesh` block that foregrounds local readiness, daemon health, skill count, agent-bus messages, vault snapshot status, focused projects, open tasks, and latest shipping signal.
+- Tightened Home copy around the DSI direction: Home is a saved live View surface that should accept You Agent-created widgets, project scopes, machine scopes, and live brain stream widgets.
+- Verified with `npx tsc --noEmit`, `git diff --check`, production `npm run build`, live dev-server logs, and localhost `/shell` route responses.
+
 ## 2026-06-19 — Shell chat layout controls
 
 ### feat(shell): collapse, flip, and freely resize the chat/live-log column
