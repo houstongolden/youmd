@@ -107,6 +107,22 @@ import type { LocalMachineReadiness } from "@/lib/local-machine-readiness.server
 
 type PrimaryPaneGroup = "home" | "brain" | "projects" | "settings";
 
+type AgentActivitySummary = {
+  agentName: string;
+  reads: number;
+  writes: number;
+  trustLevel?: string;
+  lastSeen: number;
+};
+
+type ShellAnalyticsSummary = {
+  totalViews: number;
+  agentReads: number;
+  webViews: number;
+  last7Days: number;
+  dailyViews?: Array<{ date: string; total: number; agents: number; web: number }>;
+};
+
 const PANE_GROUPS: Array<{
   key: PrimaryPaneGroup;
   label: string;
@@ -1158,6 +1174,17 @@ export function DashboardContent() {
     api.brainActivity.listRecent,
     isAuthenticated && user?.id ? { clerkId: user.id, limit: 80 } : "skip"
   );
+  // Compact the hidden Activity + Stats panes into the foreground Live Log.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const apiAny = api as any;
+  const connectedAgents = useQuery(
+    apiAny.activity?.agentSummary,
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
+  ) as AgentActivitySummary[] | undefined;
+  const analyticsSummary = useQuery(
+    api.me.getAnalytics,
+    isAuthenticated && user?.id ? { clerkId: user.id } : "skip"
+  ) as ShellAnalyticsSummary | null | undefined;
   const shellUsername =
     convexUser?.username ||
     user?.username ||
@@ -1749,6 +1776,63 @@ export function DashboardContent() {
         detail: activity.detail ?? undefined,
         status: activity.status,
       });
+    }
+
+    if (connectedAgents && connectedAgents.length > 0) {
+      const recentAgents = [...connectedAgents]
+        .sort((a, b) => b.lastSeen - a.lastSeen)
+        .slice(0, 4);
+      const totalReads = connectedAgents.reduce((sum, agentRow) => sum + agentRow.reads, 0);
+      const totalWrites = connectedAgents.reduce((sum, agentRow) => sum + agentRow.writes, 0);
+      const activeNow = connectedAgents.filter((agentRow) => now - agentRow.lastSeen < 5 * 60 * 1000).length;
+      push({
+        id: "connected-agent-summary",
+        at: now,
+        source: "agents",
+        channel: "activity",
+        kind: activeNow > 0 ? "live" : "seen",
+        title: `${connectedAgents.length} connected agents`,
+        detail: `${activeNow} active now · ${totalReads} reads · ${totalWrites} writes`,
+        status: activeNow > 0 ? "live" : "ok",
+      });
+      for (const agentRow of recentAgents) {
+        push({
+          id: `connected-agent-${agentRow.agentName}`,
+          at: now - recentAgents.indexOf(agentRow) - 1,
+          source: "agents",
+          channel: agentRow.trustLevel ?? "agent",
+          kind: agentRow.writes > 0 ? "read/write" : "read",
+          title: agentRow.agentName,
+          detail: `${agentRow.reads} reads · ${agentRow.writes} writes`,
+          status: now - agentRow.lastSeen < 5 * 60 * 1000 ? "live" : "info",
+        });
+      }
+    }
+
+    if (analyticsSummary) {
+      const today = analyticsSummary.dailyViews?.[analyticsSummary.dailyViews.length - 1];
+      push({
+        id: "analytics-summary",
+        at: now,
+        source: "stats",
+        channel: "profile",
+        kind: "traffic",
+        title: `${analyticsSummary.last7Days} views in 7d`,
+        detail: `${analyticsSummary.agentReads} agent reads · ${analyticsSummary.webViews} web views · ${analyticsSummary.totalViews} all time`,
+        status: analyticsSummary.agentReads > 0 ? "ok" : "info",
+      });
+      if (today) {
+        push({
+          id: "analytics-today",
+          at: now,
+          source: "stats",
+          channel: today.date,
+          kind: "today",
+          title: `${today.total} views today`,
+          detail: `${today.agents} agent · ${today.web} web`,
+          status: today.total > 0 ? "live" : "info",
+        });
+      }
     }
 
     if (repoUpdateBusy) {

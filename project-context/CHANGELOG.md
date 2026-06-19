@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-19 — Live log foregrounds agents and stats
+
+### polish(shell): make hidden activity visible where Houston actually looks
+- Added connected-agent rollups and profile traffic stats to the foreground Live Log as compact `AGENTS` and `STATS` rows.
+- Moved the second-brain GitHub repo and update history to the top of Settings, above account/API/session noise.
+- Collapsed new-key scopes by default, capped visible active API keys, and capped session logs with reveal controls.
+- Verified with root TypeScript, production Next build, local `next start -p 3100`, and Codex in-app Browser screenshots showing Settings repo/update history above the fold and Live Log `AGENTS`/`STATS` rows.
+
 ## 2026-06-19 — Brain activity producer expansion
 
 ### feat(convex): route portfolio work into the live brain stream

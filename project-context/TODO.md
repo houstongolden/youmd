@@ -19,6 +19,8 @@ PRD Version: 2.3
 - [x] Collapse visible shell IA toward `Home`, `Brain`, `Projects`, and `Settings`, with APIs/Machine/Vault/Activity/Stats/Portrait hidden under Settings
 - [x] Route repo update runs/steps, global portfolio task changes, task triage/detail edits, brain-dump captures, and extracted brain-dump tasks directly into `brainActivities`
 - [x] Keep producer-written brain activity redacted and marked `secretValuesExposed: false`
+- [x] Bring hidden Activity/Stats signals into the foreground Live Log as compact `AGENTS` and `STATS` rows
+- [x] Move the second-brain GitHub repo/update-history surface to the top of Settings and truncate noisy API/session sections
 - [x] Verify with root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser screenshots for `/shell` and `/desktop-demo`
 - [ ] Next pass: route skill self-improvements, portfolio hydrations, source crawls, and daemon checkpoints directly into `brainActivities` as first-class producers
 

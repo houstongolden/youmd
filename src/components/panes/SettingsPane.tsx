@@ -85,6 +85,8 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
   const [revealedKeyValue, setRevealedKeyValue] = useState<string | null>(null);
   const [revealingKeyId, setRevealingKeyId] = useState<string | null>(null);
   const [copiedExistingKeyId, setCopiedExistingKeyId] = useState<string | null>(null);
+  const [showAllActiveKeys, setShowAllActiveKeys] = useState(false);
+  const [showAllSessionLogs, setShowAllSessionLogs] = useState(false);
 
   // P36: scope selection for new keys. Default: everything except vault
   // (vault must be opted into). Free plan keys are capped at read:public
@@ -118,12 +120,14 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
 
   const activeKeys = sortedKeys.filter((k) => !k.isRevoked);
   const revokedKeys = sortedKeys.filter((k) => k.isRevoked);
+  const visibleActiveKeys = showAllActiveKeys ? activeKeys : activeKeys.slice(0, 2);
 
   // Activity logs from Convex
   const logs = useQuery(
     api.profiles.getSecurityLogs,
     profileId && clerkId ? { clerkId, profileId } : "skip"
   );
+  const visibleSessionLogs = logs ? (showAllSessionLogs ? logs : logs.slice(0, 5)) : logs;
 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -250,6 +254,11 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
       <PaneHeader>settings</PaneHeader>
 
       <div className="px-6 py-6 space-y-0 max-w-xl">
+        {/* GitHub repo (Phase 2: host your You.md in your own repo) */}
+        <GithubRepoSection clerkId={clerkId} />
+
+        <Divider />
+
         {/* Account info */}
         <SectionLabel>account</SectionLabel>
         <PaneCard className="font-mono text-xs">
@@ -298,11 +307,11 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
           </div>
         </div>
 
-        {/* P36: scope selection for new keys — terminal-style bracket toggles */}
-        <div className="mb-3">
-          <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-45 mb-1.5">
-            scopes for new keys
-          </p>
+        {/* P36: scope selection for new keys — collapsed by default so the repo/status block stays above the fold */}
+        <details className="mb-3 group">
+          <summary className="cursor-pointer list-none text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-55 hover:opacity-90">
+            &gt; scopes for new keys ({selectedScopes.length})
+          </summary>
           <div className="flex flex-wrap gap-1.5">
             {API_SCOPES.map((scope) => {
               const selected = selectedScopes.includes(scope);
@@ -325,7 +334,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
           <p className="text-[9px] font-mono text-[hsl(var(--text-secondary))] opacity-30 mt-1.5">
             vault stays off unless you switch it on. at least one scope required.
           </p>
-        </div>
+        </details>
 
         <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-45 font-mono mb-3">
           new keys can be shown again from this panel. older keys created before reveal support stay
@@ -375,7 +384,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
         {keys && (activeKeys.length > 0 || revokedKeys.length > 0) ? (
           <div className="space-y-2">
             {activeKeys.length > 0 ? (
-              activeKeys.map((k) => (
+              visibleActiveKeys.map((k) => (
                 <div
                   key={k.id}
                   className="flex items-center justify-between px-3 py-2.5 border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] text-[10px] font-mono"
@@ -483,9 +492,17 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
 
             <div className="flex items-center justify-between pt-1">
               <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-30">
-                {activeKeys.length} active / {revokedKeys.length} revoked
+                showing {visibleActiveKeys.length}/{activeKeys.length} active / {revokedKeys.length} revoked
               </p>
               <div className="flex items-center gap-3">
+                {activeKeys.length > 2 && (
+                  <button
+                    onClick={() => setShowAllActiveKeys((v) => !v)}
+                    className="text-[10px] font-mono text-[hsl(var(--accent))] opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    {showAllActiveKeys ? "[show fewer keys]" : `[show all active (${activeKeys.length})]`}
+                  </button>
+                )}
                 {revokedKeys.length > 0 && (
                   <button
                     onClick={() => setShowRevokedKeys((v) => !v)}
@@ -567,11 +584,6 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
 
         <Divider />
 
-        {/* GitHub repo (Phase 2: host your You.md in your own repo) */}
-        <GithubRepoSection clerkId={clerkId} />
-
-        <Divider />
-
         {/* Billing */}
         <SectionLabel>billing</SectionLabel>
         <PaneCard className="space-y-1.5 font-mono text-[10px] text-[hsl(var(--text-secondary))]">
@@ -599,9 +611,9 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
           <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-40 font-mono mb-2 animate-pulse">
             loading...
           </p>
-        ) : logs && logs.length > 0 ? (
+        ) : visibleSessionLogs && visibleSessionLogs.length > 0 ? (
           <div className="space-y-0 mb-2">
-            {logs.map((log) => (
+            {visibleSessionLogs.map((log) => (
               <div
                 key={log._id}
                 className="flex items-center gap-3 py-2 border-b border-[hsl(var(--border))] opacity-60 last:border-0"
@@ -625,6 +637,22 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
                 </span>
               </div>
             ))}
+            {logs && logs.length > visibleSessionLogs.length && (
+              <button
+                onClick={() => setShowAllSessionLogs(true)}
+                className="pt-2 font-mono text-[10px] text-[hsl(var(--accent))] opacity-65 hover:opacity-100"
+              >
+                [show all session logs ({logs.length})]
+              </button>
+            )}
+            {logs && logs.length > 5 && showAllSessionLogs && (
+              <button
+                onClick={() => setShowAllSessionLogs(false)}
+                className="pt-2 font-mono text-[10px] text-[hsl(var(--accent))] opacity-65 hover:opacity-100"
+              >
+                [show fewer session logs]
+              </button>
+            )}
           </div>
         ) : (
           <p className="text-[10px] text-[hsl(var(--text-secondary))] opacity-25 font-mono mb-2">
