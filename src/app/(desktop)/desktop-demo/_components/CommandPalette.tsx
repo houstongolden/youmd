@@ -39,20 +39,23 @@ export function CommandPalette({
     );
   }, [query, commands]);
 
-  // Reset transient state whenever the palette opens.
   useEffect(() => {
-    if (open) {
-      setQuery("");
-      setActive(0);
-      // Focus after the open transition so the caret lands reliably.
-      const t = setTimeout(() => inputRef.current?.focus(), 20);
-      return () => clearTimeout(t);
-    }
+    if (!open) return;
+
+    // Focus after the open transition so the caret lands reliably.
+    const t = setTimeout(() => inputRef.current?.focus(), 20);
+    return () => clearTimeout(t);
   }, [open]);
 
-  useEffect(() => {
+  const resetPalette = () => {
     setActive(0);
-  }, [query]);
+    setQuery("");
+  };
+
+  const closePalette = () => {
+    resetPalette();
+    onClose();
+  };
 
   // Keep the highlighted row in view.
   useEffect(() => {
@@ -64,7 +67,7 @@ export function CommandPalette({
   const run = (cmd?: Command) => {
     if (!cmd) return;
     cmd.run();
-    onClose();
+    closePalette();
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -79,7 +82,7 @@ export function CommandPalette({
       run(filtered[active]);
     } else if (e.key === "Escape") {
       e.preventDefault();
-      onClose();
+      closePalette();
     }
   };
 
@@ -99,7 +102,7 @@ export function CommandPalette({
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]">
       <motion.button
         aria-label="Close"
-        onClick={onClose}
+        onClick={closePalette}
         className="absolute inset-0 bg-black/60 backdrop-blur-[1px]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -121,7 +124,10 @@ export function CommandPalette({
           <input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActive(0);
+            }}
             placeholder="Search or run a command…"
             className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[hsl(var(--text-secondary))]/45"
           />
