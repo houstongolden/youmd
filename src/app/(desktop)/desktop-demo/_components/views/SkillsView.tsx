@@ -2,7 +2,7 @@
 
 import { SKILLS, STACKS } from "../../_data/mock";
 import { Icon } from "../icons";
-import { Chip, SectionLabel } from "../primitives";
+import { Chip, SectionLabel, ViewHeader } from "../primitives";
 
 const VIS_TONE = { private: "default", scoped: "accent", public: "green" } as const;
 
@@ -12,11 +12,10 @@ export function SkillsView() {
 
   return (
     <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-      <h2 className="mb-1 font-mono text-xl font-semibold tracking-tight">Skills &amp; Stacks</h2>
-      <p className="mb-6 text-[13px] text-[hsl(var(--text-secondary))]/80">
-        One definition, shared everywhere — never duplicated. Grouped into stacks
-        by project and domain, with meta-skills that create and improve the rest.
-      </p>
+      <ViewHeader
+        title="Skills & Stacks"
+        description="One definition, shared everywhere — never duplicated. Grouped into stacks by project and domain, with meta-skills that create and improve the rest."
+      />
 
       {/* DRY proof strip */}
       <div className="mb-6 flex flex-wrap gap-2">

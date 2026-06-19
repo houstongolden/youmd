@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo: typography/spacing rhythm sweep
+
+### polish(web): unify view headers across `/desktop-demo`
+- Added two shared header primitives — `ViewHeader` (title + description, for full-page scrolling views) and `ViewBar` (titled top bar + controls, for tool views) — so every screen shares one title treatment and vertical rhythm instead of ad-hoc per-view markup.
+- Applied `ViewHeader` to Skills, Connections, Agents, and Loops (consistent `text-xl` title + description + `mb-6`); applied `ViewBar` to Graph and Tasks (gives them a real title matching the Editor/Projects bar height/padding, replacing the tiny standalone section labels).
+- Net effect: page views and tool views are each internally consistent, and the whole app reads with one rhythm. Verified visually (Tasks/Graph bars match; Connections matches Skills/Agents/Loops). TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-18 — Desktop demo: Chats wired to the conversation + empty state
 
 ### feat(web): the sidebar Chats list now actually drives the chat

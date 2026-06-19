@@ -2,7 +2,7 @@
 
 import { APPS } from "../../_data/mock";
 import { Icon } from "../icons";
-import { Dot, SectionLabel } from "../primitives";
+import { Dot, SectionLabel, ViewHeader } from "../primitives";
 import { cn } from "../../_lib/cn";
 
 const STATUS_TONE = {
@@ -14,11 +14,10 @@ const STATUS_TONE = {
 export function AppsView() {
   return (
     <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-      <h2 className="mb-1 font-mono text-xl font-semibold tracking-tight">Connections</h2>
-      <p className="mb-6 text-[13px] text-[hsl(var(--text-secondary))]/80">
-        Every app feeds your brain. Crawlers, capture, and your own MCP/API pull
-        context in — agents act on it.
-      </p>
+      <ViewHeader
+        title="Connections"
+        description="Every app feeds your brain. Crawlers, capture, and your own MCP/API pull context in — agents act on it."
+      />
 
       <SectionLabel className="mb-2">Active</SectionLabel>
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">

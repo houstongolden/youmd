@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { SUB_AGENTS, DEVICES, AGENT_BUS, type SubAgent } from "../../_data/mock";
 import { Icon } from "../icons";
-import { Dot, Chip, SectionLabel } from "../primitives";
+import { Dot, Chip, SectionLabel, ViewHeader } from "../primitives";
 
 const SPAWN_STEPS = [
   "Forking your identity context",
@@ -67,14 +67,14 @@ export function AgentsView() {
 
   return (
     <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-      <div className="mb-1 flex items-center gap-2">
-        <Icon name="agent" size={18} className="text-[hsl(var(--accent))]" />
-        <h2 className="font-mono text-xl font-semibold tracking-tight">Sub-agents</h2>
-      </div>
-      <p className="mb-6 text-[13px] text-[hsl(var(--text-secondary))]/80">
-        You are the agent and the agent is you. Spawn scoped clones of yourself —
-        each carries your context, voice, and taste into a slice of your work.
-      </p>
+      <ViewHeader
+        title={
+          <>
+            <Icon name="agent" size={18} className="text-[hsl(var(--accent))]" /> Sub-agents
+          </>
+        }
+        description="You are the agent and the agent is you. Spawn scoped clones of yourself — each carries your context, voice, and taste into a slice of your work."
+      />
 
       <div className="mb-6 space-y-3">
         {agents.map((a) => (

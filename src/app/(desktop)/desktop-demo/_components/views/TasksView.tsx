@@ -1,7 +1,7 @@
 "use client";
 
 import { type Task } from "../../_data/mock";
-import { Dot, Chip, SectionLabel } from "../primitives";
+import { Dot, Chip, SectionLabel, ViewBar } from "../primitives";
 import { Icon } from "../icons";
 import { cn } from "../../_lib/cn";
 
@@ -14,12 +14,14 @@ const COLUMNS: { id: Task["status"]; label: string }[] = [
 export function TasksView({ tasks, onAdvance }: { tasks: Task[]; onAdvance: (id: string) => void }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--border))] px-4 py-2.5 md:px-5">
-        <SectionLabel>Tasks</SectionLabel>
-        <span className="truncate font-mono text-[11px] text-[hsl(var(--text-secondary))]/70">
-          {tasks.filter((t) => t.status !== "done").length} open · tap a card to advance
-        </span>
-      </div>
+      <ViewBar
+        title="Tasks"
+        right={
+          <span className="truncate font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/60">
+            {tasks.filter((t) => t.status !== "done").length} open · tap a card to advance
+          </span>
+        }
+      />
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto p-4 sm:grid-cols-3">
         {COLUMNS.map((col) => {

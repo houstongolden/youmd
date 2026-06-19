@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { LOOPS, type Loop } from "../../_data/mock";
 import { Icon } from "../icons";
-import { Dot, Chip, SectionLabel } from "../primitives";
+import { Dot, Chip, SectionLabel, ViewHeader } from "../primitives";
 import { cn } from "../../_lib/cn";
 
 export function LoopsView() {
@@ -21,11 +21,10 @@ export function LoopsView() {
 
   return (
     <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-      <h2 className="mb-1 font-mono text-xl font-semibold tracking-tight">Loops</h2>
-      <p className="mb-5 text-[13px] text-[hsl(var(--text-secondary))]/80">
-        Everything that runs on its own — scheduled workflows, self-improvement
-        loops, and the crawlers that keep your brain current. {running}/{loops.length} running.
-      </p>
+      <ViewHeader
+        title="Loops"
+        description={`Everything that runs on its own — scheduled workflows, self-improvement loops, and the crawlers that keep your brain current. ${running}/${loops.length} running.`}
+      />
 
       {groups.map((g) => (
         <div key={g.kind} className="mb-6">
