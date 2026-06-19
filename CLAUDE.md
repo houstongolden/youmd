@@ -151,7 +151,7 @@ These are patterns that have caused problems in this project. Do not repeat them
 | Backend + DB | Convex | 1.33.1 |
 | Auth | First-party passwordless sessions | web cookies + API keys |
 | LLM | OpenRouter → Claude Sonnet 4.6 | |
-| CLI | TypeScript + Commander | youmd 0.8.8 |
+| CLI | TypeScript + Commander | youmd 0.8.9 |
 | Hosting | Vercel (web) + Convex Cloud (backend) | |
 
 ---
@@ -180,7 +180,7 @@ convex/me.ts                Authenticated profile operations
 convex/memories.ts          Memory system
 convex/portrait.ts          Server-side ASCII generation
 
-cli/                        CLI package (npm: youmd, v0.8.8)
+cli/                        CLI package (npm: youmd, v0.8.9)
 cli/src/index.ts            Entry point (21 commands + skill subcommands)
 cli/src/lib/onboarding.ts   Conversational AI onboarding (1000+ lines)
 cli/src/commands/chat.ts    Ongoing chat with You Agent
