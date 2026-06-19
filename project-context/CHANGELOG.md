@@ -7,7 +7,8 @@
 - Built the snapshot from persisted safe Convex inventory summaries: machine counts, catalog gaps, DRY review samples, mirror samples, ownership/sync/provenance rollups, and explicit `secretValuesExposed` metadata.
 - Updated `POST /api/v1/me/agent-stack/inventory` to attempt the existing GitHub repo PR/push + mirror sync by default after Convex persistence, while keeping local inventory/Convex sync successful if repo sync is unavailable.
 - Added CLI repo-sync status output plus `youmd skill inventory --no-repo-sync` for local-only inventory proof runs.
-- Verified with Convex codegen, focused repo snapshot + inventory persistence tests, CLI build, root TypeScript, and compiled unauthenticated CLI smoke.
+- Increased the inventory sync API client timeout for repo-backed sync runs so the GitHub PR/push + mirror path can complete instead of failing after a normal short API timeout.
+- Verified with Convex codegen, focused repo snapshot + inventory persistence tests, CLI build, root TypeScript, compiled unauthenticated CLI smoke, Convex production deploy, live `youmd skill inventory --sync`, and GitHub read-back of `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` in `houstongolden/houstongolden-you-md`.
 
 ### feat(sync): persist agent stack inventory summaries
 - Added owner-gated Convex `agentStackInventories` persistence for secret-safe local/global skill mesh summaries, keyed by machine/root and linked into `brainActivities`.

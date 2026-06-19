@@ -66,12 +66,13 @@ function isNetworkError(err: unknown): boolean {
 async function fetchWithPolicy(
   url: string,
   fetchOptions: RequestInit,
-  method: string
+  method: string,
+  timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<Response> {
   const attempt = () =>
     fetch(url, {
       ...fetchOptions,
-      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
   try {
@@ -102,9 +103,10 @@ async function request<T = unknown>(
     body?: unknown;
     token?: string;
     headers?: Record<string, string>;
+    timeoutMs?: number;
   } = {}
 ): Promise<ApiResponse<T>> {
-  const { method = "GET", body, token, headers = {} } = options;
+  const { method = "GET", body, token, headers = {}, timeoutMs } = options;
 
   const reqHeaders: Record<string, string> = {
     "Content-Type": "application/json",
@@ -126,7 +128,7 @@ async function request<T = unknown>(
 
   const url = `${baseUrl}${path}`;
 
-  const res = await fetchWithPolicy(url, fetchOptions, method);
+  const res = await fetchWithPolicy(url, fetchOptions, method, timeoutMs);
 
   let data: T;
   const contentType = res.headers.get("content-type") ?? "";
@@ -153,6 +155,7 @@ async function apiRequest<T = unknown>(
     body?: unknown;
     token?: string;
     headers?: Record<string, string>;
+    timeoutMs?: number;
   } = {}
 ) {
   return request<T>(getConvexSiteUrl(), path, options);
@@ -165,6 +168,7 @@ async function appRequest<T = unknown>(
     body?: unknown;
     token?: string;
     headers?: Record<string, string>;
+    timeoutMs?: number;
   } = {}
 ) {
   return request<T>(getAppUrl(), path, options);
@@ -1184,6 +1188,7 @@ export async function syncAgentStackInventory(
     method: "POST",
     token: getToken(),
     body: payload,
+    timeoutMs: payload.syncRepo === false ? 30_000 : 240_000,
   });
 }
 

@@ -27,8 +27,8 @@ PRD Version: 2.3
 - [x] Add `youmd skill inventory --sync` so curl install and machine bootstrap can persist the generated inventory when authenticated
 - [x] Add `agent-stack/` GitHub repo snapshot generation for machine/skill/stack inventory markdown and JSON
 - [x] Make inventory API sync attempt the existing identity repo push/mirror path so snapshots reach `username-you-md`
+- [x] Production-prove `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` landed in the GitHub identity repo
 - [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
-- [ ] Production-prove the `agent-stack/` GitHub snapshot files after Convex deploy and live inventory sync
 - [ ] Expose agent stack inventory topology through You.md MCP and richer API read models
 - [ ] Build the web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views
 - [ ] Add resident realtime reconciliation for skills/stacks/context metadata across trusted machines and agents
