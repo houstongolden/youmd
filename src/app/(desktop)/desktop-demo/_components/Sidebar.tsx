@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { NAV_SECTIONS, CHATS, WORKSPACE, type ViewId } from "../_data/mock";
+import { NAV_SECTIONS, WORKSPACE, type ChatThread, type ViewId } from "../_data/mock";
 import { Icon } from "./icons";
 import { Dot, SectionLabel } from "./primitives";
 import { cn } from "../_lib/cn";
@@ -13,6 +13,10 @@ export function Sidebar({
   theme,
   onToggleTheme,
   onOpenStatus,
+  chats,
+  activeChat,
+  onSelectChat,
+  onNewChat,
 }: {
   collapsed: boolean;
   activeView: ViewId;
@@ -20,8 +24,11 @@ export function Sidebar({
   theme: "dark" | "light";
   onToggleTheme: () => void;
   onOpenStatus: () => void;
+  chats: ChatThread[];
+  activeChat: string;
+  onSelectChat: (id: string) => void;
+  onNewChat: () => void;
 }) {
-  const [activeChat, setActiveChat] = useState(CHATS[0].id);
   const [accountOpen, setAccountOpen] = useState(false);
 
   return (
@@ -102,6 +109,7 @@ export function Sidebar({
           <div className="flex items-center justify-between px-4 pb-1.5">
             <SectionLabel>Chats</SectionLabel>
             <button
+              onClick={onNewChat}
               title="New chat"
               className="text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]"
             >
@@ -109,10 +117,10 @@ export function Sidebar({
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-2">
-            {CHATS.map((c) => (
+            {chats.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setActiveChat(c.id)}
+                onClick={() => onSelectChat(c.id)}
                 title={c.title}
                 className={cn(
                   "group flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5 text-left text-[12.5px] transition-colors",

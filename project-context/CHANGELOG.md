@@ -1,5 +1,12 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo: Chats wired to the conversation + empty state
+
+### feat(web): the sidebar Chats list now actually drives the chat
+- Lifted chat threads + the active thread into `DesktopShell`. Clicking a chat in the sidebar **swaps the conversation** (each thread seeds its own short history from its title; the first thread keeps the demo's canned exchange). **New chat** prepends a fresh thread, makes it active, and (on mobile) jumps to the chat pane.
+- Added a proper **empty state** for a fresh chat — a centered "What can I help you with? — I'll use your full you.md context" prompt (mirrors the inspo screenshot), with the contextual suggestion chips still available below.
+- Verified end-to-end (system Chromium): selecting "Draft big-bounce paper" swaps the thread, "New chat" shows the empty state and adds the thread to the sidebar. TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-18 — Desktop demo: Loops, Chats sidebar, real task round-trip
 
 ### feat(web): Loops + sidebar Chats/account + working agent actions for `/desktop-demo`

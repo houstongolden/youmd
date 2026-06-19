@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { SEED_CHAT, type ChatMessage } from "../_data/mock";
+import { SEED_CHAT, CHATS, type ChatMessage } from "../_data/mock";
 import { Markdown } from "./Markdown";
 import { Icon } from "./icons";
 import { Dot } from "./primitives";
@@ -104,20 +104,45 @@ function suggestionsFor(scope?: ChatScope): Suggestion[] {
   }
 }
 
+// Seed a conversation for a given chat thread. The first thread shows the
+// demo's canned exchange; brand-new chats start empty; others get a short
+// "picking up where we left off" history derived from their title.
+function seedFor(chatId: string, title?: string): ChatMessage[] {
+  if (chatId.startsWith("new")) return [];
+  if (chatId === CHATS[0].id) return SEED_CHAT;
+  const t = title ?? "this thread";
+  return [
+    { id: `${chatId}-u`, role: "user", text: t },
+    { id: `${chatId}-a`, role: "agent", text: `Picking up **${t}**. Want me to keep going, or recap where we left off?` },
+  ];
+}
+
 export function ChatPanel({
   full = false,
   scope,
   onAction,
+  chatId = CHATS[0].id,
+  chatTitle,
 }: {
   full?: boolean;
   scope?: ChatScope;
   onAction?: (action: AgentAction, scope?: ChatScope) => void;
+  chatId?: string;
+  chatTitle?: string;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>(SEED_CHAT);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => seedFor(chatId, chatTitle));
   const [input, setInput] = useState("");
   const [working, setWorking] = useState(false);
   const [thinkIdx] = useState(() => Math.floor(Math.random() * THINKING.length));
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Switching threads (or starting a new chat) swaps the conversation.
+  useEffect(() => {
+    setMessages(seedFor(chatId, chatTitle));
+    setWorking(false);
+    // chatTitle intentionally omitted — chatId drives the reset.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -148,6 +173,17 @@ export function ChatPanel({
     <div className="flex h-full flex-col">
       {/* messages */}
       <div className={cn("min-h-0 flex-1 overflow-y-auto", full ? "px-0" : "px-4")}>
+        {messages.length === 0 && !working ? (
+          <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+            <Icon name="sparkles" size={22} className="mb-3 text-[hsl(var(--accent))]" />
+            <div className="font-mono text-lg tracking-tight text-[hsl(var(--text-primary))]">
+              What can I help you with?
+            </div>
+            <p className="mt-1.5 max-w-xs text-[13px] text-[hsl(var(--text-secondary))]/70">
+              Describe what you want to do — I&apos;ll use your full you.md context.
+            </p>
+          </div>
+        ) : (
         <div className={cn("mx-auto space-y-4 py-5", full ? "max-w-2xl px-6" : "")}>
           {messages.map((m) => (
             <motion.div
@@ -174,6 +210,7 @@ export function ChatPanel({
           )}
           <div ref={endRef} />
         </div>
+        )}
       </div>
 
       {/* composer */}

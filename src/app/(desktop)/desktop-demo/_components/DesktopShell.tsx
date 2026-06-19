@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, type Task, type ViewId } from "../_data/mock";
+import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, CHATS, type Task, type ChatThread, type ViewId } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
 import { useSwipe } from "../_lib/useSwipe";
 import { useTheme } from "../_lib/useTheme";
@@ -119,8 +119,28 @@ export function DesktopShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
+  const [chats, setChats] = useState<ChatThread[]>(CHATS);
+  const [activeChat, setActiveChat] = useState(CHATS[0].id);
   const { theme, toggle: toggleTheme } = useTheme();
   const toast = useToast();
+
+  const focusChatPane = () => {
+    if (isMobile) {
+      setMobilePane("chat");
+      setDrawerOpen(false);
+    }
+  };
+  const selectChat = (id: string) => {
+    setActiveChat(id);
+    focusChatPane();
+  };
+  const newChat = () => {
+    const id = `new-${Date.now()}`;
+    setChats((c) => [{ id, title: "New chat", at: "now" }, ...c]);
+    setActiveChat(id);
+    focusChatPane();
+  };
+  const activeChatTitle = chats.find((c) => c.id === activeChat)?.title;
 
   const addTask = (title: string, project: string, owner: Task["owner"] = "you") =>
     setTasks((t) => [
@@ -322,6 +342,10 @@ export function DesktopShell() {
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 onOpenStatus={() => setStatusOpen(true)}
+                chats={chats}
+                activeChat={activeChat}
+                onSelectChat={selectChat}
+                onNewChat={newChat}
               />
             </div>
 
@@ -329,7 +353,7 @@ export function DesktopShell() {
             <div {...workspaceSwipe} className="flex min-w-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-hidden">
                 {mobilePane === "chat" ? (
-                  <ChatPanel full scope={chatScope} onAction={onAgentAction} />
+                  <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
                 ) : (
                   <motion.div
                     key={activeView}
@@ -363,12 +387,16 @@ export function DesktopShell() {
               theme={theme}
               onToggleTheme={toggleTheme}
               onOpenStatus={() => setStatusOpen(true)}
+              chats={chats}
+              activeChat={activeChat}
+              onSelectChat={selectChat}
+              onNewChat={newChat}
             />
 
             {chatFull ? (
               // Full-chat: chat fills the workspace, summary widget floats.
               <div className="relative min-w-0 flex-1">
-                <ChatPanel full scope={chatScope} onAction={onAgentAction} />
+                <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
                 <div className="pointer-events-none absolute right-5 top-4">
                   <div className="pointer-events-auto">
                     <SummaryWidget />
@@ -379,7 +407,7 @@ export function DesktopShell() {
               // Split: chat 1/3 left, main view 2/3 right.
               <div className="flex min-w-0 flex-1">
                 <div className="flex w-[33%] min-w-[320px] max-w-[460px] flex-col border-r border-[hsl(var(--border))]">
-                  <ChatPanel scope={chatScope} onAction={onAgentAction} />
+                  <ChatPanel scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
                 </div>
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
                   <motion.div
