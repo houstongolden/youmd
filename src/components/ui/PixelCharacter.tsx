@@ -7,7 +7,7 @@ type PixelCharacterProps = {
   kind: PixelCharacterKind;
   seed?: string;
   status?: PixelCharacterStatus;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   className?: string;
 };
 
@@ -93,6 +93,7 @@ const PATTERNS: Record<PixelCharacterKind, string[][]> = {
 };
 
 const SIZE_PX = {
+  xs: 18,
   sm: 28,
   md: 36,
   lg: 48,

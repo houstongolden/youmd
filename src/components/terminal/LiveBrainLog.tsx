@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import { PixelCharacter, type PixelCharacterStatus } from "@/components/ui/PixelCharacter";
 
 export type LiveLogEntry = {
   id: string;
@@ -39,6 +40,21 @@ function logStatusClass(status: LiveLogEntry["status"] = "info") {
   if (status === "warn") return "text-[hsl(var(--accent))]";
   if (status === "error") return "text-red-400";
   return "text-[hsl(var(--text-secondary))] opacity-45";
+}
+
+function pixelStatus(status: LiveLogEntry["status"] = "info"): PixelCharacterStatus {
+  if (status === "live") return "active";
+  if (status === "ok") return "ready";
+  if (status === "warn") return "warn";
+  if (status === "error") return "blocked";
+  return "idle";
+}
+
+function pixelKind(source: string): "machine" | "agent" | "shell" {
+  const normalized = source.toLowerCase();
+  if (normalized.includes("agent") || normalized === "bus") return "agent";
+  if (normalized.includes("machine") || normalized.includes("daemon") || normalized.includes("proof")) return "machine";
+  return "shell";
 }
 
 export function LiveBrainLog({
@@ -87,10 +103,17 @@ export function LiveBrainLog({
             <div
               key={entry.id}
               className={[
-                "grid gap-2",
-                compact ? "grid-cols-[58px_58px_1fr]" : "grid-cols-[72px_76px_1fr]",
+                "grid items-start gap-2",
+                compact ? "grid-cols-[20px_58px_58px_1fr]" : "grid-cols-[22px_72px_76px_1fr]",
               ].join(" ")}
             >
+              <PixelCharacter
+                kind={pixelKind(entry.source)}
+                seed={`${entry.source}:${entry.channel ?? ""}:${entry.title}`}
+                status={pixelStatus(entry.status)}
+                size="xs"
+                className="mt-0.5 opacity-80"
+              />
               <span className="text-[hsl(var(--text-secondary))] opacity-38 tabular-nums">
                 {formatLogTime(entry.at)}
               </span>

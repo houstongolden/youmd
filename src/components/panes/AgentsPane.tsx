@@ -4,6 +4,7 @@ import { useUser } from "@/lib/you-auth";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useState } from "react";
+import { PixelCharacter, type PixelCharacterStatus } from "@/components/ui/PixelCharacter";
 
 interface AgentSummary {
   agentName: string;
@@ -89,12 +90,12 @@ export function AgentsPane() {
                   key={a.agentName}
                   className="flex items-center gap-3 flex-wrap"
                 >
-                  <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${
-                      isActive
-                        ? "bg-green-500 animate-pulse"
-                        : "bg-white/30"
-                    }`}
+                  <PixelCharacter
+                    kind="agent"
+                    seed={`${a.agentName}:${a.sources?.join(",") ?? ""}`}
+                    status={agentPixelStatus(a)}
+                    size="xs"
+                    className={isActive ? "opacity-95" : "opacity-55"}
                   />
                   <span className="font-bold w-40 truncate">{a.agentName}</span>
                   {a.trustLevel === "verified-third-party" && (
@@ -176,22 +177,29 @@ export function AgentsPane() {
         ) : (
           <div className="space-y-1">
             {filtered.slice(0, 50).map((e) => {
-              const trustIcon =
-                e.trust === "verified-third-party" ? (
-                  <span className="text-[hsl(var(--success))]" title="Verified external agent (anonymous fetch or context-link token)">●</span>
-                ) : e.trust === "self-attributed" ? (
-                  <span className="text-yellow-500" title="Self-attributed (authenticated as you, agent name self-reported)">●</span>
-                ) : (
-                  <span className="opacity-30">●</span>
-                );
+              const trustTitle =
+                e.trust === "verified-third-party"
+                  ? "Verified external agent (anonymous fetch or context-link token)"
+                  : e.trust === "self-attributed"
+                    ? "Self-attributed (authenticated as you, agent name self-reported)"
+                    : "Unverified or mixed agent signal";
               return (
                 <div
                   key={e._id}
-                  className="grid grid-cols-12 gap-2 text-[11px]"
+                  className="grid grid-cols-[20px_repeat(12,minmax(0,1fr))] gap-2 text-[11px]"
                   title={e.tokenId ? `via token ${e.tokenId.slice(0, 12)}...` : e.apiKeyId ? `via API key ${e.apiKeyId.slice(0, 12)}...` : "anonymous fetch"}
                 >
+                  <span title={trustTitle}>
+                    <PixelCharacter
+                      kind="agent"
+                      seed={`${e.agentName}:${e.action}:${e.resource ?? ""}`}
+                      status={activityPixelStatus(e)}
+                      size="xs"
+                      className="opacity-75"
+                    />
+                  </span>
                   <span className="col-span-2 opacity-40">
-                    {formatTime(e.createdAt)} {trustIcon}
+                    {formatTime(e.createdAt)}
                   </span>
                   <span className="col-span-3 font-bold truncate">
                     {e.agentName}
@@ -220,6 +228,21 @@ const FIVE_MIN = 5 * 60 * 1000;
 
 function isRecentlySeen(lastSeen: number): boolean {
   return Date.now() - lastSeen < FIVE_MIN;
+}
+
+function agentPixelStatus(agent: AgentSummary): PixelCharacterStatus {
+  if (isRecentlySeen(agent.lastSeen)) return "active";
+  if (agent.writes > 0) return "ready";
+  if (agent.trustLevel === "mixed") return "warn";
+  return "idle";
+}
+
+function activityPixelStatus(event: ActivityEvent): PixelCharacterStatus {
+  if (event.status === "error") return "blocked";
+  if (event.status === "warn") return "warn";
+  if (event.action.includes("write") || event.action === "push" || event.action === "publish") return "active";
+  if (event.trust === "verified-third-party" || event.trust === "self-attributed") return "ready";
+  return "idle";
 }
 
 function relativeTime(ts: number): string {

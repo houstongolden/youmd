@@ -16,7 +16,7 @@ PRD Version: 2.3
 - [x] Add focused Convex coverage for persisted Home DSI view + widgets
 - [x] Deploy Convex schema/functions after resolving the silent `npx convex deploy` hang with a dotenv-loaded noninteractive deploy
 - [ ] Next pass: visually verify the Home DSI proof block in the authenticated Codex in-app Browser when the browser bridge is available again
-- [ ] Next pass: extend pixel characters into connected-agent rows and live-log emitters
+- [x] Extend pixel characters into connected-agent rows and live-log emitters
 
 ### 2026-06-19 — Shell live brain log
 - [x] Add a `chat` / `live log` toggle inside the shell chat column instead of creating another top-level pane

@@ -15,6 +15,7 @@
 - Added a reusable original `PixelCharacter` primitive for Machines, Agents, and Shell/session surfaces.
 - Surfaced deterministic retro pixel characters in Machine's `you sync mesh` host chips and readiness metrics for this Mac, trusted machines, agent bus, skill mesh, project graph, and Secret Vault.
 - Added quiet blink/status-signal animation with reduced-motion support, keeping characters tied to real sync state instead of decorative mascot noise.
+- Extended the same character system into Live Brain Log rows and connected-agent activity rows with a tiny `xs` variant, so the background activity feed now visibly has machine/agent/shell emitters instead of anonymous text-only rows.
 - Added `DSI_VIEWS_WIDGETS_AND_PIXEL_AGENTS_2026-06-19.md` to define the Dynamic Software Interface direction: Views, Widgets, live widget contracts, core primitives, security boundaries, and the Home-as-default-View plan.
 
 ## 2026-06-19 — Shell sidebar and light-mode polish
