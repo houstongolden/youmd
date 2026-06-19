@@ -18,6 +18,8 @@ PRD Version: 2.3
 - [x] Preserve the You.md/Tauri/Convex/repo-backed architecture direction in a dedicated memo
 - [x] Add `youmd skill inventory` CLI wrapper around the shared scanner
 - [x] Add `youmd skill inventory diff` for comparing this Mac against the Mac mini or another trusted machine
+- [x] Bump CLI package to `0.8.10` for publishing the inventory commands
+- [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
 
 ### 2026-06-19 — Home DSI mesh and Tasks board

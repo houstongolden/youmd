@@ -2,6 +2,11 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### chore(cli): prepare youmd 0.8.10 publish
+- Bumped the CLI package and lockfile to `0.8.10` so the new inventory commands have a clean npm publish target.
+- Confirmed npm latest is currently `0.8.7`; `npm pack --dry-run` passes for `youmd@0.8.10`.
+- Verified `node cli/dist/index.js --version` reports `0.8.10` and the compiled `skill inventory diff` smoke still returns zero deltas on identical snapshots.
+
 ### feat(cli): add skill inventory and diff commands
 - Added `youmd skill inventory --out-dir <dir>` as a first-class wrapper around the synced shared `agent-stack-inventory` scanner.
 - Added `youmd skill inventory diff <left.json> <right.json>` for cross-machine snapshot comparison.
@@ -21,7 +26,7 @@
 - Generated `project-context/local-agent-stack-inventory-2026-06-19.html` with a Mermaid topology diagram plus tables for canonical roots, Claude/Codex/Cursor/Pi exposure, shared instruction symlinks, prompts/preferences/context/log buckets, project-context coverage, and catalog gaps.
 - Generated `project-context/local-agent-stack-inventory-2026-06-19.json` with exact counts and sampled paths.
 - Confirmed the current mismatch: `youmd skill list` reads the You.md catalog (`12` skills here) while the broader machine has `427` unique local skill names and `824` unique real `SKILL.md` files across shared, GStack, SciStack, host, and plugin roots.
-- Noted that the globally installed `youmd` is `0.8.2` while the repo CLI package is `0.8.9`, which is relevant before debugging Mac-to-Mac/account sync behavior.
+- Noted that the globally installed `youmd` was `0.8.2` while the repo CLI package was ahead of npm; the inventory command publish target is now `0.8.10`, while npm latest currently reports `0.8.7`.
 
 ## 2026-06-19 — Home DSI mesh and task board
 
