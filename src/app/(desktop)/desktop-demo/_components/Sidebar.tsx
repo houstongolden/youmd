@@ -70,13 +70,19 @@ export function Sidebar({
                   onClick={() => onNavigate(item.id)}
                   title={collapsed ? item.label : undefined}
                   className={cn(
-                    "mb-0.5 flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] transition-colors",
+                    "relative mb-0.5 flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] transition-colors active:scale-[0.98]",
                     collapsed && "justify-center px-0",
                     active
                       ? "bg-[hsl(var(--bg-raised))] text-[hsl(var(--accent))]"
                       : "text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]",
                   )}
                 >
+                  {active && !collapsed && (
+                    <span
+                      aria-hidden
+                      className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 bg-[hsl(var(--accent))]"
+                    />
+                  )}
                   <Icon name={item.icon} size={16} className={active ? "text-[hsl(var(--accent))]" : ""} />
                   {!collapsed && <span>{item.label}</span>}
                 </button>

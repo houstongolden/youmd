@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { motion } from "motion/react";
 import { SEED_CHAT, type ChatMessage } from "../_data/mock";
 import { Markdown } from "./Markdown";
 import { Icon } from "./icons";
@@ -137,7 +138,14 @@ export function ChatPanel({ full = false, scope }: { full?: boolean; scope?: Cha
       <div className={cn("min-h-0 flex-1 overflow-y-auto", full ? "px-0" : "px-4")}>
         <div className={cn("mx-auto space-y-4 py-5", full ? "max-w-2xl px-6" : "")}>
           {messages.map((m) => (
-            <Bubble key={m.id} m={m} />
+            <motion.div
+              key={m.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <Bubble m={m} />
+            </motion.div>
           ))}
           {working && (
             <div className="flex gap-2.5">

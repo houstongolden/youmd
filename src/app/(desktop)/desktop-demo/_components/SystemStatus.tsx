@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { DAEMONS, DEVICES, AGENT_BUS, WORKSPACE } from "../_data/mock";
 import { Icon } from "./icons";
 import { Dot, SectionLabel } from "./primitives";
@@ -16,10 +17,13 @@ export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <div className="fixed inset-0 z-50">
       <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/40" />
-      <div
+      <motion.div
         role="dialog"
         aria-label="System status"
         className="absolute left-3 top-12 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] shadow-2xl"
+        initial={{ opacity: 0, y: -6, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
       >
         {/* header */}
         <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-4 py-3">
@@ -80,7 +84,7 @@ export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => 
         <div className="border-t border-[hsl(var(--border))] px-4 py-2.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/45">
           managed by your daemons — nothing to configure
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

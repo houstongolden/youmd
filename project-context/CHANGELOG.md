@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo: detail-polish pass (native feel + motion)
+
+### polish(web): make `/desktop-demo` feel like a real app
+- Scoped `desktop-demo.css` (wrapper `.youmd-desktop`, kept out of globals): thin app-native scrollbars (Chromium + Firefox), a consistent accent keyboard `:focus-visible` ring, and a `prefers-reduced-motion` guard that neutralizes the demo's animations.
+- Active-nav **left accent bar** (Linear/Notion-style) on the selected sidebar item, plus a subtle press scale on nav items.
+- Tasteful entrance **motion** (Motion 12) — command palette and System Status fade/scale in, the main view fades on switch, and chat messages fade-up. Subtle and short (≤0.2s); reduced-motion users get none.
+- Verified the page renders (HTTP 200), TypeScript + radius lint pass (new CSS uses only 2px radii).
+
 ## 2026-06-18 — Desktop demo: background-magic layer + daily-brief Home
 
 ### feat(web): make the "it just works behind the scenes" layer visible (awareness only)

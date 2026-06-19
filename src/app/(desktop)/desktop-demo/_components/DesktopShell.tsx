@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "motion/react";
 import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, type ViewId } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
 import { useSwipe } from "../_lib/useSwipe";
@@ -282,7 +283,13 @@ export function DesktopShell() {
                 {mobilePane === "chat" ? (
                   <ChatPanel full scope={chatScope} />
                 ) : (
-                  <div className="h-full overflow-y-auto bg-[hsl(var(--bg))]">
+                  <motion.div
+                    key={activeView}
+                    className="h-full overflow-y-auto bg-[hsl(var(--bg))]"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
                     <MainView
                       view={activeView}
                       onNavigate={navigate}
@@ -291,7 +298,7 @@ export function DesktopShell() {
                       selectedProject={selectedProject}
                       onProjectSelect={setSelectedProject}
                     />
-                  </div>
+                  </motion.div>
                 )}
               </div>
               <MobileTabBar pane={mobilePane} activeView={activeView} onSelect={setMobilePane} />
@@ -325,7 +332,13 @@ export function DesktopShell() {
                   <ChatPanel scope={chatScope} />
                 </div>
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
-                  <div className="h-full overflow-y-auto">
+                  <motion.div
+                    key={activeView}
+                    className="h-full overflow-y-auto"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                  >
                     <MainView
                       view={activeView}
                       onNavigate={navigate}
@@ -334,7 +347,7 @@ export function DesktopShell() {
                       selectedProject={selectedProject}
                       onProjectSelect={setSelectedProject}
                     />
-                  </div>
+                  </motion.div>
                 </main>
               </div>
             )}
