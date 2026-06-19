@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-19 — DSI direction and pixel sync characters
+
+### feat(machine): give the sync mesh stable pixel characters
+- Added a reusable original `PixelCharacter` primitive for Machines, Agents, and Shell/session surfaces.
+- Surfaced deterministic retro pixel characters in Machine's `you sync mesh` host chips and readiness metrics for this Mac, trusted machines, agent bus, skill mesh, project graph, and Secret Vault.
+- Added quiet blink/status-signal animation with reduced-motion support, keeping characters tied to real sync state instead of decorative mascot noise.
+- Added `DSI_VIEWS_WIDGETS_AND_PIXEL_AGENTS_2026-06-19.md` to define the Dynamic Software Interface direction: Views, Widgets, live widget contracts, core primitives, security boundaries, and the Home-as-default-View plan.
+
 ## 2026-06-19 — Shell sidebar and light-mode polish
 
 ### polish(shell): make chats simpler and light mode softer

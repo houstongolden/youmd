@@ -40,11 +40,11 @@ Border:          #2E2E2E    (0 0% 18%)
 
 ### Light Mode (.light class)
 ```
-Background:      #F6F3EF    (36 20% 96%)
-Raised:          #FFFFFF    (0 0% 100%)
-Text Primary:    #141414    (0 0% 8%)
-Text Secondary:  #524A3E    (30 8% 32%)
-Border:          #D9D1C5    (30 10% 84%)
+Background:      warm super-light beige / ivory gradient
+Raised:          warm off-white beige
+Text Primary:    warm charcoal
+Text Secondary:  muted warm gray
+Border:          soft warm gray
 ```
 
 ### Accent (Burnt Orange)
@@ -112,6 +112,9 @@ Copy-to-clipboard. Mono text, bg-raised, 1px border. Format: `$ npx youmd init �
 
 ### Glass Nav
 bg 0.9 opacity, 1px border, 12px blur. Nav items as `--flag` format.
+
+### Pixel Characters
+Small original pixel characters for Machines, Agents, and Shell/session emitters. They should feel related to the PixelYOU logo without copying vendor mascots. Generate variants deterministically from host/agent/session identity so each trusted machine or agent feels familiar across sessions. Use tiny green/orange/red signal pixels for state and quiet blink/sync motion only where it reinforces real system status.
 
 ### Section Labels
 Uppercase, tracking-widest, 10px, mono, muted. Format: `── LABEL ──`

@@ -7,6 +7,14 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-19 — DSI views and pixel sync characters
+- [x] Add a reusable original retro pixel character primitive for Machines, Agents, and Shell/session surfaces
+- [x] Surface stable machine/agent characters inside the Machine `you sync mesh` so connected computers and agents feel alive without adding another tab
+- [x] Add quiet status animation for live/ready characters with `prefers-reduced-motion` support
+- [x] Create `project-context/DSI_VIEWS_WIDGETS_AND_PIXEL_AGENTS_2026-06-19.md` to define Dynamic Software Interface primitives, Views, Widgets, live widget contracts, private data boundaries, and the navigation implication
+- [ ] Next pass: add first Convex `views` / `widgets` schema and make Home read a saved default DSI View
+- [ ] Next pass: extend pixel characters into connected-agent rows and live-log emitters
+
 ### 2026-06-19 — Shell live brain log
 - [x] Add a `chat` / `live log` toggle inside the shell chat column instead of creating another top-level pane
 - [x] Render a terminal-style central log of realtime agent-bus messages, shell agent progress, repo/identity state, local daemon health, skill sync proof, Secret Vault metadata, machine proof, and recent chats

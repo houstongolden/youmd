@@ -50,6 +50,7 @@ Dark mode default. Light mode via .light class.
 - CLI Pill (copy-to-clipboard)
 - Glass Nav (--flag navigation)
 - PixelYOU Logo (canvas-drawn)
+- PixelCharacter system for Machines, Agents, and Shell/session emitters; original YOU-style pixel art, deterministic per host/agent/session, tiny status pixels, quiet reduced-motion-safe animation
 - ASCII Portrait System
 - FadeUp animation (IntersectionObserver)
 - Boot sequence typewriter

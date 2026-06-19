@@ -217,6 +217,16 @@
   50% { opacity: 0.18; }
 }
 
+@keyframes pixel-character-blink {
+  0%, 88%, 100% { opacity: 1; }
+  90%, 94% { opacity: 0.18; }
+}
+
+@keyframes pixel-character-signal {
+  0%, 100% { transform: scale(1); opacity: 0.78; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+
 /* ── Base layer ────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
@@ -350,6 +360,25 @@ code, pre, .font-mono {
     transparent 70%
   );
   animation: beam-pulse 5s ease-in-out infinite;
+}
+
+.pixel-character {
+  filter: drop-shadow(2px 2px 0 hsl(var(--bg) / 0.55));
+}
+
+.pixel-character-eye {
+  animation: pixel-character-blink 4.8s steps(1, end) infinite;
+}
+
+.pixel-character[data-live="true"] .pixel-character-status {
+  animation: pixel-character-signal 2.4s steps(2, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-character-eye,
+  .pixel-character-status {
+    animation: none !important;
+  }
 }
 
 /* ── ASCII art color classes ──────────────────────────────── */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Copy, RefreshCw } from "lucide-react";
@@ -11,6 +11,7 @@ import type {
 } from "@/lib/local-machine-readiness.server";
 import { CopyableCommand } from "./CopyableCommand";
 import { PaneCallout, PaneDivider, PaneHeader, PaneSectionLabel } from "./shared";
+import { PixelCharacter, type PixelCharacterStatus } from "@/components/ui/PixelCharacter";
 import {
   FRESH_MACHINE_BOOTSTRAP_DAYS,
   FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS,
@@ -62,6 +63,15 @@ function proofStatusClass(status?: string) {
   if (status === "warn") return "text-[hsl(var(--accent))]";
   if (status === "failed") return "text-red-400";
   return "text-[hsl(var(--text-secondary))] opacity-55";
+}
+
+function pixelStatus(status?: string): PixelCharacterStatus {
+  if (status === "ready") return "ready";
+  if (status === "active") return "active";
+  if (status === "warn" || status === "needs-env" || status === "partial") return "warn";
+  if (status === "failed" || status === "blocked" || status === "missing") return "blocked";
+  if (status === "quiet" || status === "waiting") return "idle";
+  return "unknown";
 }
 
 function formatTime(value?: string | number) {
@@ -214,11 +224,13 @@ function MeshMetric({
   value,
   detail,
   tone = "muted",
+  character,
 }: {
   label: string;
   value: string | number;
   detail: string;
   tone?: "success" | "accent" | "muted";
+  character?: ReactNode;
 }) {
   const toneClass =
     tone === "success"
@@ -229,9 +241,14 @@ function MeshMetric({
 
   return (
     <div className="min-w-0 border-l border-[hsl(var(--border))]/65 px-3 py-2">
-      <div className={`truncate font-mono text-[17px] leading-tight ${toneClass}`}>{value}</div>
-      <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-42">
-        {label}
+      <div className="flex min-w-0 items-start gap-2">
+        {character && <div className="pt-0.5">{character}</div>}
+        <div className="min-w-0">
+          <div className={`truncate font-mono text-[17px] leading-tight ${toneClass}`}>{value}</div>
+          <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-42">
+            {label}
+          </div>
+        </div>
       </div>
       <div className="mt-2 min-h-8 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
         {detail}
@@ -255,13 +272,15 @@ function MachineSyncMeshPanel({
 }) {
   const proofCount = syncedProofs?.length ?? 0;
   const latestProof = syncedProofs?.[0] ?? null;
+  const currentHost = report?.hostName ?? latestProof?.hostName ?? "local";
   const trustedHosts = Array.from(
     new Set(
       (syncedProofs ?? [])
         .map((proof) => proof.hostName)
-        .filter(Boolean)
+        .filter((host): host is string => Boolean(host))
     )
-  ).slice(0, 4);
+  ).slice(0, 5);
+  const visibleHosts = Array.from(new Set([currentHost, ...trustedHosts].filter((host): host is string => Boolean(host)))).slice(0, 5);
   const status = report?.summary.status ?? latestProof?.status ?? "unknown";
   const meshNodes = [
     ["you.md", "identity"],
@@ -283,6 +302,25 @@ function MachineSyncMeshPanel({
           <p className="mt-2 max-w-4xl font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
             Real local + Convex-backed sync signals only. Secret values stay local or encrypted; this panel shows routing, readiness, and proof metadata.
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {visibleHosts.map((host, index) => (
+              <div
+                key={host}
+                className="flex items-center gap-2 border-l border-[hsl(var(--border))]/65 bg-[hsl(var(--bg-raised))]/24 px-2.5 py-1.5"
+              >
+                <PixelCharacter kind="machine" seed={host} status={pixelStatus(index === 0 ? status : "ready")} size="sm" />
+                <span className="max-w-32 truncate font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
+                  {index === 0 ? "this mac" : host}
+                </span>
+              </div>
+            ))}
+            <div className="flex items-center gap-2 border-l border-[hsl(var(--success))]/55 bg-[hsl(var(--bg-raised))]/24 px-2.5 py-1.5">
+              <PixelCharacter kind="agent" seed="agent-bus" status={pixelStatus(report?.agentBus?.state)} size="sm" />
+              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
+                agent bus
+              </span>
+            </div>
+          </div>
         </div>
         <button
           type="button"
@@ -297,39 +335,45 @@ function MachineSyncMeshPanel({
       <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         <MeshMetric
           label="this mac"
-          value={report?.hostName ?? "local"}
+          value={currentHost}
           detail={`${rootMode} root / ${formatTime(report?.generatedAt)}`}
           tone={status === "ready" ? "success" : status === "warn" ? "accent" : "muted"}
+          character={<PixelCharacter kind="machine" seed={currentHost} status={pixelStatus(status)} size="sm" />}
         />
         <MeshMetric
           label="trusted machines"
           value={proofCount}
           detail={trustedHosts.length > 0 ? trustedHosts.join(" / ") : "no synced machine proofs yet"}
           tone={proofCount > 0 ? "success" : "accent"}
+          character={<PixelCharacter kind="machine" seed="trusted-machines" status={proofCount > 0 ? "ready" : "idle"} size="sm" />}
         />
         <MeshMetric
           label="agent bus"
           value={report?.agentBus?.state ?? "unknown"}
           detail={report?.agentBus ? `${report.agentBus.recentCount} msgs / ${report.agentBus.channelCount} channels` : "daemon status not loaded"}
           tone={report?.agentBus?.state === "active" ? "success" : "accent"}
+          character={<PixelCharacter kind="agent" seed="agent-bus-metric" status={pixelStatus(report?.agentBus?.state)} size="sm" />}
         />
         <MeshMetric
           label="skill mesh"
           value={report?.skillSync.status ?? "unknown"}
           detail={report?.skillSync ? `${report.skillSync.canonicalCount} shared / ${report.skillSync.codexMirrorCount} codex` : "waiting for local proof"}
           tone={report?.skillSync.status === "ready" ? "success" : "accent"}
+          character={<PixelCharacter kind="agent" seed="skill-mesh" status={pixelStatus(report?.skillSync.status)} size="sm" />}
         />
         <MeshMetric
           label="project graph"
           value={report ? `${report.summary.projectReady}/${report.summary.projectScanned}` : latestProof ? `${latestProof.ready}/${latestProof.scanned}` : "pending"}
           detail={report ? `${report.summary.envLocal} env locals / ${report.summary.projectContext} contexts` : "use local refresh for live root"}
           tone={report?.summary.status === "ready" ? "success" : report ? "accent" : "muted"}
+          character={<PixelCharacter kind="shell" seed="project-graph" status={pixelStatus(report?.summary.status)} size="sm" />}
         />
         <MeshMetric
           label="secret vault"
           value={report?.envVault.accountSnapshotStatus ?? "unknown"}
           detail={report?.envVault.accountSnapshotSummary ?? "encrypted snapshot metadata only"}
           tone={report?.envVault.accountSnapshotStatus === "ready" ? "success" : "accent"}
+          character={<PixelCharacter kind="shell" seed="secret-vault" status={pixelStatus(report?.envVault.accountSnapshotStatus)} size="sm" />}
         />
       </div>
 
