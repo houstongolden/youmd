@@ -29,6 +29,26 @@ type MachineReadinessPaneProps = {
 const freshComputerPromptCommand = "youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault";
 const freshComputerShellCommand = "/new computer";
 const sourceEnvVaultBackupCommand = "youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault";
+const machineSetupCollapsedStorageKey = "youmd:machine-setup-collapsed";
+
+type SyncedMachineProof = {
+  _id: string;
+  hostName: string;
+  status: string;
+  generatedAt: number;
+  rootDir: string;
+  source: string;
+  secretValuesExposed: boolean;
+  scanned: number;
+  ready: number;
+  needsEnv: number;
+  partial: number;
+  installPassed: number;
+  checksPassed: number;
+  serversPassed: number;
+  failures: number;
+  warnings: string[];
+};
 
 function statusClass(status: LocalReadinessStatus | LocalProjectReadiness["status"]) {
   if (status === "ready") return "text-[hsl(var(--success))]";
@@ -189,12 +209,180 @@ function SkillSyncProofPanel({ skillSync }: { skillSync: LocalMachineReadiness["
   );
 }
 
+function MeshMetric({
+  label,
+  value,
+  detail,
+  tone = "muted",
+}: {
+  label: string;
+  value: string | number;
+  detail: string;
+  tone?: "success" | "accent" | "muted";
+}) {
+  const toneClass =
+    tone === "success"
+      ? "text-[hsl(var(--success))]"
+      : tone === "accent"
+        ? "text-[hsl(var(--accent))]"
+        : "text-[hsl(var(--text-primary))]";
+
+  return (
+    <div className="min-w-0 border-l border-[hsl(var(--border))]/65 px-3 py-2">
+      <div className={`truncate font-mono text-[17px] leading-tight ${toneClass}`}>{value}</div>
+      <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-42">
+        {label}
+      </div>
+      <div className="mt-2 min-h-8 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+        {detail}
+      </div>
+    </div>
+  );
+}
+
+function MachineSyncMeshPanel({
+  report,
+  syncedProofs,
+  rootMode,
+  loading,
+  onRefresh,
+}: {
+  report: LocalMachineReadiness | null;
+  syncedProofs?: SyncedMachineProof[];
+  rootMode: RootMode;
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const proofCount = syncedProofs?.length ?? 0;
+  const latestProof = syncedProofs?.[0] ?? null;
+  const trustedHosts = Array.from(
+    new Set(
+      (syncedProofs ?? [])
+        .map((proof) => proof.hostName)
+        .filter(Boolean)
+    )
+  ).slice(0, 4);
+  const status = report?.summary.status ?? latestProof?.status ?? "unknown";
+  const meshNodes = [
+    ["you.md", "identity"],
+    ["realtime", report?.daemons.find((daemon) => daemon.label === "realtime-sync")?.loaded ? "live" : "polling"],
+    ["agents", report?.agentBus?.state ?? "quiet"],
+    ["skills", report?.skillSync.status ?? "waiting"],
+    ["projects", report ? `${report.summary.projectReady}/${report.summary.projectScanned}` : proofCount ? `${proofCount} proofs` : "pending"],
+    ["vault", report?.envVault.accountSnapshotStatus ?? "unknown"],
+  ];
+
+  return (
+    <section className="mt-4 border-l border-[hsl(var(--success))]/60 bg-[hsl(var(--bg))]/30 px-4 py-4">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0">
+          <PaneSectionLabel>you sync mesh</PaneSectionLabel>
+          <h2 className="max-w-3xl font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
+            Machines, agents, skills, vaults, and project context moving through one live brain stream.
+          </h2>
+          <p className="mt-2 max-w-4xl font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+            Real local + Convex-backed sync signals only. Secret values stay local or encrypted; this panel shows routing, readiness, and proof metadata.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="ml-auto flex h-8 items-center gap-2 bg-[hsl(var(--bg))]/60 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-60 transition-opacity hover:opacity-90"
+        >
+          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+          refresh
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <MeshMetric
+          label="this mac"
+          value={report?.hostName ?? "local"}
+          detail={`${rootMode} root / ${formatTime(report?.generatedAt)}`}
+          tone={status === "ready" ? "success" : status === "warn" ? "accent" : "muted"}
+        />
+        <MeshMetric
+          label="trusted machines"
+          value={proofCount}
+          detail={trustedHosts.length > 0 ? trustedHosts.join(" / ") : "no synced machine proofs yet"}
+          tone={proofCount > 0 ? "success" : "accent"}
+        />
+        <MeshMetric
+          label="agent bus"
+          value={report?.agentBus?.state ?? "unknown"}
+          detail={report?.agentBus ? `${report.agentBus.recentCount} msgs / ${report.agentBus.channelCount} channels` : "daemon status not loaded"}
+          tone={report?.agentBus?.state === "active" ? "success" : "accent"}
+        />
+        <MeshMetric
+          label="skill mesh"
+          value={report?.skillSync.status ?? "unknown"}
+          detail={report?.skillSync ? `${report.skillSync.canonicalCount} shared / ${report.skillSync.codexMirrorCount} codex` : "waiting for local proof"}
+          tone={report?.skillSync.status === "ready" ? "success" : "accent"}
+        />
+        <MeshMetric
+          label="project graph"
+          value={report ? `${report.summary.projectReady}/${report.summary.projectScanned}` : latestProof ? `${latestProof.ready}/${latestProof.scanned}` : "pending"}
+          detail={report ? `${report.summary.envLocal} env locals / ${report.summary.projectContext} contexts` : "use local refresh for live root"}
+          tone={report?.summary.status === "ready" ? "success" : report ? "accent" : "muted"}
+        />
+        <MeshMetric
+          label="secret vault"
+          value={report?.envVault.accountSnapshotStatus ?? "unknown"}
+          detail={report?.envVault.accountSnapshotSummary ?? "encrypted snapshot metadata only"}
+          tone={report?.envVault.accountSnapshotStatus === "ready" ? "success" : "accent"}
+        />
+      </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <div className="flex min-w-max items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))]">
+          {meshNodes.map(([label, detail], index) => (
+            <div key={label} className="flex items-center gap-2">
+              <div className="border-l border-[hsl(var(--border))]/75 bg-[hsl(var(--bg-raised))]/30 px-3 py-2">
+                <span className="text-[hsl(var(--text-primary))]">{label}</span>
+                <span className="ml-2 opacity-40">{detail}</span>
+              </div>
+              {index < meshNodes.length - 1 && <span className="opacity-25">/</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {latestProof && (
+        <div className="mt-4 grid gap-3 border-t border-[hsl(var(--border))]/55 pt-3 lg:grid-cols-[0.8fr_1fr]">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-65">
+              latest synced proof
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">{latestProof.hostName}</span>
+              <span className={`font-mono text-[9px] uppercase tracking-[0.14em] ${proofStatusClass(latestProof.status)}`}>
+                {latestProof.status}
+              </span>
+              <span className="font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-42">
+                {formatTime(latestProof.generatedAt)}
+              </span>
+            </div>
+          </div>
+          <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+            scanned {latestProof.scanned} / ready {latestProof.ready} / env {latestProof.needsEnv} / partial {latestProof.partial} / failures {latestProof.failures}
+            <span className="ml-2 opacity-45">secret values exposed: {String(latestProof.secretValuesExposed)}</span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function MachineSetupHero({
   clerkId,
   onCopied,
+  collapsed,
+  onToggleCollapsed,
 }: {
   clerkId?: string;
   onCopied: (label: string) => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
 }) {
   const createApiKey = useMutation(api.apiKeys.createKey);
   const [copyState, setCopyState] = useState<"idle" | "minting" | "copied" | "fallback" | "failed">("idle");
@@ -251,8 +439,57 @@ function MachineSetupHero({
     }
   };
 
+  if (collapsed) {
+    return (
+      <div className="border-l border-[hsl(var(--accent))]/70 bg-gradient-to-r from-[hsl(var(--accent))]/10 via-[hsl(var(--bg))]/35 to-transparent px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="min-w-0">
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))]">
+              new machine setup
+            </div>
+            <div className="mt-1 font-mono text-[12px] text-[hsl(var(--text-primary))]">
+              {"Blank Mac -> CODE_YOU, trusted vault, shared skills, MCP, focused projects, resident sync."}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void copyGeneratedCommand()}
+              disabled={copyState === "minting"}
+              className="flex h-8 items-center gap-2 border border-[hsl(var(--border))] bg-[hsl(var(--accent))]/10 px-3 font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]/50 disabled:cursor-wait disabled:opacity-60"
+            >
+              <Copy size={12} />
+              {copyState === "minting" ? "minting" : copyState === "copied" ? "copied" : "copy setup"}
+            </button>
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              className="h-8 border border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/55 px-3 font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-65 transition-opacity hover:opacity-95"
+            >
+              details
+            </button>
+          </div>
+        </div>
+        {error && (
+          <div className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--accent))] opacity-70">
+            key mint fallback: {error}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <PaneCallout label="new machine setup" className="px-5 py-5">
+        <div className="mb-3 flex justify-start">
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="h-7 border border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/55 px-2.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-55 transition-opacity hover:opacity-90"
+          >
+            collapse setup
+          </button>
+        </div>
         <h2 className="font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
           Copy one Claude/Codex setup prompt into a blank Mac to rebuild this working context.
         </h2>
@@ -314,6 +551,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [copiedNotice, setCopiedNotice] = useState<string | null>(null);
+  const [setupCollapsed, setSetupCollapsed] = useState(false);
   const syncedProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 8 } : "skip");
 
   const load = useCallback(async () => {
@@ -342,9 +580,29 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
     window.setTimeout(() => setCopiedNotice(null), 1800);
   }, []);
 
+  const toggleSetupCollapsed = useCallback(() => {
+    setSetupCollapsed((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(machineSetupCollapsedStorageKey, next ? "1" : "0");
+      } catch {
+        // Browser storage is a convenience only; the setup prompt still works.
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    try {
+      setSetupCollapsed(window.localStorage.getItem(machineSetupCollapsedStorageKey) === "1");
+    } catch {
+      setSetupCollapsed(false);
+    }
+  }, []);
 
   const topProjects = useMemo(() => report?.projects.rows.slice(0, 14) ?? [], [report]);
   const syncedProofsSection = (
@@ -404,12 +662,24 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
     <div className="h-full overflow-y-auto">
       <PaneHeader>machine readiness</PaneHeader>
       <div className="max-w-6xl px-6 py-6">
-        <MachineSetupHero clerkId={clerkId} onCopied={handleCopied} />
+        <MachineSetupHero
+          clerkId={clerkId}
+          onCopied={handleCopied}
+          collapsed={setupCollapsed}
+          onToggleCollapsed={toggleSetupCollapsed}
+        />
         {copiedNotice && (
           <div className="mt-3 border-l border-[hsl(var(--success))]/70 bg-[hsl(var(--success))]/5 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--success))]">
             {copiedNotice}
           </div>
         )}
+        <MachineSyncMeshPanel
+          report={report}
+          syncedProofs={syncedProofs}
+          rootMode={rootMode}
+          loading={loading}
+          onRefresh={() => void load()}
+        />
         {report?.agentBus && <AgentBusPanel agentBus={report.agentBus} />}
         {report?.skillSync && <SkillSyncProofPanel skillSync={report.skillSync} />}
 

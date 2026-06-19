@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-19 — Machine sync mesh foregrounding
+
+### polish(machine): make connected computers the point of the page
+- Added a persisted collapse control to Machine's `new machine setup` block so it becomes a compact first-run row with `copy setup` and `details` after the user is done with the long instructions.
+- Added a foreground `you sync mesh` panel that summarizes real safe signals for this Mac, trusted machine proofs, realtime agent bus, shared skill mesh, project graph/env/context readiness, and Secret Vault status.
+- Tuned the mesh for the current split-pane width: three metric columns instead of six cramped telemetry columns, with the detailed readiness sections still available below.
+- Verified with root TypeScript, production Next build, local `next start -p 3100`, and Codex in-app Browser visual checks for expanded and collapsed Machine states with localhost readiness hydrated.
+
 ## 2026-06-19 — Live log foregrounds agents and stats
 
 ### polish(shell): make hidden activity visible where Houston actually looks
