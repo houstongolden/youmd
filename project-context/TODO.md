@@ -40,6 +40,7 @@ PRD Version: 2.3
 - [x] Generate/backfill useful chat titles from first prompts or existing session summaries so the left rail reads like real chat history instead of raw ids
 - [x] Soften light mode with a subtle super-light beige gradient and warmer surface tokens instead of a stark white canvas
 - [x] Replace black/orange shell chrome and active fills with warm charcoal/beige shell tokens, and document the no orange-gradient-over-black design rule
+- [x] Add desktop shell layout controls to hide/show chat, flip chat to the left or right of the detail pane, and resize chat down to a compact column
 - [x] Verify with root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser screenshots for `/shell` and `/desktop-demo`
 - [x] Route skill sync, portfolio hydration, source-crawl policy, realtime daemon, machine proof, Secret Vault, and GitHub repo-mirror state into `brainActivities` as first-class producers
 - [x] Upgrade CLI skill/stack sync rows so shared canonical skill propagation and `~/.agent-shared` sync are visible in `brainActivities`

@@ -11,6 +11,7 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AsciiAvatar from "@/components/AsciiAvatar";
@@ -213,17 +214,20 @@ const PANEL_OPEN_STORAGE_KEY = "youmd.dashboard.panelOpen";
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "youmd.shell.sidebarCollapsed";
 const SIDEBAR_COLLAPSE_MODE_STORAGE_KEY = "youmd.shell.sidebarCollapseMode";
 const CHAT_WIDTH_STORAGE_KEY = "youmd.shell.chatWidth";
+const CHAT_HIDDEN_STORAGE_KEY = "youmd.shell.chatHidden";
+const CHAT_SIDE_STORAGE_KEY = "youmd.shell.chatSide";
 const STALE_NUDGE_SESSION_KEY = "youmd.dashboard.staleNudgeShown";
 const STALE_NUDGE_DAYS = 7;
 const FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_CHAT_WIDTH = 46;
-const MIN_CHAT_WIDTH = 34;
-const MAX_CHAT_WIDTH = 54;
-const MIN_CHAT_WIDTH_PX = 460;
-const MIN_DETAIL_WIDTH_PX = 440;
+const DEFAULT_CHAT_WIDTH = 38;
+const MIN_CHAT_WIDTH = 16;
+const MAX_CHAT_WIDTH = 72;
+const MIN_CHAT_WIDTH_PX = 260;
+const MIN_DETAIL_WIDTH_PX = 320;
 const SIDEBAR_AUTO_COLLAPSE_PX = 1520;
 
 type SidebarCollapseMode = "auto" | "collapsed" | "expanded";
+type ChatSide = "left" | "right";
 
 function formatRelativeTime(ts: number): string {
   const diffMin = Math.floor((Date.now() - ts) / 60000);
@@ -406,10 +410,27 @@ function readStoredChatWidth(): number {
   try {
     const raw = Number(window.localStorage.getItem(CHAT_WIDTH_STORAGE_KEY));
     if (!Number.isFinite(raw)) return DEFAULT_CHAT_WIDTH;
-    if (raw < DEFAULT_CHAT_WIDTH) return DEFAULT_CHAT_WIDTH;
     return Math.min(MAX_CHAT_WIDTH, Math.max(MIN_CHAT_WIDTH, raw));
   } catch {
     return DEFAULT_CHAT_WIDTH;
+  }
+}
+
+function readStoredChatHidden(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(CHAT_HIDDEN_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function readStoredChatSide(): ChatSide {
+  if (typeof window === "undefined") return "left";
+  try {
+    return window.localStorage.getItem(CHAT_SIDE_STORAGE_KEY) === "right" ? "right" : "left";
+  } catch {
+    return "left";
   }
 }
 
@@ -538,6 +559,66 @@ function DetailPanelGlyph({ open }: { open: boolean }) {
         ].join(" ")}
       />
     </span>
+  );
+}
+
+function ChatPanelGlyph({ hidden }: { hidden: boolean }) {
+  return (
+    <span aria-hidden="true" className="relative block h-4 w-5 text-current">
+      <span className="absolute inset-y-0 left-0 w-px bg-current opacity-65" />
+      <span className="absolute inset-y-0 right-0 w-px bg-current opacity-20" />
+      <span className="absolute left-0 right-0 top-0 h-px bg-current opacity-20" />
+      <span className="absolute bottom-0 left-0 right-0 h-px bg-current opacity-20" />
+      <span
+        className={[
+          "absolute left-1 top-1/2 h-2.5 -translate-y-1/2 bg-current transition-[width,opacity]",
+          hidden ? "w-px opacity-70" : "w-1.5 opacity-45",
+        ].join(" ")}
+      />
+    </span>
+  );
+}
+
+function FlipSplitGlyph({ side }: { side: ChatSide }) {
+  return (
+    <span aria-hidden="true" className="relative block h-4 w-5 text-current">
+      <span className="absolute inset-y-0 left-0 w-px bg-current opacity-25" />
+      <span className="absolute inset-y-0 right-0 w-px bg-current opacity-25" />
+      <span className="absolute left-0 right-0 top-0 h-px bg-current opacity-20" />
+      <span className="absolute bottom-0 left-0 right-0 h-px bg-current opacity-20" />
+      <span
+        className={[
+          "absolute top-1/2 h-2.5 w-1.5 -translate-y-1/2 bg-current opacity-55 transition-[left,right]",
+          side === "left" ? "left-1" : "right-1",
+        ].join(" ")}
+      />
+      <span className="absolute left-1/2 top-1/2 h-2 w-px -translate-x-1/2 -translate-y-1/2 bg-current opacity-25" />
+    </span>
+  );
+}
+
+function ShellChromeIconButton({
+  label,
+  title,
+  onClick,
+  children,
+}: {
+  label: string;
+  title: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="hidden h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--shell-chrome-hover))] hover:text-[hsl(var(--text-primary))] hover:opacity-95 lg:flex"
+      style={{ borderRadius: "var(--radius)" }}
+      aria-label={label}
+      title={title}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -1181,6 +1262,8 @@ export function DashboardContent() {
     readStoredSidebarCollapseMode()
   );
   const [chatWidth, setChatWidth] = useState<number>(() => readStoredChatWidth());
+  const [chatHidden, setChatHidden] = useState<boolean>(() => readStoredChatHidden());
+  const [chatSide, setChatSide] = useState<ChatSide>(() => readStoredChatSide());
   const [editInitialSubTab, setEditInitialSubTab] = useState<EditSubTab>("files");
   const [viewportWidth, setViewportWidth] = useState(0);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
@@ -1222,6 +1305,22 @@ export function DashboardContent() {
       // localStorage unavailable (private mode etc.) — non-fatal
     }
   }, [chatWidth]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CHAT_HIDDEN_STORAGE_KEY, String(chatHidden));
+    } catch {
+      // localStorage unavailable (private mode etc.) — non-fatal
+    }
+  }, [chatHidden]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CHAT_SIDE_STORAGE_KEY, chatSide);
+    } catch {
+      // localStorage unavailable (private mode etc.) — non-fatal
+    }
+  }, [chatSide]);
 
   useEffect(() => {
     if (!requestedRightPane) return;
@@ -1592,7 +1691,9 @@ export function DashboardContent() {
 
     const handleMove = (moveEvent: PointerEvent) => {
       const rect = container.getBoundingClientRect();
-      const next = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+      const next = chatSide === "right"
+        ? ((rect.right - moveEvent.clientX) / rect.width) * 100
+        : ((moveEvent.clientX - rect.left) / rect.width) * 100;
       const pixelMin = (MIN_CHAT_WIDTH_PX / rect.width) * 100;
       const detailMax = ((rect.width - MIN_DETAIL_WIDTH_PX) / rect.width) * 100;
       const lower = Math.max(MIN_CHAT_WIDTH, pixelMin);
@@ -1612,7 +1713,7 @@ export function DashboardContent() {
     document.body.style.userSelect = "none";
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", handleUp, { once: true });
-  }, []);
+  }, [chatSide]);
 
   // Auto-create Convex user for /create flow (session cookie present),
   // or redirect to /initialize for /sign-up flow users
@@ -1724,6 +1825,8 @@ export function DashboardContent() {
     PANE_GROUPS.find((group) => group.panes.some((pane) => pane.key === rightPane)) ??
     PANE_GROUPS[0];
   const activePreviewTab = activePaneGroup.key;
+  const chatVisibleOnDesktop = !chatHidden || !panelOpen;
+  const detailVisibleOnDesktop = panelOpen;
   const shellGitHubStatus = repoUpdateBusy
     ? {
         label: "syncing",
@@ -2014,16 +2117,32 @@ export function DashboardContent() {
                 onClick={() => openPane("github")}
               />
               <ShellUpdateButton busy={repoUpdateBusy} onClick={runRepoUpdate} />
-              <button
-                type="button"
-                onClick={() => setPanelOpen((value) => !value)}
-                className="ml-1 hidden h-8 w-8 cursor-pointer items-center justify-center text-[hsl(var(--text-secondary))] opacity-55 transition-[background,color,opacity] hover:bg-[hsl(var(--shell-chrome-hover))] hover:text-[hsl(var(--text-primary))] hover:opacity-95 lg:flex"
-                style={{ borderRadius: "var(--radius)" }}
-                aria-label={panelOpen ? "Hide detail pane" : "Show detail pane"}
-                title={panelOpen ? "Hide detail pane" : "Show detail pane"}
-              >
-                <DetailPanelGlyph open={panelOpen} />
-              </button>
+              <div className="ml-1 hidden items-center gap-1 border-l border-[hsl(var(--border))]/60 pl-2 lg:flex">
+                <ShellChromeIconButton
+                  label={chatHidden && panelOpen ? "Show chat and live log" : "Hide chat and live log"}
+                  title={chatHidden && panelOpen ? "Show chat / live log" : "Hide chat / live log"}
+                  onClick={() => {
+                    if (!panelOpen) setPanelOpen(true);
+                    setChatHidden((value) => !value);
+                  }}
+                >
+                  <ChatPanelGlyph hidden={chatHidden && panelOpen} />
+                </ShellChromeIconButton>
+                <ShellChromeIconButton
+                  label={chatSide === "left" ? "Move chat to right" : "Move chat to left"}
+                  title={chatSide === "left" ? "Move chat to right" : "Move chat to left"}
+                  onClick={() => setChatSide((value) => value === "left" ? "right" : "left")}
+                >
+                  <FlipSplitGlyph side={chatSide} />
+                </ShellChromeIconButton>
+                <ShellChromeIconButton
+                  label={panelOpen ? "Hide detail pane" : "Show detail pane"}
+                  title={panelOpen ? "Hide detail pane" : "Show detail pane"}
+                  onClick={() => setPanelOpen((value) => !value)}
+                >
+                  <DetailPanelGlyph open={panelOpen} />
+                </ShellChromeIconButton>
+              </div>
             </div>
           </div>
           {/* Mobile nav — single row: scrollable pane tabs + compact status */}
@@ -2093,12 +2212,20 @@ export function DashboardContent() {
           </div>
 
           {/* Content — split on desktop, toggled on mobile */}
-          <div ref={splitContainerRef} className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
+          <div
+            ref={splitContainerRef}
+            className={[
+              "relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]",
+              chatSide === "right" ? "lg:flex-row-reverse" : "lg:flex-row",
+            ].join(" ")}
+          >
             {/* Terminal — always rendered on desktop; on mobile only when active */}
             <div
               className={[
                 "min-h-0 min-w-0 flex flex-col bg-[hsl(var(--bg-raised))]",
-                panelOpen ? "lg:w-[var(--shell-chat-width)] lg:flex-none" : "lg:flex-1",
+                chatVisibleOnDesktop
+                  ? panelOpen ? "lg:w-[var(--shell-chat-width)] lg:flex-none" : "lg:flex-1"
+                  : "lg:hidden",
                 "lg:relative lg:opacity-100 lg:translate-x-0",
                 // Mobile: full width, absolute positioned for transitions
                 "w-full",
@@ -2128,7 +2255,7 @@ export function DashboardContent() {
               />
             </div>
 
-            {panelOpen && (
+            {panelOpen && chatVisibleOnDesktop && (
               <button
                 type="button"
                 onPointerDown={startColumnResize}
@@ -2145,7 +2272,7 @@ export function DashboardContent() {
               className={[
                 "min-h-0 min-w-0 flex flex-col overflow-hidden bg-[hsl(var(--bg-raised))]",
                 // Desktop: hidden when panel is closed
-                panelOpen
+                detailVisibleOnDesktop
                   ? "lg:relative lg:flex-1 lg:opacity-100 lg:translate-x-0"
                   : "lg:hidden",
                 // Mobile: full width, absolute positioned for transitions

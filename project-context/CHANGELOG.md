@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-19 — Shell chat layout controls
+
+### feat(shell): collapse, flip, and freely resize the chat/live-log column
+- Added persisted desktop shell controls for hiding/showing the chat/live-log column, moving it between the left and right side of the detail pane, and preserving the chosen side in local storage.
+- Lowered shell chat resize constraints so the chat can shrink to a compact column instead of being trapped near half-width.
+- Kept the shell from becoming blank: if the detail pane is closed, chat remains available even when the hidden-chat preference is set.
+- Verified with root TypeScript, production Next build, and live localhost `/shell?tab=tasks` response.
+
 ## 2026-06-19 — Agent bus coordination activity links
 
 ### feat(activity): link cross-agent messages to projects, skills, and entities
