@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
@@ -18,6 +20,98 @@ const PROVIDER_HOURLY_LIMITS: Record<string, number> = {
   "agent-browser": 6,
   apify: 20,
 };
+
+const MAX_FIELD_CHARS = 120;
+const MAX_TITLE_CHARS = 180;
+const MAX_DETAIL_CHARS = 800;
+
+function cleanText(value: string | undefined, fallback: string, maxChars: number): string {
+  const cleaned = (value ?? fallback)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (cleaned || fallback).slice(0, maxChars);
+}
+
+function safeSourceUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return cleanText(value, "source", MAX_FIELD_CHARS);
+  }
+}
+
+type SourceRunDecision = Record<string, unknown> & {
+  allowed?: boolean;
+  reason?: string;
+  estimatedCostCents?: number;
+  requiresApproval?: boolean;
+  hourlyLimit?: number;
+  remainingThisHour?: number;
+};
+
+function activityStatus(decision: SourceRunDecision): "live" | "ok" | "warn" | "error" | "info" {
+  if (decision.allowed) return "live";
+  if (decision.reason === "approval_required" || decision.reason === "rate_limited") return "warn";
+  return "error";
+}
+
+async function recordSourceRunActivity(
+  ctx: MutationCtx,
+  args: {
+    userId: Id<"users">;
+    sourceId: Id<"sources">;
+    title: string;
+    detail: string;
+    provider: string;
+    decision: SourceRunDecision;
+    occurredAt: number;
+  },
+) {
+  const existing = await ctx.db
+    .query("brainActivities")
+    .withIndex("by_userId_activityId", (q) =>
+      q.eq("userId", args.userId).eq("activityId", `source-crawl:${args.sourceId}`)
+    )
+    .first();
+  const now = Date.now();
+  const patch = {
+    source: "source-crawl",
+    channel: "sources",
+    kind: args.decision.allowed === true ? "reserved" : "blocked",
+    title: cleanText(args.title, "source crawl", MAX_TITLE_CHARS),
+    detail: cleanText(args.detail, "source crawl decision", MAX_DETAIL_CHARS),
+    status: activityStatus(args.decision),
+    entityType: "source",
+    entityId: String(args.sourceId),
+    sourceAgent: "source-run-policy",
+    metadata: {
+      provider: args.provider,
+      allowed: args.decision.allowed === true,
+      reason: args.decision.reason,
+      estimatedCostCents: args.decision.estimatedCostCents,
+      requiresApproval: args.decision.requiresApproval,
+      hourlyLimit: args.decision.hourlyLimit,
+      remainingThisHour: args.decision.remainingThisHour,
+    },
+    occurredAt: args.occurredAt,
+    updatedAt: now,
+    secretValuesExposed: false,
+  };
+
+  if (existing) {
+    await ctx.db.patch(existing._id, patch);
+    return;
+  }
+
+  await ctx.db.insert("brainActivities", {
+    userId: args.userId,
+    activityId: `source-crawl:${args.sourceId}`,
+    ...patch,
+    createdAt: now,
+  });
+}
 
 function estimateCostCents(provider: string): number {
   return PROVIDER_COST_CENTS[provider] ?? 0;
@@ -58,6 +152,9 @@ export const reserveSourceRun = internalMutation({
     }
 
     const provider = args.provider || source.crawlerProvider || "native";
+    const displayName = source.displayName || source.sourceType || "source";
+    const sourceLabel = `${displayName} via ${provider}`;
+    const sourceUrl = safeSourceUrl(source.sourceUrl);
     const estimatedCostCents = estimateCostCents(provider);
     const policy = runPolicy(source.metadata);
     const approvedUntil =
@@ -86,6 +183,15 @@ export const reserveSourceRun = internalMutation({
         failureCount: (source.failureCount ?? 0) + 1,
         metadata: mergeRunDecision(source.metadata, decision),
       });
+      await recordSourceRunActivity(ctx, {
+        userId: source.userId,
+        sourceId: source._id,
+        provider,
+        decision,
+        title: `source crawl blocked: ${sourceLabel}`,
+        detail: `manual source has no crawler provider · ${sourceUrl}`,
+        occurredAt: now,
+      });
       return decision;
     }
 
@@ -96,6 +202,15 @@ export const reserveSourceRun = internalMutation({
         errorMessage: `${provider} refresh requires owner approval`,
         failureCount: (source.failureCount ?? 0) + 1,
         metadata: mergeRunDecision(source.metadata, decision),
+      });
+      await recordSourceRunActivity(ctx, {
+        userId: source.userId,
+        sourceId: source._id,
+        provider,
+        decision,
+        title: `source crawl needs approval: ${sourceLabel}`,
+        detail: `${provider} refresh requires owner approval · ${sourceUrl}`,
+        occurredAt: now,
       });
       return decision;
     }
@@ -108,6 +223,15 @@ export const reserveSourceRun = internalMutation({
         failureCount: (source.failureCount ?? 0) + 1,
         metadata: mergeRunDecision(source.metadata, decision),
       });
+      await recordSourceRunActivity(ctx, {
+        userId: source.userId,
+        sourceId: source._id,
+        provider,
+        decision,
+        title: `source crawl blocked: ${sourceLabel}`,
+        detail: `${provider} estimate ${estimatedCostCents}c exceeds limit ${maxEstimatedCostCents}c · ${sourceUrl}`,
+        occurredAt: now,
+      });
       return decision;
     }
 
@@ -119,6 +243,15 @@ export const reserveSourceRun = internalMutation({
         errorMessage: `${provider} provider is disabled for automatic runs`,
         failureCount: (source.failureCount ?? 0) + 1,
         metadata: mergeRunDecision(source.metadata, decision),
+      });
+      await recordSourceRunActivity(ctx, {
+        userId: source.userId,
+        sourceId: source._id,
+        provider,
+        decision,
+        title: `source crawl disabled: ${sourceLabel}`,
+        detail: `${provider} provider is disabled for automatic runs · ${sourceUrl}`,
+        occurredAt: now,
       });
       return decision;
     }
@@ -138,6 +271,15 @@ export const reserveSourceRun = internalMutation({
         failureCount: (source.failureCount ?? 0) + 1,
         metadata: mergeRunDecision(source.metadata, decision),
       });
+      await recordSourceRunActivity(ctx, {
+        userId: source.userId,
+        sourceId: source._id,
+        provider,
+        decision,
+        title: `source crawl rate limited: ${sourceLabel}`,
+        detail: `${provider} hourly source-refresh limit reached · ${sourceUrl}`,
+        occurredAt: now,
+      });
       return decision;
     }
 
@@ -151,6 +293,15 @@ export const reserveSourceRun = internalMutation({
     };
     await ctx.db.patch(source._id, {
       metadata: mergeRunDecision(source.metadata, decision),
+    });
+    await recordSourceRunActivity(ctx, {
+      userId: source.userId,
+      sourceId: source._id,
+      provider,
+      decision,
+      title: `source crawl reserved: ${sourceLabel}`,
+      detail: `${provider} refresh reserved · ${sourceUrl}`,
+      occurredAt: now,
     });
     return decision;
   },

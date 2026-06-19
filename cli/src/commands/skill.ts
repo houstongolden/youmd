@@ -34,7 +34,7 @@ import {
 import { loadIdentityData, resolveVariable, renderSkillTemplate } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
-import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, type SkillInsight } from "../lib/api";
+import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, recordBrainActivity, type SkillInsight } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 
@@ -463,6 +463,32 @@ async function syncSkillsCmd(): Promise<void> {
     console.log("");
     for (const err of result.errors) {
       console.log(`  ${ACCENT("\u2717")} ${DIM(err)}`);
+    }
+  }
+
+  if (isAuthenticated()) {
+    try {
+      await recordBrainActivity({
+        activityId: `skill-sync:${os.hostname()}`,
+        source: "skill-sync",
+        channel: "skills",
+        kind: result.errors.length > 0 ? "warn" : "synced",
+        status: result.errors.length > 0 ? "warn" : "ok",
+        title: `${result.synced.length} skills synced`,
+        detail: result.errors.length > 0
+          ? `${result.errors.length} sync warning${result.errors.length === 1 ? "" : "s"}`
+          : "installed skills re-rendered against the latest identity bundle",
+        sourceHost: os.hostname(),
+        sourceAgent: "youmd CLI",
+        sourceRuntime: process.version,
+        metadata: {
+          syncedCount: result.synced.length,
+          errorCount: result.errors.length,
+          skills: result.synced.slice(0, 20),
+        },
+      });
+    } catch (err) {
+      if (process.env.DEBUG) console.error(`[skill sync] brain activity failed: ${err}`);
     }
   }
   console.log("");

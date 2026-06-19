@@ -2642,6 +2642,103 @@ http.route({
   }),
 });
 
+// POST /api/v1/me/brain-activities — record a redacted, owner-scoped live brain activity event.
+http.route({
+  path: "/api/v1/me/brain-activities",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "activity");
+    if (denied) return denied;
+
+    let body: {
+      activityId?: string;
+      source?: string;
+      channel?: string;
+      kind?: string;
+      title?: string;
+      detail?: string;
+      status?: string;
+      projectSlug?: string;
+      entityType?: string;
+      entityId?: string;
+      sourceHost?: string;
+      sourceAgent?: string;
+      sourceRuntime?: string;
+      metadata?: unknown;
+      occurredAt?: number;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
+    }
+
+    if (!body.title || typeof body.title !== "string") {
+      return errorResponse("invalid_request", "title is required", 400);
+    }
+    if (!body.source || typeof body.source !== "string") {
+      return errorResponse("invalid_request", "source is required", 400);
+    }
+
+    try {
+      const agent = detectAgent(request.headers.get("user-agent"));
+      const activity = await ctx.runMutation(api.brainActivity.recordActivity, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        activityId: body.activityId,
+        source: body.source,
+        channel: body.channel,
+        kind: body.kind,
+        title: body.title,
+        detail: body.detail,
+        status: body.status,
+        projectSlug: body.projectSlug,
+        entityType: body.entityType,
+        entityId: body.entityId,
+        sourceHost: body.sourceHost,
+        sourceAgent: body.sourceAgent ?? auth.appName ?? agent.name,
+        sourceRuntime: body.sourceRuntime,
+        metadata: body.metadata,
+        occurredAt: Number.isFinite(body.occurredAt) ? body.occurredAt : undefined,
+      });
+
+      try {
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: body.sourceAgent || auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: `brain-activities/${activity.source}`,
+          scope: "write:bundle",
+          apiKeyId: auth.apiKeyId,
+          connectedAppGrantId: auth.connectedAppGrantId,
+          status: "success",
+          details: {
+            activityId: activity.activityId,
+            source: activity.source,
+            kind: activity.kind,
+            secretValuesExposed: false,
+          },
+        });
+      } catch {
+        // best-effort observability; the activity itself is saved.
+      }
+
+      return json({
+        success: true,
+        schemaVersion: "you-md/brain-activity/v1",
+        activity,
+        secretValuesExposed: false,
+      }, 201);
+    } catch (err) {
+      return serverErrorResponse("me/brain-activities", err, "Failed to record brain activity");
+    }
+  }),
+});
+
 // GET/POST /api/v1/me/secret-vault/env — Account-backed encrypted .env.local vault snapshots.
 http.route({
   path: "/api/v1/me/secret-vault/devices",
@@ -4769,6 +4866,7 @@ http.route({ path: "/api/v1/me/portfolio/tasks/update", method: "OPTIONS", handl
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/realtime-sync/session", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/agent-bus/messages", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/brain-activities", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/secret-vault/devices", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/secret-vault/envelopes", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/secret-vault/env", method: "OPTIONS", handler: corsPreflight });

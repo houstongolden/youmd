@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-19 — Brain activity producer ingestion
+
+### feat(activity): let local agents and daemons write the canonical live log
+- Added `POST /api/v1/me/brain-activities` so trusted local agents, CLIs, and service producers can write redacted owner-scoped events into the canonical `brainActivities` stream.
+- Wired CLI producers for `youmd skill sync`, `youmd project portfolio-hydrate`, and `youmd sync --live --daemon` checkpoints into the same stream with stable activity ids and `secretValuesExposed: false`.
+- Wired source crawl run policy decisions into `brainActivities`, including approval blocks, rate limits, provider disablement, and reserved runs, while stripping query strings from source URLs.
+- Regenerated agent docs/OpenAPI surfaces so the activity ingestion endpoint is visible to local agents.
+- Bumped CLI to `0.8.8` for npm publish readiness.
+- Verified with focused source-run policy tests, CLI TypeScript build, production Next build, Convex production deploy, and a deployed endpoint smoke that returned `you-md/brain-activity/v1` with `secretValuesExposed: false`.
+
 ## 2026-06-19 — DSI direction and pixel sync characters
 
 ### feat(dsi): persist Home as a live View with widget contracts

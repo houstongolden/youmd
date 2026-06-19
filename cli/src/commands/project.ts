@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
 import { execFileSync } from "child_process";
+import * as os from "os";
 import chalk from "chalk";
 import {
   initProjectFiles,
@@ -23,6 +24,7 @@ import {
 import {
   apiErrorMessage,
   hydratePortfolioProjects,
+  recordBrainActivity,
   saveBrainDump,
   savePortfolioTask,
   updatePortfolioTask,
@@ -1299,6 +1301,34 @@ async function hydratePortfolioFromCli(args: string[]): Promise<void> {
   console.log(chalk.dim(`  local audit: ${res.data.local.upserted} upserted / ${res.data.local.skipped} skipped`));
   if (res.data.patterns) {
     console.log(chalk.dim(`  reusable patterns: ${res.data.patterns.upserted} upserted / ${res.data.patterns.created} created / ${res.data.patterns.updated} updated`));
+  }
+  try {
+    await recordBrainActivity({
+      activityId: `portfolio-hydrate:${os.hostname()}`,
+      source: "portfolio-hydrate",
+      channel: "projects",
+      kind: "hydrated",
+      status: "ok",
+      title: "portfolio graph hydrated",
+      detail: `${tracked ? `${tracked.tracked} tracked GitHub projects considered · ` : ""}${res.data.local.upserted} local projects upserted · ${res.data.patterns?.upserted ?? 0} reusable patterns upserted`,
+      sourceHost: os.hostname(),
+      sourceAgent: "youmd CLI portfolio-graph-auditor",
+      sourceRuntime: process.version,
+      metadata: {
+        days: Number.isFinite(days) ? days : 90,
+        limit: Number.isFinite(limit) ? limit : 80,
+        includeTracked,
+        localUpserted: res.data.local.upserted,
+        localSkipped: res.data.local.skipped,
+        trackedConsidered: tracked?.tracked ?? 0,
+        trackedCreated: tracked?.created ?? 0,
+        trackedUpdated: tracked?.updated ?? 0,
+        patternsUpserted: res.data.patterns?.upserted ?? 0,
+        projectsScanned: audit.projectsScanned,
+      },
+    });
+  } catch (err) {
+    if (process.env.DEBUG) console.error(`[portfolio hydrate] brain activity failed: ${err}`);
   }
   console.log("");
 }

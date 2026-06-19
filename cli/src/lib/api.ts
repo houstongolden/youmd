@@ -250,6 +250,46 @@ export interface AgentBusMessagesResponse {
   secretValuesExposed: false;
 }
 
+export interface BrainActivityPayload {
+  activityId?: string;
+  source: string;
+  channel?: string;
+  kind?: string;
+  title: string;
+  detail?: string;
+  status?: string;
+  projectSlug?: string;
+  entityType?: string;
+  entityId?: string;
+  sourceHost?: string;
+  sourceAgent?: string;
+  sourceRuntime?: string;
+  metadata?: unknown;
+  occurredAt?: number;
+}
+
+export interface BrainActivityRecord {
+  id: string;
+  activityId: string;
+  source: string;
+  channel?: string | null;
+  kind: string;
+  title: string;
+  detail?: string | null;
+  status: "live" | "ok" | "warn" | "error" | "info";
+  projectSlug?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  sourceHost?: string | null;
+  sourceAgent?: string | null;
+  sourceRuntime?: string | null;
+  metadata?: unknown;
+  occurredAt: number;
+  createdAt: number;
+  updatedAt: number;
+  secretValuesExposed: false;
+}
+
 export async function sendAgentBusMessage(payload: {
   body: string;
   channel?: string;
@@ -285,6 +325,21 @@ export async function listAgentBusMessages(opts: {
   const qs = params.toString();
   return apiRequest(`/api/v1/me/agent-bus/messages${qs ? `?${qs}` : ""}`, {
     token: getToken(),
+  });
+}
+
+export async function recordBrainActivity(
+  payload: BrainActivityPayload
+): Promise<ApiResponse<{
+  success: boolean;
+  schemaVersion: "you-md/brain-activity/v1";
+  activity: BrainActivityRecord;
+  secretValuesExposed: false;
+}>> {
+  return apiRequest("/api/v1/me/brain-activities", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
   });
 }
 

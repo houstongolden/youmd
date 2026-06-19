@@ -1922,8 +1922,8 @@ Last Updated: 2026-06-19
 10. Reconcile source-Mac bundle drift. **DONE LOCALLY:** generated CLI/web prompts and hosted `machine-bootstrap` now run `youmd pull && youmd sync` after env-vault handling so the new Mac does not leave setup with a `remote ahead` state after source-Mac shares/envelope updates.
 
 ### 138. Make shared You.md skills, project context, and stacks sync Notion-like across trusted devices
-**Status:** DONE FIRST REALTIME SLICE / 90-DAY MAC MINI FOLLOW-UP PENDING
-**Verified:** PARTIAL (Convex prod deployed, production websocket sync-head smoke passed, local CLI `youmd sync --live --daemon` smoke passed, this Mac's launchd daemon set shows `com.youmd.realtime-sync` loaded, npm `0.8.7` is published, and Mac mini restored via trusted-device vault; 90-day expansion/device-message proof pending)
+**Status:** DONE FIRST REALTIME SLICE / PRODUCER EXPANSION DEPLOYED / 90-DAY MAC MINI FOLLOW-UP PENDING
+**Verified:** PARTIAL (Convex prod deployed, production websocket sync-head smoke passed, local CLI `youmd sync --live --daemon` smoke passed, this Mac's launchd daemon set shows `com.youmd.realtime-sync` loaded, npm `0.8.7` is published, Mac mini restored via trusted-device vault, and canonical `brainActivities` producer ingestion was deployed/smoke-tested for CLI/daemon/source-crawl events; 90-day expansion/device-message proof pending)
 **Source:** 2026-06-18 — Houston: "all synced skills and you.md project context and shared local/global skills/stacks should sync real-time like Notion too ya know ? come on"
 **Actionable Scope:**
 1. Add an always-on realtime account-state lane instead of relying only on 5m/15m polling. **DONE:** `youmd sync --live --daemon` subscribes to Convex websocket updates through a short-lived `ys_` sync session.
@@ -1932,7 +1932,8 @@ Last Updated: 2026-06-19
 4. Make it visible in the Machine tab and CLI. **DONE:** `com.youmd.realtime-sync` is included in daemon install/status and Machine readiness as `realtime brain / live websocket`.
 5. Publish/install everywhere. **DONE for 30-day pass:** CLI `0.8.7` is published to npm, and the Mac mini setup ran with the realtime daemon, trusted-device Secret Vault share gate, and account Secret Vault status from the normal install path.
 6. Make the value visible in-product. **DONE LOCAL:** Home now shows a compact `live skill mesh` proof, and Machine shows a detailed local proof for `project-clarity-audit` across shared source, rendered skill, Claude mirror, Codex mirror, You.md catalog, and Stack Map.
-7. Remaining architecture gap. **OPEN:** GitHub-backed shared skill repos still use conflict-safe git sync as the materialization layer; true instant cross-device sync for every non-Convex source should add GitHub webhook/change-event ingestion into the Convex sync head.
+7. Route real producers into the visible brain pulse. **DONE DEPLOYED:** `POST /api/v1/me/brain-activities`, `youmd skill sync`, `youmd project portfolio-hydrate`, `youmd sync --live --daemon`, and source crawl run-policy decisions now write the canonical `brainActivities` stream with stable ids, sanitized details, and `secretValuesExposed: false`.
+8. Remaining architecture gap. **OPEN:** GitHub-backed shared skill repos still use conflict-safe git sync as the materialization layer; true instant cross-device sync for every non-Convex source should add GitHub webhook/change-event ingestion into the Convex sync head.
 
 ### 139. Main YOU home feed/dashboard plus global personal/project task tracking
 **Status:** VERIFIED LOCAL

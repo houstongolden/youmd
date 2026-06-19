@@ -13,7 +13,7 @@ import {
   bundleResolutionNotice,
   bundleLooksInitialized,
 } from "../lib/config";
-import { apiErrorMessage, createRealtimeSyncSession, getMe } from "../lib/api";
+import { apiErrorMessage, createRealtimeSyncSession, getMe, recordBrainActivity } from "../lib/api";
 import { pushCommand } from "./push";
 import { pullCommand, detectLocalDirtyState, stableContentHash } from "./pull";
 import { syncAllSkills } from "../lib/skills";
@@ -296,6 +296,32 @@ function runYoumdSubcommand(label: string, args: string[], timeoutMs: number): v
   }
 }
 
+async function recordDaemonCheckpoint(fields: {
+  kind: string;
+  status?: string;
+  title: string;
+  detail?: string;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    await recordBrainActivity({
+      activityId: `daemon:realtime-sync:${os.hostname()}`,
+      source: "daemon",
+      channel: "realtime-sync",
+      kind: fields.kind,
+      status: fields.status ?? fields.kind,
+      title: fields.title,
+      detail: fields.detail,
+      sourceHost: os.hostname(),
+      sourceAgent: "youmd realtime daemon",
+      sourceRuntime: process.version,
+      metadata: fields.metadata,
+    });
+  } catch (err) {
+    if (process.env.DEBUG) console.error(`[realtime sync] brain activity failed: ${err}`);
+  }
+}
+
 async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Promise<void> {
   const heartbeatMs = envNumber("YOUMD_LIVE_SYNC_HEARTBEAT_SECONDS", 60) * 1000;
   const localMinMs = envNumber("YOUMD_LIVE_SYNC_LOCAL_INTERVAL_SECONDS", 5) * 1000;
@@ -346,6 +372,23 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
           }
           console.log("");
           console.log(chalk.green("  live sync update: ") + chalk.dim(latestHead ? summarizeRealtimeSyncHead(latestHead) : activeReason));
+          await recordDaemonCheckpoint({
+            kind: "syncing",
+            status: "live",
+            title: "realtime daemon checkpoint",
+            detail: latestHead ? summarizeRealtimeSyncHead(latestHead) : activeReason,
+            metadata: latestHead
+              ? {
+                  reason: activeReason,
+                  identityHash: latestHead.identity?.latestHash ?? null,
+                  skills: latestHead.skills?.installedCount ?? null,
+                  portfolioProjects: latestHead.portfolio?.projects ?? null,
+                  machineProofs: latestHead.portfolio?.machineProofs ?? null,
+                  agentMessages: latestHead.agentBus?.messages?.length ?? null,
+                  secretValuesExposed: false,
+                }
+              : { reason: activeReason, secretValuesExposed: false },
+          });
           if (latestHead) {
             const agentBus = describeRealtimeAgentBus(latestHead);
             const unseenMessages = agentBus.messages.filter((message) => message.createdAt > lastAgentMessageAt);

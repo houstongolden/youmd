@@ -5,7 +5,7 @@ export const openApiSpec = {
   "openapi": "3.1.0",
   "info": {
     "title": "You.md API",
-    "version": "0.8.7",
+    "version": "0.8.8",
     "description": "Generated source-of-truth API inventory for the You.md identity context protocol."
   },
   "servers": [
@@ -256,6 +256,45 @@ export const openApiSpec = {
       "post": {
         "operationId": "post_api_v1_me_api_keys",
         "summary": "Create an API key",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/brain-activities": {
+      "post": {
+        "operationId": "post_api_v1_me_brain_activities",
+        "summary": "record a redacted, owner-scoped live brain activity event.",
         "tags": [
           "Account"
         ],

@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "e1f6dbaeafa4d48385637b64723a9936cfbd82c6ab89f9955e64b86491ed903a",
+  "sourceHash": "61af7207dc60eabb4afc9d7c41770f7aeec40eef46b2e3ce50adc0f8bf060dec",
   "cli": {
-    "version": "0.8.7"
+    "version": "0.8.8"
   },
   "counts": {
-    "endpoints": 102,
+    "endpoints": 103,
     "internalRoutes": 9,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 31,
-    "convexRoutes": 83,
+    "convexRoutes": 84,
     "nextRoutes": 27
   },
   "endpoints": [
@@ -128,6 +128,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Create an API key",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/brain-activities",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "record a redacted, owner-scoped live brain activity event.",
       "sources": [
         "convex"
       ]
