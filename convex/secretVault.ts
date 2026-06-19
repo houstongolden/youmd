@@ -419,6 +419,61 @@ export const upsertKeyEnvelope = mutation({
   },
 });
 
+export const recordPullActivity = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    kind: v.string(),
+    snapshotId: v.optional(v.id("secretVaultSnapshots")),
+    deviceId: v.optional(v.string()),
+    fileName: v.optional(v.string()),
+    projectCount: v.optional(v.number()),
+    variableCount: v.optional(v.number()),
+    sizeBytes: v.optional(v.number()),
+    sourceHost: v.optional(v.string()),
+    targetHost: v.optional(v.string()),
+    sha256: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const kind = args.kind === "envelope-pulled" ? "envelope-pulled" : "snapshot-pulled";
+    const snapshotId = args.snapshotId ? String(args.snapshotId) : "latest";
+    const deviceId = args.deviceId ? cleanActivityText(args.deviceId, "device", 120) : "device";
+    const title = kind === "envelope-pulled"
+      ? "Secret Vault device envelope pulled"
+      : "Secret Vault encrypted snapshot downloaded";
+    const detail = kind === "envelope-pulled"
+      ? `trusted-device envelope pulled for ${deviceId}`
+      : `${args.projectCount ?? 0} projects / ${args.variableCount ?? 0} vars · ${args.fileName ?? "encrypted env vault"}`;
+    await recordVaultActivity(ctx, {
+      userId: user._id,
+      activityId: kind === "envelope-pulled"
+        ? `secret-vault:envelope-pull:${snapshotId}:${deviceId}`
+        : `secret-vault:snapshot-pull:${snapshotId}`,
+      kind: "pulled",
+      title,
+      detail,
+      entityType: kind === "envelope-pulled" ? "secretVaultKeyEnvelope" : "secretVaultSnapshot",
+      entityId: snapshotId,
+      sourceHost: args.sourceHost ?? args.targetHost,
+      metadata: {
+        eventKind: kind,
+        snapshotId,
+        deviceId: args.deviceId,
+        fileName: args.fileName,
+        projectCount: args.projectCount,
+        variableCount: args.variableCount,
+        sizeBytes: args.sizeBytes,
+        sourceHost: args.sourceHost,
+        targetHost: args.targetHost,
+        sha256Short: args.sha256?.slice(0, 12),
+        secretValuesExposed: false,
+      },
+    });
+    return { success: true, secretValuesExposed: false };
+  },
+});
+
 export const getLatestKeyEnvelopeForDevice = query({
   args: {
     clerkId: v.string(),

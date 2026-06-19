@@ -2861,6 +2861,20 @@ http.route({
       if (!result) {
         return errorResponse("not_found", "No Secret Vault key envelope exists for this device yet", 404);
       }
+      await ctx.runMutation(api.secretVault.recordPullActivity, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        kind: "envelope-pulled",
+        snapshotId: result.snapshot.id as Id<"secretVaultSnapshots">,
+        deviceId,
+        fileName: result.snapshot.fileName,
+        projectCount: result.snapshot.projectCount,
+        variableCount: result.snapshot.variableCount,
+        sizeBytes: result.snapshot.sizeBytes,
+        sourceHost: result.envelope.sourceHost,
+        targetHost: deviceId,
+        sha256: result.snapshot.sha256,
+      });
       return json({
         success: true,
         snapshot: omitSecretVaultManifest(result.snapshot),
@@ -2983,6 +2997,19 @@ http.route({
       if (computedSha256 !== latest.sha256) {
         return errorResponse("conflict", "Encrypted env vault checksum mismatch", 409);
       }
+
+      await ctx.runMutation(api.secretVault.recordPullActivity, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        kind: "snapshot-pulled",
+        snapshotId: latest.id as Id<"secretVaultSnapshots">,
+        fileName: latest.fileName,
+        projectCount: latest.projectCount,
+        variableCount: latest.variableCount,
+        sizeBytes: latest.sizeBytes,
+        sourceHost: latest.sourceHost,
+        sha256: latest.sha256,
+      });
 
       try {
         const agent = detectAgent(request.headers.get("user-agent"));

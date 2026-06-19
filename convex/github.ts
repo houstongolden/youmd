@@ -15,6 +15,10 @@ import {
   shouldDebounceAutoPush,
 } from "./lib/githubSync";
 
+const ACTIVITY_FIELD_CHARS = 160;
+const ACTIVITY_TITLE_CHARS = 180;
+const ACTIVITY_DETAIL_CHARS = 800;
+
 /**
  * GitHub OAuth + repo connection backend.
  *
@@ -53,6 +57,64 @@ function assertTrustedInternal(token: string | undefined) {
       "unauthorized: github bootstrap requires the trusted internal token"
     );
   }
+}
+
+function cleanActivityText(value: string | undefined, fallback: string, maxChars: number): string {
+  const cleaned = (value ?? fallback)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (cleaned || fallback).slice(0, maxChars);
+}
+
+async function recordGithubActivity(
+  ctx: MutationCtx,
+  fields: {
+    userId: Id<"users">;
+    activityId: string;
+    kind: string;
+    title: string;
+    detail?: string;
+    status?: "live" | "ok" | "warn" | "error" | "info";
+    entityType?: string;
+    entityId?: string;
+    metadata?: Record<string, unknown>;
+    occurredAt?: number;
+  },
+) {
+  const now = Date.now();
+  const activityId = cleanActivityText(fields.activityId, "github", ACTIVITY_FIELD_CHARS);
+  const existing = await ctx.db
+    .query("brainActivities")
+    .withIndex("by_userId_activityId", (q) => q.eq("userId", fields.userId).eq("activityId", activityId))
+    .first();
+  const patch = {
+    source: "github",
+    channel: "repo-mirror",
+    kind: cleanActivityText(fields.kind, "event", ACTIVITY_FIELD_CHARS),
+    title: cleanActivityText(fields.title, "GitHub activity", ACTIVITY_TITLE_CHARS),
+    detail: fields.detail ? cleanActivityText(fields.detail, "", ACTIVITY_DETAIL_CHARS) : undefined,
+    status: fields.status ?? (fields.kind === "stale" ? "warn" : "ok"),
+    entityType: fields.entityType,
+    entityId: fields.entityId,
+    sourceAgent: "github-mirror",
+    metadata: fields.metadata,
+    occurredAt: fields.occurredAt ?? now,
+    updatedAt: now,
+    secretValuesExposed: false,
+  };
+
+  if (existing) {
+    await ctx.db.patch(existing._id, patch);
+    return;
+  }
+
+  await ctx.db.insert("brainActivities", {
+    userId: fields.userId,
+    activityId,
+    ...patch,
+    createdAt: now,
+  });
 }
 
 async function isUsernameAvailable(
@@ -607,10 +669,11 @@ export const internalUpsertMirror = internalMutation({
       truncated: args.truncated,
       syncedAt: Date.now(),
     };
+    let mirrorId = existing?._id;
     if (existing) {
       await ctx.db.patch(existing._id, row);
     } else {
-      await ctx.db.insert("repoMirror", row);
+      mirrorId = await ctx.db.insert("repoMirror", row);
     }
 
     // P17 ancestry check: if the mirrored head moved past the commit we last
@@ -627,6 +690,32 @@ export const internalUpsertMirror = internalMutation({
         await ctx.db.patch(conn._id, { mirrorStale: stale, updatedAt: Date.now() });
       }
     }
+
+    const stale = conn?.lastPushedCommitSha
+      ? hasMirrorDiverged(conn.lastPushedCommitSha, args.commitSha)
+      : conn?.mirrorStale === true;
+    await recordGithubActivity(ctx, {
+      userId: args.userId,
+      activityId: `github:repo-mirror:${args.repoFullName}`,
+      kind: stale ? "stale" : "synced",
+      title: stale ? `GitHub mirror stale: ${args.repoFullName}` : `GitHub mirror synced: ${args.repoFullName}`,
+      detail: `${args.files.length} files / ${totalBytes} bytes${args.truncated ? " / capped" : ""}${args.commitSha ? ` / ${args.commitSha.slice(0, 12)}` : ""}`,
+      status: stale ? "warn" : "ok",
+      entityType: "repoMirror",
+      entityId: mirrorId ? String(mirrorId) : args.repoFullName,
+      metadata: {
+        repoFullName: args.repoFullName,
+        commitSha: args.commitSha,
+        commitShaShort: args.commitSha?.slice(0, 12),
+        fileCount: args.files.length,
+        totalBytes,
+        truncated: args.truncated,
+        stale,
+        lastPushedCommitSha: conn?.lastPushedCommitSha,
+        secretValuesExposed: false,
+      },
+      occurredAt: row.syncedAt,
+    });
 
     return { fileCount: args.files.length, totalBytes };
   },

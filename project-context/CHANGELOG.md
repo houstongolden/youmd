@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — GitHub mirror and vault pull activity producers
+
+### feat(activity): show repo mirror refreshes and vault pulls in the live brain stream
+- Added canonical `brainActivities` rows for GitHub repo mirror refreshes, including synced vs stale state, file counts, byte totals, truncation state, and short commit shas.
+- Added Secret Vault pull/download activity rows for trusted-device envelope pulls and encrypted snapshot downloads.
+- Kept pull events secret-safe: no wrapped passphrases, encrypted archive bytes, public keys, manifest text, or full checksums are written to activity rows.
+- Added focused Convex coverage for repo mirror activity updates and vault pull/download activity.
+- Verified with focused Convex tests, docs check, root TypeScript, production Next build, and Convex production deploy.
+
 ## 2026-06-19 — Machine and vault activity producers
 
 ### feat(activity): route machine proof and Secret Vault events into the live brain stream

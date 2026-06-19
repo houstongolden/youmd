@@ -495,6 +495,35 @@ describe("mirror staleness (ancestor check on reads)", () => {
       truncated: false,
     });
     expect((await getConn(t, connectionId)).mirrorStale).toBe(true);
+    let activities = await t.withIdentity({ subject: CLERK }).query(api.brainActivity.listRecent, {
+      clerkId: CLERK,
+      source: "github",
+      limit: 10,
+    });
+    expect(activities).toHaveLength(1);
+    expect(activities[0]).toMatchObject({
+      activityId: `github:repo-mirror:${REPO}`,
+      source: "github",
+      channel: "repo-mirror",
+      kind: "stale",
+      status: "warn",
+      title: `GitHub mirror stale: ${REPO}`,
+      entityType: "repoMirror",
+      sourceAgent: "github-mirror",
+      secretValuesExposed: false,
+    });
+    expect(activities[0].detail).toContain("2 files / 19 bytes");
+    expect(activities[0].metadata).toMatchObject({
+      repoFullName: REPO,
+      commitSha: "c2",
+      commitShaShort: "c2",
+      fileCount: 2,
+      totalBytes: 19,
+      truncated: false,
+      stale: true,
+      lastPushedCommitSha: "c1",
+      secretValuesExposed: false,
+    });
 
     await t.mutation(internal.github.internalUpsertMirror, {
       userId,
@@ -504,6 +533,23 @@ describe("mirror staleness (ancestor check on reads)", () => {
       truncated: false,
     });
     expect((await getConn(t, connectionId)).mirrorStale).toBe(false);
+    activities = await t.withIdentity({ subject: CLERK }).query(api.brainActivity.listRecent, {
+      clerkId: CLERK,
+      source: "github",
+      limit: 10,
+    });
+    expect(activities).toHaveLength(1);
+    expect(activities[0]).toMatchObject({
+      activityId: `github:repo-mirror:${REPO}`,
+      kind: "synced",
+      status: "ok",
+      title: `GitHub mirror synced: ${REPO}`,
+      secretValuesExposed: false,
+    });
+    expect(activities[0].metadata).toMatchObject({
+      commitSha: "c1",
+      stale: false,
+    });
   });
 
   it("internalGetMirrorByClerkId overlays canonical content when stale", async () => {
