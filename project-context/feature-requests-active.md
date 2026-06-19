@@ -7,8 +7,8 @@ Last Updated: 2026-06-19
 ## 2026-06-19 — Local/global skill stack inventory and You.md catalog gap
 
 ### 144. Map the whole local agent skill/prompt/context system before fixing account sync
-**Status:** CLI INVENTORY + DIFF SHIPPED / CLI 0.8.10 PUBLISH TARGET READY / APP SYNC FIX NOT STARTED
-**Verified:** YES locally (`node scripts/local-agent-stack-inventory.mjs`, shared skill script proof under `/tmp/agent-stack-inventory-proof`, `youmd skill list`, `youmd skill use agent-stack-inventory`, shared-agent sync mirror check, compiled `youmd skill inventory`, compiled `youmd skill inventory diff`, CLI build, `npm pack --dry-run`)
+**Status:** INSTALL-TIME LOCAL INVENTORY WIRED / CLI 0.8.10 PUBLISH TARGET READY / CONVEX+GITHUB+API+MCP+APP SYNC FIX NOT STARTED
+**Verified:** YES locally (`node scripts/local-agent-stack-inventory.mjs`, shared skill script proof under `/tmp/agent-stack-inventory-proof`, `youmd skill list`, `youmd skill use agent-stack-inventory`, shared-agent sync mirror check, compiled `youmd skill inventory`, compiled `youmd skill inventory diff`, CLI build, focused CLI tests, bundled scanner smoke, `npm pack --dry-run`)
 **Production Verified:** N/A
 **Source:** 2026-06-19 — Houston: "I am on my Mac Mini and just ran youmd skill sync and youmd skill list - and it only returned 10 skills ... help whip up a quick html visual + mermaid diagram showing ALL my local/global skills and shared prompts/preferences..."
 **Goal / Success Definition:** This is complete only when the inventory/report becomes a You.md platform capability: the initial curl install and fresh-machine setup automatically install the current CLI, pull/sync the shared skill and stack layers, run the full agent stack inventory, organize canonical vs external/public/plugin/project-scoped skills, persist safe inventory/drift/DRY metadata to Convex and the `username-you-md` GitHub repo, expose the topology through You.md API/MCP, render it in the web/Tauri Skill Mesh, keep it reconciled through resident sync, and prove on a second Mac that all intended skills/stacks/context/config are installed or referenced with zero unexpected drift and no secret exposure.
@@ -22,7 +22,7 @@ Last Updated: 2026-06-19
 7. Preserve the You.md/Tauri/Convex/repo-backed product architecture direction. **DONE memo:** `project-context/AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md`.
 8. Next, add a first-class `youmd skill inventory` CLI wrapper and a diff command for comparing two Macs. **DONE:** `youmd skill inventory --out-dir <dir>` generates the shared report and `youmd skill inventory diff <left.json> <right.json>` compares two machine snapshots.
 9. Prepare the CLI publish target so the Mac mini can install the new commands through normal `youmd` update/install. **DONE locally:** CLI package is bumped to `0.8.10`, build passes, and `npm pack --dry-run` passes. **PENDING:** npm publish/OTP and Mac mini install proof.
-10. Productize install-time inventory in `install.sh` / machine setup so a new Mac automatically inventories and verifies the skill/stack system after install. **OPEN.**
+10. Productize install-time inventory in `install.sh` / machine setup so a new Mac automatically inventories and verifies the skill/stack system after install. **DONE local report slice:** CLI package bundles the scanner, curl install writes best-effort `~/.youmd/agent-stack-inventory`, and fresh-machine bootstrap runs inventory after shared skills/MCP restore and near final proof. **OPEN:** persist/sync those reports into Convex/GitHub and show them in app/API/MCP.
 11. Add Convex persistence for safe machine inventory snapshots, sync events, drift summaries, and DRY review queues. **OPEN.**
 12. Add GitHub repo snapshots under the user's `username-you-md` repo for portable markdown/JSON machine/skill/stack inventory. **OPEN.**
 13. Expose inventory topology through You.md API and MCP so authorized agents can inspect and repair drift. **OPEN.**

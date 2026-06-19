@@ -131,15 +131,18 @@ Success means:
    **Done locally; pending npm publish on `youmd@0.8.10`.**
 2. Add `youmd skill inventory diff --left A.json --right B.json`.
    **Done locally; pending npm publish on `youmd@0.8.10`.**
-3. Add Convex `agentStackInventories` summaries keyed by user + machine + root.
-4. Add web/Tauri `Skill Mesh` view with ownership, DRY, catalog gap, and machine
+3. Bundle the scanner into the CLI package and run local inventory during curl
+   install and fresh-machine bootstrap.
+   **Done locally; pending npm publish/deploy.**
+4. Add Convex `agentStackInventories` summaries keyed by user + machine + root.
+5. Add web/Tauri `Skill Mesh` view with ownership, DRY, catalog gap, and machine
    drift tabs.
-5. Add You Agent actions:
+6. Add You Agent actions:
    - register canonical shared skill in You.md catalog
    - mark external reference
    - create alias/routing note
    - propose merge
    - repair broken mirror
-6. Extend project-context hydration so project-scoped `AGENTS.md`, `CLAUDE.md`,
+7. Extend project-context hydration so project-scoped `AGENTS.md`, `CLAUDE.md`,
    `.youmd-project`, `youstack.json`, and `project-context/` docs appear in the
    same topology.

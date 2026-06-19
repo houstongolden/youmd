@@ -61,7 +61,7 @@ DAYS="\${YOUMD_ACTIVE_DAYS:-30}"
 EXPAND_DAYS="\${YOUMD_EXPAND_ACTIVE_DAYS:-90}"
 LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
 HYDRATE_TIMEOUT="\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"
-MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.7}"
+MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.10}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -98,7 +98,7 @@ ensure_youmd_min_version() {
   installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
   echo "[you.md] installed version after forced source install: \${installed:-unknown}"
   if [ -z "$installed" ] || ! version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
-    echo "[you.md] youmd \${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, and fresh-machine restore. npm latest may still be behind; rerun after this commit is deployed or install from GitHub main." >&2
+    echo "[you.md] youmd \${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore. npm latest may still be behind; rerun after this commit is deployed or install from GitHub main." >&2
     exit 1
   fi
 }
@@ -119,6 +119,17 @@ run_with_timeout() {
     kill "$watcher" >/dev/null 2>&1 || true
     wait "$watcher" 2>/dev/null || true
     return "$status"
+  fi
+}
+run_agent_stack_inventory() {
+  INVENTORY_DIR="\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.youmd/agent-stack-inventory}"
+  mkdir -p "$INVENTORY_DIR"
+  echo "[you.md] running local/global agent stack inventory into $INVENTORY_DIR"
+  if youmd skill inventory --out-dir "$INVENTORY_DIR"; then
+    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) generated agent stack inventory at $INVENTORY_DIR" || true
+  else
+    echo "[you.md] agent stack inventory did not complete; continuing setup so sync can self-heal, then rerun: youmd skill inventory --out-dir $INVENTORY_DIR"
+    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) could not complete agent stack inventory yet; rerun after shared skill sync" || true
   fi
 }
 
@@ -227,6 +238,7 @@ youmd mcp --install claude --auto || true
 youmd mcp --install codex --auto || true
 youmd skill link claude || true
 youmd skill link codex || true
+run_agent_stack_inventory
 youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored shared skills/stacks and MCP config" || true
 
 if [ "$GITHUB_READY" != "1" ]; then
@@ -401,6 +413,7 @@ fi
 echo "[you.md] confirming resident realtime/identity/skillstack/project-context daemons"
 youmd stack daemon install || true
 youmd stack daemon status || true
+run_agent_stack_inventory
 youmd status
 if [ "$FULL_PROJECT_SET_COMPLETE" = "1" ]; then
   echo "[you.md] fresh-machine full \${EXPAND_DAYS}-day project setup complete: $ROOT"
@@ -439,13 +452,13 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
   return [
     "You are Claude Code or Codex running on my brand-new Mac.",
     "",
-    "Goal: set up this blank computer so it has my You.md identity context, shared skills/stacks, MCP wiring, agent preferences/prompts, active project repos, encrypted `.env.local` files, machine proof sync, and resident sync behavior from my source Mac.",
+    "Goal: set up this blank computer so it has my You.md identity context, shared skills/stacks, MCP wiring, agent preferences/prompts, active project repos, encrypted `.env.local` files, local/global agent stack inventory, machine proof sync, and resident sync behavior from my source Mac.",
     "",
     "Do not just explain this. Execute the setup, stream progress, and verify the result. Run the exact command below in the terminal first.",
     "",
     authLine,
     "",
-    "Behind-the-scenes operating rule: use the You.md CLI and You Agent yourself before asking Houston to do anything. Run deterministic commands like `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`, `youmd skill install all`, `youmd skill sync`, `youmd env vault list`, `youmd env vault device-register`, `youmd env vault pull --restore`, `youmd machine prompt`, `youmd machine verify`, `youmd project portfolio-hydrate`, and `youmd agent status` as needed. Use `youmd agent send --channel machine-sync --kind status \"...\"` to report setup milestones back to Houston's other trusted Macs over the realtime agent bus. Use `you` / `youmd chat` only when you need the You Agent to synthesize or route context, then turn its output into concrete shell actions. Interrupt Houston only for true human-gated steps: GitHub browser auth, source-Mac Secret Vault share if the trusted-device envelope has not been created yet, local vault passphrase/Keychain only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOUMD_ENV_VAULT` is explicitly provided, npm OTP, OS permissions, or an explicit choice such as the 90-day expansion.",
+    "Behind-the-scenes operating rule: use the You.md CLI and You Agent yourself before asking Houston to do anything. Run deterministic commands like `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`, `youmd skill install all`, `youmd skill sync`, `youmd skill inventory`, `youmd env vault list`, `youmd env vault device-register`, `youmd env vault pull --restore`, `youmd machine prompt`, `youmd machine verify`, `youmd project portfolio-hydrate`, and `youmd agent status` as needed. Use `youmd agent send --channel machine-sync --kind status \"...\"` to report setup milestones back to Houston's other trusted Macs over the realtime agent bus. Use `you` / `youmd chat` only when you need the You Agent to synthesize or route context, then turn its output into concrete shell actions. Interrupt Houston only for true human-gated steps: GitHub browser auth, source-Mac Secret Vault share if the trusted-device envelope has not been created yet, local vault passphrase/Keychain only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOUMD_ENV_VAULT` is explicitly provided, npm OTP, OS permissions, or an explicit choice such as the 90-day expansion.",
     "",
     "Exact setup command:",
     "",
@@ -461,6 +474,7 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     "- require GitHub CLI auth before private shared-skill/project repos clone; if browser auth fails inside Claude/Codex, it prints the exact Terminal command to run and stops cleanly",
     "- install/configure MCP for Claude Code and Codex",
     "- restore shared agent skills, stack config, Claude/Codex links, and agent host config",
+    "- generate a secret-safe local/global agent stack inventory under `~/.youmd/agent-stack-inventory` after shared skills are restored and again near final proof",
     "- use the installed You.md CLI behind the scenes for status, skill sync, Secret Vault pull, portfolio graph hydration, machine verification, and You Agent context routing instead of making Houston manually drive those steps",
     "- publish setup milestones through `youmd agent send` so Houston's source Mac and realtime daemon can see the Mac mini come online without clipboard babysitting",
     "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
@@ -479,6 +493,7 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     `- the \`${root}\` project count`,
     "- whether the encrypted env vault restored",
     "- whether Claude/Codex MCP config was installed",
+    "- where the agent stack inventory JSON/HTML was written",
     "- the synced machine proof status",
     "- whether I should expand to the 90-day active project set if I have not answered yet",
     "",

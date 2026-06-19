@@ -32,14 +32,19 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("brew install gh");
     expect(command).toContain("brew install bun");
     expect(command).toContain("YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash");
-    expect(command).toContain('MIN_YOUMD_VERSION="${YOUMD_MIN_VERSION:-0.8.7}"');
+    expect(command).toContain('MIN_YOUMD_VERSION="${YOUMD_MIN_VERSION:-0.8.10}"');
     expect(command).toContain("ensure_youmd_min_version");
-    expect(command).toContain("youmd ${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, and fresh-machine restore");
+    expect(command).toContain("youmd ${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore");
+    expect(command).toContain("run_agent_stack_inventory()");
+    expect(command).toContain('INVENTORY_DIR="${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.youmd/agent-stack-inventory}"');
+    expect(command).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR"');
+    expect(command).toContain("generated agent stack inventory");
     expect(command).toContain('HYDRATE_TIMEOUT="${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"');
     expect(command).toContain('run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate');
     expect(command).toContain('youmd login --key "$YOUMD_API_KEY"');
     expect(command).toContain("youmd mcp --install claude --auto || true");
     expect(command).toContain("youmd mcp --install codex --auto || true");
+    expect(command).toContain("run_agent_stack_inventory");
     expect(command).toContain("ensure_github_auth");
     expect(command).toContain("gh auth login -h github.com -p https -s repo");
     expect(command).toContain("stopping after You.md identity/daemon setup because GitHub auth is required for private repos");
@@ -117,12 +122,15 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("Do not just explain this. Execute the setup");
     expect(prompt).toContain("Behind-the-scenes operating rule");
     expect(prompt).toContain("use the You.md CLI and You Agent yourself before asking Houston");
+    expect(prompt).toContain("youmd skill inventory");
     expect(prompt).toContain("youmd env vault pull");
     expect(prompt).toContain("youmd env vault device-register");
     expect(prompt).toContain("Interrupt Houston only for true human-gated steps");
     expect(prompt).toContain("Exact setup command:");
     expect(prompt).toContain("```bash");
     expect(prompt).toContain("install/configure MCP for Claude Code and Codex");
+    expect(prompt).toContain("local/global agent stack inventory");
+    expect(prompt).toContain("~/.youmd/agent-stack-inventory");
     expect(prompt).toContain("check/install the local prerequisites first");
     expect(prompt).toContain("installing runtime from GitHub main");
     expect(prompt).toContain("require GitHub CLI auth before private shared-skill/project repos clone");
@@ -164,6 +172,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("skips agent auth config");
     expect(prompt).toContain("After the command finishes, report:");
     expect(prompt).toContain("whether Claude/Codex MCP config was installed");
+    expect(prompt).toContain("where the agent stack inventory JSON/HTML was written");
     expect(prompt).toContain("fails instead of pretending setup is complete");
   });
 

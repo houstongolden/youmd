@@ -19,8 +19,11 @@ PRD Version: 2.3
 - [x] Add `youmd skill inventory` CLI wrapper around the shared scanner
 - [x] Add `youmd skill inventory diff` for comparing this Mac against the Mac mini or another trusted machine
 - [x] Bump CLI package to `0.8.10` for publishing the inventory commands
+- [x] Bundle the agent stack inventory scanner inside the CLI package so fresh installs can run inventory before shared skills are restored
+- [x] Add a curl install hook that writes a best-effort secret-safe inventory to `~/.youmd/agent-stack-inventory`
+- [x] Add fresh-machine bootstrap inventory proof after shared skills/MCP restore and again near final readiness proof
 - [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
-- [ ] Productize install-time inventory in `install.sh` and machine setup so curl setup runs the inventory and verifies skill/stack sync automatically
+- [ ] Productize install-time inventory persistence into Convex and GitHub snapshots after the local report is generated
 - [ ] Add Convex persistence for safe machine inventory snapshots, sync events, drift summaries, and DRY review queues
 - [ ] Add `username-you-md` GitHub snapshot output for machine/skill/stack inventory markdown and JSON
 - [ ] Expose agent stack inventory topology through You.md API and MCP

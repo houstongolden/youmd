@@ -2,6 +2,12 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### feat(machine): run agent stack inventory during install and bootstrap
+- Bundled `scripts/local-agent-stack-inventory.mjs` into the CLI package so fresh npm/source installs can run `youmd skill inventory` before shared skills are restored.
+- Updated the curl installer to run a best-effort secret-safe inventory into `~/.youmd/agent-stack-inventory` after native skill install/sync.
+- Updated fresh-machine bootstrap to require `youmd@0.8.10+`, run inventory after shared skills/MCP restore, run it again near final proof, and include the inventory path in the generated agent prompt.
+- Verified with CLI build, focused CLI tests, bundled inventory smoke using `YOUMD_AGENT_STACK_INVENTORY_SCRIPT=cli/scripts/local-agent-stack-inventory.mjs`, `git diff --check`, and `npm pack --dry-run` showing the bundled script in the tarball.
+
 ### docs(sync): define productized skill mesh success gate
 - Added a concrete Definition of Success to `AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md`.
 - Reframed the active request so completion requires curl-install inventory, machine setup proof, Convex/GitHub persistence, API/MCP exposure, web/Tauri Skill Mesh rendering, resident realtime reconciliation, and second-Mac zero-unexpected-drift proof without secret exposure.

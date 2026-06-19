@@ -163,8 +163,8 @@ function resolveInventoryScript(): string | null {
     process.env.YOUMD_AGENT_STACK_INVENTORY_SCRIPT,
     path.join(os.homedir(), ".agent-shared", "claude-skills", "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
     path.join(os.homedir(), ".youmd", "skills", "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
-    path.resolve(__dirname, "../../../scripts/local-agent-stack-inventory.mjs"),
     path.resolve(__dirname, "../../scripts/local-agent-stack-inventory.mjs"),
+    path.resolve(__dirname, "../../../scripts/local-agent-stack-inventory.mjs"),
   ].filter(Boolean) as string[];
 
   for (const candidate of candidates) {

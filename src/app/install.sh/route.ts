@@ -267,6 +267,18 @@ RUNTIME
 
 echo "Installing native You.md skills..."
 youmd skill install all >/dev/null 2>&1 || true
+youmd skill sync >/dev/null 2>&1 || true
+
+if [ "\${YOUMD_INSTALL_INVENTORY:-1}" = "1" ]; then
+  INVENTORY_DIR="\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$YOUMD_HOME_DIR/agent-stack-inventory}"
+  mkdir -p "$INVENTORY_DIR"
+  echo "Creating secret-safe local agent stack inventory..."
+  if youmd skill inventory --out-dir "$INVENTORY_DIR" >/dev/null 2>&1; then
+    echo "  - inventory: $INVENTORY_DIR"
+  else
+    echo "  - inventory skipped; run \`youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory\` after login/sync"
+  fi
+fi
 
 # Auto-configure MCP for whichever local agents are present, so they know how
 # to use you.md out of the box. Each host write is non-fatal and backs up the
