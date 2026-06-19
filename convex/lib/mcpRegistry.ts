@@ -1,7 +1,7 @@
 /**
  * T14 — Unified hosted MCP tool registry.
  *
- * Single source of truth for all 9 tools served by POST /api/v1/mcp.
+ * Single source of truth for all tools served by POST /api/v1/mcp.
  * Adding a tool requires editing only this file; convex/http.ts
  * tools/list and tools/call both drive from HOSTED_MCP_TOOLS.
  *
@@ -237,6 +237,12 @@ function textResult(text: string, mimeType = "text/plain"): McpHandlerResult {
 // Helper: produce a tool-error McpHandlerResult
 function errorResult(message: string): McpHandlerResult {
   return { content: [{ type: "text", text: message }], isError: true };
+}
+
+function boundedNumber(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(Math.trunc(parsed), min), max);
 }
 
 const PRIVATE_CONTEXT_OMISSIONS = [
@@ -789,6 +795,80 @@ export const HOSTED_MCP_TOOLS: McpToolSpec[] = [
       };
 
       return textResult(JSON.stringify(result, null, 2), "application/json");
+    },
+  },
+
+  // ── get_agent_stack_inventory ───────────────────────────────────────────────
+  {
+    name: "get_agent_stack_inventory",
+    description:
+      "Read the authenticated user's latest You.md agent-stack inventory snapshots: skill/stack counts, machine roots, You.md catalog gaps, DRY review queues, mirror clusters, provenance/source rollups, and repo snapshot files. Use to audit cross-machine skill drift and sync health without exposing secrets.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Maximum inventory snapshots to return (default 5, max 20).",
+        },
+        include_repo_snapshot: {
+          type: "boolean",
+          description: "Include safe agent-stack snapshot files from the authenticated repo mirror when available (default true).",
+        },
+      },
+    },
+    scopes: ["read:private"],
+    async handler(ctx, args, auth) {
+      if (!auth) return errorResult("authentication required — pass your you.md API key as Bearer token");
+      const limit = boundedNumber(args.limit, 5, 1, 20);
+      const inventories = await ctx.runQuery(api.portfolio.listAgentStackInventories, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        limit,
+      });
+
+      let repoSnapshot: {
+        repo: string | null;
+        expectedPaths: string[];
+        missingPaths: string[];
+        files: Array<{ path: string; size: number; content: string }>;
+      } | null = null;
+      if (args.include_repo_snapshot !== false) {
+        const { mirror } = await getMirrorStacks(ctx, auth);
+        const expectedPaths = [
+          "agent-stack/README.md",
+          "agent-stack/inventory.md",
+          "agent-stack/inventory.json",
+        ];
+        const snapshotPaths = new Set(expectedPaths);
+        const files = (mirror?.files ?? [])
+          .filter((file: { path: string }) => snapshotPaths.has(file.path))
+          .map((file: { path: string; content: string }) => ({
+            path: file.path,
+            size: file.content.length,
+            content: file.content,
+          }));
+        const presentPaths = new Set(files.map((file) => file.path));
+        repoSnapshot = {
+          repo: mirror?.repoFullName ?? null,
+          expectedPaths,
+          missingPaths: expectedPaths.filter((path) => !presentPaths.has(path)),
+          files,
+        };
+      }
+
+      return textResult(
+        JSON.stringify(
+          {
+            schemaVersion: "you-md/agent-stack-mcp/v1",
+            inventories,
+            repoSnapshot,
+            secretValuesExposed: false,
+          },
+          null,
+          2
+        ),
+        "application/json"
+      );
     },
   },
 

@@ -2,6 +2,13 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### feat(mcp): expose agent stack inventory to agents
+- Added local stdio MCP `get_agent_stack_inventory` so authenticated local agents can read the latest safe You.md inventory summaries, catalog gaps, DRY review queues, mirror clusters, source/provenance rollups, and repo snapshot hints.
+- Added hosted JSON-RPC MCP `get_agent_stack_inventory` with `read:private` scope, stack-scoped connected-app routing, optional repo snapshot file inclusion, and explicit `expectedPaths` / `missingPaths` diagnostics for `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json`.
+- Regenerated agent docs so hosted MCP advertises `11` tools and includes the new inventory tool in `/llms.txt`, `/llms-full.txt`, and the generated docs reference.
+- Updated root agent manuals to the real `youmd 0.8.10` CLI marker enforced by `agent-docs:ci`.
+- Verified with CLI build, Convex codegen, focused MCP/inventory tests, root TypeScript, `docs:check`, `agent-docs:ci`, `git diff --check`, Convex production deploy, live `https://www.you.md/api/v1/mcp` `tools/list`, and authenticated hosted MCP `tools/call` returning `429` unique skill names, `826` unique real skill files, `417` catalog gaps, `73` DRY review cases, `133` mirror clusters, and `secretValuesExposed: false`.
+
 ### feat(sync): add repo-backed agent stack inventory snapshots
 - Added generated `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` files to the existing You.md identity repo push path.
 - Built the snapshot from persisted safe Convex inventory summaries: machine counts, catalog gaps, DRY review samples, mirror samples, ownership/sync/provenance rollups, and explicit `secretValuesExposed` metadata.

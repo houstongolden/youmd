@@ -59,7 +59,7 @@ describe("HOSTED_MCP_TOOLS registry — structural completeness", () => {
     }
   });
 
-  it("all 10 expected tool names are present", () => {
+  it("all 11 expected tool names are present", () => {
     const names = HOSTED_MCP_TOOLS.map((t) => t.name);
     const expected = [
       "whoami",
@@ -68,6 +68,7 @@ describe("HOSTED_MCP_TOOLS registry — structural completeness", () => {
       "ask_public_profile",
       "search_profiles",
       "get_my_identity",
+      "get_agent_stack_inventory",
       "get_my_stacks",
       "get_repo_file",
       "search_memories",
@@ -89,6 +90,7 @@ describe("HOSTED_MCP_TOOLS registry — structural completeness", () => {
       "whoami",
       "get_agent_brief",
       "get_my_identity",
+      "get_agent_stack_inventory",
       "get_my_stacks",
       "get_repo_file",
       "search_memories",
@@ -114,6 +116,16 @@ describe("HOSTED_MCP_TOOLS registry — structural completeness", () => {
         expect(Array.isArray(tool.inputSchema.required)).toBe(true);
       }
     }
+  });
+
+  it("agent stack inventory is a read-only private stack audit tool", () => {
+    const spec = HOSTED_MCP_TOOLS.find((t) => t.name === "get_agent_stack_inventory");
+    expect(spec).toBeDefined();
+    expect(spec?.scopes).toEqual(["read:private"]);
+    expect(spec?.inputSchema.properties.limit).toBeDefined();
+    expect(spec?.inputSchema.properties.include_repo_snapshot).toBeDefined();
+    expect(spec?.description).toContain("skill/stack counts");
+    expect(spec?.description).toContain("without exposing secrets");
   });
 });
 

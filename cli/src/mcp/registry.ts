@@ -11,7 +11,7 @@
  *
  * ─── MIGRATION STATUS ───────────────────────────────────────────────────────
  *
- * MIGRATED (22 tools):
+ * MIGRATED (23 tools):
  *   whoami              — local bundle read, no auth required
  *   get_identity        — local bundle read, compact/full/json/markdown
  *   list_skills         — pure local dir scan
@@ -28,6 +28,7 @@
  *   add_source          — async POST via ctx.apiRequest
  *   create_context_link — async POST via ctx.apiRequest
  *   get_remote_status   — conditional auth branch + ctx.apiRequest
+ *   get_agent_stack_inventory — authenticated read via ctx.apiRequest
  *   use_skill           — ctx.getInstalledSkills()
  *   get_activity_log    — auth-gated fetch via ctx.fetchActivityLog
  *   upsert_portfolio_task — authenticated write via ctx.apiRequest
@@ -105,6 +106,12 @@ function getYouMd(): string {
 
 function asRecord(v: unknown): Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v) ? v as Record<string, unknown> : {};
+}
+
+function boundedNumber(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(Math.trunc(parsed), min), max);
 }
 
 function getInstalledSkillNames(): string[] {
@@ -1247,6 +1254,56 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       }
       ctx.logActivity("read", "status");
       return { content: [{ type: "text", text: JSON.stringify(status, null, 2) }] };
+    },
+  },
+
+  // ── get_agent_stack_inventory ───────────────────────────────────────────────
+  {
+    name: "get_agent_stack_inventory",
+    description:
+      "Read the authenticated user's latest You.md agent-stack inventory snapshots: skill/stack counts, machine roots, You.md catalog gaps, DRY review queues, mirror clusters, provenance/source rollups, and repo snapshot hints. Use to audit cross-machine skill drift and sync health without exposing secrets.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Maximum inventory snapshots to return (default 5, max 20).",
+        },
+        include_repo_snapshot: {
+          type: "boolean",
+          description: "Include the canonical repo snapshot file paths written by You.md sync (default true).",
+        },
+      },
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return {
+          content: [{ type: "text", text: "authentication required — run `youmd login` or provide a you.md API key" }],
+          isError: true,
+        };
+      }
+
+      const limit = boundedNumber(args.limit, 5, 1, 20);
+      const result = await ctx.apiRequest(`/api/v1/me/agent-stack/inventories?limit=${limit}`) as Record<string, unknown>;
+      const includeRepoSnapshot = args.include_repo_snapshot !== false;
+      const payload: Record<string, unknown> = {
+        schemaVersion: "you-md/agent-stack-mcp/v1",
+        source: "youmd-api",
+        ...result,
+        secretValuesExposed: false,
+      };
+      if (includeRepoSnapshot) {
+        payload.repoSnapshot = {
+          paths: [
+            "agent-stack/README.md",
+            "agent-stack/inventory.md",
+            "agent-stack/inventory.json",
+          ],
+          note: "Use hosted MCP get_repo_file or the GitHub mirror to inspect snapshot file contents.",
+        };
+      }
+      ctx.logActivity("read", "agent-stack/inventory", { limit, includeRepoSnapshot });
+      return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
     },
   },
 

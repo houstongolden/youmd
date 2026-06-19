@@ -41,7 +41,7 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "935d5521c64ddd549630b66f5e223941aae1652709957e050f1bd207c87450f8",
+  "sourceHash": "a2a42120d1ffac79f779360f118841fc5945f5965d531f7253487247a8eabd2c",
   "cli": {
     "version": "0.8.10"
   },
@@ -49,7 +49,7 @@ export const docsReference = {
     "endpoints": 105,
     "internalRoutes": 9,
     "mcpTools": 6,
-    "hostedMcpTools": 10,
+    "hostedMcpTools": 11,
     "cliCommands": 31,
     "convexRoutes": 86,
     "nextRoutes": 27
@@ -1380,6 +1380,16 @@ export const docsReference = {
       "name": "get_my_identity",
       "description": "Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.",
       "inputFields": [],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_agent_stack_inventory",
+      "description": "Read the authenticated user's latest You.md agent-stack inventory snapshots: skill/stack counts, machine roots, You.md catalog gaps, DRY review queues, mirror clusters, provenance/source rollups, and repo snapshot files. Use to audit cross-machine skill drift and sync health without exposing secrets.",
+      "inputFields": [
+        "limit",
+        "include_repo_snapshot"
+      ],
       "required": [],
       "requiresAuth": true
     },

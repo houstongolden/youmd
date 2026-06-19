@@ -1,5 +1,5 @@
 /**
- * T25 — MCP tool-call test harness (table-driven over all 10 hosted MCP tools).
+ * T25 — MCP tool-call test harness (table-driven over all hosted MCP tools).
  *
  * Tests exercise the underlying queries/mutations that the MCP http dispatch
  * routes to — NOT the httpAction routes themselves, which convex-test cannot
@@ -13,6 +13,7 @@
  *   ask_public_profile — requires_auth: false — underlying: profiles.getPublicProfile
  *   search_profiles   — requires_auth: false — underlying: profiles.searchPublicProfiles / profiles.listAll
  *   get_my_identity   — requires_auth: true  — underlying: users.getByClerkId + bundles.getLatestBundle
+ *   get_agent_stack_inventory — requires_auth: true — underlying: portfolio.listAgentStackInventories + repo mirror
  *   get_my_stacks     — requires_auth: true  — underlying: github.internalGetMirrorByClerkId (internal)
  *   get_repo_file     — requires_auth: true  — underlying: github.internalGetMirrorByClerkId (internal)
  *   search_memories   — requires_auth: true  — underlying: memories.searchMemories

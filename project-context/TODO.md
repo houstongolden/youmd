@@ -29,7 +29,8 @@ PRD Version: 2.3
 - [x] Make inventory API sync attempt the existing identity repo push/mirror path so snapshots reach `username-you-md`
 - [x] Production-prove `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` landed in the GitHub identity repo
 - [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
-- [ ] Expose agent stack inventory topology through You.md MCP and richer API read models
+- [x] Expose first agent stack inventory topology through You.md local and hosted MCP
+- [ ] Next pass: add richer API/MCP drift query models and optional MCP resources for agent stack topology
 - [ ] Build the web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views
 - [ ] Add resident realtime reconciliation for skills/stacks/context metadata across trusted machines and agents
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure

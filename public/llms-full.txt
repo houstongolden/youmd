@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: 935d5521c64ddd549630b66f5e223941aae1652709957e050f1bd207c87450f8. CLI version: 0.8.10. Endpoints: 105 documented (9 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 10. CLI commands: 31. Reference intelligence: 2026-06-19T15:31:38.182Z.
+> Generated full agent context. Source hash: a2a42120d1ffac79f779360f118841fc5945f5965d531f7253487247a8eabd2c. CLI version: 0.8.10. Endpoints: 105 documented (9 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 11. CLI commands: 31. Reference intelligence: 2026-06-19T15:31:38.182Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -185,7 +185,7 @@ All 31 registered runtime commands, generated from the commander registrations i
 You.md has two MCP surfaces with distinct tool sets:
 
 - Local stdio MCP through the runtime: 6 tools. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
-- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 10 tools, for web-capable clients.
+- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 11 tools, for web-capable clients.
 
 Discovery:
 
@@ -227,6 +227,7 @@ Hosted MCP tools (`POST /api/v1/mcp`):
 - `ask_public_profile` (public): Ask a public-context-only question about a You.md profile. This is the MCP companion to POST /api/v1/profiles/{username}/conversation: it answers from the user's public you.json/you.txt surface, returns public field provenance, and explicitly omits private memories, loop reports, connected-app data, source snapshots, logs, and scoped grants.
 - `search_profiles` (public): Search or list public profiles on you.md.
 - `get_my_identity` (Bearer API key required): Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.
+- `get_agent_stack_inventory` (Bearer API key required): Read the authenticated user's latest You.md agent-stack inventory snapshots: skill/stack counts, machine roots, You.md catalog gaps, DRY review queues, mirror clusters, provenance/source rollups, and repo snapshot files. Use to audit cross-machine skill drift and sync health without exposing secrets.
 - `get_my_stacks` (Bearer API key required): List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.
 - `get_repo_file` (Bearer API key required): Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.
 - `search_memories` (Bearer API key required): Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored - e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope...
