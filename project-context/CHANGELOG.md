@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — Agent bus coordination activity links
+
+### feat(activity): link cross-agent messages to projects, skills, and entities
+- Upgraded realtime agent-bus `brainActivities` rows with coordination metadata: `projectSlug`, `skillName`, `entityType`, `entityId`, related projects, related skills, channel, kind, and message id.
+- Added safe inference for common message labels such as `project: youmd`, `skill: machine-sync`, `task: env-restore`, `goal: ...`, and `pr: #123`.
+- Added `youmd agent send --project`, `--skill`, `--entity-type`, and `--entity-id` flags so Claude/Codex/local agents can publish structured coordination messages without relying on natural-language parsing.
+- Kept agent message bodies and metadata secret-redacted; focused tests assert API/env-like values do not leak into activity rows.
+- Verified with focused Convex tests, CLI build, root TypeScript, production Next build, Convex production deploy, and a live local-CLI `youmd agent send --project youmd --skill machine-sync --entity-type task --entity-id agent-bus-link-proof` smoke.
+
 ## 2026-06-19 — Skill improvement and outcome activity producers
 
 ### feat(activity): show skill outcomes and improvement analysis in the live brain stream

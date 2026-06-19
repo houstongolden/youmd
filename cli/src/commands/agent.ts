@@ -18,6 +18,10 @@ type AgentCommandOptions = {
   targetHost?: string;
   targetAgent?: string;
   agent?: string;
+  project?: string;
+  skill?: string;
+  entityType?: string;
+  entityId?: string;
   limit?: string;
   tail?: boolean;
   json?: boolean;
@@ -125,6 +129,10 @@ async function sendCommand(messageArgs: string[], options: AgentCommandOptions):
     metadata: {
       cwd: process.cwd(),
       pid: process.pid,
+      projectSlug: options.project,
+      skillName: options.skill,
+      entityType: options.entityType,
+      entityId: options.entityId,
       secretValuesExposed: false,
     },
   });

@@ -13,6 +13,7 @@ const MAX_HOST_CHARS = 120;
 const MAX_METADATA_DEPTH = 4;
 const MAX_METADATA_ARRAY = 24;
 const MAX_METADATA_KEYS = 40;
+const MAX_LINKS = 8;
 
 async function loadOwner(
   ctx: QueryCtx | MutationCtx,
@@ -67,6 +68,134 @@ function sanitizeMetadata(value: unknown, depth = 0): unknown {
     return out;
   }
   return String(value).slice(0, 200);
+}
+
+function metadataRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function safeSlug(value: unknown, maxChars = 80): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const cleaned = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, maxChars);
+  return cleaned || undefined;
+}
+
+function safeEntityValue(value: unknown, maxChars = 120): string | undefined {
+  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  const cleaned = String(value)
+    .trim()
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, "-")
+    .replace(/[^A-Za-z0-9._:@#/-]+/g, "")
+    .slice(0, maxChars);
+  return cleaned || undefined;
+}
+
+function stringArray(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") return value.split(/[,\s]+/).filter(Boolean);
+  return [];
+}
+
+function firstSafeSlug(values: unknown[], maxChars = 80): string | undefined {
+  for (const value of values) {
+    const slug = safeSlug(value, maxChars);
+    if (slug) return slug;
+  }
+  return undefined;
+}
+
+function uniqueSafe(values: Array<string | undefined>): string[] {
+  const out: string[] = [];
+  for (const value of values) {
+    if (!value || out.includes(value)) continue;
+    out.push(value);
+    if (out.length >= MAX_LINKS) break;
+  }
+  return out;
+}
+
+function inferFromText(text: string, labels: string[]): string | undefined {
+  for (const label of labels) {
+    const pattern = new RegExp(`(?:^|[\\s\\[({,;])${label}\\s*[:=#]\\s*([A-Za-z0-9._/-]{2,120})`, "i");
+    const match = text.match(pattern);
+    const inferred = safeSlug(match?.[1]);
+    if (inferred) return inferred;
+  }
+  return undefined;
+}
+
+function inferEntityFromText(text: string): { entityType?: string; entityId?: string } {
+  const task = text.match(/(?:^|[\s[({,;])task\s*[:=#]\s*([A-Za-z0-9._:@#/-]{2,120})/i);
+  if (task?.[1]) return { entityType: "task", entityId: safeEntityValue(task[1]) };
+  const goal = text.match(/(?:^|[\s[({,;])goal\s*[:=#]\s*([A-Za-z0-9._:@#/-]{2,120})/i);
+  if (goal?.[1]) return { entityType: "goal", entityId: safeEntityValue(goal[1]) };
+  const pr = text.match(/(?:^|[\s[({,;])(?:pr|pull-request)\s*[:=#]\s*#?([0-9]{1,10})/i);
+  if (pr?.[1]) return { entityType: "pullRequest", entityId: `#${pr[1]}` };
+  return {};
+}
+
+function coordinationContext(fields: {
+  body: string;
+  channel: string;
+  kind: string;
+  messageId: string;
+  metadata?: unknown;
+}) {
+  const metadata = metadataRecord(fields.metadata);
+  const projectSlug = firstSafeSlug([
+    metadata?.projectSlug,
+    metadata?.project,
+    metadata?.repo,
+    metadata?.repository,
+    inferFromText(fields.body, ["project", "repo", "workspace"]),
+  ]);
+  const skillName = firstSafeSlug([
+    metadata?.skillName,
+    metadata?.skill,
+    metadata?.skillSlug,
+    inferFromText(fields.body, ["skill", "ystack", "youstack"]),
+  ], 100);
+  const inferredEntity = inferEntityFromText(fields.body);
+  const entityType =
+    safeSlug(metadata?.entityType, 60) ??
+    safeSlug(metadata?.type, 60) ??
+    inferredEntity.entityType ??
+    (skillName ? "skill" : "agentMessage");
+  const entityId =
+    safeEntityValue(metadata?.entityId) ??
+    safeEntityValue(metadata?.id) ??
+    safeEntityValue(metadata?.taskId) ??
+    inferredEntity.entityId ??
+    skillName ??
+    fields.messageId;
+  const relatedProjects = uniqueSafe([
+    projectSlug,
+    ...stringArray(metadata?.projectSlugs ?? metadata?.projects).map((value) => safeSlug(value)),
+  ]);
+  const relatedSkills = uniqueSafe([
+    skillName,
+    ...stringArray(metadata?.skillNames ?? metadata?.skills).map((value) => safeSlug(value, 100)),
+  ]);
+
+  return {
+    projectSlug,
+    skillName,
+    entityType,
+    entityId,
+    relatedProjects,
+    relatedSkills,
+    channel: fields.channel,
+    kind: fields.kind,
+    messageId: fields.messageId,
+  };
 }
 
 function toPublicMessage(row: Doc<"realtimeAgentMessages">) {
@@ -129,6 +258,13 @@ export const sendMessage = mutation({
     });
     const row = await ctx.db.get(rowId);
     if (!row) throw new Error("Agent message failed to save");
+    const coordination = coordinationContext({
+      body: row.body,
+      channel: row.channel,
+      kind: row.kind,
+      messageId,
+      metadata: row.metadata,
+    });
     await ctx.db.insert("brainActivities", {
       userId: user._id,
       activityId: `agent-bus:${messageId}`,
@@ -138,10 +274,19 @@ export const sendMessage = mutation({
       title: `${row.sourceAgent}${row.sourceHost ? ` @ ${row.sourceHost}` : ""}`,
       detail: row.body,
       status: brainActivityStatus(row.kind),
+      projectSlug: coordination.projectSlug,
+      entityType: coordination.entityType,
+      entityId: coordination.entityId,
       sourceHost: row.sourceHost,
       sourceAgent: row.sourceAgent,
       sourceRuntime: row.sourceRuntime,
-      metadata: row.metadata,
+      metadata: {
+        coordination,
+        message: row.metadata,
+        targetHost: row.targetHost,
+        targetAgent: row.targetAgent,
+        secretValuesExposed: false,
+      },
       occurredAt: row.createdAt,
       createdAt: now,
       updatedAt: now,

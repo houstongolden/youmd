@@ -669,6 +669,10 @@ program
   .option("--target-host <host>", "Target a specific host")
   .option("--target-agent <name>", "Target a specific agent")
   .option("--agent <name>", "Source agent name")
+  .option("--project <slug>", "Link the message to a project slug")
+  .option("--skill <name>", "Link the message to a skill name")
+  .option("--entity-type <type>", "Link the message to an entity type")
+  .option("--entity-id <id>", "Link the message to an entity id")
   .option("--limit <n>", "Inbox messages to show", "20")
   .option("--tail", "Inbox live mode")
   .option("--json", "Print JSON")
@@ -679,6 +683,10 @@ program
       targetHost: options.targetHost,
       targetAgent: options.targetAgent,
       agent: options.agent,
+      project: options.project,
+      skill: options.skill,
+      entityType: options.entityType,
+      entityId: options.entityId,
       limit: options.limit,
       tail: options.tail,
       json: options.json,
