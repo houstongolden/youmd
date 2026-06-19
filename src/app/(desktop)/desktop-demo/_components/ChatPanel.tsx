@@ -214,7 +214,7 @@ export function ChatPanel({
       </div>
 
       {/* composer */}
-      <div className={cn("border-t border-[hsl(var(--border))] p-3", full && "px-6")}>
+      <div className={cn("border-t border-[hsl(var(--border))] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]", full && "px-6")}>
         <div className={cn("mx-auto", full && "max-w-2xl")}>
           {/* contextual agent suggestions */}
           {!working && (

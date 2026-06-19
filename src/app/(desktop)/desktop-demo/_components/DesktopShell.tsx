@@ -71,42 +71,6 @@ function MainView({
 
 // Mobile-only bottom bar: swap between the conversation and the active
 // workspace view (the desktop split is collapsed into a single column).
-function MobileTabBar({
-  pane,
-  activeView,
-  onSelect,
-}: {
-  pane: "chat" | "view";
-  activeView: ViewId;
-  onSelect: (p: "chat" | "view") => void;
-}) {
-  const viewMeta = PRIMARY_NAV.find((n) => n.id === activeView);
-  const tabs = [
-    { id: "chat" as const, label: "Chat", icon: "chat" as const },
-    { id: "view" as const, label: viewMeta?.label ?? "Workspace", icon: viewMeta?.icon ?? ("home" as const) },
-  ];
-  return (
-    <nav className="flex shrink-0 border-t border-[hsl(var(--border))] bg-[hsl(var(--bg))] pb-[env(safe-area-inset-bottom)]">
-      {tabs.map((t) => {
-        const active = pane === t.id;
-        return (
-          <button
-            key={t.id}
-            onClick={() => onSelect(t.id)}
-            className={cn(
-              "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors",
-              active ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))]",
-            )}
-          >
-            <Icon name={t.icon} size={18} />
-            <span className="font-mono text-[10px] uppercase tracking-wider">{t.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
 export function DesktopShell() {
   const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop rail
@@ -315,6 +279,8 @@ export function DesktopShell() {
         chatFull={chatFull}
         onToggleChatFull={() => setChatFull((f) => !f)}
         onOpenCommand={() => setPaletteOpen(true)}
+        mobileOnView={isMobile && mobilePane === "view"}
+        onGoToChat={() => setMobilePane("chat")}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -375,7 +341,6 @@ export function DesktopShell() {
                   </motion.div>
                 )}
               </div>
-              <MobileTabBar pane={mobilePane} activeView={activeView} onSelect={setMobilePane} />
             </div>
           </>
         ) : (
