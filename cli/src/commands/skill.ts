@@ -10,6 +10,7 @@ import * as path from "path";
 import * as os from "os";
 import * as readline from "readline";
 import * as yaml from "js-yaml";
+import { execFileSync } from "child_process";
 import chalk from "chalk";
 import {
   readSkillCatalog,
@@ -40,6 +41,32 @@ import { hasLinkedClaudeSkills } from "../lib/host-link";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
+
+type InventoryTotals = {
+  uniqueSkillNames?: number;
+  skillFileOccurrences?: number;
+  uniqueRealSkillFiles?: number;
+  directExposureSkillRecords?: number;
+  canonicalSkillFiles?: number;
+  duplicateNameDifferentRealpaths?: number;
+  sameRealpathMirrors?: number;
+  youmdCatalogSkills?: number;
+  youmdCatalogInstalled?: number;
+  missingFromYoumdCatalog?: number;
+  catalogNotFoundInFilesystem?: number;
+  projectSignals?: number;
+};
+
+type InventorySnapshot = {
+  host?: { hostname?: string };
+  generatedAt?: string;
+  totals?: InventoryTotals;
+  uniqueSkills?: Array<{ name?: string; ownerClasses?: string[]; syncPolicies?: string[] }>;
+  dryAudit?: {
+    duplicateNameDifferentRealpaths?: Array<{ name?: string }>;
+    sameRealpathMirrors?: Array<{ name?: string }>;
+  };
+};
 
 // ─── Personality spinner labels ──────────────────────────────────────
 
@@ -98,6 +125,95 @@ function truncateAtWord(text: string, max: number): string {
 function sourcePrefix(source: string): string {
   const idx = source.indexOf(":");
   return idx > 0 ? source.slice(0, idx) : "path";
+}
+
+function parseFlagArgs(args: string[]): { positional: string[]; flags: Record<string, string | boolean> } {
+  const positional: string[] = [];
+  const flags: Record<string, string | boolean> = {};
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (!arg.startsWith("--")) {
+      positional.push(arg);
+      continue;
+    }
+    const eq = arg.indexOf("=");
+    if (eq > 0) {
+      flags[arg.slice(2, eq)] = arg.slice(eq + 1);
+      continue;
+    }
+    const key = arg.slice(2);
+    const next = args[i + 1];
+    if (next && !next.startsWith("--")) {
+      flags[key] = next;
+      i += 1;
+    } else {
+      flags[key] = true;
+    }
+  }
+  return { positional, flags };
+}
+
+function flagString(flags: Record<string, string | boolean>, key: string): string | undefined {
+  const value = flags[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function resolveInventoryScript(): string | null {
+  const candidates = [
+    process.env.YOUMD_AGENT_STACK_INVENTORY_SCRIPT,
+    path.join(os.homedir(), ".agent-shared", "claude-skills", "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
+    path.join(os.homedir(), ".youmd", "skills", "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
+    path.resolve(__dirname, "../../../scripts/local-agent-stack-inventory.mjs"),
+    path.resolve(__dirname, "../../scripts/local-agent-stack-inventory.mjs"),
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
+function readInventorySnapshot(file: string): InventorySnapshot {
+  return JSON.parse(fs.readFileSync(file, "utf-8")) as InventorySnapshot;
+}
+
+function inventoryNames(snapshot: InventorySnapshot): Set<string> {
+  return new Set((snapshot.uniqueSkills || []).map((skill) => skill.name).filter(Boolean) as string[]);
+}
+
+function findLatestInventoryJson(outDir: string, sinceMs: number): string | null {
+  if (!fs.existsSync(outDir)) return null;
+  const files = fs.readdirSync(outDir)
+    .filter((file) => /^local-agent-stack-inventory-.*\.json$/.test(file))
+    .map((file) => path.join(outDir, file))
+    .filter((file) => {
+      try {
+        return fs.statSync(file).mtimeMs >= sinceMs - 1000;
+      } catch {
+        return false;
+      }
+    })
+    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+  return files[0] || null;
+}
+
+function renderInventoryTotals(totals: InventoryTotals): void {
+  const rows: Array<[string, number | undefined]> = [
+    ["unique skill names", totals.uniqueSkillNames],
+    ["real SKILL.md files", totals.uniqueRealSkillFiles],
+    ["direct host exposures", totals.directExposureSkillRecords],
+    ["You.md catalog skills", totals.youmdCatalogSkills],
+    ["missing from You.md catalog", totals.missingFromYoumdCatalog],
+    ["DRY review cases", totals.duplicateNameDifferentRealpaths],
+    ["healthy mirror clusters", totals.sameRealpathMirrors],
+    ["project/context signals", totals.projectSignals],
+  ];
+
+  const maxLabel = Math.max(...rows.map(([label]) => label.length));
+  for (const [label, value] of rows) {
+    if (typeof value !== "number") continue;
+    console.log(`  ${DIM(label.padEnd(maxLabel + 2))}${chalk.cyan(value.toLocaleString())}`);
+  }
 }
 
 function buildSkillSyncActivityMetadata(synced: string[], errors: string[]) {
@@ -1142,6 +1258,140 @@ async function improveCmd(): Promise<void> {
   }
 }
 
+function inventoryDiffCmd(args: string[]): void {
+  const { positional, flags } = parseFlagArgs(args);
+  const leftPath = flagString(flags, "left") || positional[0];
+  const rightPath = flagString(flags, "right") || positional[1];
+
+  if (!leftPath || !rightPath) {
+    console.log("");
+    console.log(chalk.yellow("  usage: youmd skill inventory diff --left mac-mini.json --right laptop.json"));
+    console.log(DIM("  or:    youmd skill inventory diff mac-mini.json laptop.json"));
+    console.log("");
+    return;
+  }
+
+  const left = readInventorySnapshot(path.resolve(leftPath));
+  const right = readInventorySnapshot(path.resolve(rightPath));
+  const leftNames = inventoryNames(left);
+  const rightNames = inventoryNames(right);
+  const onlyLeft = [...leftNames].filter((name) => !rightNames.has(name)).sort();
+  const onlyRight = [...rightNames].filter((name) => !leftNames.has(name)).sort();
+
+  console.log("");
+  console.log("  " + chalk.bold("skill inventory diff"));
+  console.log("");
+  console.log(`  ${DIM("left ")}${chalk.cyan(left.host?.hostname || path.basename(leftPath))}${DIM(left.generatedAt ? ` · ${left.generatedAt}` : "")}`);
+  console.log(`  ${DIM("right")}${chalk.cyan(" " + (right.host?.hostname || path.basename(rightPath)))}${DIM(right.generatedAt ? ` · ${right.generatedAt}` : "")}`);
+  console.log("");
+
+  const totalRows: Array<[string, number | undefined, number | undefined]> = [
+    ["unique skill names", left.totals?.uniqueSkillNames, right.totals?.uniqueSkillNames],
+    ["real SKILL.md files", left.totals?.uniqueRealSkillFiles, right.totals?.uniqueRealSkillFiles],
+    ["direct host exposures", left.totals?.directExposureSkillRecords, right.totals?.directExposureSkillRecords],
+    ["You.md catalog skills", left.totals?.youmdCatalogSkills, right.totals?.youmdCatalogSkills],
+    ["missing from catalog", left.totals?.missingFromYoumdCatalog, right.totals?.missingFromYoumdCatalog],
+    ["DRY review cases", left.totals?.duplicateNameDifferentRealpaths, right.totals?.duplicateNameDifferentRealpaths],
+    ["mirror clusters", left.totals?.sameRealpathMirrors, right.totals?.sameRealpathMirrors],
+  ];
+  const maxLabel = Math.max(...totalRows.map(([label]) => label.length));
+  for (const [label, leftValue, rightValue] of totalRows) {
+    const delta = typeof leftValue === "number" && typeof rightValue === "number"
+      ? rightValue - leftValue
+      : undefined;
+    const deltaText = typeof delta === "number"
+      ? delta === 0
+        ? DIM(" 0")
+        : delta > 0
+          ? chalk.green(` +${delta}`)
+          : ACCENT(` ${delta}`)
+      : "";
+    console.log(
+      `  ${DIM(label.padEnd(maxLabel + 2))}` +
+      `${String(leftValue ?? "?").padStart(6)} ${DIM("->")} ${String(rightValue ?? "?").padStart(6)}${deltaText}`
+    );
+  }
+
+  console.log("");
+  console.log(`  ${DIM("skills only in left: ")}${onlyLeft.length}`);
+  for (const name of onlyLeft.slice(0, 20)) console.log(`    ${ACCENT("-")} ${name}`);
+  if (onlyLeft.length > 20) console.log(DIM(`    ... ${onlyLeft.length - 20} more`));
+
+  console.log("");
+  console.log(`  ${DIM("skills only in right: ")}${onlyRight.length}`);
+  for (const name of onlyRight.slice(0, 20)) console.log(`    ${chalk.green("+")} ${name}`);
+  if (onlyRight.length > 20) console.log(DIM(`    ... ${onlyRight.length - 20} more`));
+  console.log("");
+}
+
+function inventoryCmd(args: string[]): void {
+  if (args[0] === "diff") {
+    inventoryDiffCmd(args.slice(1));
+    return;
+  }
+
+  const { flags } = parseFlagArgs(args);
+  const script = resolveInventoryScript();
+  if (!script) {
+    console.log("");
+    console.log(chalk.yellow("  agent-stack-inventory script not found on this machine."));
+    console.log(DIM("  expected one of:"));
+    console.log(DIM("    ~/.agent-shared/claude-skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs"));
+    console.log(DIM("    ~/.youmd/skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs"));
+    console.log("");
+    console.log(DIM("  run ") + chalk.cyan("youmd skill install agent-stack-inventory") + DIM(" or sync your shared skills, then retry."));
+    console.log("");
+    return;
+  }
+
+  const outDir = path.resolve(flagString(flags, "out-dir") || process.cwd());
+  const workspace = flagString(flags, "workspace");
+  const date = flagString(flags, "date");
+  const startedAt = Date.now();
+  const scriptArgs = [script, "--out-dir", outDir];
+  if (workspace) scriptArgs.push("--workspace", path.resolve(workspace));
+  if (date) scriptArgs.push("--date", date);
+
+  console.log("");
+  const spinner = new BrailleSpinner("mapping the local skill mesh");
+  spinner.start();
+  let output = "";
+  try {
+    output = execFileSync(process.execPath, scriptArgs, {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  } catch (err) {
+    spinner.fail("inventory failed");
+    const message = err instanceof Error ? err.message : String(err);
+    console.log(DIM(`  ${message}`));
+    console.log("");
+    return;
+  }
+
+  const latest = findLatestInventoryJson(outDir, startedAt);
+  const parsed = latest ? readInventorySnapshot(latest) : null;
+  spinner.stop("inventory generated");
+  console.log("");
+  if (parsed?.totals) {
+    renderInventoryTotals(parsed.totals);
+    console.log("");
+  }
+
+  try {
+    const scriptResult = JSON.parse(output) as { html?: string; json?: string };
+    if (scriptResult.html) console.log(`  ${DIM("html")} ${chalk.cyan(scriptResult.html)}`);
+    if (scriptResult.json) console.log(`  ${DIM("json")} ${chalk.cyan(scriptResult.json)}`);
+  } catch {
+    if (latest) {
+      console.log(`  ${DIM("json")} ${chalk.cyan(latest)}`);
+      console.log(`  ${DIM("html")} ${chalk.cyan(latest.replace(/\.json$/, ".html"))}`);
+    }
+  }
+  console.log("");
+}
+
 function searchCmd(args: string[]): void {
   const query = args.join(" ");
   if (!query) {
@@ -1500,6 +1750,10 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
     case "improve":
       await improveCmd();
       break;
+    case "inventory":
+    case "audit":
+      inventoryCmd(args);
+      break;
     case "metrics":
     case "stats":
       metricsCmd();
@@ -1571,6 +1825,8 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       console.log(`    ${chalk.cyan("link <agent>".padEnd(28))} ${DIM("link to claude | cursor | codex")}`);
       console.log(`    ${chalk.cyan("init-project [--mode auto|additive|zero-touch|scaffold]".padEnd(28))} ${DIM("bootstrap AGENTS/CLAUDE + project-context/ + .you/ + links")}`);
       console.log(`    ${chalk.cyan("improve".padEnd(28))} ${DIM("review metrics, find gaps, propose changes")}`);
+      console.log(`    ${chalk.cyan("inventory [--out-dir dir]".padEnd(28))} ${DIM("map local/global skills, mirrors, catalog gaps, and DRY risks")}`);
+      console.log(`    ${chalk.cyan("inventory diff <a> <b>".padEnd(28))} ${DIM("compare two machine inventory JSON snapshots")}`);
       console.log(`    ${chalk.cyan("metrics".padEnd(28))} ${DIM("usage stats and effectiveness scores")}`);
       console.log(`    ${chalk.cyan("search <query>".padEnd(28))} ${DIM("search skills by name or description")}`);
       console.log(`    ${chalk.cyan("browse".padEnd(28))} ${DIM("browse the public skill registry")}`);

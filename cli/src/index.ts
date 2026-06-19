@@ -109,7 +109,7 @@ const HELP_GROUPS: Array<{
   {
     title: "SKILLS",
     commands: [
-      { name: "skill", summary: "identity-aware agent skills (list/install/use/sync)" },
+      { name: "skill", summary: "identity-aware agent skills (list/install/use/sync/inventory)" },
       { name: "stack", summary: "local YouStack manifests (inspect/doctor/smoke/capabilities/route)" },
     ],
   },
@@ -630,7 +630,7 @@ program
 
 program
   .command("skill [subcommand] [args...]")
-  .description("Identity-aware agent skills (list, install, use, sync, init-project)")
+  .description("Identity-aware agent skills (list, install, use, sync, inventory, init-project)")
   .allowUnknownOption(true)
   .action((subcommand, args) => {
     return skillCommand(subcommand, ...(args || []));

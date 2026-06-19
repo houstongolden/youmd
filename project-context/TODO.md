@@ -16,8 +16,8 @@ PRD Version: 2.3
 - [x] Register `agent-stack-inventory` in the local You.md skill catalog and mirror it into Claude/Codex/Pi
 - [x] Add ownership/source/provenance grouping plus safe DRY audit sections to the report
 - [x] Preserve the You.md/Tauri/Convex/repo-backed architecture direction in a dedicated memo
-- [ ] Next pass: add `youmd skill inventory` CLI wrapper around the shared scanner
-- [ ] Next pass: add an inventory diff command for comparing this Mac against the Mac mini or another trusted machine
+- [x] Add `youmd skill inventory` CLI wrapper around the shared scanner
+- [x] Add `youmd skill inventory diff` for comparing this Mac against the Mac mini or another trusted machine
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
 
 ### 2026-06-19 — Home DSI mesh and Tasks board

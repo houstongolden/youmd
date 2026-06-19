@@ -2,6 +2,11 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### feat(cli): add skill inventory and diff commands
+- Added `youmd skill inventory --out-dir <dir>` as a first-class wrapper around the synced shared `agent-stack-inventory` scanner.
+- Added `youmd skill inventory diff <left.json> <right.json>` for cross-machine snapshot comparison.
+- Verified with `npm run build`, compiled CLI inventory generation to `/tmp/youmd-skill-inventory-cli-proof`, self-diff proof, help output proof, and `git diff --check`.
+
 ### feat(skills): package stack inventory as a shared skill
 - Added canonical shared skill `agent-stack-inventory` under `~/.agent-shared/claude-skills` with the portable inventory script in `scripts/local-agent-stack-inventory.mjs`.
 - Registered it in `~/.youmd/skills/youmd-skills.yaml` as `source: shared:agent-stack-inventory` and symlinked it into the local You.md skill cache.
