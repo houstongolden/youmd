@@ -33,6 +33,21 @@ function coerceImportance(raw: number | undefined): number | undefined {
   return raw;
 }
 
+function buildChatTitleFromPrompt(prompt?: string): string | undefined {
+  const cleaned = (prompt ?? "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/https?:\/\/\S+/g, "link")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(yo|hey|ok|okay|please|can you|could you|i need you to)\b[\s,.:;-]*/i, "")
+    .trim();
+  if (!cleaned) return undefined;
+  const sentence = cleaned.split(/[.!?\n]/)[0]?.trim() || cleaned;
+  const title = sentence.length > 58 ? `${sentence.slice(0, 55).trim()}...` : sentence;
+  return title || undefined;
+}
+
 // ── P23: content-hash dedupe (PRODUCT-AUDIT #25) ────────────────
 //
 // Saving the exact same fact twice (same normalized content + category) for
@@ -574,9 +589,23 @@ export const listSessions = query({
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .collect();
 
-    return sessions
+    const recentSessions = sessions
       .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
       .slice(0, args.limit ?? 20);
+
+    return await Promise.all(
+      recentSessions.map(async (session) => {
+        if (session.summary?.trim()) return session;
+        const messages = await ctx.db
+          .query("chatMessages")
+          .withIndex("by_sessionId", (q) => q.eq("sessionId", session.sessionId))
+          .first();
+        const firstDisplayUser = messages?.displayMessages.find((message) => message.role === "user");
+        const firstLlmUser = messages?.llmMessages.find((message) => message.role === "user");
+        const summary = buildChatTitleFromPrompt(firstDisplayUser?.content ?? firstLlmUser?.content);
+        return summary ? { ...session, summary } : session;
+      })
+    );
   },
 });
 

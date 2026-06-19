@@ -24,6 +24,9 @@ PRD Version: 2.3
 - [x] Make Machine's new-computer setup block collapsible into a compact first-run row
 - [x] Add a foreground `you sync mesh` on Machine that summarizes real local/Convex signals for trusted machines, agent bus, shared skill mesh, project graph, and Secret Vault readiness
 - [x] Verify Machine collapse + sync mesh in the Codex in-app Browser with localhost readiness hydrated
+- [x] Simplify the shell chat history into an always-visible one-line list with no section icon, no toggle, no per-chat subtitles, and a 50-session first page
+- [x] Generate/backfill useful chat titles from first prompts or existing session summaries so the left rail reads like real chat history instead of raw ids
+- [x] Soften light mode with a subtle super-light beige gradient and warmer surface tokens instead of a stark white canvas
 - [x] Verify with root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser screenshots for `/shell` and `/desktop-demo`
 - [ ] Next pass: route skill self-improvements, portfolio hydrations, source crawls, and daemon checkpoints directly into `brainActivities` as first-class producers
 

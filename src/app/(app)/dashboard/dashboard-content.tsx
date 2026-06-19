@@ -38,7 +38,6 @@ import {
   Layers3,
   ListTodo,
   LogOut,
-  MessageSquareText,
   Monitor,
   Moon,
   Plus,
@@ -273,8 +272,7 @@ type ShellGitHubChromeStatus = {
 function chatSessionTitle(session: ShellChatSession): string {
   const summary = session.summary?.trim();
   if (summary) return summary;
-  const shortId = session.sessionId.slice(0, 8);
-  return `chat ${shortId}`;
+  return `Chat from ${formatRelativeTime(session.lastMessageAt)}`;
 }
 
 function getShellGitHubStatus(
@@ -925,73 +923,52 @@ function ShellSidebar({
           )}
           {!collapsed && (
             <section aria-label="saved chats" className="pt-1">
-              <button
-                type="button"
-                onClick={() => toggleGroup("chats")}
-                aria-expanded={Boolean(openGroups.chats)}
-                className="group flex h-8 w-full cursor-pointer items-center gap-2 px-2 text-left font-mono text-[hsl(var(--text-secondary))] opacity-55 transition-[background,opacity,color] hover:bg-[hsl(var(--bg))]/70 hover:text-[hsl(var(--text-primary))] hover:opacity-95"
-                style={{ borderRadius: "var(--radius)" }}
-              >
-                <MessageSquareText size={13} strokeWidth={1.75} aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate text-[9px] uppercase tracking-[0.16em]">chats</span>
-                {recentSessions && recentSessions.length > 0 && (
-                  <span className="text-[8px] opacity-45">{Math.min(recentSessions.length, 5)}</span>
-                )}
-                {openGroups.chats ? <ChevronDown size={13} aria-hidden="true" /> : <ChevronRight size={13} aria-hidden="true" />}
-              </button>
-              {openGroups.chats && (
-                <div className="mt-0.5 space-y-0.5 pl-3">
+              <div className="px-2 pb-1 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-55">
+                chats
+              </div>
+              <div className="mt-0.5 space-y-0.5">
                 {recentSessions === undefined ? (
-                <div className="px-2 py-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
-                  syncing sessions...
-                </div>
-              ) : recentSessions.length === 0 ? (
-                <div className="px-2 py-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-35">
-                  conversations save here after your first turn
-                </div>
-              ) : (
-                recentSessions.slice(0, 5).map((session) => {
-                  const isActive = session.sessionId === activeSessionId;
-                  const isLoading = session.sessionId === loadingSessionId;
-                  return (
-                    <button
-                      key={session.sessionId}
-                      type="button"
-                      onClick={() => onOpenChatSession(session.sessionId)}
-                      className={[
-                        "group relative flex min-h-8 w-full items-center gap-2 px-2 py-1 text-left font-mono transition-[background,color,opacity]",
-                        isActive
-                          ? "bg-[hsl(var(--accent))]/[0.055] text-[hsl(var(--text-primary))]"
-                          : "text-[hsl(var(--text-secondary))] opacity-55 hover:bg-[hsl(var(--bg))]/70 hover:opacity-95",
-                      ].join(" ")}
-                      style={{ borderRadius: "var(--radius)" }}
-                      title={`${chatSessionTitle(session)} - ${formatRelativeTime(session.lastMessageAt)}`}
-                    >
-                      {isActive && (
-                        <span
-                          aria-hidden="true"
-                          className="absolute left-0 top-1/2 h-3.5 w-px -translate-y-1/2 bg-[hsl(var(--accent))]"
-                        />
-                      )}
-                      <MessageSquareText
-                        size={14}
-                        strokeWidth={1.75}
-                        className={isActive ? "shrink-0 text-[hsl(var(--accent))]" : "shrink-0 text-current"}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[10px] leading-4">
-                          {isLoading ? "opening..." : chatSessionTitle(session)}
+                  <div className="px-2 py-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-35">
+                    syncing sessions...
+                  </div>
+                ) : recentSessions.length === 0 ? (
+                  <div className="px-2 py-1 font-mono text-[9px] leading-4 text-[hsl(var(--text-secondary))] opacity-35">
+                    conversations save here after your first turn
+                  </div>
+                ) : (
+                  recentSessions.slice(0, 50).map((session) => {
+                    const isActive = session.sessionId === activeSessionId;
+                    const isLoading = session.sessionId === loadingSessionId;
+                    return (
+                      <button
+                        key={session.sessionId}
+                        type="button"
+                        onClick={() => onOpenChatSession(session.sessionId)}
+                        className={[
+                          "group relative flex min-h-8 w-full items-center gap-2 px-2 py-1 text-left font-mono transition-[background,color,opacity]",
+                          isActive
+                            ? "bg-[hsl(var(--accent))]/[0.055] text-[hsl(var(--text-primary))]"
+                            : "text-[hsl(var(--text-secondary))] opacity-55 hover:bg-[hsl(var(--bg))]/70 hover:opacity-95",
+                        ].join(" ")}
+                        style={{ borderRadius: "var(--radius)" }}
+                        title={`${chatSessionTitle(session)} - ${formatRelativeTime(session.lastMessageAt)}`}
+                      >
+                        {isActive && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-0 top-1/2 h-3.5 w-px -translate-y-1/2 bg-[hsl(var(--accent))]"
+                          />
+                        )}
+                        <span className="min-w-0 flex-1 truncate">
+                          <span className="block truncate text-[10px] leading-4">
+                            {isLoading ? "opening..." : chatSessionTitle(session)}
+                          </span>
                         </span>
-                        <span className="block truncate text-[8.5px] opacity-40">
-                          {session.messageCount} msgs / {formatRelativeTime(session.lastMessageAt)}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })
-              )}
-                </div>
-              )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </section>
           )}
         </div>
@@ -1167,7 +1144,7 @@ export function DashboardContent() {
   const recentSessions = useQuery(
     api.memories.listSessions,
     isAuthenticated && user?.id && convexUser?._id
-      ? { clerkId: user.id, userId: convexUser._id, limit: 8 }
+      ? { clerkId: user.id, userId: convexUser._id, limit: 50 }
       : "skip"
   );
   const brainActivities = useQuery(

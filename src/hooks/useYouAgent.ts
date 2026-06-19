@@ -65,6 +65,21 @@ function humanizeProjectSlug(slug: string) {
   return slug.replace(/[-_]+/g, " ").trim();
 }
 
+function buildSessionTitleFromPrompt(prompt: string): string | undefined {
+  const cleaned = prompt
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/https?:\/\/\S+/g, "link")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(yo|hey|ok|okay|please|can you|could you|i need you to)\b[\s,.:;-]*/i, "")
+    .trim();
+  if (!cleaned) return undefined;
+  const sentence = cleaned.split(/[.!?\n]/)[0]?.trim() || cleaned;
+  const title = sentence.length > 58 ? `${sentence.slice(0, 55).trim()}...` : sentence;
+  return title || undefined;
+}
+
 function formatOpeningRelativeTime(ts?: number | null): string | null {
   if (!ts) return null;
   const diffMin = Math.floor((Date.now() - ts) / 60000);
@@ -4017,6 +4032,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
               // Non-fatal
             }
           }
+          summary = summary ?? (messageCountRef.current <= 2 ? buildSessionTitleFromPrompt(userMsg.content) : undefined);
 
           await upsertSession({
             clerkId: user.id,

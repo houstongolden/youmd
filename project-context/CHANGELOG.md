@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-19 — Shell sidebar and light-mode polish
+
+### polish(shell): make chats simpler and light mode softer
+- Changed the shell chat history into an always-visible, one-line list with no section icon, no group toggle, no per-row icon, and no subtitle clutter.
+- Loaded the first 50 chat sessions in the sidebar and added deterministic first-prompt title fallbacks, while keeping the existing LLM session-summary path for longer chats.
+- Backfilled sidebar titles from saved chat messages when older Convex sessions have no summary.
+- Softened light mode with warmer beige tokens and a subtle radial/linear gradient so the canvas no longer reads as stark white.
+- Verified with root TypeScript, production Next build, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser visual checks on `/shell?tab=apis`.
+
 ## 2026-06-19 — Machine sync mesh foregrounding
 
 ### polish(machine): make connected computers the point of the page
