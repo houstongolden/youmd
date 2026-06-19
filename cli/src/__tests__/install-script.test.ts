@@ -11,7 +11,7 @@ describe("install.sh route", () => {
     expect(script).toContain("npm_install_global()");
     expect(script).toContain('npm install -g --prefix "$NPM_GLOBAL_PREFIX" "$@"');
     expect(script).toContain("Creating secret-safe local agent stack inventory");
-    expect(script).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR"');
+    expect(script).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR" --sync');
     expect(script).toContain('YOUMD_INSTALL_INVENTORY:-1');
     expect(script).not.toContain("NPM_GLOBAL_FLAGS");
     expect(script).not.toContain('"${NPM_GLOBAL_FLAGS[@]}"');

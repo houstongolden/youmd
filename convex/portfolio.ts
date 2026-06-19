@@ -97,6 +97,16 @@ function normalizeMachineProofStatus(value: string | undefined, fallback: string
   return next && MACHINE_PROOF_STATUSES.includes(next as typeof MACHINE_PROOF_STATUSES[number]) ? next : fallback;
 }
 
+function safeCount(value: number | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, Math.trunc(value!)) : 0;
+}
+
+function optionalSampleStrings(value: string[] | undefined, maxItems = 24): string[] {
+  return optionalStrings(value)
+    .map((item) => item.slice(0, 240))
+    .slice(0, maxItems);
+}
+
 function normalizeUpdateRunStatus(value: string | undefined, fallback: string): string {
   const next = value?.trim();
   return next && UPDATE_RUN_STATUSES.includes(next as typeof UPDATE_RUN_STATUSES[number]) ? next : fallback;
@@ -119,6 +129,7 @@ function brainActivityStatus(value: string | undefined): "live" | "ok" | "warn" 
   if (value === "running" || value === "in_progress" || value === "open") return "live";
   if (value === "success" || value === "done" || value === "ready") return "ok";
   if (value === "failed" || value === "error" || value === "cancelled") return "error";
+  if (value === "warn") return "warn";
   if (value === "pending" || value === "proposed" || value === "snoozed" || value === "skipped") return "warn";
   return "info";
 }
@@ -1754,6 +1765,167 @@ export const listMachineProofs = query({
     const limit = Math.max(1, Math.min(Number(args.limit ?? 12), 50));
     return await ctx.db
       .query("machineProofReports")
+      .withIndex("by_userId_generatedAt", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(limit);
+  },
+});
+
+export const upsertAgentStackInventory = mutation({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    machineKey: v.optional(v.string()),
+    hostName: v.string(),
+    platform: v.optional(v.string()),
+    rootDir: v.string(),
+    inventorySchemaVersion: v.optional(v.string()),
+    uniqueSkillNames: v.number(),
+    uniqueRealSkillFiles: v.number(),
+    directExposureSkillRecords: v.number(),
+    canonicalSkillFiles: v.number(),
+    youmdCatalogSkills: v.number(),
+    missingFromYoumdCatalog: v.number(),
+    duplicateNameDifferentRealpaths: v.number(),
+    sameRealpathMirrors: v.number(),
+    projectSignals: v.number(),
+    ownershipRollup: v.optional(v.any()),
+    syncPolicyRollup: v.optional(v.any()),
+    provenanceRollup: v.optional(v.any()),
+    missingCatalogSamples: v.optional(v.array(v.string())),
+    duplicateNameSamples: v.optional(v.array(v.string())),
+    mirrorSamples: v.optional(v.array(v.string())),
+    reportJsonPath: v.optional(v.string()),
+    reportHtmlPath: v.optional(v.string()),
+    source: v.optional(v.string()),
+    agentName: v.optional(v.string()),
+    secretValuesExposed: v.boolean(),
+    generatedAt: v.number(),
+  },
+  handler: async (ctx, args): Promise<{ inventoryId: Id<"agentStackInventories">; created: boolean }> => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const now = Date.now();
+    const hostName = args.hostName.trim().slice(0, 180) || "unknown-host";
+    const rootDir = args.rootDir.trim().slice(0, 700) || "unknown-root";
+    const machineKey = slugify(args.machineKey ?? `${hostName}-${rootDir}-agent-stack`);
+    const existing = await ctx.db
+      .query("agentStackInventories")
+      .withIndex("by_userId_machineKey", (q) => q.eq("userId", user._id).eq("machineKey", machineKey))
+      .first();
+
+    const row = {
+      userId: user._id,
+      machineKey,
+      hostName,
+      platform: args.platform?.trim().slice(0, 180),
+      rootDir,
+      inventorySchemaVersion: args.inventorySchemaVersion?.trim().slice(0, 80),
+      uniqueSkillNames: safeCount(args.uniqueSkillNames),
+      uniqueRealSkillFiles: safeCount(args.uniqueRealSkillFiles),
+      directExposureSkillRecords: safeCount(args.directExposureSkillRecords),
+      canonicalSkillFiles: safeCount(args.canonicalSkillFiles),
+      youmdCatalogSkills: safeCount(args.youmdCatalogSkills),
+      missingFromYoumdCatalog: safeCount(args.missingFromYoumdCatalog),
+      duplicateNameDifferentRealpaths: safeCount(args.duplicateNameDifferentRealpaths),
+      sameRealpathMirrors: safeCount(args.sameRealpathMirrors),
+      projectSignals: safeCount(args.projectSignals),
+      ownershipRollup: args.ownershipRollup ?? {},
+      syncPolicyRollup: args.syncPolicyRollup ?? {},
+      provenanceRollup: args.provenanceRollup ?? {},
+      missingCatalogSamples: optionalSampleStrings(args.missingCatalogSamples, 40),
+      duplicateNameSamples: optionalSampleStrings(args.duplicateNameSamples, 40),
+      mirrorSamples: optionalSampleStrings(args.mirrorSamples, 40),
+      reportJsonPath: args.reportJsonPath?.trim().slice(0, 700),
+      reportHtmlPath: args.reportHtmlPath?.trim().slice(0, 700),
+      source: args.source?.trim().slice(0, 80) || "cli",
+      agentName: args.agentName?.trim().slice(0, 160),
+      secretValuesExposed: args.secretValuesExposed,
+      generatedAt: Number.isFinite(args.generatedAt) ? args.generatedAt : now,
+      updatedAt: now,
+    };
+
+    if (existing) {
+      await ctx.db.patch(existing._id, row);
+      await recordBrainActivity(ctx, {
+        userId: user._id,
+        activityId: `agent-stack-inventory:${machineKey}`,
+        source: "skill",
+        channel: "agent-stack-inventory",
+        kind: row.missingFromYoumdCatalog > 0 || row.duplicateNameDifferentRealpaths > 0 ? "warn" : "synced",
+        title: `${hostName} agent stack inventory synced`,
+        detail: `${row.uniqueSkillNames} skills · ${row.youmdCatalogSkills} cataloged · ${row.missingFromYoumdCatalog} catalog gaps · ${row.duplicateNameDifferentRealpaths} DRY reviews`,
+        status: row.missingFromYoumdCatalog > 0 || row.duplicateNameDifferentRealpaths > 0 ? "warn" : "ok",
+        entityType: "agentStackInventory",
+        entityId: String(existing._id),
+        sourceHost: hostName,
+        sourceAgent: row.agentName ?? row.source,
+        metadata: {
+          machineKey,
+          rootDir,
+          platform: row.platform,
+          uniqueSkillNames: row.uniqueSkillNames,
+          uniqueRealSkillFiles: row.uniqueRealSkillFiles,
+          directExposureSkillRecords: row.directExposureSkillRecords,
+          youmdCatalogSkills: row.youmdCatalogSkills,
+          missingFromYoumdCatalog: row.missingFromYoumdCatalog,
+          duplicateNameDifferentRealpaths: row.duplicateNameDifferentRealpaths,
+          sameRealpathMirrors: row.sameRealpathMirrors,
+          projectSignals: row.projectSignals,
+          inventorySecretValuesExposed: row.secretValuesExposed === true,
+        },
+        occurredAt: row.generatedAt,
+      });
+      return { inventoryId: existing._id, created: false };
+    }
+
+    const inventoryId = await ctx.db.insert("agentStackInventories", {
+      ...row,
+      createdAt: now,
+    });
+    await recordBrainActivity(ctx, {
+      userId: user._id,
+      activityId: `agent-stack-inventory:${machineKey}`,
+      source: "skill",
+      channel: "agent-stack-inventory",
+      kind: row.missingFromYoumdCatalog > 0 || row.duplicateNameDifferentRealpaths > 0 ? "warn" : "synced",
+      title: `${hostName} agent stack inventory synced`,
+      detail: `${row.uniqueSkillNames} skills · ${row.youmdCatalogSkills} cataloged · ${row.missingFromYoumdCatalog} catalog gaps · ${row.duplicateNameDifferentRealpaths} DRY reviews`,
+      status: row.missingFromYoumdCatalog > 0 || row.duplicateNameDifferentRealpaths > 0 ? "warn" : "ok",
+      entityType: "agentStackInventory",
+      entityId: String(inventoryId),
+      sourceHost: hostName,
+      sourceAgent: row.agentName ?? row.source,
+      metadata: {
+        machineKey,
+        rootDir,
+        platform: row.platform,
+        uniqueSkillNames: row.uniqueSkillNames,
+        uniqueRealSkillFiles: row.uniqueRealSkillFiles,
+        directExposureSkillRecords: row.directExposureSkillRecords,
+        youmdCatalogSkills: row.youmdCatalogSkills,
+        missingFromYoumdCatalog: row.missingFromYoumdCatalog,
+        duplicateNameDifferentRealpaths: row.duplicateNameDifferentRealpaths,
+        sameRealpathMirrors: row.sameRealpathMirrors,
+        projectSignals: row.projectSignals,
+        inventorySecretValuesExposed: row.secretValuesExposed === true,
+      },
+      occurredAt: row.generatedAt,
+    });
+    return { inventoryId, created: true };
+  },
+});
+
+export const listAgentStackInventories = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const limit = Math.max(1, Math.min(Number(args.limit ?? 12), 50));
+    return await ctx.db
+      .query("agentStackInventories")
       .withIndex("by_userId_generatedAt", (q) => q.eq("userId", user._id))
       .order("desc")
       .take(limit);

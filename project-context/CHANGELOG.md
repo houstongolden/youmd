@@ -2,6 +2,13 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### feat(sync): persist agent stack inventory summaries
+- Added owner-gated Convex `agentStackInventories` persistence for secret-safe local/global skill mesh summaries, keyed by machine/root and linked into `brainActivities`.
+- Added authenticated API routes: `POST /api/v1/me/agent-stack/inventory` to upsert a safe snapshot and `GET /api/v1/me/agent-stack/inventories` to list recent machine summaries.
+- Added `youmd skill inventory --sync` to persist the generated report summary when authenticated, with offline/unauthenticated sync skips that do not break curl install or fresh-machine setup.
+- Updated curl install and machine bootstrap to run the inventory command with `--sync`.
+- Verified with Convex codegen, focused Convex and CLI tests, CLI build, root TypeScript, compiled unauthenticated CLI smoke, and CLI prepublish gate.
+
 ### feat(machine): run agent stack inventory during install and bootstrap
 - Bundled `scripts/local-agent-stack-inventory.mjs` into the CLI package so fresh npm/source installs can run `youmd skill inventory` before shared skills are restored.
 - Updated the curl installer to run a best-effort secret-safe inventory into `~/.youmd/agent-stack-inventory` after native skill install/sync.

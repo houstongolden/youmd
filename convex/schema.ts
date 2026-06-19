@@ -851,6 +851,41 @@ export default defineSchema({
     .index("by_userId_generatedAt", ["userId", "generatedAt"])
     .index("by_userId_status", ["userId", "status"]),
 
+  agentStackInventories: defineTable({
+    userId: v.id("users"),
+    machineKey: v.string(),
+    hostName: v.string(),
+    platform: v.optional(v.string()),
+    rootDir: v.string(),
+    inventorySchemaVersion: v.optional(v.string()),
+    uniqueSkillNames: v.number(),
+    uniqueRealSkillFiles: v.number(),
+    directExposureSkillRecords: v.number(),
+    canonicalSkillFiles: v.number(),
+    youmdCatalogSkills: v.number(),
+    missingFromYoumdCatalog: v.number(),
+    duplicateNameDifferentRealpaths: v.number(),
+    sameRealpathMirrors: v.number(),
+    projectSignals: v.number(),
+    ownershipRollup: v.any(),
+    syncPolicyRollup: v.any(),
+    provenanceRollup: v.any(),
+    missingCatalogSamples: v.array(v.string()),
+    duplicateNameSamples: v.array(v.string()),
+    mirrorSamples: v.array(v.string()),
+    reportJsonPath: v.optional(v.string()),
+    reportHtmlPath: v.optional(v.string()),
+    source: v.string(),
+    agentName: v.optional(v.string()),
+    secretValuesExposed: v.boolean(),
+    generatedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_machineKey", ["userId", "machineKey"])
+    .index("by_userId_generatedAt", ["userId", "generatedAt"]),
+
   repoUpdateRuns: defineTable({
     userId: v.id("users"),
     source: v.string(), // "shell" | "chat" | "cli" | "api" | "github-pane"

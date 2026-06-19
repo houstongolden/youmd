@@ -131,6 +131,122 @@ describe("portfolio repo update history", () => {
     expect(otherProofs).toHaveLength(0);
   });
 
+  it("upserts and lists agent stack inventories per owner", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    const asOther = t.withIdentity({ subject: OTHER_CLERK });
+
+    const first = await asOwner.mutation(api.portfolio.upsertAgentStackInventory, {
+      clerkId: CLERK,
+      hostName: "houston-mac-mini",
+      platform: "darwin 25.0.0",
+      rootDir: "/Users/houston/Desktop/CODE_2025",
+      inventorySchemaVersion: "local-agent-stack-inventory/v1",
+      uniqueSkillNames: 427,
+      uniqueRealSkillFiles: 824,
+      directExposureSkillRecords: 409,
+      canonicalSkillFiles: 814,
+      youmdCatalogSkills: 12,
+      missingFromYoumdCatalog: 415,
+      duplicateNameDifferentRealpaths: 73,
+      sameRealpathMirrors: 133,
+      projectSignals: 91,
+      ownershipRollup: { houstonOwned: 120, external: 300 },
+      syncPolicyRollup: { mirror: 133, catalog: 415 },
+      provenanceRollup: { gstack: 40, scistack: 90 },
+      missingCatalogSamples: ["academic-paper", "bigbounce-status"],
+      duplicateNameSamples: ["autoplan", "browse"],
+      mirrorSamples: ["agent-stack-inventory"],
+      reportJsonPath: "/Users/houston/.youmd/agent-stack-inventory/latest.json",
+      reportHtmlPath: "/Users/houston/.youmd/agent-stack-inventory/latest.html",
+      source: "youmd-cli",
+      agentName: "youmd skill inventory",
+      secretValuesExposed: false,
+      generatedAt: 1_781_700_000_000,
+    });
+
+    const second = await asOwner.mutation(api.portfolio.upsertAgentStackInventory, {
+      clerkId: CLERK,
+      hostName: "houston-mac-mini",
+      platform: "darwin 25.0.0",
+      rootDir: "/Users/houston/Desktop/CODE_2025",
+      inventorySchemaVersion: "local-agent-stack-inventory/v1",
+      uniqueSkillNames: 430,
+      uniqueRealSkillFiles: 828,
+      directExposureSkillRecords: 412,
+      canonicalSkillFiles: 818,
+      youmdCatalogSkills: 14,
+      missingFromYoumdCatalog: 416,
+      duplicateNameDifferentRealpaths: 70,
+      sameRealpathMirrors: 136,
+      projectSignals: 94,
+      ownershipRollup: { houstonOwned: 123, external: 300 },
+      syncPolicyRollup: { mirror: 136, catalog: 416 },
+      provenanceRollup: { gstack: 41, scistack: 91 },
+      missingCatalogSamples: ["academic-paper"],
+      duplicateNameSamples: ["autoplan"],
+      mirrorSamples: ["agent-stack-inventory"],
+      reportJsonPath: "/Users/houston/.youmd/agent-stack-inventory/latest.json",
+      reportHtmlPath: "/Users/houston/.youmd/agent-stack-inventory/latest.html",
+      source: "youmd-cli",
+      agentName: "youmd skill inventory",
+      secretValuesExposed: false,
+      generatedAt: 1_781_700_100_000,
+    });
+
+    expect(second.inventoryId).toBe(first.inventoryId);
+    expect(second.created).toBe(false);
+
+    const ownerInventories = await asOwner.query(api.portfolio.listAgentStackInventories, {
+      clerkId: CLERK,
+      limit: 10,
+    });
+    expect(ownerInventories).toHaveLength(1);
+    expect(ownerInventories[0]).toMatchObject({
+      hostName: "houston-mac-mini",
+      uniqueSkillNames: 430,
+      youmdCatalogSkills: 14,
+      missingFromYoumdCatalog: 416,
+      duplicateNameDifferentRealpaths: 70,
+      secretValuesExposed: false,
+    });
+    expect(ownerInventories[0].missingCatalogSamples).toEqual(["academic-paper"]);
+
+    const activities = await asOwner.query(api.brainActivity.listRecent, {
+      clerkId: CLERK,
+      source: "skill",
+      limit: 10,
+    });
+    expect(activities).toHaveLength(1);
+    expect(activities[0]).toMatchObject({
+      source: "skill",
+      channel: "agent-stack-inventory",
+      kind: "warn",
+      status: "warn",
+      title: "houston-mac-mini agent stack inventory synced",
+      detail: "430 skills · 14 cataloged · 416 catalog gaps · 70 DRY reviews",
+      entityType: "agentStackInventory",
+      entityId: String(first.inventoryId),
+      sourceHost: "houston-mac-mini",
+      sourceAgent: "youmd skill inventory",
+      secretValuesExposed: false,
+    });
+    expect(activities[0].metadata).toMatchObject({
+      uniqueSkillNames: 430,
+      youmdCatalogSkills: 14,
+      missingFromYoumdCatalog: 416,
+      duplicateNameDifferentRealpaths: 70,
+      inventorySecretValuesExposed: false,
+    });
+
+    const otherInventories = await asOther.query(api.portfolio.listAgentStackInventories, {
+      clerkId: OTHER_CLERK,
+      limit: 10,
+    });
+    expect(otherInventories).toHaveLength(0);
+  });
+
   it("persists repo update runs with ordered steps", async () => {
     const t = convexTest(schema);
     await seedUsers(t);

@@ -125,10 +125,10 @@ run_agent_stack_inventory() {
   INVENTORY_DIR="\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.youmd/agent-stack-inventory}"
   mkdir -p "$INVENTORY_DIR"
   echo "[you.md] running local/global agent stack inventory into $INVENTORY_DIR"
-  if youmd skill inventory --out-dir "$INVENTORY_DIR"; then
+  if youmd skill inventory --out-dir "$INVENTORY_DIR" --sync; then
     youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) generated agent stack inventory at $INVENTORY_DIR" || true
   else
-    echo "[you.md] agent stack inventory did not complete; continuing setup so sync can self-heal, then rerun: youmd skill inventory --out-dir $INVENTORY_DIR"
+    echo "[you.md] agent stack inventory did not complete; continuing setup so sync can self-heal, then rerun: youmd skill inventory --out-dir $INVENTORY_DIR --sync"
     youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) could not complete agent stack inventory yet; rerun after shared skill sync" || true
   fi
 }

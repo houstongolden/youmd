@@ -940,6 +940,21 @@ function cleanStringArray(value: unknown): string[] {
     : [];
 }
 
+function cleanNameSamples(value: unknown, limit = 40): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .flatMap((item) => {
+      if (typeof item === "string") return [item];
+      if (item && typeof item === "object" && typeof (item as { name?: unknown }).name === "string") {
+        return [(item as { name: string }).name];
+      }
+      return [];
+    })
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, limit);
+}
+
 function hasBodyKey(body: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(body, key);
 }
@@ -2469,6 +2484,130 @@ http.route({
       return json({ machines });
     } catch (err) {
       return serverErrorResponse("me/machines/proofs", err, "Failed to list machine proofs");
+    }
+  }),
+});
+
+// POST /api/v1/me/agent-stack/inventory — Sync secret-safe local/global agent stack inventory metadata.
+http.route({
+  path: "/api/v1/me/agent-stack/inventory",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const startedAt = Date.now();
+    const body = await request.json() as Record<string, unknown>;
+    const totals = body && typeof body.totals === "object" && body.totals !== null
+      ? body.totals as Record<string, unknown>
+      : body;
+    const roots = body && typeof body.roots === "object" && body.roots !== null
+      ? body.roots as Record<string, unknown>
+      : {};
+    const dryAudit = body && typeof body.dryAudit === "object" && body.dryAudit !== null
+      ? body.dryAudit as Record<string, unknown>
+      : {};
+
+    const hostName = cleanOptionalString(body.hostName ?? body.hostname ?? body.host, 180);
+    const rootDir = cleanOptionalString(body.rootDir ?? body.root ?? body.repoRoot ?? roots.workspace, 700);
+    if (!hostName) return errorResponse("invalid_request", "hostName must be a non-empty string", 400);
+    if (!rootDir) return errorResponse("invalid_request", "rootDir must be a non-empty string", 400);
+
+    const generatedAtRaw = body.generatedAt;
+    const generatedAt = typeof generatedAtRaw === "string"
+      ? Date.parse(generatedAtRaw)
+      : cleanFiniteNumber(generatedAtRaw, Date.now());
+
+    try {
+      const inventory = await ctx.runMutation(api.portfolio.upsertAgentStackInventory, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        machineKey: cleanOptionalString(body.machineKey, 220),
+        hostName,
+        platform: cleanOptionalString(body.platform, 180),
+        rootDir,
+        inventorySchemaVersion: cleanOptionalString(body.inventorySchemaVersion ?? body.schemaVersion, 80),
+        uniqueSkillNames: cleanFiniteNumber(totals.uniqueSkillNames),
+        uniqueRealSkillFiles: cleanFiniteNumber(totals.uniqueRealSkillFiles),
+        directExposureSkillRecords: cleanFiniteNumber(totals.directExposureSkillRecords),
+        canonicalSkillFiles: cleanFiniteNumber(totals.canonicalSkillFiles),
+        youmdCatalogSkills: cleanFiniteNumber(totals.youmdCatalogSkills),
+        missingFromYoumdCatalog: cleanFiniteNumber(totals.missingFromYoumdCatalog),
+        duplicateNameDifferentRealpaths: cleanFiniteNumber(totals.duplicateNameDifferentRealpaths),
+        sameRealpathMirrors: cleanFiniteNumber(totals.sameRealpathMirrors),
+        projectSignals: cleanFiniteNumber(totals.projectSignals),
+        ownershipRollup: typeof body.ownershipRollup === "object" && body.ownershipRollup !== null ? body.ownershipRollup : {},
+        syncPolicyRollup: typeof body.syncPolicyRollup === "object" && body.syncPolicyRollup !== null ? body.syncPolicyRollup : {},
+        provenanceRollup: typeof body.provenanceRollup === "object" && body.provenanceRollup !== null ? body.provenanceRollup : {},
+        missingCatalogSamples: cleanNameSamples(body.missingCatalogSamples ?? body.missingFromCatalog, 40),
+        duplicateNameSamples: cleanNameSamples(body.duplicateNameSamples ?? dryAudit.duplicateNameDifferentRealpaths, 40),
+        mirrorSamples: cleanNameSamples(body.mirrorSamples ?? dryAudit.sameRealpathMirrors, 40),
+        reportJsonPath: cleanOptionalString(body.reportJsonPath, 700),
+        reportHtmlPath: cleanOptionalString(body.reportHtmlPath, 700),
+        source: cleanOptionalString(body.source, 80) ?? "cli",
+        agentName: cleanOptionalString(body.agentName, 160),
+        secretValuesExposed: body.secretValuesExposed === true,
+        generatedAt: Number.isFinite(generatedAt) ? generatedAt : Date.now(),
+      });
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: typeof body.agentName === "string" && body.agentName.trim()
+            ? body.agentName.trim()
+            : auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: "agent-stack/inventory",
+          status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
+          durationMs: Date.now() - startedAt,
+          details: {
+            hostName,
+            rootDir,
+            uniqueSkillNames: cleanFiniteNumber(totals.uniqueSkillNames),
+            missingFromYoumdCatalog: cleanFiniteNumber(totals.missingFromYoumdCatalog),
+            duplicateNameDifferentRealpaths: cleanFiniteNumber(totals.duplicateNameDifferentRealpaths),
+          },
+        });
+      } catch {
+        // best-effort
+      }
+
+      return guard.finish(json({ success: true, ...inventory }));
+    } catch (err) {
+      return serverErrorResponse("me/agent-stack/inventory", err, "Failed to sync agent stack inventory");
+    }
+  }),
+});
+
+// GET /api/v1/me/agent-stack/inventories — List synced safe agent stack inventory summaries.
+http.route({
+  path: "/api/v1/me/agent-stack/inventories",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private", "projects");
+    if (denied) return denied;
+
+    const url = new URL(request.url);
+    const limit = cleanFiniteNumber(url.searchParams.get("limit"), 12);
+    try {
+      const inventories = await ctx.runQuery(api.portfolio.listAgentStackInventories, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        limit,
+      });
+      return json({ inventories });
+    } catch (err) {
+      return serverErrorResponse("me/agent-stack/inventories", err, "Failed to list agent stack inventories");
     }
   }),
 });

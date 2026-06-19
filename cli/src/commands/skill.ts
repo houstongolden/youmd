@@ -35,7 +35,7 @@ import {
 import { loadIdentityData, resolveVariable, renderSkillTemplate } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
-import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, recordBrainActivity, type SkillInsight } from "../lib/api";
+import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, recordBrainActivity, syncAgentStackInventory, type AgentStackInventorySyncPayload, type SkillInsight } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 
@@ -58,13 +58,20 @@ type InventoryTotals = {
 };
 
 type InventorySnapshot = {
-  host?: { hostname?: string };
+  host?: string | { hostname?: string };
   generatedAt?: string;
+  inventorySchemaVersion?: string;
+  repoRoot?: string;
+  roots?: { workspace?: string } & Record<string, unknown>;
   totals?: InventoryTotals;
+  ownershipRollup?: Record<string, unknown>;
+  syncPolicyRollup?: Record<string, unknown>;
+  provenanceRollup?: Record<string, unknown>;
+  missingFromCatalog?: Array<{ name?: string } | string>;
   uniqueSkills?: Array<{ name?: string; ownerClasses?: string[]; syncPolicies?: string[] }>;
   dryAudit?: {
-    duplicateNameDifferentRealpaths?: Array<{ name?: string }>;
-    sameRealpathMirrors?: Array<{ name?: string }>;
+    duplicateNameDifferentRealpaths?: Array<{ name?: string } | string>;
+    sameRealpathMirrors?: Array<{ name?: string } | string>;
   };
 };
 
@@ -214,6 +221,73 @@ function renderInventoryTotals(totals: InventoryTotals): void {
     if (typeof value !== "number") continue;
     console.log(`  ${DIM(label.padEnd(maxLabel + 2))}${chalk.cyan(value.toLocaleString())}`);
   }
+}
+
+function inventoryHostName(snapshot: InventorySnapshot): string {
+  if (typeof snapshot.host === "string" && snapshot.host.trim()) return snapshot.host.trim();
+  if (snapshot.host && typeof snapshot.host === "object" && snapshot.host.hostname) {
+    return snapshot.host.hostname;
+  }
+  return os.hostname();
+}
+
+function inventorySnapshotLabel(snapshot: InventorySnapshot, fallback: string): string {
+  const host = inventoryHostName(snapshot);
+  return host || fallback;
+}
+
+function safeInventoryCount(value: number | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, Math.trunc(value!)) : 0;
+}
+
+function inventorySampleNames(rows: Array<{ name?: string } | string> | undefined): string[] {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .flatMap((row) => {
+      if (typeof row === "string") return [row];
+      if (row?.name) return [row.name];
+      return [];
+    })
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .slice(0, 24);
+}
+
+function buildAgentStackInventorySyncPayload(
+  snapshot: InventorySnapshot,
+  jsonPath?: string,
+  htmlPath?: string
+): AgentStackInventorySyncPayload {
+  const totals = snapshot.totals || {};
+  return {
+    inventorySchemaVersion: snapshot.inventorySchemaVersion || "local-agent-stack-inventory/v1",
+    generatedAt: snapshot.generatedAt || new Date().toISOString(),
+    hostName: inventoryHostName(snapshot),
+    platform: `${os.platform()} ${os.release()}`,
+    rootDir: snapshot.roots?.workspace || snapshot.repoRoot || process.cwd(),
+    secretValuesExposed: false,
+    reportJsonPath: jsonPath,
+    reportHtmlPath: htmlPath,
+    source: "youmd-cli",
+    agentName: "youmd skill inventory",
+    totals: {
+      uniqueSkillNames: safeInventoryCount(totals.uniqueSkillNames),
+      uniqueRealSkillFiles: safeInventoryCount(totals.uniqueRealSkillFiles),
+      directExposureSkillRecords: safeInventoryCount(totals.directExposureSkillRecords),
+      canonicalSkillFiles: safeInventoryCount(totals.canonicalSkillFiles),
+      youmdCatalogSkills: safeInventoryCount(totals.youmdCatalogSkills),
+      missingFromYoumdCatalog: safeInventoryCount(totals.missingFromYoumdCatalog),
+      duplicateNameDifferentRealpaths: safeInventoryCount(totals.duplicateNameDifferentRealpaths),
+      sameRealpathMirrors: safeInventoryCount(totals.sameRealpathMirrors),
+      projectSignals: safeInventoryCount(totals.projectSignals),
+    },
+    ownershipRollup: snapshot.ownershipRollup || {},
+    syncPolicyRollup: snapshot.syncPolicyRollup || {},
+    provenanceRollup: snapshot.provenanceRollup || {},
+    missingCatalogSamples: inventorySampleNames(snapshot.missingFromCatalog),
+    duplicateNameSamples: inventorySampleNames(snapshot.dryAudit?.duplicateNameDifferentRealpaths),
+    mirrorSamples: inventorySampleNames(snapshot.dryAudit?.sameRealpathMirrors),
+  };
 }
 
 function buildSkillSyncActivityMetadata(synced: string[], errors: string[]) {
@@ -1281,8 +1355,8 @@ function inventoryDiffCmd(args: string[]): void {
   console.log("");
   console.log("  " + chalk.bold("skill inventory diff"));
   console.log("");
-  console.log(`  ${DIM("left ")}${chalk.cyan(left.host?.hostname || path.basename(leftPath))}${DIM(left.generatedAt ? ` · ${left.generatedAt}` : "")}`);
-  console.log(`  ${DIM("right")}${chalk.cyan(" " + (right.host?.hostname || path.basename(rightPath)))}${DIM(right.generatedAt ? ` · ${right.generatedAt}` : "")}`);
+  console.log(`  ${DIM("left ")}${chalk.cyan(inventorySnapshotLabel(left, path.basename(leftPath)))}${DIM(left.generatedAt ? ` · ${left.generatedAt}` : "")}`);
+  console.log(`  ${DIM("right")}${chalk.cyan(" " + inventorySnapshotLabel(right, path.basename(rightPath)))}${DIM(right.generatedAt ? ` · ${right.generatedAt}` : "")}`);
   console.log("");
 
   const totalRows: Array<[string, number | undefined, number | undefined]> = [
@@ -1324,7 +1398,7 @@ function inventoryDiffCmd(args: string[]): void {
   console.log("");
 }
 
-function inventoryCmd(args: string[]): void {
+async function inventoryCmd(args: string[]): Promise<void> {
   if (args[0] === "diff") {
     inventoryDiffCmd(args.slice(1));
     return;
@@ -1347,6 +1421,7 @@ function inventoryCmd(args: string[]): void {
   const outDir = path.resolve(flagString(flags, "out-dir") || process.cwd());
   const workspace = flagString(flags, "workspace");
   const date = flagString(flags, "date");
+  const shouldSync = flags.sync === true;
   const startedAt = Date.now();
   const scriptArgs = [script, "--out-dir", outDir];
   if (workspace) scriptArgs.push("--workspace", path.resolve(workspace));
@@ -1379,14 +1454,39 @@ function inventoryCmd(args: string[]): void {
     console.log("");
   }
 
+  let htmlPath = latest ? latest.replace(/\.json$/, ".html") : undefined;
+  let jsonPath = latest || undefined;
   try {
     const scriptResult = JSON.parse(output) as { html?: string; json?: string };
+    htmlPath = scriptResult.html || htmlPath;
+    jsonPath = scriptResult.json || jsonPath;
     if (scriptResult.html) console.log(`  ${DIM("html")} ${chalk.cyan(scriptResult.html)}`);
     if (scriptResult.json) console.log(`  ${DIM("json")} ${chalk.cyan(scriptResult.json)}`);
   } catch {
     if (latest) {
       console.log(`  ${DIM("json")} ${chalk.cyan(latest)}`);
       console.log(`  ${DIM("html")} ${chalk.cyan(latest.replace(/\.json$/, ".html"))}`);
+    }
+  }
+
+  if (shouldSync && parsed) {
+    if (!isAuthenticated()) {
+      console.log(DIM("  sync skipped: run `youmd login` or set YOUMD_API_KEY to persist this machine inventory."));
+    } else {
+      try {
+        const res = await syncAgentStackInventory(
+          buildAgentStackInventorySyncPayload(parsed, jsonPath, htmlPath)
+        );
+        if (res.ok && res.data?.success) {
+          const action = res.data.created ? "created" : "updated";
+          console.log(`  ${DIM("sync")} ${chalk.green(action)} You.md agent stack inventory`);
+        } else {
+          console.log(`  ${DIM("sync skipped:")} ${apiErrorMessage(res.data) || `HTTP ${res.status}`}`);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.log(`  ${DIM("sync skipped:")} ${message}`);
+      }
     }
   }
   console.log("");
@@ -1752,7 +1852,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       break;
     case "inventory":
     case "audit":
-      inventoryCmd(args);
+      await inventoryCmd(args);
       break;
     case "metrics":
     case "stats":

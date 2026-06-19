@@ -1018,6 +1018,75 @@ export interface SyncedMachineProof {
   updatedAt: number;
 }
 
+export interface AgentStackInventorySyncPayload {
+  inventorySchemaVersion?: string;
+  generatedAt: string;
+  hostName: string;
+  platform?: string;
+  rootDir: string;
+  secretValuesExposed: false;
+  reportJsonPath?: string;
+  reportHtmlPath?: string;
+  source?: string;
+  agentName?: string;
+  totals: {
+    uniqueSkillNames: number;
+    uniqueRealSkillFiles: number;
+    directExposureSkillRecords: number;
+    canonicalSkillFiles: number;
+    youmdCatalogSkills: number;
+    missingFromYoumdCatalog: number;
+    duplicateNameDifferentRealpaths: number;
+    sameRealpathMirrors: number;
+    projectSignals: number;
+  };
+  ownershipRollup?: Record<string, unknown>;
+  syncPolicyRollup?: Record<string, unknown>;
+  provenanceRollup?: Record<string, unknown>;
+  missingCatalogSamples?: string[];
+  duplicateNameSamples?: string[];
+  mirrorSamples?: string[];
+}
+
+export interface AgentStackInventorySyncResult {
+  success: boolean;
+  inventoryId?: string;
+  created?: boolean;
+  error?: unknown;
+  message?: string;
+}
+
+export interface SyncedAgentStackInventory {
+  _id: string;
+  machineKey: string;
+  hostName: string;
+  platform?: string;
+  rootDir: string;
+  inventorySchemaVersion?: string;
+  uniqueSkillNames: number;
+  uniqueRealSkillFiles: number;
+  directExposureSkillRecords: number;
+  canonicalSkillFiles: number;
+  youmdCatalogSkills: number;
+  missingFromYoumdCatalog: number;
+  duplicateNameDifferentRealpaths: number;
+  sameRealpathMirrors: number;
+  projectSignals: number;
+  ownershipRollup: Record<string, unknown>;
+  syncPolicyRollup: Record<string, unknown>;
+  provenanceRollup: Record<string, unknown>;
+  missingCatalogSamples: string[];
+  duplicateNameSamples: string[];
+  mirrorSamples: string[];
+  reportJsonPath?: string;
+  reportHtmlPath?: string;
+  source: string;
+  agentName?: string;
+  secretValuesExposed: boolean;
+  generatedAt: number;
+  updatedAt: number;
+}
+
 export async function savePortfolioTask(
   payload: PortfolioTaskPayload
 ): Promise<ApiResponse<PortfolioWriteResult>> {
@@ -1102,6 +1171,27 @@ export async function getMachineProofs(opts?: {
   if (opts?.limit) params.set("limit", String(opts.limit));
   const qs = params.toString();
   return apiRequest<{ machines: SyncedMachineProof[] }>(`/api/v1/me/machines/proofs${qs ? `?${qs}` : ""}`, {
+    token: getToken(),
+  });
+}
+
+export async function syncAgentStackInventory(
+  payload: AgentStackInventorySyncPayload
+): Promise<ApiResponse<AgentStackInventorySyncResult>> {
+  return apiRequest<AgentStackInventorySyncResult>("/api/v1/me/agent-stack/inventory", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+export async function getAgentStackInventories(opts?: {
+  limit?: number;
+}): Promise<ApiResponse<{ inventories: SyncedAgentStackInventory[] }>> {
+  const params = new URLSearchParams();
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return apiRequest<{ inventories: SyncedAgentStackInventory[] }>(`/api/v1/me/agent-stack/inventories${qs ? `?${qs}` : ""}`, {
     token: getToken(),
   });
 }
