@@ -43,10 +43,52 @@ if $REMOTE; then
   exit $?
 fi
 
-# Local deploy — keys MUST be set via environment variables.
-# Export CONVEX_PROD_DEPLOY_KEY or CONVEX_DEV_DEPLOY_KEY before running.
-PROD_KEY="${CONVEX_PROD_DEPLOY_KEY:-}"
-DEV_KEY="${CONVEX_DEV_DEPLOY_KEY:-}"
+read_dotenv_key() {
+  local key="$1"
+  local file="${2:-.env.local}"
+  [[ -f "$file" ]] || return 0
+  node - "$key" "$file" <<'NODE'
+const fs = require("fs");
+const [key, file] = process.argv.slice(2);
+const text = fs.readFileSync(file, "utf8");
+for (const line of text.split(/\r?\n/)) {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) continue;
+  const eq = trimmed.indexOf("=");
+  if (eq === -1) continue;
+  const name = trimmed.slice(0, eq).trim();
+  if (name !== key) continue;
+  let value = trimmed.slice(eq + 1).trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1);
+  }
+  process.stdout.write(value);
+  break;
+}
+NODE
+}
+
+# Local deploy. Prefer explicit environment variables, then fall back to the
+# existing .env.local names without sourcing the file. .env.local contains
+# values that are not valid shell assignments, so `source .env.local` is unsafe.
+PROD_KEY="${CONVEX_PROD_DEPLOY_KEY:-${CONVEX_DEPLOY_KEY:-}}"
+DEV_KEY="${CONVEX_DEV_DEPLOY_KEY:-${CONVEX_DEPLOY_KEY_DEV:-}}"
+
+if [[ -z "$PROD_KEY" ]]; then
+  PROD_KEY="$(read_dotenv_key CONVEX_PROD_DEPLOY_KEY)"
+fi
+if [[ -z "$PROD_KEY" ]]; then
+  PROD_KEY="$(read_dotenv_key CONVEX_DEPLOY_KEY)"
+fi
+if [[ -z "$DEV_KEY" ]]; then
+  DEV_KEY="$(read_dotenv_key CONVEX_DEV_DEPLOY_KEY)"
+fi
+if [[ -z "$DEV_KEY" ]]; then
+  DEV_KEY="$(read_dotenv_key CONVEX_DEPLOY_KEY_DEV)"
+fi
 
 case "$ENV" in
   prod)
@@ -67,7 +109,7 @@ fi
 
 export CONVEX_DEPLOY_KEY="$DEPLOY_KEY"
 
-echo ">> Running: npx convex deploy"
-npx convex deploy
+echo ">> Running: npx convex deploy --yes"
+npx convex deploy --yes
 
 echo ">> Done."

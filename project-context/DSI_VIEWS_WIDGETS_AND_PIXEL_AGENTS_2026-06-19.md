@@ -2,7 +2,7 @@
 
 Date: 2026-06-19
 
-Status: first local implementation slice shipped on 2026-06-19. Convex now has `dsiViews` and `dsiViewWidgets`, plus an idempotent default `home` View with six live widget contracts. Production Convex deploy remains pending after a silent deploy hang in the local session.
+Status: first implementation slices shipped on 2026-06-19. Convex now has `dsiViews` and `dsiViewWidgets`, plus an idempotent default `home` View with six live widget contracts. Production Convex deployment is complete; the deploy fix was to load `.env.local` as dotenv data and run `npx convex deploy --yes --typecheck disable --codegen disable` noninteractively so shell-unsafe env values do not break or stall the command.
 
 ## North Star
 

@@ -8,7 +8,8 @@
 - Seeded the default `home` View with six live widgets: You Agent chat/shell, Live Brain Log, Needs Houston, Agent Queue, Project Focus, and Machine Mesh.
 - Home now initializes and renders a compact DSI proof block showing the saved View, live widget count, source kinds, and `rawSecretsInBrowser: false` contract.
 - Added focused Convex coverage for idempotent Home view creation and widget ordering.
-- Verified locally with Convex codegen, focused DSI tests, root TypeScript, `git diff --check`, and production Next build. Convex production deploy was attempted but hung silently and was interrupted; deployment remains pending.
+- Verified with Convex codegen, focused DSI tests, root TypeScript, `git diff --check`, production Next build, and Convex production deploy. The deploy hang was resolved by loading `.env.local` as dotenv data and running Convex deploy noninteractively.
+- Hardened `scripts/convex-deploy.sh` so future deploys read deploy keys from explicit env vars or `.env.local` without sourcing shell-unsafe values, and run `npx convex deploy --yes`.
 
 ### feat(machine): give the sync mesh stable pixel characters
 - Added a reusable original `PixelCharacter` primitive for Machines, Agents, and Shell/session surfaces.

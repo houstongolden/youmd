@@ -14,7 +14,8 @@ PRD Version: 2.3
 - [x] Create `project-context/DSI_VIEWS_WIDGETS_AND_PIXEL_AGENTS_2026-06-19.md` to define Dynamic Software Interface primitives, Views, Widgets, live widget contracts, private data boundaries, and the navigation implication
 - [x] Add first Convex `dsiViews` / `dsiViewWidgets` schema and make Home read/initialize a saved default DSI View
 - [x] Add focused Convex coverage for persisted Home DSI view + widgets
-- [ ] Next pass: deploy Convex schema/functions after resolving the silent `npx convex deploy` hang from this local session
+- [x] Deploy Convex schema/functions after resolving the silent `npx convex deploy` hang with a dotenv-loaded noninteractive deploy
+- [ ] Next pass: visually verify the Home DSI proof block in the authenticated Codex in-app Browser when the browser bridge is available again
 - [ ] Next pass: extend pixel characters into connected-agent rows and live-log emitters
 
 ### 2026-06-19 — Shell live brain log

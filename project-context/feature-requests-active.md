@@ -8,8 +8,8 @@ Last Updated: 2026-06-19
 
 ### 142. Add personality to the sync mesh and define You.md as a Dynamic Software Interface
 **Status:** IN PROGRESS / FIRST UI + PERSISTED HOME VIEW SLICE COMPLETE
-**Verified:** PARTIAL (focused Convex test, Convex codegen, root TypeScript, `git diff --check`, production Next build, and in-app Browser pixel mesh proof complete; Home DSI visual proof blocked because the in-app browser bridge lost authenticated access during the final check)
-**Production Verified:** NO
+**Verified:** PARTIAL (focused Convex test, Convex codegen, root TypeScript, `git diff --check`, production Next build, Convex production deploy, and in-app Browser pixel mesh proof complete; Home DSI visual proof still pending because the browser bridge was unavailable/blocked during the final check)
+**Production Verified:** BACKEND YES / FRONTEND VISUAL PENDING
 **Source:** 2026-06-19 — Houston: "it would be very cool if we could create some claude code mascot inspired characters that we can randomly automatically create for every YOU Machine ... DSI - DYNAMIC SOFTWARE INTERFACE ... custom Widgets to add to custom Views..."
 **Actionable Scope:**
 1. Create original retro/pixel characters for Machines, YOU agents, shell/chat sessions, and sync animations while staying in the YOU logo style. **DONE first slice:** reusable `PixelCharacter` primitive with deterministic variants and status pixels.
@@ -21,7 +21,7 @@ Last Updated: 2026-06-19
 7. Package user/private data for extensible widgets/API while keeping raw secrets local/encrypted. **OPEN.**
 8. Look at Bad.app's DSI/render-json direction as a reference before deeper implementation. **OPEN.**
 **Progress (2026-06-19):** Added an original `PixelCharacter` UI primitive and wired it into Machine's live sync mesh for this Mac, trusted machines, agent bus, skill mesh, project graph, and Secret Vault status. Added quiet blink/signal animation and documented the DSI architecture: core primitives, View shape, Widget contracts, security boundaries, navigation implications, and near-term build plan.
-**Progress (2026-06-19 continuation):** Added Convex `dsiViews` / `dsiViewWidgets`, idempotent `ensureDefaultHomeView`, owner-gated `getDefaultHomeView`, and a Home pane DSI proof strip. The default View persists six live widgets and keeps browser secret exposure false. Focused Convex test, Convex codegen, root TypeScript, `git diff --check`, and production Next build passed. `npx convex deploy` hung silently for several minutes and was interrupted, so production deploy remains pending before this can fully hydrate in the deployed/authenticated shell.
+**Progress (2026-06-19 continuation):** Added Convex `dsiViews` / `dsiViewWidgets`, idempotent `ensureDefaultHomeView`, owner-gated `getDefaultHomeView`, and a Home pane DSI proof strip. The default View persists six live widgets and keeps browser secret exposure false. Focused Convex test, Convex codegen, root TypeScript, `git diff --check`, and production Next build passed. The initial `npx convex deploy` hung because `.env.local` was not shell-sourceable; the deploy completed after loading env values as dotenv data and running Convex deploy with `--yes --typecheck disable --codegen disable`.
 
 ---
 
