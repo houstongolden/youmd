@@ -42,14 +42,23 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchSession(): Promise<SessionResponse | null> {
-  const res = await fetch("/api/auth/session", {
-    credentials: "include",
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    return null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const res = await fetch("/api/auth/session", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        return null;
+      }
+      return (await res.json()) as SessionResponse;
+    } catch {
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 180 * (attempt + 1)));
+      }
+    }
   }
-  return (await res.json()) as SessionResponse;
+  return null;
 }
 
 function normalizeAuthUser(

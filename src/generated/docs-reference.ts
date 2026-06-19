@@ -41,13 +41,13 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "79c40fbd17fd5b43477df92c0ceb3501b7d78ff1c5e2fb1dba021ab3bb3c1620",
+  "sourceHash": "e1f6dbaeafa4d48385637b64723a9936cfbd82c6ab89f9955e64b86491ed903a",
   "cli": {
     "version": "0.8.7"
   },
   "counts": {
     "endpoints": 102,
-    "internalRoutes": 8,
+    "internalRoutes": 9,
     "mcpTools": 6,
     "hostedMcpTools": 10,
     "cliCommands": 31,
@@ -1216,6 +1216,11 @@ export const docsReference = {
       "method": "POST",
       "path": "/api/github/webhook",
       "reason": "GitHub App webhook receiver authenticated by HMAC signature"
+    },
+    {
+      "method": "GET",
+      "path": "/api/local/browser-session",
+      "reason": "localhost-only CLI-to-browser session bootstrap for local visual testing"
     },
     {
       "method": "GET",

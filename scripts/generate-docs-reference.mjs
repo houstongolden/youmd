@@ -86,6 +86,7 @@ const INTERNAL_ROUTES = new Map([
   // Localhost-only signed-in shell surface for inspecting the current laptop or
   // agent host. This reports local filesystem readiness metadata and is not a
   // hosted/public agent API.
+  ["GET /api/local/browser-session", "localhost-only CLI-to-browser session bootstrap for local visual testing"],
   ["GET /api/local/machine-readiness", "localhost-only signed-in machine readiness metadata"],
 ]);
 

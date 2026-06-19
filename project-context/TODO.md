@@ -15,7 +15,8 @@ PRD Version: 2.3
 - [x] Add first Convex `dsiViews` / `dsiViewWidgets` schema and make Home read/initialize a saved default DSI View
 - [x] Add focused Convex coverage for persisted Home DSI view + widgets
 - [x] Deploy Convex schema/functions after resolving the silent `npx convex deploy` hang with a dotenv-loaded noninteractive deploy
-- [ ] Next pass: visually verify the Home DSI proof block in the authenticated Codex in-app Browser when the browser bridge is available again
+- [x] Add a localhost-only browser-session bridge so the Codex in-app Browser can authenticate from the local `youmd` CLI session without exposing CLI/API tokens to the browser
+- [x] Visually verify the Home DSI proof block in the authenticated Codex in-app Browser at `/shell?tab=home`
 - [x] Extend pixel characters into connected-agent rows and live-log emitters
 
 ### 2026-06-19 — Shell live brain log

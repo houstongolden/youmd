@@ -8,6 +8,9 @@
 - Seeded the default `home` View with six live widgets: You Agent chat/shell, Live Brain Log, Needs Houston, Agent Queue, Project Focus, and Machine Mesh.
 - Home now initializes and renders a compact DSI proof block showing the saved View, live widget count, source kinds, and `rawSecretsInBrowser: false` contract.
 - Added focused Convex coverage for idempotent Home view creation and widget ordering.
+- Added a localhost-only `/api/local/browser-session` bridge that uses the already-authenticated local `youmd` CLI session server-side to mint a normal HTTP-only web session for Codex in-app Browser QA; raw CLI/API tokens never get sent to the browser.
+- Hardened `/api/auth/session` and the client session fetch path with short retries so transient Convex fetch resets do not strand the shell in an unauthenticated skeleton.
+- Verified the authenticated Home DSI proof visually in the Codex in-app Browser at `/shell?tab=home`: the saved `DSI HOME VIEW`, `live skill mesh`, `6/6 live widgets`, and `secrets redacted` contract render in the actual shell.
 - Verified with Convex codegen, focused DSI tests, root TypeScript, `git diff --check`, production Next build, and Convex production deploy. The deploy hang was resolved by loading `.env.local` as dotenv data and running Convex deploy noninteractively.
 - Hardened `scripts/convex-deploy.sh` so future deploys read deploy keys from explicit env vars or `.env.local` without sourcing shell-unsafe values, and run `npx convex deploy --yes`.
 

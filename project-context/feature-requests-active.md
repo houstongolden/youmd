@@ -1944,3 +1944,13 @@ Last Updated: 2026-06-19
 3. Make navigation more intuitive and less redundant. **DONE:** shell nav now groups around Home, Projects, APIs, Skillstacks, Connect, Identity, Stats, and Account, with Home/Tasks first.
 4. Keep text and click navigation aligned for agent-first use. **DONE:** slash commands now route `/home`, `/dashboard`, `/today`, `/tasks`, and `/taskboard`.
 5. Continue the deeper minimal-surface cleanup. **OPEN:** move more long project/stack/API detail sections into dedicated drill-in pages with breadcrumbs and compact list/detail modes.
+
+### 140. Make Home DSI proof visually testable in the authenticated local browser
+**Status:** VERIFIED LOCAL
+**Verified:** `git diff --check`, full production Next build, local `next start -p 3100`, and Codex in-app Browser visual proof at `/shell?tab=home`.
+**Source:** 2026-06-19 — Houston: repeated `continue` on the DSI/pixel/live-view work and asked that future UI work be visually reviewed in the Codex in-app Browser rather than treated as code-only.
+**Actionable Scope:**
+1. Restore a real authenticated local browser path for the Codex in-app Browser without using headless Chrome or raw Playwright. **DONE:** added localhost-only `GET /api/local/browser-session?next=...`, which reads the local `~/.youmd/config.json` token server-side, verifies it against `/api/v1/me`, and mints a normal web session cookie.
+2. Keep bootstrap material and secrets out of the browser. **DONE:** the bridge never returns the local token or raw env values, sets an HTTP-only session cookie, and is blocked for non-local hosts.
+3. Harden shell auth hydration against transient Convex fetch failures. **DONE:** `/api/auth/session` and the client session fetch path retry short-lived fetch resets before treating the session as missing.
+4. Prove Home DSI in the real product shell. **DONE LOCAL:** authenticated in-app Browser visual proof shows `LIVE SKILL MESH`, `DSI HOME VIEW`, `Home is now a saved live View`, `6/6 live widgets`, and `secrets redacted` on `/shell?tab=home`.
