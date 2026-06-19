@@ -1046,12 +1046,14 @@ export interface AgentStackInventorySyncPayload {
   missingCatalogSamples?: string[];
   duplicateNameSamples?: string[];
   mirrorSamples?: string[];
+  syncRepo?: boolean;
 }
 
 export interface AgentStackInventorySyncResult {
   success: boolean;
   inventoryId?: string;
   created?: boolean;
+  repoSync?: { attempted: boolean; ok: boolean; error?: string; push?: unknown; mirror?: unknown };
   error?: unknown;
   message?: string;
 }

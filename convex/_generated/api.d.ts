@@ -35,6 +35,7 @@ import type * as health from "../health.js";
 import type * as http from "../http.js";
 import type * as lib_agentContext from "../lib/agentContext.js";
 import type * as lib_agentDetect from "../lib/agentDetect.js";
+import type * as lib_agentStackRepoSnapshot from "../lib/agentStackRepoSnapshot.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_brainScopes from "../lib/brainScopes.js";
 import type * as lib_capabilityRouter from "../lib/capabilityRouter.js";
@@ -126,6 +127,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/agentContext": typeof lib_agentContext;
   "lib/agentDetect": typeof lib_agentDetect;
+  "lib/agentStackRepoSnapshot": typeof lib_agentStackRepoSnapshot;
   "lib/auth": typeof lib_auth;
   "lib/brainScopes": typeof lib_brainScopes;
   "lib/capabilityRouter": typeof lib_capabilityRouter;

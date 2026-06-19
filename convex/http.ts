@@ -2516,6 +2516,7 @@ http.route({
     const rootDir = cleanOptionalString(body.rootDir ?? body.root ?? body.repoRoot ?? roots.workspace, 700);
     if (!hostName) return errorResponse("invalid_request", "hostName must be a non-empty string", 400);
     if (!rootDir) return errorResponse("invalid_request", "rootDir must be a non-empty string", 400);
+    const syncRepo = body.syncRepo !== false;
 
     const generatedAtRaw = body.generatedAt;
     const generatedAt = typeof generatedAtRaw === "string"
@@ -2554,6 +2555,29 @@ http.route({
         generatedAt: Number.isFinite(generatedAt) ? generatedAt : Date.now(),
       });
 
+      const repoSync: { attempted: boolean; ok: boolean; error?: string; push?: unknown; mirror?: unknown } = {
+        attempted: syncRepo,
+        ok: !syncRepo,
+      };
+      if (syncRepo) {
+        try {
+          const push = await ctx.runAction(api.githubRepo.pushToRepo, {
+            clerkId: auth.userId,
+            _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          });
+          const mirror = await ctx.runAction(api.githubRepo.syncMirror, {
+            clerkId: auth.userId,
+            _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          });
+          repoSync.ok = true;
+          repoSync.push = push;
+          repoSync.mirror = mirror;
+        } catch (err) {
+          repoSync.ok = false;
+          repoSync.error = err instanceof Error ? err.message : "unknown repo sync error";
+        }
+      }
+
       try {
         const agent = detectAgent(request.headers.get("user-agent"));
         await ctx.runMutation(internal.activity.logActivity, {
@@ -2574,13 +2598,15 @@ http.route({
             uniqueSkillNames: cleanFiniteNumber(totals.uniqueSkillNames),
             missingFromYoumdCatalog: cleanFiniteNumber(totals.missingFromYoumdCatalog),
             duplicateNameDifferentRealpaths: cleanFiniteNumber(totals.duplicateNameDifferentRealpaths),
+            repoSyncAttempted: repoSync.attempted,
+            repoSyncOk: repoSync.ok,
           },
         });
       } catch {
         // best-effort
       }
 
-      return guard.finish(json({ success: true, ...inventory }));
+      return guard.finish(json({ success: true, ...inventory, repoSync }));
     } catch (err) {
       return serverErrorResponse("me/agent-stack/inventory", err, "Failed to sync agent stack inventory");
     }

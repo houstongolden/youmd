@@ -2,6 +2,13 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### feat(sync): add repo-backed agent stack inventory snapshots
+- Added generated `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` files to the existing You.md identity repo push path.
+- Built the snapshot from persisted safe Convex inventory summaries: machine counts, catalog gaps, DRY review samples, mirror samples, ownership/sync/provenance rollups, and explicit `secretValuesExposed` metadata.
+- Updated `POST /api/v1/me/agent-stack/inventory` to attempt the existing GitHub repo PR/push + mirror sync by default after Convex persistence, while keeping local inventory/Convex sync successful if repo sync is unavailable.
+- Added CLI repo-sync status output plus `youmd skill inventory --no-repo-sync` for local-only inventory proof runs.
+- Verified with Convex codegen, focused repo snapshot + inventory persistence tests, CLI build, root TypeScript, and compiled unauthenticated CLI smoke.
+
 ### feat(sync): persist agent stack inventory summaries
 - Added owner-gated Convex `agentStackInventories` persistence for secret-safe local/global skill mesh summaries, keyed by machine/root and linked into `brainActivities`.
 - Added authenticated API routes: `POST /api/v1/me/agent-stack/inventory` to upsert a safe snapshot and `GET /api/v1/me/agent-stack/inventories` to list recent machine summaries.

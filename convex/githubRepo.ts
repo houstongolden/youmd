@@ -10,6 +10,8 @@ import { agentPushViaPR } from "./githubAgentSync";
 import type { AgentPushTimelineEvent } from "./githubAgentSync";
 import { buildPortfolioRepoSnapshotFiles } from "./lib/portfolioRepoSnapshot";
 import type { PortfolioRepoSnapshotGraph } from "./lib/portfolioRepoSnapshot";
+import { buildAgentStackRepoSnapshotFiles } from "./lib/agentStackRepoSnapshot";
+import type { AgentStackRepoInventory } from "./lib/agentStackRepoSnapshot";
 
 /**
  * GitHub repo actions (Phase 2): create or connect the user's own You.md repo
@@ -649,12 +651,18 @@ export const pushToRepo = action({
       _internalAuthToken,
       includeDoneTasks: false,
     }) as PortfolioRepoSnapshotGraph;
+    const agentStackInventories = await ctx.runQuery(api.portfolio.listAgentStackInventories, {
+      clerkId,
+      _internalAuthToken,
+      limit: 20,
+    }) as AgentStackRepoInventory[];
 
     const files: { path: string; content: string }[] = dedupeRepoFiles([
       { path: "you.md", content: seed.youMd ?? "" },
       { path: "you.json", content: JSON.stringify(seed.youJson ?? {}, null, 2) },
       ...customFilesFromYouJson(seed.youJson),
       ...buildPortfolioRepoSnapshotFiles(portfolioGraph),
+      ...buildAgentStackRepoSnapshotFiles(agentStackInventories),
     ]);
 
     // Autonomous management: route identity writes through agentPushViaPR

@@ -256,7 +256,8 @@ function inventorySampleNames(rows: Array<{ name?: string } | string> | undefine
 function buildAgentStackInventorySyncPayload(
   snapshot: InventorySnapshot,
   jsonPath?: string,
-  htmlPath?: string
+  htmlPath?: string,
+  syncRepo = true
 ): AgentStackInventorySyncPayload {
   const totals = snapshot.totals || {};
   return {
@@ -287,6 +288,7 @@ function buildAgentStackInventorySyncPayload(
     missingCatalogSamples: inventorySampleNames(snapshot.missingFromCatalog),
     duplicateNameSamples: inventorySampleNames(snapshot.dryAudit?.duplicateNameDifferentRealpaths),
     mirrorSamples: inventorySampleNames(snapshot.dryAudit?.sameRealpathMirrors),
+    syncRepo,
   };
 }
 
@@ -1422,6 +1424,7 @@ async function inventoryCmd(args: string[]): Promise<void> {
   const workspace = flagString(flags, "workspace");
   const date = flagString(flags, "date");
   const shouldSync = flags.sync === true;
+  const shouldSyncRepo = flags["no-repo-sync"] !== true;
   const startedAt = Date.now();
   const scriptArgs = [script, "--out-dir", outDir];
   if (workspace) scriptArgs.push("--workspace", path.resolve(workspace));
@@ -1475,11 +1478,17 @@ async function inventoryCmd(args: string[]): Promise<void> {
     } else {
       try {
         const res = await syncAgentStackInventory(
-          buildAgentStackInventorySyncPayload(parsed, jsonPath, htmlPath)
+          buildAgentStackInventorySyncPayload(parsed, jsonPath, htmlPath, shouldSyncRepo)
         );
         if (res.ok && res.data?.success) {
           const action = res.data.created ? "created" : "updated";
           console.log(`  ${DIM("sync")} ${chalk.green(action)} You.md agent stack inventory`);
+          if (res.data.repoSync?.attempted) {
+            const label = res.data.repoSync.ok ? chalk.green("synced repo snapshot") : ACCENT("repo snapshot skipped");
+            console.log(`  ${DIM("repo")} ${label}${res.data.repoSync.error ? DIM(`: ${res.data.repoSync.error}`) : ""}`);
+          } else if (!shouldSyncRepo) {
+            console.log(`  ${DIM("repo")} ${DIM("snapshot sync disabled by --no-repo-sync")}`);
+          }
         } else {
           console.log(`  ${DIM("sync skipped:")} ${apiErrorMessage(res.data) || `HTTP ${res.status}`}`);
         }
@@ -1926,6 +1935,8 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       console.log(`    ${chalk.cyan("init-project [--mode auto|additive|zero-touch|scaffold]".padEnd(28))} ${DIM("bootstrap AGENTS/CLAUDE + project-context/ + .you/ + links")}`);
       console.log(`    ${chalk.cyan("improve".padEnd(28))} ${DIM("review metrics, find gaps, propose changes")}`);
       console.log(`    ${chalk.cyan("inventory [--out-dir dir]".padEnd(28))} ${DIM("map local/global skills, mirrors, catalog gaps, and DRY risks")}`);
+      console.log(`    ${chalk.cyan("inventory --sync".padEnd(28))} ${DIM("persist safe inventory metadata to Convex + repo snapshot")}`);
+      console.log(`    ${chalk.cyan("inventory --no-repo-sync".padEnd(28))} ${DIM("skip GitHub snapshot push when syncing inventory")}`);
       console.log(`    ${chalk.cyan("inventory diff <a> <b>".padEnd(28))} ${DIM("compare two machine inventory JSON snapshots")}`);
       console.log(`    ${chalk.cyan("metrics".padEnd(28))} ${DIM("usage stats and effectiveness scores")}`);
       console.log(`    ${chalk.cyan("search <query>".padEnd(28))} ${DIM("search skills by name or description")}`);

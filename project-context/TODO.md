@@ -25,9 +25,10 @@ PRD Version: 2.3
 - [x] Add Convex persistence for safe machine inventory snapshots, sync events, drift summaries, and DRY review counts
 - [x] Add owner-gated API endpoints for posting/listing safe agent stack inventory summaries
 - [x] Add `youmd skill inventory --sync` so curl install and machine bootstrap can persist the generated inventory when authenticated
+- [x] Add `agent-stack/` GitHub repo snapshot generation for machine/skill/stack inventory markdown and JSON
+- [x] Make inventory API sync attempt the existing identity repo push/mirror path so snapshots reach `username-you-md`
 - [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
-- [ ] Productize GitHub snapshots after the local report is generated
-- [ ] Add `username-you-md` GitHub snapshot output for machine/skill/stack inventory markdown and JSON
+- [ ] Production-prove the `agent-stack/` GitHub snapshot files after Convex deploy and live inventory sync
 - [ ] Expose agent stack inventory topology through You.md MCP and richer API read models
 - [ ] Build the web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views
 - [ ] Add resident realtime reconciliation for skills/stacks/context metadata across trusted machines and agents
