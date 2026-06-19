@@ -75,7 +75,12 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
         className="mb-5"
       >
         <div className="divide-y divide-[hsl(var(--border))]">
-          {needsAttention.map((t) => (
+          {needsAttention.length === 0 ? (
+            <div className="flex items-center gap-2 px-3.5 py-4 text-[13px] text-[hsl(var(--text-secondary))]/70">
+              <Dot tone="green" size={6} /> You&apos;re all caught up — agents have the rest.
+            </div>
+          ) : (
+            needsAttention.map((t) => (
             <button
               key={t.id}
               onClick={() => onNavigate("tasks")}
@@ -88,7 +93,8 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
               </span>
               <Chip tone={t.owner === "agent" ? "accent" : "default"}>{t.owner === "agent" ? "agent" : "you"}</Chip>
             </button>
-          ))}
+            ))
+          )}
         </div>
       </Panel>
 

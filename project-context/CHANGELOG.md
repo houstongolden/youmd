@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-18 — Desktop demo: tablet breakpoint + caught-up empty state
+
+### polish(web): fix the desktop-split breakpoint for tablets/narrow windows
+- Moved the desktop split (sidebar + 1/3 chat + main) from `md` (768px) up to `lg` (1024px). Below 1024 the app now uses the clean single-column layout (drawer + bottom tabs + stacked master-detail) instead of cramming the chat + main + master-detail panes into a narrow tablet width. Kept the JS (`useIsMobile`) and CSS breakpoints in lockstep at 1024 so the title-bar chrome and the layout structure always agree (no mismatched state between 768–1024).
+- Converted the structural `md:` breakpoints to `lg:` in TitleBar (desktop chrome) and the EditorView/ProjectsView master-detail stacking.
+- Added a "You're all caught up — agents have the rest" empty state to Home's Needs-attention (now that tasks are live shared state, this shows when nothing needs a human).
+- Verified: tablet (834px) renders single-column; desktop (1440px) renders the split. TypeScript + radius lint pass; dev serves HTTP 200.
+
 ## 2026-06-18 — Desktop demo: typography/spacing rhythm sweep
 
 ### polish(web): unify view headers across `/desktop-demo`

@@ -21,9 +21,9 @@ export function ProjectsView({
   const stack = STACKS.find((s) => s.projects.includes(project.name));
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
+    <div className="flex h-full flex-col lg:flex-row">
       {/* Project list */}
-      <aside className="max-h-44 w-full shrink-0 overflow-y-auto border-b border-[hsl(var(--border))] py-2 md:max-h-none md:w-60 md:border-b-0 md:border-r">
+      <aside className="max-h-44 w-full shrink-0 overflow-y-auto border-b border-[hsl(var(--border))] py-2 lg:max-h-none lg:w-60 lg:border-b-0 lg:border-r">
         <SectionLabel className="px-4 py-2">Projects · {PROJECTS.length}</SectionLabel>
         {PROJECTS.map((p) => (
           <button

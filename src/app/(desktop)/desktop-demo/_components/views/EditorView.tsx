@@ -77,9 +77,9 @@ export function EditorView({
   const source = FILE_CONTENT[activeId] ?? "# Untitled\n\nEmpty note.";
 
   return (
-    <div className="flex h-full flex-col md:flex-row">
+    <div className="flex h-full flex-col lg:flex-row">
       {/* File explorer — full-width strip on top for mobile, side rail on desktop */}
-      <aside className="max-h-40 w-full shrink-0 overflow-y-auto border-b border-[hsl(var(--border))] py-3 md:max-h-none md:w-56 md:border-b-0 md:border-r">
+      <aside className="max-h-40 w-full shrink-0 overflow-y-auto border-b border-[hsl(var(--border))] py-3 lg:max-h-none lg:w-56 lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between px-3 pb-2">
           <SectionLabel>Vault</SectionLabel>
           <Icon name="plus" size={13} className="cursor-pointer text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))]" />
@@ -89,7 +89,7 @@ export function EditorView({
 
       {/* Document */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--border))] px-4 py-2.5 md:px-5">
+        <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--border))] px-4 py-2.5 lg:px-5">
           <div className="flex min-w-0 items-center gap-2 font-mono text-[12px] text-[hsl(var(--text-secondary))]">
             <Icon name="file" size={13} className="shrink-0 opacity-60" />
             <span className="truncate">{activeId}</span>

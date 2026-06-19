@@ -26,22 +26,22 @@ export function TitleBar({
   onOpenCommand: () => void;
 }) {
   return (
-    <div className="flex min-h-[44px] shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 pt-[env(safe-area-inset-top)] md:h-10 md:min-h-0 md:gap-3 md:pt-0">
+    <div className="flex min-h-[44px] shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 pt-[env(safe-area-inset-top)] lg:h-10 lg:min-h-0 lg:gap-3 lg:pt-0">
       {/* traffic lights — desktop only */}
-      <div className="hidden items-center gap-2 md:flex">
+      <div className="hidden items-center gap-2 lg:flex">
         {["#ED6A5E", "#F4BF4F", "#61C554"].map((c) => (
           <span key={c} aria-hidden style={{ width: 11, height: 11, borderRadius: "50%", background: c }} />
         ))}
       </div>
 
-      <div className="mx-1 hidden h-4 w-px bg-[hsl(var(--border))] md:block" />
+      <div className="mx-1 hidden h-4 w-px bg-[hsl(var(--border))] lg:block" />
 
       {/* sidebar / menu toggle */}
       <button
         onClick={onToggleSidebar}
         title={isMobile ? "Menu" : "Toggle sidebar"}
         aria-label={isMobile ? "Open menu" : "Toggle sidebar"}
-        className="-ml-1 p-1 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))] md:ml-0 md:p-0"
+        className="-ml-1 p-1 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))] lg:ml-0 lg:p-0"
       >
         <Icon name={isMobile ? "menu" : sidebarCollapsed ? "panelOpen" : "panelClose"} size={18} />
       </button>
@@ -56,7 +56,7 @@ export function TitleBar({
       {/* center command bar — desktop only */}
       <button
         onClick={onOpenCommand}
-        className="mx-auto hidden w-72 items-center gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 py-1 text-[12px] text-[hsl(var(--text-secondary))]/60 transition-colors hover:border-[hsl(var(--accent))]/30 md:flex"
+        className="mx-auto hidden w-72 items-center gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3 py-1 text-[12px] text-[hsl(var(--text-secondary))]/60 transition-colors hover:border-[hsl(var(--accent))]/30 lg:flex"
       >
         <Icon name="search" size={13} />
         <span>Search or run a command…</span>
@@ -67,13 +67,13 @@ export function TitleBar({
       <button
         aria-label="Search"
         onClick={onOpenCommand}
-        className="ml-auto p-1 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))] md:hidden"
+        className="ml-auto p-1 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))] lg:hidden"
       >
         <Icon name="search" size={17} />
       </button>
 
       {/* chat layout toggle — desktop only */}
-      <div className="hidden items-center overflow-hidden rounded-sm border border-[hsl(var(--border))] md:flex">
+      <div className="hidden items-center overflow-hidden rounded-sm border border-[hsl(var(--border))] lg:flex">
         <button
           onClick={() => chatFull && onToggleChatFull()}
           title="Split view"
