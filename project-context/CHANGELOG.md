@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-18 — Home dashboard and global task surface
+
+### feat(shell): surface cross-project tasks as the default workspace
+- Added first-class `home` and `tasks` shell panes backed by the existing Convex `portfolioTasks` and `brainDumpCaptures` graph, so global project/personal tasks are no longer buried inside Portfolio Graph detail.
+- Home now opens by default for `/shell`, including compact in-app browser widths, and shows Houston-owned tasks, agent-owned tasks, personal task count, focused projects, recent shipped/moved activity, and latest brain dumps.
+- Tasks now provides a focused global task router with active/done, owner, and personal/project filters plus quick assignment controls for `me`, `agent`, `doing`, `done`, and `personal`.
+- Simplified shell navigation around clearer product jobs: Home, Projects, APIs, Skillstacks, Connect, Identity, Stats, and Account. Slash commands now include `/home`, `/dashboard`, `/today`, `/tasks`, and `/taskboard`.
+- Verification: root TypeScript pass, full production Next build, fresh local `next start -p 3100`, and Codex in-app Browser visual checks for `/shell`, `/shell?tab=home`, and `/shell?tab=tasks`. Browser logs were clean.
+
 ## 2026-06-18 — Shell callout and sidebar logo polish
 
 ### fix(shell): make pane intro blocks consistent and readable

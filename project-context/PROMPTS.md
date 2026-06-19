@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 116
-**Total messages:** 527
-**Last updated:** 2026-06-18
+**Total sessions:** 117
+**Total messages:** 528
+**Last updated:** 2026-06-19
 
 ## Table of Contents
 
+1. [2026-06-18 (home-dashboard-global-tasks-surface)](#session-2026-06-18-home-dashboard-global-tasks-surface) --- 1 message
 1. [2026-06-18 (vault-passphrase-callout-logo-polish)](#session-2026-06-18-vault-passphrase-callout-logo-polish) --- 1 message
 1. [2026-06-18 (trusted-device-secret-vault-escrow-correction)](#session-2026-06-18-trusted-device-secret-vault-escrow-correction) --- 1 message
 1. [2026-06-18 (realtime-agent-bus-two-mac-handshake)](#session-2026-06-18-realtime-agent-bus-two-mac-handshake) --- 1 message
@@ -124,6 +125,18 @@ Auto-maintained — new messages appended each session.
 33. [2026-05-21 (private-context-url-access)](#session-2026-05-21-private-context-url-access) --- 1 message
 34. [2026-05-21 (commit-push-deploy-all)](#session-2026-05-21-commit-push-deploy-all) --- 1 message
 35. [2026-05-22 (youstack-local-agent-priority)](#session-2026-05-22-youstack-local-agent-priority) --- 1 message
+
+---
+
+## Session: 2026-06-18 (home-dashboard-global-tasks-surface)
+
+**2026-06-19 00:26:50 UTC**
+> # In app browser:
+> - The user has the in-app browser open.
+> - Current URL: http://localhost:3100/shell?tab=machine
+>
+> ## My request for Codex:
+> ok why haven't you added anything for my main YOU home feed/dashboard etc and Task tracking globally across projects and personal/non-project scoped - and tasks which need YOU (ie need you/me need me as the human to complete) vs tasks that just need an agent assigned etc etc. i know we have talked about these things before but not seeing any progress on things ... and frankly the navigation and organization of everything feels super confusing and not intuitive or standard how it should look and be organized and needs to really be assessed on how we can use design-review and minimal-surface to have simple intuitive product surface and ui/ux that is familiar and makes all our important core solutions/functionality easy to understand and utilize without flooding the ui with too many similar or redundant tabs and pages and things ...
 
 ---
 

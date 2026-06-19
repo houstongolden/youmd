@@ -2678,6 +2678,11 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       // Pane-switching commands
       // Note: /publish and /help are handled separately below with special logic
       const paneCommands: Record<string, RightPane> = {
+        "/home": "home",
+        "/dashboard": "home",
+        "/today": "home",
+        "/tasks": "tasks",
+        "/taskboard": "tasks",
         "/preview": "profile",
         "/profile": "profile",
         "/portfolio": "portfolio",

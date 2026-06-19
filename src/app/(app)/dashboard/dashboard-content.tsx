@@ -24,7 +24,6 @@ import {
   Activity,
   BarChart3,
   BookOpen,
-  Bot,
   ChevronDown,
   ChevronRight,
   Clock3,
@@ -33,11 +32,10 @@ import {
   Database,
   FileText,
   FolderGit2,
-  Github,
-  History,
+  Home,
   Image,
-  KeyRound,
   Layers3,
+  ListTodo,
   LogOut,
   MessageSquareText,
   Monitor,
@@ -104,9 +102,10 @@ import { StacksPane } from "@/components/panes/StacksPane";
 import { PortfolioGraphPane } from "@/components/panes/PortfolioGraphPane";
 import { ApiEnvPane } from "@/components/panes/ApiEnvPane";
 import { MachineReadinessPane } from "@/components/panes/MachineReadinessPane";
+import { HomePane, TasksPane } from "@/components/panes/TaskPanes";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-type PrimaryPaneGroup = "profile" | "projects" | "share" | "agents" | "insights" | "portrait" | "account" | "integrations";
+type PrimaryPaneGroup = "home" | "projects" | "workbench" | "integrations" | "identity" | "insights" | "account";
 
 const PANE_GROUPS: Array<{
   key: PrimaryPaneGroup;
@@ -115,10 +114,13 @@ const PANE_GROUPS: Array<{
   panes: Array<{ key: RightPane; label: string }>;
 }> = [
   {
-    key: "profile",
-    label: "profile",
-    defaultPane: "profile",
-    panes: [{ key: "profile", label: "profile" }],
+    key: "home",
+    label: "home",
+    defaultPane: "home",
+    panes: [
+      { key: "home", label: "home" },
+      { key: "tasks", label: "tasks" },
+    ],
   },
   {
     key: "projects",
@@ -132,13 +134,7 @@ const PANE_GROUPS: Array<{
     ],
   },
   {
-    key: "share",
-    label: "share",
-    defaultPane: "share",
-    panes: [{ key: "share", label: "share" }],
-  },
-  {
-    key: "agents",
+    key: "workbench",
     label: "stacks",
     defaultPane: "stacks",
     panes: [
@@ -158,18 +154,24 @@ const PANE_GROUPS: Array<{
     ],
   },
   {
-    // analytics = aggregate stats (views, reads, referrers);
-    // "activity" (the agent event log) lives under stacks → AgentsPane
+    key: "identity",
+    label: "identity",
+    defaultPane: "profile",
+    panes: [
+      { key: "profile", label: "profile" },
+      { key: "files", label: "files" },
+      { key: "share", label: "share" },
+      { key: "portrait", label: "portrait" },
+    ],
+  },
+  {
     key: "insights",
     label: "stats",
     defaultPane: "analytics",
-    panes: [{ key: "analytics", label: "analytics" }],
-  },
-  {
-    key: "portrait",
-    label: "portrait",
-    defaultPane: "portrait",
-    panes: [{ key: "portrait", label: "portrait" }],
+    panes: [
+      { key: "analytics", label: "analytics" },
+      { key: "history", label: "history" },
+    ],
   },
   {
     key: "account",
@@ -188,6 +190,8 @@ const RIGHT_PANE_KEYS = new Set<RightPane>(
 );
 
 function paneFromShellPath(pathname: string): RightPane | null {
+  if (/^\/shell\/tasks/.test(pathname)) return "tasks";
+  if (/^\/shell\/home/.test(pathname)) return "home";
   if (/^\/shell\/projects\/[^/]+/.test(pathname)) return "portfolio";
   if (/^\/shell\/stacks\/[^/]+/.test(pathname)) return "stacks";
   if (/^\/shell\/skills\/[^/]+/.test(pathname)) return "skills";
@@ -744,10 +748,19 @@ function ShellSidebar({
 
   const groups: ShellSidebarGroup[] = [
     {
+      label: "home",
+      icon: Home,
+      items: [
+        { label: "Home", detail: "tasks + focus", icon: Home, pane: "home", status: "new" },
+        { label: "Tasks", detail: "me vs agent", icon: ListTodo, pane: "tasks", status: "new" },
+        { label: "Activity", detail: "agent run log", icon: Activity, pane: "agents" },
+      ],
+    },
+    {
       label: "projects",
       icon: FolderGit2,
       items: [
-        { label: "Portfolio", detail: "projects + dependencies", icon: Database, pane: "portfolio", status: "new" },
+        { label: "Portfolio", detail: "projects + graph", icon: FolderGit2, pane: "portfolio" },
         {
           label: githubRepoName ? "Synced Repo" : "GitHub Repo",
           detail: repoDetail,
@@ -755,18 +768,15 @@ function ShellSidebar({
           pane: githubRepoName ? "files" : "github",
           status: githubRepoName ? "live" : "setup",
         },
-        { label: "Repo Link", detail: "create/connect", icon: Github, pane: "github" },
-        { label: "History", detail: "versions + sync", icon: History, pane: "history" },
+        { label: "Files", detail: "markdown brain", icon: FileText, pane: "files" },
       ],
     },
     {
-      label: "personal api",
+      label: "apis",
       icon: Code2,
       items: [
-        { label: "APIs / Env", detail: "providers + key map", icon: Database, pane: "apis", status: "new" },
+        { label: "APIs / Env", detail: "providers + key map", icon: Database, pane: "apis" },
         { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
-        { label: "API Tokens", detail: "owner keys", icon: KeyRound, pane: "settings" },
-        { label: "Shared Links", detail: "scoped context", icon: Shield, pane: "share" },
         { label: "Vault", detail: "secrets", icon: BookOpen, pane: "vault" },
       ],
     },
@@ -777,7 +787,6 @@ function ShellSidebar({
         { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
         { label: "Skills", detail: "templates + tools", icon: Wrench, pane: "skills" },
         { label: "Machine", detail: "sync + readiness", icon: Monitor, pane: "machine", status: "new" },
-        { label: "Agents", detail: "activity + MCP", icon: Bot, pane: "agents" },
       ],
     },
     {
@@ -785,9 +794,8 @@ function ShellSidebar({
       icon: Plug,
       items: [
         { label: "Connectors", detail: "apps + crawlers", icon: Plug, pane: "github" },
-        { label: "Sources", detail: "web + repo context", icon: Radar, pane: "edit", subTab: "sources" },
         { label: "Loops", detail: "crons + reports", icon: Clock3, pane: "github" },
-        { label: "Activity", detail: "agent run log", icon: Activity, pane: "agents" },
+        { label: "Shared Links", detail: "scoped context", icon: Shield, pane: "share" },
       ],
     },
     {
@@ -795,7 +803,7 @@ function ShellSidebar({
       icon: UserRound,
       items: [
         { label: "Profile", detail: `you.md/${username}`, icon: UserRound, pane: "profile" },
-        { label: "Files", detail: "markdown brain", icon: FileText, pane: "files" },
+        { label: "Sources", detail: "web + repo context", icon: Radar, pane: "edit", subTab: "sources" },
         { label: "Share", detail: "links + publish", icon: Share2, pane: "share" },
         { label: "Portrait", detail: "ascii identity", icon: Image, pane: "portrait" },
         { label: "Analytics", detail: "reads + views", icon: BarChart3, pane: "analytics" },
@@ -805,12 +813,14 @@ function ShellSidebar({
   ];
   const collapsedItems: ShellSidebarItem[] = [
     {
-      label: "Portfolio",
-      detail: "projects + dependencies",
-      icon: FolderGit2,
-      pane: "portfolio",
+      label: "Home",
+      detail: "tasks + focus",
+      icon: Home,
+      pane: "home",
       status: "new",
     },
+    { label: "Tasks", detail: "me vs agent", icon: ListTodo, pane: "tasks" },
+    { label: "Portfolio", detail: "projects + graph", icon: FolderGit2, pane: "portfolio" },
     { label: "APIs / Env", detail: "providers + key map", icon: Database, pane: "apis" },
     { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
     { label: "Machine", detail: "sync + readiness", icon: Monitor, pane: "machine" },
@@ -1204,8 +1214,8 @@ export function DashboardContent() {
   // /shell?tab=files reload-safe without inventing a second dashboard router.
   const shellQueryString = searchParams.toString();
   const requestedRightPane = paneFromShellPath(pathname) ?? paneFromShellQuery(searchParams);
-  const [rightPane, setRightPane] = useState<RightPane>(requestedRightPane ?? "profile");
-  const [mobileView, setMobileView] = useState<"terminal" | "preview">("terminal");
+  const [rightPane, setRightPane] = useState<RightPane>(requestedRightPane ?? "home");
+  const [mobileView, setMobileView] = useState<"terminal" | "preview">("preview");
   const [panelOpen, setPanelOpen] = useState<boolean>(() =>
     requestedRightPane ? true : readStoredPanelOpen()
   );
@@ -1966,6 +1976,12 @@ export function DashboardContent() {
               {/* Active pane */}
               <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
                 <ErrorBoundary>
+                  {rightPane === "home" && (
+                    <HomePane clerkId={user?.id} onOpenPane={(pane) => openPane(pane)} />
+                  )}
+                  {rightPane === "tasks" && (
+                    <TasksPane clerkId={user?.id} />
+                  )}
                   {rightPane === "profile" && (
                     <ProfilePane userId={convexUser._id} username={username} ownerId={convexUser._id} />
                   )}

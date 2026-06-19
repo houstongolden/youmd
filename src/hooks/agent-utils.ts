@@ -1041,7 +1041,7 @@ export interface PrivateUpdate {
   project?: Record<string, string>;
 }
 
-export type RightPane = "profile" | "portfolio" | "portrait" | "edit" | "files" | "share" | "skills" | "stacks" | "history" | "settings" | "analytics" | "agents" | "vault" | "help" | "github" | "apis" | "machine";
+export type RightPane = "home" | "tasks" | "profile" | "portfolio" | "portrait" | "edit" | "files" | "share" | "skills" | "stacks" | "history" | "settings" | "analytics" | "agents" | "vault" | "help" | "github" | "apis" | "machine";
 
 // ---------------------------------------------------------------------------
 // Helpers (exported for reuse)

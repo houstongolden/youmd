@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-18 — Home dashboard and global task surface
+- [x] Make `/shell` default to a real Home dashboard instead of leaving the user in chat/profile-only mode
+- [x] Add a Home pane that summarizes Houston-owned tasks, agent-owned tasks, personal tasks, focused projects, shipped/moved activity, and recent brain dumps
+- [x] Add a dedicated Tasks pane for global personal/project task triage
+- [x] Keep task ownership explicit: `me` / `agent`, project-scoped / personal, active / done
+- [x] Add `/home`, `/dashboard`, `/today`, `/tasks`, and `/taskboard` shell slash command routing
+- [x] Simplify the shell navigation taxonomy around Home, Projects, APIs, Skillstacks, Connect, Identity, Stats, and Account
+- [x] Verify with root TypeScript, full production build, local server restart, and Codex in-app Browser checks for `/shell`, `/shell?tab=home`, and `/shell?tab=tasks`
+- [ ] Next pass: continue reducing duplicate long panes by moving project/stack/API drill-ins to dedicated pages with breadcrumbs and compact list/detail modes
+
 ### 2026-06-18 — Shell callout and logo polish
 - [x] Clarify Mac mini Secret Vault flow: the new Mac does not need the vault passphrase first; it registers as a trusted device, then the source Mac runs `youmd env vault share` once using the source vault passphrase locally
 - [x] Add shared `PaneCallout` styling so top explainer/copy-prompt blocks match the Skills tab left-border + gradient treatment

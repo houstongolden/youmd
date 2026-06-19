@@ -1773,14 +1773,14 @@ Last Updated: 2026-06-18
 
 | Status | Count |
 |---|---|
-| VERIFIED | 3 |
+| VERIFIED | 4 |
 | DONE (not verified) | 37 |
 | DECIDED | 1 |
 | PARTIALLY DONE | 2 |
 | IN PROGRESS | 2 |
 | TODO | 9 |
 | BLOCKED | 1 |
-| **Total tracked** | **55** |
+| **Total tracked** | **56** |
 
 ## March 27 Session Additions
 
@@ -1866,3 +1866,14 @@ Last Updated: 2026-06-18
 4. Make it visible in the Machine tab and CLI. **DONE:** `com.youmd.realtime-sync` is included in daemon install/status and Machine readiness as `realtime brain / live websocket`.
 5. Publish/install everywhere. **PENDING:** publish CLI `0.8.6` to npm and rerun the Mac mini setup so the new machine has the realtime daemon and account Secret Vault status from the normal install path.
 6. Remaining architecture gap. **OPEN:** GitHub-backed shared skill repos still use conflict-safe git sync as the materialization layer; true instant cross-device sync for every non-Convex source should add GitHub webhook/change-event ingestion into the Convex sync head.
+
+### 139. Main YOU home feed/dashboard plus global personal/project task tracking
+**Status:** VERIFIED LOCAL
+**Verified:** root TypeScript pass, full production Next build, local `next start -p 3100`, Codex in-app Browser visual checks for `/shell`, `/shell?tab=home`, and `/shell?tab=tasks`, and clean browser logs.
+**Source:** 2026-06-18 — Houston: "why haven't you added anything for my main YOU home feed/dashboard etc and Task tracking globally across projects and personal/non-project scoped - and tasks which need YOU ... vs tasks that just need an agent assigned..."
+**Actionable Scope:**
+1. Surface the existing task graph where Houston can actually see it. **DONE:** `/shell` now defaults to Home, and Home shows human-owned tasks, agent-owned tasks, personal task count, focused projects, recent shipped/moved activity, and latest brain dumps.
+2. Create a dedicated global Tasks screen instead of burying triage inside Portfolio Graph. **DONE:** `/shell?tab=tasks` provides active/done, owner, and personal/project filters with quick `me`, `agent`, `doing`, `done`, and `personal` task controls.
+3. Make navigation more intuitive and less redundant. **DONE:** shell nav now groups around Home, Projects, APIs, Skillstacks, Connect, Identity, Stats, and Account, with Home/Tasks first.
+4. Keep text and click navigation aligned for agent-first use. **DONE:** slash commands now route `/home`, `/dashboard`, `/today`, `/tasks`, and `/taskboard`.
+5. Continue the deeper minimal-surface cleanup. **OPEN:** move more long project/stack/API detail sections into dedicated drill-in pages with breadcrumbs and compact list/detail modes.
