@@ -9,6 +9,13 @@
 - Note: the live `www.you.md/desktop-demo` is still the pre-responsive build that merged in #24; all of this responsive work is in PR #25 and lands when that deploys.
 - Verified on a 390px phone (system Chromium): no bottom bar, full-screen chat, drawer nav, Projects/master-detail stacks, and the back-to-chat button returns to the conversation.
 
+## 2026-06-19 — Shared Project Clarity Audit skill
+
+### feat(skills): package Project Clarity Audit outside gstack
+- Added `project-clarity-audit` as a canonical shared personal-stack skill at `~/.agent-shared/claude-skills/project-clarity-audit`.
+- Registered the skill in the local You.md catalog as `source: shared:project-clarity-audit` and symlinked `~/.youmd/skills/project-clarity-audit` to the shared source for YouStack/ystack visibility.
+- Synced shared agent mirrors, verified `youmd skill list` / `youmd skill use project-clarity-audit`, logged the skill-governor learning, and pushed the shared stack update to `houstongolden/agent-shared`.
+
 ## 2026-06-18 — Desktop demo: tablet breakpoint + caught-up empty state
 
 ### polish(web): fix the desktop-split breakpoint for tablets/narrow windows
