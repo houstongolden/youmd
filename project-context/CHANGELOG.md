@@ -7,6 +7,7 @@
 - The new default failure path registers the Mac, sends a realtime `machine-sync` status, prints the exact source-Mac action (`youmd env vault share`), and stops before marking setup ready.
 - Local/iCloud encrypted-file restore still exists, but it is now explicit opt-in via `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or an explicit `YOUMD_ENV_VAULT=/path/to/env-vault...`.
 - Updated the hosted `machine-bootstrap` skill guidance so Claude/Codex agents do not ask Houston for a Keychain/passphrase fallback unless that older local-vault path was intentionally selected.
+- Updated the bundled packaged `cli/skills/machine-bootstrap.md` with the same trusted-device-first rule so npm installs and hosted skill reads match.
 - Bumped CLI runtime to `0.8.7`; generated docs/openapi/llms references now advertise `0.8.7`.
 - Verification: focused CLI prompt tests passed, CLI TypeScript build passed, root TypeScript passed, and full production Next build passed.
 

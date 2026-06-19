@@ -156,9 +156,10 @@ You.md is the brain. The new machine should become a runnable local agent workst
 - Do not stop to ask "what next?" after each setup phase. Continue through the
   command, verify the result, and report concise proof.
 - Interrupt Houston only for true human-gated steps: GitHub browser auth,
-  source-Mac Secret Vault share/passphrase entry if no trusted-device envelope
-  exists yet, npm OTP, OS permissions, or the explicit 90-day project expansion
-  choice.
+  source-Mac Secret Vault share if no trusted-device envelope exists yet, local
+  vault passphrase/Keychain only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1`
+  or `YOUMD_ENV_VAULT` is explicitly provided, npm OTP, OS permissions, or the
+  explicit 90-day project expansion choice.
 - If the installed CLI is stale, run the curl installer/update path first, then
   retry the You.md command. Tell Houston when npm publish is needed for
   `npx youmd@latest` or npm fallback installs.
