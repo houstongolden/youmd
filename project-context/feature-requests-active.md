@@ -4,6 +4,22 @@ Last Updated: 2026-06-19
 
 ---
 
+## 2026-06-19 — Shared personal-stack clarity audit skill
+
+### 140. Package Project Clarity Audit as a local global skill outside gstack
+**Status:** DONE locally
+**Verified:** YES (`youmd skill list` shows `project-clarity-audit`; `youmd skill use project-clarity-audit` renders the skill; shared-agent sync exposed it into Claude/Codex/Pi and the local You.md catalog points at `source: shared:project-clarity-audit`)
+**Production Verified:** N/A (local/shared stack asset; pushed to `houstongolden/agent-shared`)
+**Source:** 2026-06-19 — Houston: "package this as a local global skill for me - i don't want it inside gstack but my own stack and possibly shared with ystack too ..."
+**Actionable Scope:**
+1. Convert the reusable prompt into a real local global skill. **DONE.**
+2. Keep canonical ownership outside gstack. **DONE** (`~/.agent-shared/claude-skills/project-clarity-audit`).
+3. Make it available to the personal/You.md stack and potentially ystack/YouStack. **DONE** (`~/.youmd/skills/youmd-skills.yaml` registers `source: shared:project-clarity-audit`; `~/.youmd/skills/project-clarity-audit` symlinks to the shared canonical skill).
+4. Sync across local agent hosts. **DONE** (`sync-agent-shared.sh` mirrored the shared skill into Codex and Pi; Claude points at the shared source; Cursor remains rules-based per the sync script).
+**Progress (2026-06-19):** Added the shared `project-clarity-audit` skill with `/clarity-audit [LIGHT|FULL]` invocation, nine-phase audit workflow, status taxonomy, real-file/commit citation rules, and a strict quality gate. Registered it in the You.md local skill catalog as an installed shared skill, added the shared stack-map ownership note, logged the skill-governor learning, synced agent mirrors, verified You.md rendering, and pushed `agent-shared` commit `c4c8f62`.
+
+---
+
 ## 2026-06-18 — Native desktop app design demo (frontend only)
 
 ### 139. Make the daily reference-intelligence loop prove actual You.md follow-through

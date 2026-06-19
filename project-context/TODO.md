@@ -7,6 +7,15 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-19 — Shared Project Clarity Audit skill
+- [x] Package the reusable Project Clarity Audit prompt as `project-clarity-audit`
+- [x] Keep canonical ownership outside gstack in `~/.agent-shared/claude-skills/project-clarity-audit`
+- [x] Register the skill into the local You.md catalog as `source: shared:project-clarity-audit`
+- [x] Symlink `~/.youmd/skills/project-clarity-audit` to the canonical shared implementation for YouStack/ystack visibility
+- [x] Run shared-agent sync so local agent hosts can discover the skill
+- [x] Verify `youmd skill list` and `youmd skill use project-clarity-audit`
+- [x] Push the shared stack update to `houstongolden/agent-shared`
+
 ### 2026-06-19 — Mac mini trusted-device setup follow-up
 - [x] Fix the `install.sh` Bash 3.2 empty-array crash so fresh Macs no longer need `YOUMD_FORCE_USER_NPM_PREFIX=1`
 - [x] Add a regression test that reads the generated install route and blocks reintroducing `NPM_GLOBAL_FLAGS=()`
