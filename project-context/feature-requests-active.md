@@ -1884,7 +1884,8 @@ Last Updated: 2026-06-19
 3. Materialize useful local state. **DONE:** live updates pull identity files, re-render installed You.md skills, and trigger bounded shared skillstack/project-context syncs.
 4. Make it visible in the Machine tab and CLI. **DONE:** `com.youmd.realtime-sync` is included in daemon install/status and Machine readiness as `realtime brain / live websocket`.
 5. Publish/install everywhere. **DONE for 30-day pass:** CLI `0.8.7` is published to npm, and the Mac mini setup ran with the realtime daemon, trusted-device Secret Vault share gate, and account Secret Vault status from the normal install path.
-6. Remaining architecture gap. **OPEN:** GitHub-backed shared skill repos still use conflict-safe git sync as the materialization layer; true instant cross-device sync for every non-Convex source should add GitHub webhook/change-event ingestion into the Convex sync head.
+6. Make the value visible in-product. **DONE LOCAL:** Home now shows a compact `live skill mesh` proof, and Machine shows a detailed local proof for `project-clarity-audit` across shared source, rendered skill, Claude mirror, Codex mirror, You.md catalog, and Stack Map.
+7. Remaining architecture gap. **OPEN:** GitHub-backed shared skill repos still use conflict-safe git sync as the materialization layer; true instant cross-device sync for every non-Convex source should add GitHub webhook/change-event ingestion into the Convex sync head.
 
 ### 139. Main YOU home feed/dashboard plus global personal/project task tracking
 **Status:** VERIFIED LOCAL

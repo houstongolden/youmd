@@ -122,6 +122,73 @@ function AgentBusPanel({ agentBus }: { agentBus: LocalMachineReadiness["agentBus
   );
 }
 
+function SkillSyncProofPanel({ skillSync }: { skillSync: LocalMachineReadiness["skillSync"] }) {
+  const proof = skillSync.highlightedSkill;
+  const checks = [
+    ["shared", proof.canonicalPresent],
+    ["rendered", proof.renderedPresent],
+    ["claude", proof.claudePresent],
+    ["codex", proof.codexPresent],
+    ["catalog", proof.catalogPresent],
+    ["stack map", proof.stackMapPresent],
+  ] as const;
+
+  return (
+    <div id="skill-sync-proof" className="mt-4 border-l border-[hsl(var(--success))]/70 bg-[hsl(var(--bg))]/30 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
+          live skill mesh
+        </span>
+        <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${statusClass(skillSync.status)}`}>
+          {skillSync.status}
+        </span>
+      </div>
+      <div className="mt-3 grid gap-3 lg:grid-cols-[0.8fr_1fr]">
+        <div>
+          <h3 className="font-mono text-[17px] leading-tight text-[hsl(var(--text-primary))]">
+            {proof.name}
+          </h3>
+          <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+            One canonical shared skill, mirrored into Claude and Codex, registered in You.md, and ready for any trusted Mac.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {checks.map(([label, ready]) => (
+              <span
+                key={label}
+                className={`border px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.11em] ${
+                  ready
+                    ? "border-[hsl(var(--success))]/35 text-[hsl(var(--success))]"
+                    : "border-[hsl(var(--accent))]/35 text-[hsl(var(--accent))]"
+                }`}
+              >
+                {label} {ready ? "yes" : "missing"}
+              </span>
+            ))}
+          </div>
+          <div className="mt-3 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+            latest observed {formatTime(proof.updatedAt)}
+          </div>
+        </div>
+        <div>
+          <div className="grid gap-2 sm:grid-cols-4">
+            <StatCell label="shared" value={skillSync.canonicalCount} />
+            <StatCell label="claude" value={skillSync.claudeMirrorCount} />
+            <StatCell label="codex" value={skillSync.codexMirrorCount} />
+            <StatCell label="catalog" value={skillSync.youmdCatalogCount} />
+          </div>
+          <div className="mt-3 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
+            recent shared skills: {skillSync.recentSharedSkills.join(", ") || "none observed"}
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 space-y-2">
+        <CopyableCommand command={skillSync.syncCommand} dimmed />
+        <CopyableCommand command={skillSync.verifyCommand} dimmed />
+      </div>
+    </div>
+  );
+}
+
 function MachineSetupHero({
   clerkId,
   onCopied,
@@ -344,6 +411,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
           </div>
         )}
         {report?.agentBus && <AgentBusPanel agentBus={report.agentBus} />}
+        {report?.skillSync && <SkillSyncProofPanel skillSync={report.skillSync} />}
 
         <PaneDivider />
 
@@ -534,9 +602,10 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                   <BooleanCell label="codex skills mirror" value={report.agentStack.codexSkillsPresent} />
                   <BooleanCell label="claude skills mirror" value={report.agentStack.claudeSkillsPresent} />
                   <BooleanCell label="youmd skill cache" value={report.agentStack.youmdSkillsPresent} />
+                  <BooleanCell label="clarity skill proof" value={report.skillSync.status === "ready"} />
                 </div>
                 <p className="mt-3 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
-                  {report.agentStack.youmdCliPath ?? "youmd cli not found"} / {report.agentStack.sharedSkillCount} shared skills indexed
+                  {report.agentStack.youmdCliPath ?? "youmd cli not found"} / {report.agentStack.sharedSkillCount} shared skills indexed / {report.skillSync.highlightedSkill.name} {report.skillSync.status}
                 </p>
               </div>
               <div>

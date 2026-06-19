@@ -7,6 +7,14 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-19 — Cross-machine skill sync proof UI
+- [x] Add local machine readiness metadata for shared skill sync proof
+- [x] Highlight `project-clarity-audit` across canonical shared source, rendered skill, Claude mirror, Codex mirror, You.md catalog, and Stack Map
+- [x] Surface the proof as a compact `live skill mesh` block on Home
+- [x] Surface the detailed proof in Machine readiness with sync/verify commands
+- [x] Verify with root TypeScript, production build, direct readiness payload proof, and local server restart
+- [ ] Next pass: make the desktop app System Status popover consume the same real readiness payload instead of mock sync data
+
 ### 2026-06-19 — Shared Project Clarity Audit skill
 - [x] Package the reusable Project Clarity Audit prompt as `project-clarity-audit`
 - [x] Keep canonical ownership outside gstack in `~/.agent-shared/claude-skills/project-clarity-audit`

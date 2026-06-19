@@ -9,6 +9,15 @@
 - Note: the live `www.you.md/desktop-demo` is still the pre-responsive build that merged in #24; all of this responsive work is in PR #25 and lands when that deploys.
 - Verified on a 390px phone (system Chromium): no bottom bar, full-screen chat, drawer nav, Projects/master-detail stacks, and the back-to-chat button returns to the conversation.
 
+## 2026-06-19 — Cross-machine skill sync proof UI
+
+### feat(shell): show the live shared-skill mesh in Home and Machine
+- Added a local-only `skillSync` readiness payload that counts canonical shared skills, Claude mirrors, Codex mirrors, and You.md catalog entries without reading or exposing secrets.
+- The payload highlights `project-clarity-audit` as the current proof skill and verifies six sync points: canonical shared source, rendered skill, Claude mirror, Codex mirror, You.md catalog, and shared stack map.
+- Added a compact `live skill mesh` block to the Home dashboard so the main product surface explains the actual value: a skill created once becomes available across trusted Macs and agent runtimes.
+- Added a richer `live skill mesh` proof panel to Machine readiness with counts, recent shared skills, status tags, and copyable sync/verify commands for Mac mini checks.
+- Verification: root TypeScript passed, production Next build passed, local readiness builder returns `project-clarity-audit` as `ready` with `13` shared skills / `128` Claude skills / `130` Codex skills / `11` You.md catalog skills, and local `next start -p 3100` is running.
+
 ## 2026-06-19 — Shared Project Clarity Audit skill
 
 ### feat(skills): package Project Clarity Audit outside gstack

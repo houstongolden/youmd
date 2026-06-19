@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { Bot, Check, Clock3, FolderGit2, ListTodo, UserRound } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import type { LocalMachineReadiness } from "@/lib/local-machine-readiness.server";
 import { PaneCallout, PaneDivider, PaneEmptyState, PaneHeader, PaneSectionLabel } from "./shared";
 
 type TaskPaneKey = "portfolio" | "tasks" | "machine" | "agents" | "apis" | "skills";
@@ -409,6 +410,65 @@ function partitionTasks(tasks: PortfolioTask[]) {
   };
 }
 
+function HomeSkillSyncProof({
+  readiness,
+  onOpenMachine,
+}: {
+  readiness: LocalMachineReadiness | null;
+  onOpenMachine?: () => void;
+}) {
+  const skillSync = readiness?.skillSync;
+  const proof = skillSync?.highlightedSkill;
+  const readyCount = proof
+    ? [
+        proof.canonicalPresent,
+        proof.renderedPresent,
+        proof.claudePresent,
+        proof.codexPresent,
+        proof.catalogPresent,
+        proof.stackMapPresent,
+      ].filter(Boolean).length
+    : 0;
+
+  return (
+    <div className="border-l border-[hsl(var(--success))]/70 bg-[hsl(var(--bg))]/30 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
+          live skill mesh
+        </span>
+        <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${skillSync?.status === "ready" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}`}>
+          {skillSync?.status ?? "checking"}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="font-mono text-[15px] leading-tight text-[hsl(var(--text-primary))]">
+            {proof?.name ?? "project-clarity-audit"}
+          </div>
+          <p className="mt-2 max-w-3xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+            A shared skill created on one Mac is now a canonical agent capability across trusted machines, Claude, Codex, and the You.md catalog.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+            {skillSync
+              ? `${skillSync.canonicalCount} shared / ${skillSync.claudeMirrorCount} claude / ${skillSync.codexMirrorCount} codex / ${readyCount}/6 proof`
+              : "reading local sync state"}
+          </span>
+          <button
+            type="button"
+            onClick={onOpenMachine}
+            className="h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            machine proof
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HomePane({
   clerkId,
   onOpenPane,
@@ -418,6 +478,7 @@ export function HomePane({
 }) {
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const { busyTaskId, statusLine, setStatus, setOwner, setPersonal } = useTaskActions(clerkId);
+  const [machineReadiness, setMachineReadiness] = useState<LocalMachineReadiness | null>(null);
 
   const tasks = useMemo(() => (graph?.tasks ?? []) as PortfolioTask[], [graph?.tasks]);
   const projects = useMemo(() => (graph?.projects ?? []) as PortfolioProject[], [graph?.projects]);
@@ -438,6 +499,27 @@ export function HomePane({
       .sort((a, b) => b.occurredAt - a.occurredAt)
       .slice(0, 8);
   }, [activities]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMachineReadiness() {
+      try {
+        const response = await fetch("/api/local/machine-readiness?root=current", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (!response.ok) return;
+        const payload = (await response.json()) as LocalMachineReadiness;
+        if (!cancelled) setMachineReadiness(payload);
+      } catch {
+        if (!cancelled) setMachineReadiness(null);
+      }
+    }
+    void loadMachineReadiness();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>
@@ -470,6 +552,8 @@ export function HomePane({
           <MiniStat value={personalTasks.length} label="personal tasks" />
           <MiniStat value={focusedProjects.length} label="focused projects" />
         </div>
+
+        <HomeSkillSyncProof readiness={machineReadiness} onOpenMachine={() => onOpenPane?.("machine")} />
 
         {statusLine && (
           <div className="border-l border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/[0.035] px-4 py-2 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[hsl(var(--accent))]">

@@ -110,6 +110,31 @@ export type LocalMachineReadiness = {
     youmdSkillsPresent: boolean;
     syncScriptPresent: boolean;
   };
+  skillSync: {
+    status: LocalReadinessStatus;
+    canonicalRoot: string;
+    claudeRoot: string;
+    codexRoot: string;
+    youmdCatalogPath: string;
+    canonicalCount: number;
+    claudeMirrorCount: number;
+    codexMirrorCount: number;
+    youmdCatalogCount: number;
+    recentSharedSkills: string[];
+    highlightedSkill: {
+      name: string;
+      canonicalPresent: boolean;
+      renderedPresent: boolean;
+      claudePresent: boolean;
+      codexPresent: boolean;
+      catalogPresent: boolean;
+      stackMapPresent: boolean;
+      updatedAt?: string;
+    };
+    syncCommand: string;
+    verifyCommand: string;
+    secretValuesExposed: false;
+  };
   mcp: {
     status: LocalReadinessStatus;
     claudeConfigPresent: boolean;
@@ -521,6 +546,91 @@ function countSkills(skillRoot: string): number {
   }
 }
 
+function skillNames(skillRoot: string): string[] {
+  const root = expandHome(skillRoot);
+  if (!isDirectory(root)) return [];
+  try {
+    return fs
+      .readdirSync(root)
+      .filter((entry) => exists(path.join(root, entry, "SKILL.md")))
+      .sort((a, b) => {
+        const bTime = mtimeMs(path.join(root, b, "SKILL.md"));
+        const aTime = mtimeMs(path.join(root, a, "SKILL.md"));
+        return bTime - aTime || a.localeCompare(b);
+      });
+  } catch {
+    return [];
+  }
+}
+
+function catalogSkillNames(catalogPath: string): string[] {
+  return Array.from(readText(catalogPath).matchAll(/^\s*-\s+name:\s+([A-Za-z0-9_.-]+)/gm))
+    .map((match) => match[1])
+    .filter((name): name is string => Boolean(name));
+}
+
+function localSkillSyncStatus(home: string): LocalMachineReadiness["skillSync"] {
+  const highlightedName = "project-clarity-audit";
+  const canonicalRoot = path.join(home, ".agent-shared", "claude-skills");
+  const claudeRoot = path.join(home, ".claude", "skills");
+  const codexRoot = path.join(home, ".codex", "skills");
+  const youmdCatalogPath = path.join(home, ".youmd", "skills", "youmd-skills.yaml");
+  const canonicalNames = skillNames(canonicalRoot);
+  const claudeNames = skillNames(claudeRoot);
+  const codexNames = skillNames(codexRoot);
+  const catalogNames = catalogSkillNames(youmdCatalogPath);
+  const stackMapText = readText(path.join(home, ".agent-shared", "STACK-MAP.md"), 160000);
+  const highlightedRoot = path.join(canonicalRoot, highlightedName);
+  const highlighted = {
+    name: highlightedName,
+    canonicalPresent: exists(path.join(highlightedRoot, "SKILL.md")),
+    renderedPresent: exists(path.join(highlightedRoot, "RENDERED.md")),
+    claudePresent: exists(path.join(claudeRoot, highlightedName, "SKILL.md")),
+    codexPresent: exists(path.join(codexRoot, highlightedName, "SKILL.md")),
+    catalogPresent: catalogNames.includes(highlightedName),
+    stackMapPresent: stackMapText.includes(highlightedName),
+    updatedAt: newestMtimeIso([
+      path.join(highlightedRoot, "SKILL.md"),
+      path.join(highlightedRoot, "RENDERED.md"),
+      path.join(claudeRoot, highlightedName),
+      path.join(codexRoot, highlightedName),
+      youmdCatalogPath,
+      path.join(home, ".agent-shared", "STACK-MAP.md"),
+    ]),
+  };
+  const allHighlightedReady = [
+    highlighted.canonicalPresent,
+    highlighted.renderedPresent,
+    highlighted.claudePresent,
+    highlighted.codexPresent,
+    highlighted.catalogPresent,
+    highlighted.stackMapPresent,
+  ];
+
+  return {
+    status: statusFrom([
+      canonicalNames.length > 0,
+      claudeNames.length > 0,
+      codexNames.length > 0,
+      catalogNames.length > 0,
+      allHighlightedReady.every(Boolean),
+    ]) as LocalReadinessStatus,
+    canonicalRoot,
+    claudeRoot,
+    codexRoot,
+    youmdCatalogPath,
+    canonicalCount: canonicalNames.length,
+    claudeMirrorCount: claudeNames.length,
+    codexMirrorCount: codexNames.length,
+    youmdCatalogCount: catalogNames.length,
+    recentSharedSkills: canonicalNames.slice(0, 6),
+    highlightedSkill: highlighted,
+    syncCommand: "youmd pull && youmd sync && youmd skill sync && git -C ~/.agent-shared pull --ff-only && ~/.agent-shared/bin/sync-agent-shared.sh",
+    verifyCommand: `rg -n "${highlightedName}" ~/.youmd/skills ~/.agent-shared/STACK-MAP.md && ls -la ~/.agent-shared/claude-skills/${highlightedName} ~/.claude/skills/${highlightedName} ~/.codex/skills/${highlightedName}`,
+    secretValuesExposed: false,
+  };
+}
+
 function statusFrom(parts: boolean[], warnWhenPartial = true): LocalReadinessStatus {
   if (parts.every(Boolean)) return "ready";
   if (parts.some(Boolean) && warnWhenPartial) return "warn";
@@ -704,6 +814,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
   };
   const accountVault = realtimeSecretVaultStatus();
   const agentBus = realtimeAgentBusStatus();
+  const skillSync = localSkillSyncStatus(home);
   const envVault = {
     status: statusFrom([
       exists("~/.agent-shared/bin/env-key-audit.py"),
@@ -731,6 +842,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     projects.totals.needsEnv > 0 ? `${projects.totals.needsEnv} projects need env restore` : "",
     projects.scanned === 0 ? `no project directories found under ${rootDir}` : "",
     agentStack.status !== "ready" ? "local You.md agent stack is not fully ready" : "",
+    skillSync.status !== "ready" ? `${skillSync.highlightedSkill.name} skill sync proof is incomplete` : "",
     envVault.status !== "ready" ? "env vault backup/restore tooling is incomplete" : "",
     envVault.accountSnapshotStatus !== "ready" ? "account Secret Vault encrypted snapshot is not ready in realtime status" : "",
   ].filter(Boolean);
@@ -755,6 +867,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     },
     daemons,
     agentStack,
+    skillSync,
     mcp,
     envVault,
     agentBus,
