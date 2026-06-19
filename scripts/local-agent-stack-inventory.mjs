@@ -3,14 +3,40 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
-import yaml from "js-yaml";
 
 const home = os.homedir();
 const repoRoot = process.cwd();
 const now = new Date();
 
-const outJson = path.join(repoRoot, "project-context", "local-agent-stack-inventory-2026-06-19.json");
-const outHtml = path.join(repoRoot, "project-context", "local-agent-stack-inventory-2026-06-19.html");
+function parseArgs(argv) {
+  const opts = {};
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === "--out-dir") opts.outDir = argv[++i];
+    else if (arg === "--workspace") opts.workspace = argv[++i];
+    else if (arg === "--date") opts.date = argv[++i];
+    else if (arg === "--help" || arg === "-h") opts.help = true;
+  }
+  return opts;
+}
+
+const cli = parseArgs(process.argv.slice(2));
+if (cli.help) {
+  console.log(`Usage: node scripts/local-agent-stack-inventory.mjs [--out-dir DIR] [--workspace DIR] [--date YYYY-MM-DD]
+
+Secret-safe inventory of Houston's local/global agent skills, prompts,
+preferences, project context, host mirrors, and sync/catalog gaps.
+`);
+  process.exit(0);
+}
+
+const stamp = cli.date || now.toISOString().slice(0, 10);
+const workspaceRoot = path.resolve(cli.workspace || path.join(home, "Desktop", "CODE_2025"));
+const outDir = path.resolve(cli.outDir || path.join(repoRoot, "project-context"));
+fs.mkdirSync(outDir, { recursive: true });
+
+const outJson = path.join(outDir, `local-agent-stack-inventory-${stamp}.json`);
+const outHtml = path.join(outDir, `local-agent-stack-inventory-${stamp}.html`);
 
 const roots = {
   agentShared: path.join(home, ".agent-shared"),
@@ -28,7 +54,7 @@ const roots = {
   gstack: path.join(home, ".claude", "skills", "gstack"),
   youmdHome: path.join(home, ".youmd"),
   youmdSkills: path.join(home, ".youmd", "skills"),
-  workspace: path.join(home, "Desktop", "CODE_2025"),
+  workspace: workspaceRoot,
 };
 
 const skipDirs = new Set([
@@ -75,6 +101,18 @@ function readJsonSafe(p) {
     return JSON.parse(fs.readFileSync(p, "utf8"));
   } catch {
     return null;
+  }
+}
+
+function readTextPrefix(p, max = 12000) {
+  try {
+    const fd = fs.openSync(p, "r");
+    const buffer = Buffer.alloc(max);
+    const bytes = fs.readSync(fd, buffer, 0, max, 0);
+    fs.closeSync(fd);
+    return buffer.subarray(0, bytes).toString("utf8");
+  } catch {
+    return "";
   }
 }
 
@@ -162,12 +200,16 @@ function skillFiles(root) {
     const dir = path.dirname(file);
     const name = path.basename(dir);
     const real = realpathSafe(file) || file;
+    const classification = classifySkill(file, real);
     return {
       name,
       file,
       pathDisplay: relHome(file),
       realpath: relHome(real),
-      sourceClass: classifyPath(real),
+      sourceClass: classification.sourceClass,
+      ownerClass: classification.ownerClass,
+      provenance: classification.provenance,
+      syncPolicy: classification.syncPolicy,
     };
   });
 }
@@ -178,12 +220,16 @@ function directSkillRecords(root) {
     .map((entry) => {
       const file = path.join(entry.path, "SKILL.md");
       const real = realpathSafe(file) || file;
+      const classification = classifySkill(file, real);
       return {
         name: entry.name,
         file,
         pathDisplay: relHome(file),
         realpath: relHome(real),
-        sourceClass: classifyPath(real),
+        sourceClass: classification.sourceClass,
+        ownerClass: classification.ownerClass,
+        provenance: classification.provenance,
+        syncPolicy: classification.syncPolicy,
         exposureKind: entry.kind,
       };
     });
@@ -202,18 +248,140 @@ function classifyPath(p) {
   return "other";
 }
 
+function classifySkill(file, real) {
+  const sourceClass = classifyPath(real);
+  const text = readTextPrefix(file, 10000).toLowerCase();
+  let ownerClass = "unknown";
+  let provenance = "unknown";
+  let syncPolicy = "review-before-sync";
+
+  if (real.startsWith(roots.sharedSkills)) {
+    ownerClass = "houston-owned-shared";
+    provenance = "canonical ~/.agent-shared";
+    syncPolicy = "syncable-canonical";
+  } else if (real.startsWith(roots.scienceStack)) {
+    if (real.includes("/extensions/")) {
+      ownerClass = "external-science-extension";
+      provenance = "SciStack opt-in upstream extension";
+      syncPolicy = "catalog-as-external-reference";
+    } else {
+      ownerClass = "houston-owned-science";
+      provenance = "SciStack/HubStack/AstroStack canonical";
+      syncPolicy = "syncable-canonical-with-namespace";
+    }
+  } else if (real.startsWith(roots.gstack)) {
+    ownerClass = "gstack-managed-reference";
+    provenance = "GStack local reference stack";
+    syncPolicy = "catalog-as-external-reference";
+  } else if (real.startsWith(roots.youmdSkills)) {
+    ownerClass = "youmd-catalog-cache";
+    provenance = "You.md local skill catalog";
+    syncPolicy = "already-cataloged-or-cache";
+  } else if (real.startsWith(roots.codexPluginSkills)) {
+    ownerClass = "plugin-bundled";
+    provenance = "Codex/OpenAI plugin cache";
+    syncPolicy = "catalog-as-plugin-reference";
+  } else if (real.startsWith(roots.agentsSkills) && text.includes("skills.sh")) {
+    ownerClass = "public-marketplace-helper";
+    provenance = "skills.sh referenced helper";
+    syncPolicy = "catalog-as-public-source-reference";
+  } else if (real.startsWith(roots.agentsSkills)) {
+    ownerClass = "agent-host-local";
+    provenance = ".agents host-local skill";
+    syncPolicy = "review-before-sync";
+  } else if (sourceClass.endsWith("-host")) {
+    ownerClass = "host-local-or-mirror";
+    provenance = "agent host exposure root";
+    syncPolicy = "resolve-canonical-owner-first";
+  }
+
+  if (text.includes("clawhub.ai")) provenance = "clawhub.ai referenced";
+  if (text.includes("skills.sh")) provenance = "skills.sh referenced";
+  if (text.includes("github.com")) provenance = provenance === "unknown" ? "GitHub referenced" : provenance;
+
+  return { sourceClass, ownerClass, provenance, syncPolicy };
+}
+
 function uniqueByName(items) {
   const map = new Map();
   for (const item of items) {
     const current = map.get(item.name);
     if (!current) {
-      map.set(item.name, { name: item.name, paths: [item.pathDisplay], classes: [item.sourceClass] });
+      map.set(item.name, {
+        name: item.name,
+        paths: [item.pathDisplay],
+        realpaths: [item.realpath],
+        classes: [item.sourceClass],
+        ownerClasses: [item.ownerClass],
+        provenances: [item.provenance],
+        syncPolicies: [item.syncPolicy],
+      });
     } else {
       current.paths.push(item.pathDisplay);
+      if (!current.realpaths.includes(item.realpath)) current.realpaths.push(item.realpath);
       if (!current.classes.includes(item.sourceClass)) current.classes.push(item.sourceClass);
+      if (!current.ownerClasses.includes(item.ownerClass)) current.ownerClasses.push(item.ownerClass);
+      if (!current.provenances.includes(item.provenance)) current.provenances.push(item.provenance);
+      if (!current.syncPolicies.includes(item.syncPolicy)) current.syncPolicies.push(item.syncPolicy);
     }
   }
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function rollup(items, field) {
+  return items.reduce((acc, item) => {
+    const key = item[field] || "unknown";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+function buildDryAudit(records, catalogNameSet) {
+  const groups = new Map();
+  for (const record of records) {
+    const group = groups.get(record.name) || [];
+    group.push(record);
+    groups.set(record.name, group);
+  }
+
+  const duplicateNames = [];
+  const mirrors = [];
+  const ownedPriority = [];
+  for (const [name, group] of groups.entries()) {
+    const realpaths = [...new Set(group.map((item) => item.realpath))];
+    const owners = [...new Set(group.map((item) => item.ownerClass))];
+    const policies = [...new Set(group.map((item) => item.syncPolicy))];
+    const row = {
+      name,
+      occurrences: group.length,
+      realpathCount: realpaths.length,
+      owners,
+      policies,
+      cataloged: catalogNameSet.has(name),
+      samplePaths: group.map((item) => item.pathDisplay).slice(0, 8),
+    };
+
+    if (owners.some((owner) => owner.startsWith("houston-owned"))) ownedPriority.push(row);
+    if (realpaths.length === 1 && group.length > 1) mirrors.push(row);
+    if (realpaths.length > 1) duplicateNames.push({
+      ...row,
+      risk: owners.some((owner) => owner.startsWith("houston-owned"))
+        ? "review-only-owned-priority"
+        : "possible-redundancy-review",
+    });
+  }
+
+  return {
+    duplicateNameDifferentRealpaths: duplicateNames.sort((a, b) => b.realpathCount - a.realpathCount || a.name.localeCompare(b.name)),
+    sameRealpathMirrors: mirrors.sort((a, b) => b.occurrences - a.occurrences || a.name.localeCompare(b.name)),
+    ownedPrioritySkills: ownedPriority.sort((a, b) => a.name.localeCompare(b.name)),
+    guidance: [
+      "Never auto-delete Houston-owned shared, science, or heavily modified skills.",
+      "Same-name/different-realpath rows are review queues, not deletion instructions.",
+      "Same-realpath mirrors are usually healthy host exposure, not duplication.",
+      "Public or plugin skills should be cataloged as external references unless intentionally forked.",
+    ],
+  };
 }
 
 function getCommand(cmd, args) {
@@ -228,11 +396,52 @@ function readSkillCatalog() {
   const catalogPath = path.join(roots.youmdSkills, "youmd-skills.yaml");
   if (!exists(catalogPath)) return { path: catalogPath, skills: [] };
   try {
-    const parsed = yaml.load(fs.readFileSync(catalogPath, "utf8"));
-    return { path: catalogPath, skills: Array.isArray(parsed?.skills) ? parsed.skills : [] };
+    const raw = fs.readFileSync(catalogPath, "utf8");
+    const skills = [];
+    let current = null;
+    let activeArray = null;
+    for (const line of raw.split(/\r?\n/)) {
+      const nameMatch = line.match(/^\s*-\s+name:\s*(.+?)\s*$/);
+      if (nameMatch) {
+        if (current) skills.push(current);
+        current = { name: unquoteYaml(nameMatch[1]), identity_fields: [], requires: [] };
+        activeArray = null;
+        continue;
+      }
+      if (!current) continue;
+      const scalar = line.match(/^\s{4}([a-zA-Z_]+):\s*(.*?)\s*$/);
+      if (scalar) {
+        const [, key, value] = scalar;
+        if (value === "[]") {
+          current[key] = [];
+          activeArray = null;
+        } else if (value === "") {
+          current[key] = [];
+          activeArray = key;
+        } else {
+          current[key] = key === "installed" ? value === "true" : unquoteYaml(value);
+          activeArray = null;
+        }
+        continue;
+      }
+      const arrayItem = line.match(/^\s{6}-\s+(.+?)\s*$/);
+      if (arrayItem && activeArray) {
+        current[activeArray].push(unquoteYaml(arrayItem[1]));
+      }
+    }
+    if (current) skills.push(current);
+    return { path: catalogPath, skills };
   } catch {
     return { path: catalogPath, skills: [] };
   }
+}
+
+function unquoteYaml(value) {
+  const trimmed = String(value || "").trim();
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
 }
 
 function collectProjectSignals() {
@@ -309,6 +518,7 @@ const catalogNames = new Set(catalog.skills.map((s) => s.name));
 const filesystemNames = new Set(uniqueSkills.map((s) => s.name));
 const missingFromCatalog = uniqueSkills.filter((s) => !catalogNames.has(s.name));
 const catalogNotFoundInFs = catalog.skills.filter((s) => !filesystemNames.has(s.name));
+const dryAudit = buildDryAudit(allSkillFiles, catalogNames);
 
 const hostRoots = [
   ["Claude host", roots.claudeSkills],
@@ -338,6 +548,8 @@ const hostSummaries = hostRoots.map(([label, root]) => {
       acc[item.sourceClass] = (acc[item.sourceClass] || 0) + 1;
       return acc;
     }, {}),
+    ownerClasses: rollup(skills, "ownerClass"),
+    syncPolicies: rollup(skills, "syncPolicy"),
     sampleEntries: direct.slice(0, 80).map((entry) => ({
       name: entry.name,
       kind: entry.kind,
@@ -393,6 +605,8 @@ const summary = {
     uniqueRealSkillFiles,
     directExposureSkillRecords: directExposureSkillRecords.length,
     canonicalSkillFiles: canonicalSkillFiles.length,
+    duplicateNameDifferentRealpaths: dryAudit.duplicateNameDifferentRealpaths.length,
+    sameRealpathMirrors: dryAudit.sameRealpathMirrors.length,
     youmdCatalogSkills: catalog.skills.length,
     youmdCatalogInstalled: catalog.skills.filter((s) => s.installed).length,
     missingFromYoumdCatalog: missingFromCatalog.length,
@@ -400,6 +614,10 @@ const summary = {
     projectSignals: projectSignals.count,
   },
   hostSummaries,
+  ownershipRollup: rollup(allSkillFiles, "ownerClass"),
+  syncPolicyRollup: rollup(allSkillFiles, "syncPolicy"),
+  provenanceRollup: rollup(allSkillFiles, "provenance"),
+  dryAudit,
   catalog: {
     path: relHome(catalog.path),
     skills: catalog.skills.map((s) => ({
@@ -413,6 +631,9 @@ const summary = {
   missingFromCatalog: missingFromCatalog.map((s) => ({
     name: s.name,
     classes: s.classes,
+    ownerClasses: s.ownerClasses,
+    provenances: s.provenances,
+    syncPolicies: s.syncPolicies,
     samplePaths: s.paths.slice(0, 6),
   })),
   catalogNotFoundInFilesystem: catalogNotFoundInFs.map((s) => s.name),
@@ -431,6 +652,7 @@ const summary = {
     "Secret-safe inventory: file paths, filenames, counts, and symlink metadata only.",
     "youmd skill list reads ~/.youmd/skills/youmd-skills.yaml merged with CLI defaultSkills(); it does not crawl every host/global skill root.",
     "Top-level host entry counts and nested SKILL.md counts intentionally differ because stack roots such as gstack and scistack contain their own nested skills.",
+    "DRY audit rows are review queues. The scanner never recommends deleting Houston-owned skills automatically.",
   ],
 };
 
@@ -469,6 +691,11 @@ const mermaid = `flowchart TB
     M["resident daemons\\nidentity + skillstack + project-context"]
     B["You.md API/MCP/account sync\\nremote is ${esc(summary.versions.installedYoumd || "unknown")} local CLI"]
   end
+  subgraph Analysis["Inventory intelligence"]
+    O["Ownership rollup\\nowned vs external vs plugin"]
+    Q["DRY audit\\nreview queues, no auto-delete"]
+    V["Future app view\\nConvex + username-you-md repo"]
+  end
   A --> C
   A --> X
   A --> R
@@ -481,7 +708,11 @@ const mermaid = `flowchart TB
   L --> B
   M --> B
   C -.not fully cataloged.-> L
-  X -.not fully cataloged.-> L`;
+  X -.not fully cataloged.-> L
+  C --> O
+  X --> O
+  O --> Q
+  Q --> V`;
 
 const hostRows = summary.hostSummaries.map((h) => [
   esc(h.label),
@@ -492,6 +723,8 @@ const hostRows = summary.hostSummaries.map((h) => [
   esc(h.symlinks),
   esc(h.brokenSymlinks),
   `<code>${esc(Object.entries(h.sourceClasses).map(([k, v]) => `${k}:${v}`).join(", ") || "-")}</code>`,
+  `<code>${esc(Object.entries(h.ownerClasses).map(([k, v]) => `${k}:${v}`).join(", ") || "-")}</code>`,
+  `<code>${esc(Object.entries(h.syncPolicies).map(([k, v]) => `${k}:${v}`).join(", ") || "-")}</code>`,
 ]);
 
 const catalogRows = summary.catalog.skills.map((s) => [
@@ -505,6 +738,32 @@ const catalogRows = summary.catalog.skills.map((s) => [
 const missingRows = summary.missingFromCatalog.slice(0, 400).map((s) => [
   `<code>${esc(s.name)}</code>`,
   `<code>${esc(s.classes.join(", "))}</code>`,
+  `<code>${esc(s.ownerClasses.join(", "))}</code>`,
+  `<code>${esc(s.syncPolicies.join(", "))}</code>`,
+  `<code>${esc(s.samplePaths.join("\\n"))}</code>`,
+]);
+
+const rollupRows = Object.entries(summary.ownershipRollup)
+  .sort((a, b) => b[1] - a[1])
+  .map(([key, value]) => [esc(key), esc(value)]);
+
+const policyRows = Object.entries(summary.syncPolicyRollup)
+  .sort((a, b) => b[1] - a[1])
+  .map(([key, value]) => [esc(key), esc(value)]);
+
+const duplicateRows = summary.dryAudit.duplicateNameDifferentRealpaths.slice(0, 160).map((s) => [
+  `<code>${esc(s.name)}</code>`,
+  esc(s.realpathCount),
+  esc(s.occurrences),
+  `<code>${esc(s.owners.join(", "))}</code>`,
+  `<code>${esc(s.risk)}</code>`,
+  `<code>${esc(s.samplePaths.join("\\n"))}</code>`,
+]);
+
+const mirrorRows = summary.dryAudit.sameRealpathMirrors.slice(0, 160).map((s) => [
+  `<code>${esc(s.name)}</code>`,
+  esc(s.occurrences),
+  `<code>${esc(s.owners.join(", "))}</code>`,
   `<code>${esc(s.samplePaths.join("\\n"))}</code>`,
 ]);
 
@@ -593,6 +852,12 @@ const html = `<!doctype html>
       padding: 14px;
       overflow-x: auto;
     }
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -639,6 +904,8 @@ const html = `<!doctype html>
       ${numberCard("Exposure + canonical records", summary.totals.skillFileOccurrences, `${summary.totals.directExposureSkillRecords} host exposures + ${summary.totals.canonicalSkillFiles} canonical files`)}
       ${numberCard("You.md catalog", `${summary.totals.youmdCatalogInstalled}/${summary.totals.youmdCatalogSkills}`, "installed / cataloged")}
       ${numberCard("Missing from catalog", summary.totals.missingFromYoumdCatalog, "filesystem skills not represented in youmd skill list")}
+      ${numberCard("Duplicate-name risks", summary.totals.duplicateNameDifferentRealpaths, "same name, different real files")}
+      ${numberCard("Healthy mirrors", summary.totals.sameRealpathMirrors, "same real file exposed to hosts")}
       ${numberCard("Project context signals", summary.totals.projectSignals, "AGENTS/CLAUDE/project-context/YouStack")}
       ${numberCard("Installed CLI", summary.versions.installedYoumd || "unknown", `repo ${summary.versions.repoPackage || "unknown"} / cli ${summary.versions.cliPackage || "unknown"}`)}
     </section>
@@ -651,7 +918,23 @@ const html = `<!doctype html>
     <div class="diagram"><pre class="mermaid">${esc(mermaid)}</pre></div>
 
     <h2>Sync Roots</h2>
-    ${table(["Root", "Path", "Top-level entries", "Direct skill entries", "Nested SKILL.md", "Symlinks", "Broken symlinks", "Source classes"], hostRows)}
+    ${table(["Root", "Path", "Top-level entries", "Direct skill entries", "Nested SKILL.md", "Symlinks", "Broken symlinks", "Source classes", "Owner classes", "Sync policies"], hostRows)}
+
+    <h2>Ownership</h2>
+    <p>Owned skills should be protected and made canonical; external/reference/plugin skills should be cataloged with provenance instead of copied into the personal stack blindly.</p>
+    <div class="two-col">
+      <div>${table(["Owner class", "Records"], rollupRows)}</div>
+      <div>${table(["Sync policy", "Records"], policyRows)}</div>
+    </div>
+
+    <h2>DRY Audit</h2>
+    <div class="callout">
+      These are review queues, not destructive instructions. Same-realpath mirrors usually mean healthy host exposure. Same-name/different-realpath rows need a human/agent decision, and Houston-owned skills win priority over public or plugin versions.
+    </div>
+    <h3>Same Name, Different Real Files</h3>
+    ${table(["Skill", "Real files", "Occurrences", "Owners", "Risk", "Sample paths"], duplicateRows)}
+    <h3>Same Real File Mirrored Across Hosts</h3>
+    ${table(["Skill", "Occurrences", "Owners", "Sample paths"], mirrorRows)}
 
     <h2>You.md Catalog</h2>
     <p>This is what <code>youmd skill list</code> sees today.</p>
@@ -659,7 +942,7 @@ const html = `<!doctype html>
 
     <h2>Catalog Gap</h2>
     <p>Filesystem skills not currently represented in the You.md skill catalog. Showing up to 400 rows; full data is in JSON.</p>
-    ${table(["Skill", "Classes", "Sample paths"], missingRows)}
+    ${table(["Skill", "Classes", "Owners", "Sync policies", "Sample paths"], missingRows)}
 
     <h2>Shared Instructions Symlinks</h2>
     ${table(["Link", "Kind", "Status", "Actual target", "Expected target"], linkRows)}

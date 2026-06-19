@@ -2,11 +2,20 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### feat(skills): package stack inventory as a shared skill
+- Added canonical shared skill `agent-stack-inventory` under `~/.agent-shared/claude-skills` with the portable inventory script in `scripts/local-agent-stack-inventory.mjs`.
+- Registered it in `~/.youmd/skills/youmd-skills.yaml` as `source: shared:agent-stack-inventory` and symlinked it into the local You.md skill cache.
+- Mirrored the new skill through the shared-agent sync path; Claude, Codex, and Pi now expose `agent-stack-inventory`.
+- Removed the scanner's `js-yaml` runtime dependency so it can run from `~/.agent-shared` on another Mac without repo-local packages.
+- Upgraded the report with ownership classes, sync policies, provenance hints, same-name/different-realpath DRY review queues, and same-realpath healthy mirror detection.
+- Added `project-context/AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md` for the You.md/Tauri/Convex/repo-backed product architecture direction.
+- Verified with the shared script writing `/tmp/agent-stack-inventory-proof`, `youmd skill list` showing `12/12`, and `youmd skill use agent-stack-inventory`.
+
 ### docs(sync): map local/global skills before expanding You.md sync
 - Added `scripts/local-agent-stack-inventory.mjs`, a repeatable secret-safe scanner for Houston's local agent skill/stack system.
 - Generated `project-context/local-agent-stack-inventory-2026-06-19.html` with a Mermaid topology diagram plus tables for canonical roots, Claude/Codex/Cursor/Pi exposure, shared instruction symlinks, prompts/preferences/context/log buckets, project-context coverage, and catalog gaps.
 - Generated `project-context/local-agent-stack-inventory-2026-06-19.json` with exact counts and sampled paths.
-- Confirmed the current mismatch: `youmd skill list` reads the You.md catalog (`11` skills here) while the broader machine has `426` unique local skill names and `823` unique real `SKILL.md` files across shared, GStack, SciStack, host, and plugin roots.
+- Confirmed the current mismatch: `youmd skill list` reads the You.md catalog (`12` skills here) while the broader machine has `427` unique local skill names and `824` unique real `SKILL.md` files across shared, GStack, SciStack, host, and plugin roots.
 - Noted that the globally installed `youmd` is `0.8.2` while the repo CLI package is `0.8.9`, which is relevant before debugging Mac-to-Mac/account sync behavior.
 
 ## 2026-06-19 — Home DSI mesh and task board

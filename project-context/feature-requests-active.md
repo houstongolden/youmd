@@ -7,17 +7,21 @@ Last Updated: 2026-06-19
 ## 2026-06-19 — Local/global skill stack inventory and You.md catalog gap
 
 ### 144. Map the whole local agent skill/prompt/context system before fixing account sync
-**Status:** FIRST INVENTORY COMPLETE / SYNC FIX NOT STARTED
-**Verified:** YES locally (`node scripts/local-agent-stack-inventory.mjs`, generated HTML opened locally, JSON counts inspected)
+**Status:** SHARED SKILL PACKAGED / FIRST INVENTORY + OWNERSHIP + DRY AUDIT COMPLETE / APP SYNC FIX NOT STARTED
+**Verified:** YES locally (`node scripts/local-agent-stack-inventory.mjs`, shared skill script proof under `/tmp/agent-stack-inventory-proof`, `youmd skill list`, `youmd skill use agent-stack-inventory`, shared-agent sync mirror check)
 **Production Verified:** N/A
 **Source:** 2026-06-19 — Houston: "I am on my Mac Mini and just ran youmd skill sync and youmd skill list - and it only returned 10 skills ... help whip up a quick html visual + mermaid diagram showing ALL my local/global skills and shared prompts/preferences..."
 **Actionable Scope:**
 1. Confirm why `youmd skill list` only shows the small catalog instead of the whole local/global stack. **DONE first pass:** CLI reads `~/.youmd/skills/youmd-skills.yaml` plus hard-coded default skills; it does not crawl Claude/Codex/GStack/SciStack/shared roots.
 2. Inventory local/global skills, stack ownership roots, symlinks, host exposure paths, prompts/preferences/context/memory/log buckets, and counts. **DONE first pass:** generated secret-safe JSON and HTML reports.
 3. Include a Mermaid visual showing canonical sources flowing into Claude Code, Codex, Cursor, Pi/.agents, and the You.md sync layer. **DONE.**
-4. Identify the sync gap before changing behavior. **DONE first pass:** this Mac has `426` unique local skill names, `823` unique real `SKILL.md` files, `405` direct host exposure records, and only `11` You.md catalog skills; installed global `youmd` is `0.8.2` while repo CLI is `0.8.9`.
-5. Next, decide whether You.md should catalog all host-discoverable skills, only canonical personal-stack skills, or a typed union with public/private/syncable flags. **OPEN.**
-**Artifacts:** `project-context/local-agent-stack-inventory-2026-06-19.html`, `project-context/local-agent-stack-inventory-2026-06-19.json`, and `scripts/local-agent-stack-inventory.mjs`.
+4. Identify the sync gap before changing behavior. **DONE first pass + updated after shared-skill registration:** this Mac now has `427` unique local skill names, `824` unique real `SKILL.md` files, `409` direct host exposure records, and `12` You.md catalog skills; installed global `youmd` is `0.8.2` while repo CLI is `0.8.9`.
+5. Package the scanner as a reusable shared skill so it travels through ystack/local global skills and can run on the other Mac. **DONE:** `~/.agent-shared/claude-skills/agent-stack-inventory`, mirrored to Claude/Codex/Pi and registered in the You.md catalog as `source: shared:agent-stack-inventory`.
+6. Improve grouping by ownership/source/provenance and add a safe DRY audit. **DONE first pass:** report now includes owner classes, sync policies, duplicate-name/different-realpath review risks, and same-realpath healthy mirrors. It explicitly forbids auto-deleting Houston-owned skills.
+7. Preserve the You.md/Tauri/Convex/repo-backed product architecture direction. **DONE memo:** `project-context/AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md`.
+8. Next, add a first-class `youmd skill inventory` CLI wrapper and a diff command for comparing two Macs. **OPEN.**
+9. Next, decide whether You.md should catalog all host-discoverable skills, only canonical personal-stack skills, or a typed union with public/private/syncable flags. **OPEN.**
+**Artifacts:** `project-context/local-agent-stack-inventory-2026-06-19.html`, `project-context/local-agent-stack-inventory-2026-06-19.json`, `scripts/local-agent-stack-inventory.mjs`, `project-context/AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md`, and shared skill `~/.agent-shared/claude-skills/agent-stack-inventory`.
 
 ## 2026-06-19 — DSI, custom Views/Widgets, and pixel machine/agent characters
 

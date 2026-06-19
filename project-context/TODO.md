@@ -11,7 +11,13 @@ PRD Version: 2.3
 - [x] Confirm `youmd skill list` is catalog-driven, not a full local filesystem skill crawl
 - [x] Generate a secret-safe HTML + Mermaid visual of local/global skills, stacks, host exposure roots, prompts/preferences/context/log buckets, and counts
 - [x] Generate a companion JSON inventory for exact counts and full skill/path samples
-- [x] Record the current sync gap: 426 unique local skill names versus 11 You.md catalog skills on this Mac
+- [x] Record the current sync gap: 427 unique local skill names versus 12 You.md catalog skills on this Mac
+- [x] Package the inventory workflow as canonical shared skill `agent-stack-inventory`
+- [x] Register `agent-stack-inventory` in the local You.md skill catalog and mirror it into Claude/Codex/Pi
+- [x] Add ownership/source/provenance grouping plus safe DRY audit sections to the report
+- [x] Preserve the You.md/Tauri/Convex/repo-backed architecture direction in a dedicated memo
+- [ ] Next pass: add `youmd skill inventory` CLI wrapper around the shared scanner
+- [ ] Next pass: add an inventory diff command for comparing this Mac against the Mac mini or another trusted machine
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
 
 ### 2026-06-19 — Home DSI mesh and Tasks board
