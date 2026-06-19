@@ -2,6 +2,14 @@
 
 ## 2026-06-19 — DSI direction and pixel sync characters
 
+### feat(dsi): persist Home as a live View with widget contracts
+- Added Convex `dsiViews` and `dsiViewWidgets` tables for saved DSI layouts and ordered live widget contracts.
+- Added `api.dsi.ensureDefaultHomeView` and `api.dsi.getDefaultHomeView`.
+- Seeded the default `home` View with six live widgets: You Agent chat/shell, Live Brain Log, Needs Houston, Agent Queue, Project Focus, and Machine Mesh.
+- Home now initializes and renders a compact DSI proof block showing the saved View, live widget count, source kinds, and `rawSecretsInBrowser: false` contract.
+- Added focused Convex coverage for idempotent Home view creation and widget ordering.
+- Verified locally with Convex codegen, focused DSI tests, root TypeScript, `git diff --check`, and production Next build. Convex production deploy was attempted but hung silently and was interrupted; deployment remains pending.
+
 ### feat(machine): give the sync mesh stable pixel characters
 - Added a reusable original `PixelCharacter` primitive for Machines, Agents, and Shell/session surfaces.
 - Surfaced deterministic retro pixel characters in Machine's `you sync mesh` host chips and readiness metrics for this Mac, trusted machines, agent bus, skill mesh, project graph, and Secret Vault.

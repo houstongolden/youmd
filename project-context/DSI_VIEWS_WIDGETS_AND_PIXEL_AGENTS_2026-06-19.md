@@ -2,6 +2,8 @@
 
 Date: 2026-06-19
 
+Status: first local implementation slice shipped on 2026-06-19. Convex now has `dsiViews` and `dsiViewWidgets`, plus an idempotent default `home` View with six live widget contracts. Production Convex deploy remains pending after a silent deploy hang in the local session.
+
 ## North Star
 
 You.md should become a Dynamic Software Interface for a person's agentic operating system: one realtime brain layer that can render different useful views of the same private data, agents, machines, projects, tasks, skills, sources, logs, and secrets without forcing the user through a fixed maze of tabs.

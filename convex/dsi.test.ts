@@ -70,6 +70,43 @@ const surf = {
 };
 
 describe("dsi components", () => {
+  it("creates a persisted default Home DSI view with live widgets", async () => {
+    const t = convexTest(schema);
+    await seedUser(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+
+    const ensured = await asOwner.mutation(api.dsi.ensureDefaultHomeView, {
+      clerkId: CLERK,
+    });
+    expect(ensured.created).toBe(true);
+    expect(ensured.widgetCount).toBeGreaterThanOrEqual(6);
+
+    const home = await asOwner.query(api.dsi.getDefaultHomeView, {
+      clerkId: CLERK,
+    });
+    expect(home?.view.slug).toBe("home");
+    expect(home?.view.isDefault).toBe(true);
+    expect(home?.summary.rawSecretsInBrowser).toBe(false);
+    expect(home?.summary.liveCount).toBe(home?.summary.widgetCount);
+    expect(home?.summary.sourceKinds).toEqual(
+      expect.arrayContaining(["brainActivity", "portfolioGraph", "machineReadiness", "youAgent"])
+    );
+    expect(home?.widgets.map((widget) => widget.widgetKey)).toEqual([
+      "you-agent-chat",
+      "live-log",
+      "tasks-needing-houston",
+      "agent-queue",
+      "project-focus",
+      "machine-mesh",
+    ]);
+
+    const second = await asOwner.mutation(api.dsi.ensureDefaultHomeView, {
+      clerkId: CLERK,
+    });
+    expect(second.created).toBe(false);
+    expect(second.viewId).toBe(ensured.viewId);
+  });
+
   it("persists weather and surf components with source snapshots", async () => {
     const t = convexTest(schema);
     const userId = await seedUser(t);

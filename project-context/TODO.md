@@ -12,7 +12,9 @@ PRD Version: 2.3
 - [x] Surface stable machine/agent characters inside the Machine `you sync mesh` so connected computers and agents feel alive without adding another tab
 - [x] Add quiet status animation for live/ready characters with `prefers-reduced-motion` support
 - [x] Create `project-context/DSI_VIEWS_WIDGETS_AND_PIXEL_AGENTS_2026-06-19.md` to define Dynamic Software Interface primitives, Views, Widgets, live widget contracts, private data boundaries, and the navigation implication
-- [ ] Next pass: add first Convex `views` / `widgets` schema and make Home read a saved default DSI View
+- [x] Add first Convex `dsiViews` / `dsiViewWidgets` schema and make Home read/initialize a saved default DSI View
+- [x] Add focused Convex coverage for persisted Home DSI view + widgets
+- [ ] Next pass: deploy Convex schema/functions after resolving the silent `npx convex deploy` hang from this local session
 - [ ] Next pass: extend pixel characters into connected-agent rows and live-log emitters
 
 ### 2026-06-19 — Shell live brain log

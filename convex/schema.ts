@@ -580,6 +580,51 @@ export default defineSchema({
     .index("by_userId_slug", ["userId", "slug"])
     .index("by_userId_updatedAt", ["userId", "updatedAt"]),
 
+  dsiViews: defineTable({
+    userId: v.id("users"),
+    slug: v.string(),
+    title: v.string(),
+    description: v.string(),
+    viewType: v.string(), // "home" | "project_focus" | "custom"
+    visibility: v.string(), // "private" | "scoped" | "public"
+    status: v.string(), // "active" | "paused" | "archived"
+    isDefault: v.boolean(),
+    layout: v.any(),
+    scope: v.any(),
+    sourceSelectors: v.array(v.string()),
+    createdBy: v.string(), // "system" | "you-agent" | "user"
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_slug", ["userId", "slug"])
+    .index("by_userId_default", ["userId", "isDefault"])
+    .index("by_userId_updatedAt", ["userId", "updatedAt"]),
+
+  dsiViewWidgets: defineTable({
+    userId: v.id("users"),
+    viewId: v.id("dsiViews"),
+    widgetKey: v.string(),
+    widgetType: v.string(),
+    title: v.string(),
+    summary: v.string(),
+    componentSlug: v.optional(v.string()),
+    sourceKind: v.string(), // "brainActivity" | "portfolioGraph" | "machineReadiness" | "youAgent" | ...
+    layout: v.any(),
+    query: v.any(),
+    security: v.any(),
+    liveEnabled: v.boolean(),
+    status: v.string(), // "active" | "paused" | "archived"
+    sortOrder: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    metadata: v.optional(v.any()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_viewId_sortOrder", ["viewId", "sortOrder"])
+    .index("by_userId_widgetKey", ["userId", "widgetKey"]),
+
   // ── Portfolio Graph ──────────────────────────────────────
   //
   // User-owned project intelligence for the cross-project graph Houston keeps

@@ -414,6 +414,173 @@ async function ownerForUserId(ctx: QueryCtx | MutationCtx, clerkId: string, user
   return owner;
 }
 
+async function ownerByClerkId(ctx: QueryCtx | MutationCtx, clerkId: string): Promise<Doc<"users">> {
+  await requireOwner(ctx, clerkId);
+  const owner = await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+    .first();
+  if (!owner) throw new Error("owner not found");
+  return owner;
+}
+
+const DEFAULT_HOME_WIDGETS = [
+  {
+    widgetKey: "you-agent-chat",
+    widgetType: "chat-shell",
+    title: "You Agent",
+    summary: "Primary chat and future trusted shell toggle for this view.",
+    sourceKind: "youAgent",
+    layout: { slot: "primary", span: "tall", mode: "chat-shell-toggle" },
+    query: { channels: ["chat", "commands"], limit: 50 },
+    security: { scope: "private", browserSecrets: false, localShellRequiresTrustedDevice: true },
+    sortOrder: 10,
+  },
+  {
+    widgetKey: "live-log",
+    widgetType: "live-log",
+    title: "Live Brain Log",
+    summary: "Realtime brain activity across agents, machines, skills, projects, and repo sync.",
+    sourceKind: "brainActivity",
+    layout: { slot: "primary", span: "medium" },
+    query: { kinds: ["agent", "machine", "skill", "project", "repo", "vault"], limit: 24 },
+    security: { scope: "private", browserSecrets: false, redacted: true },
+    sortOrder: 20,
+  },
+  {
+    widgetKey: "tasks-needing-houston",
+    widgetType: "task-queue",
+    title: "Needs Houston",
+    summary: "Human-owned personal and project tasks that need a decision, action, or review.",
+    sourceKind: "portfolioGraph",
+    layout: { slot: "main", span: "compact" },
+    query: { ownerType: "human", status: ["open", "in_progress", "proposed"], limit: 5 },
+    security: { scope: "private", browserSecrets: false },
+    sortOrder: 30,
+  },
+  {
+    widgetKey: "agent-queue",
+    widgetType: "task-queue",
+    title: "Agent Queue",
+    summary: "Agent-owned tasks and delegated work across active projects.",
+    sourceKind: "portfolioGraph",
+    layout: { slot: "main", span: "compact" },
+    query: { ownerType: "agent", status: ["open", "in_progress", "proposed"], limit: 5 },
+    security: { scope: "private", browserSecrets: false },
+    sortOrder: 40,
+  },
+  {
+    widgetKey: "project-focus",
+    widgetType: "project-pulse",
+    title: "Project Focus",
+    summary: "Active, Top Priority, and Focusing projects with recent activity.",
+    sourceKind: "portfolioGraph",
+    layout: { slot: "main", span: "wide" },
+    query: { projectStatus: ["active"], focusStatus: ["top-priority", "focusing"], limit: 12 },
+    security: { scope: "private", browserSecrets: false },
+    sortOrder: 50,
+  },
+  {
+    widgetKey: "machine-mesh",
+    widgetType: "machine-mesh",
+    title: "Machine Mesh",
+    summary: "Trusted computers, resident daemons, shared skills, project context, and Secret Vault readiness.",
+    sourceKind: "machineReadiness",
+    layout: { slot: "support", span: "medium" },
+    query: { root: "current", includeSyncedProofs: true },
+    security: { scope: "local-private", browserSecrets: false, rawEnvValues: false },
+    sortOrder: 60,
+  },
+] as const;
+
+async function ensureDefaultHomeViewForUser(ctx: MutationCtx, userId: Id<"users">): Promise<{ viewId: Id<"dsiViews">; created: boolean; widgetCount: number }> {
+  const now = Date.now();
+  let created = false;
+  let view = await ctx.db
+    .query("dsiViews")
+    .withIndex("by_userId_slug", (q) => q.eq("userId", userId).eq("slug", "home"))
+    .first();
+
+  const viewPatch = {
+    title: "Home",
+    description: "Default live DSI view for chat, tasks, projects, machine sync, and the brain activity stream.",
+    viewType: "home",
+    visibility: "private",
+    status: "active",
+    isDefault: true,
+    layout: {
+      surfaces: ["chat", "live-log", "tasks", "projects", "machine-mesh"],
+      maxVisibleSurfaces: 3,
+      primaryWidget: "you-agent-chat",
+    },
+    scope: {
+      projects: "active-focus",
+      tasks: ["personal", "project"],
+      owners: ["human", "agent"],
+      timeWindow: "now",
+    },
+    sourceSelectors: ["brainActivity", "portfolioGraph", "machineReadiness", "youAgent"],
+    createdBy: "system",
+    updatedAt: now,
+    metadata: {
+      schemaVersion: "you-md/dsi-view/v1",
+      browserSecrets: false,
+      rawEnvValues: false,
+    },
+  };
+
+  if (view) {
+    await ctx.db.patch(view._id, viewPatch);
+  } else {
+    const viewId = await ctx.db.insert("dsiViews", {
+      userId,
+      slug: "home",
+      createdAt: now,
+      ...viewPatch,
+    });
+    view = await ctx.db.get(viewId);
+    created = true;
+  }
+  if (!view) throw new Error("failed to initialize default DSI view");
+
+  for (const widget of DEFAULT_HOME_WIDGETS) {
+    const existing = await ctx.db
+      .query("dsiViewWidgets")
+      .withIndex("by_userId_widgetKey", (q) => q.eq("userId", userId).eq("widgetKey", widget.widgetKey))
+      .first();
+    const widgetPatch = {
+      viewId: view._id,
+      widgetType: widget.widgetType,
+      title: widget.title,
+      summary: widget.summary,
+      sourceKind: widget.sourceKind,
+      layout: widget.layout,
+      query: widget.query,
+      security: widget.security,
+      liveEnabled: true,
+      status: "active",
+      sortOrder: widget.sortOrder,
+      updatedAt: now,
+      metadata: {
+        schemaVersion: "you-md/dsi-widget/v1",
+        defaultHomeWidget: true,
+      },
+    };
+    if (existing) {
+      await ctx.db.patch(existing._id, widgetPatch);
+    } else {
+      await ctx.db.insert("dsiViewWidgets", {
+        userId,
+        widgetKey: widget.widgetKey,
+        createdAt: now,
+        ...widgetPatch,
+      });
+    }
+  }
+
+  return { viewId: view._id, created, widgetCount: DEFAULT_HOME_WIDGETS.length };
+}
+
 function ptDateParts(now = new Date()): { weekday: string; hour: number; minute: number; dateKey: string } {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Los_Angeles",
@@ -2195,6 +2362,49 @@ export const listComponents = query({
       .withIndex("by_userId_updatedAt", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(Math.min(Math.max(args.limit ?? 40, 1), 100));
+  },
+});
+
+export const ensureDefaultHomeView = mutation({
+  args: {
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args): Promise<{ viewId: Id<"dsiViews">; created: boolean; widgetCount: number }> => {
+    const owner = await ownerByClerkId(ctx, args.clerkId);
+    return await ensureDefaultHomeViewForUser(ctx, owner._id);
+  },
+});
+
+export const getDefaultHomeView = query({
+  args: {
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const owner = await ownerByClerkId(ctx, args.clerkId);
+    const view = await ctx.db
+      .query("dsiViews")
+      .withIndex("by_userId_slug", (q) => q.eq("userId", owner._id).eq("slug", "home"))
+      .first();
+    if (!view) return null;
+
+    const widgets = await ctx.db
+      .query("dsiViewWidgets")
+      .withIndex("by_viewId_sortOrder", (q) => q.eq("viewId", view._id))
+      .order("asc")
+      .collect();
+
+    return {
+      view,
+      widgets: widgets.filter((widget) => widget.status === "active"),
+      summary: {
+        title: view.title,
+        widgetCount: widgets.filter((widget) => widget.status === "active").length,
+        liveCount: widgets.filter((widget) => widget.status === "active" && widget.liveEnabled).length,
+        sourceKinds: Array.from(new Set(widgets.filter((widget) => widget.status === "active").map((widget) => widget.sourceKind))),
+        updatedAt: view.updatedAt,
+        rawSecretsInBrowser: false,
+      },
+    };
   },
 });
 

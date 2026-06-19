@@ -469,6 +469,73 @@ function HomeSkillSyncProof({
   );
 }
 
+function HomeDsiViewProof({
+  dsiView,
+  onOpenMachine,
+}: {
+  dsiView:
+    | {
+        view: { title: string; updatedAt: number };
+        widgets: Array<{ widgetKey: string; title: string; sourceKind: string; liveEnabled: boolean }>;
+        summary: { widgetCount: number; liveCount: number; sourceKinds: string[]; rawSecretsInBrowser: boolean };
+      }
+    | null
+    | undefined;
+  onOpenMachine?: () => void;
+}) {
+  const widgets = dsiView?.widgets ?? [];
+  const visibleWidgets = widgets.slice(0, 6);
+  return (
+    <div className="border-l border-[hsl(var(--accent))]/60 bg-[hsl(var(--bg))]/30 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
+          DSI home view
+        </span>
+        <span className="ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--success))]">
+          {dsiView ? "persisted" : dsiView === undefined ? "loading" : "initializing"}
+        </span>
+      </div>
+      <div className="mt-2 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <div className="font-mono text-[15px] leading-tight text-[hsl(var(--text-primary))]">
+            {dsiView?.view.title ?? "Home"} is now a saved live View, not a fixed tab.
+          </div>
+          <p className="mt-2 max-w-3xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+            This is the substrate for You Agent-created dashboards: widgets can be reordered, scoped to projects/tasks/machines, and synced through Convex without exposing raw secrets.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+            {dsiView
+              ? `${dsiView.summary.liveCount}/${dsiView.summary.widgetCount} live widgets / secrets ${dsiView.summary.rawSecretsInBrowser ? "unsafe" : "redacted"}`
+              : "creating default widgets"}
+          </span>
+          <button
+            type="button"
+            onClick={onOpenMachine}
+            className="h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            mesh proof
+          </button>
+        </div>
+      </div>
+      {visibleWidgets.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {visibleWidgets.map((widget) => (
+            <div key={widget.widgetKey} className="border-l border-[hsl(var(--border))]/65 bg-[hsl(var(--bg-raised))]/30 px-2.5 py-1.5">
+              <div className="font-mono text-[9px] text-[hsl(var(--text-primary))]">{widget.title}</div>
+              <div className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-45">
+                {widget.sourceKind} {widget.liveEnabled ? "/ live" : ""}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function HomePane({
   clerkId,
   onOpenPane,
@@ -477,6 +544,8 @@ export function HomePane({
   onOpenPane?: (pane: TaskPaneKey) => void;
 }) {
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
+  const dsiView = useQuery(api.dsi.getDefaultHomeView, clerkId ? { clerkId } : "skip");
+  const ensureDefaultHomeView = useMutation(api.dsi.ensureDefaultHomeView);
   const { busyTaskId, statusLine, setStatus, setOwner, setPersonal } = useTaskActions(clerkId);
   const [machineReadiness, setMachineReadiness] = useState<LocalMachineReadiness | null>(null);
 
@@ -521,6 +590,14 @@ export function HomePane({
     };
   }, []);
 
+  useEffect(() => {
+    if (!clerkId || dsiView !== null) return;
+    void ensureDefaultHomeView({ clerkId }).catch(() => {
+      // The Home pane can still render from the portfolio graph while the DSI
+      // substrate initializes; do not block the core task view.
+    });
+  }, [clerkId, dsiView, ensureDefaultHomeView]);
+
   return (
     <>
       <PaneHeader>home</PaneHeader>
@@ -554,6 +631,7 @@ export function HomePane({
         </div>
 
         <HomeSkillSyncProof readiness={machineReadiness} onOpenMachine={() => onOpenPane?.("machine")} />
+        <HomeDsiViewProof dsiView={dsiView} onOpenMachine={() => onOpenPane?.("machine")} />
 
         {statusLine && (
           <div className="border-l border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/[0.035] px-4 py-2 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[hsl(var(--accent))]">

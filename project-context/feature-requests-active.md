@@ -7,8 +7,8 @@ Last Updated: 2026-06-19
 ## 2026-06-19 — DSI, custom Views/Widgets, and pixel machine/agent characters
 
 ### 142. Add personality to the sync mesh and define You.md as a Dynamic Software Interface
-**Status:** IN PROGRESS / FIRST UI + PRODUCT PLAN SLICE COMPLETE
-**Verified:** PARTIAL (local TypeScript/build and in-app Browser visual proof pending for the pixel mesh slice)
+**Status:** IN PROGRESS / FIRST UI + PERSISTED HOME VIEW SLICE COMPLETE
+**Verified:** PARTIAL (focused Convex test, Convex codegen, root TypeScript, `git diff --check`, production Next build, and in-app Browser pixel mesh proof complete; Home DSI visual proof blocked because the in-app browser bridge lost authenticated access during the final check)
 **Production Verified:** NO
 **Source:** 2026-06-19 — Houston: "it would be very cool if we could create some claude code mascot inspired characters that we can randomly automatically create for every YOU Machine ... DSI - DYNAMIC SOFTWARE INTERFACE ... custom Widgets to add to custom Views..."
 **Actionable Scope:**
@@ -16,11 +16,12 @@ Last Updated: 2026-06-19
 2. Surface the characters where the product magic is happening, especially machine/agent sync. **DONE first slice:** Machine `you sync mesh` host chips and metrics now show machine/agent/shell characters tied to real readiness signals.
 3. Avoid turning personality into clutter. **APPLIED:** characters are small, status-linked, and reduced-motion-safe.
 4. Define DSI as a product architecture for custom Views and live Widgets generated/edited by the You Agent. **DONE planning slice:** `DSI_VIEWS_WIDGETS_AND_PIXEL_AGENTS_2026-06-19.md`.
-5. Make Home a DSI default View with widgets for chat/shell, live log, tasks, projects, blockers, shipped work, machines, agents, skills, and vault state. **OPEN.**
-6. Add Convex/realtime-backed `views` and `widgets` data model plus security contracts. **OPEN.**
+5. Make Home a DSI default View with widgets for chat/shell, live log, tasks, projects, blockers, shipped work, machines, agents, skills, and vault state. **DONE first persisted slice:** default Home view stores You Agent chat/shell, Live Brain Log, Needs Houston, Agent Queue, Project Focus, and Machine Mesh widgets.
+6. Add Convex/realtime-backed `views` and `widgets` data model plus security contracts. **DONE first slice:** `dsiViews` and `dsiViewWidgets` with layout/query/security metadata and `rawSecretsInBrowser: false` Home proof.
 7. Package user/private data for extensible widgets/API while keeping raw secrets local/encrypted. **OPEN.**
 8. Look at Bad.app's DSI/render-json direction as a reference before deeper implementation. **OPEN.**
 **Progress (2026-06-19):** Added an original `PixelCharacter` UI primitive and wired it into Machine's live sync mesh for this Mac, trusted machines, agent bus, skill mesh, project graph, and Secret Vault status. Added quiet blink/signal animation and documented the DSI architecture: core primitives, View shape, Widget contracts, security boundaries, navigation implications, and near-term build plan.
+**Progress (2026-06-19 continuation):** Added Convex `dsiViews` / `dsiViewWidgets`, idempotent `ensureDefaultHomeView`, owner-gated `getDefaultHomeView`, and a Home pane DSI proof strip. The default View persists six live widgets and keeps browser secret exposure false. Focused Convex test, Convex codegen, root TypeScript, `git diff --check`, and production Next build passed. `npx convex deploy` hung silently for several minutes and was interrupted, so production deploy remains pending before this can fully hydrate in the deployed/authenticated shell.
 
 ---
 
