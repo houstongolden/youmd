@@ -12,8 +12,13 @@ PRD Version: 2.3
 - [x] Render a terminal-style central log of realtime agent-bus messages, shell agent progress, repo/identity state, local daemon health, skill sync proof, Secret Vault metadata, machine proof, and recent chats
 - [x] Poll the authenticated local machine readiness endpoint for safe metadata only
 - [x] Keep raw `.env.local` values and secret material out of the browser log (`secretValuesExposed: false` remains the contract)
-- [ ] Next pass: persist all significant skill/project/source/task/sync updates into one durable brain-graph activity stream instead of assembling the view from existing partial sources
-- [ ] Next pass: fold desktop-demo System Status and shell Live Log into one shared product primitive
+- [x] Add owner-gated Convex `brainActivities` as the durable canonical activity stream
+- [x] Mirror new realtime agent-bus messages into `brainActivities` with redacted text/metadata and `secretValuesExposed: false`
+- [x] Make the shell Live Log read `brainActivities` first, with local readiness and current UI state as safe supplementary rows
+- [x] Extract `LiveBrainLog` as a shared product primitive and reuse it in `/desktop-demo` System Status
+- [x] Collapse visible shell IA toward `Home`, `Brain`, `Projects`, and `Settings`, with APIs/Machine/Vault/Activity/Stats/Portrait hidden under Settings
+- [x] Verify with root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser screenshots for `/shell` and `/desktop-demo`
+- [ ] Next pass: route repo updates, skill self-improvements, task changes, portfolio hydrations, source crawls, and daemon checkpoints directly into `brainActivities` as first-class producers
 
 ### 2026-06-19 — Cross-machine skill sync proof UI
 - [x] Add local machine readiness metadata for shared skill sync proof

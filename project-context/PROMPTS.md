@@ -3,12 +3,12 @@ All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
 **Total sessions:** 122
-**Total messages:** 533
+**Total messages:** 534
 **Last updated:** 2026-06-19
 
 ## Table of Contents
 
-1. [2026-06-19 (shell-live-brain-log-minimal-surface)](#session-2026-06-19-shell-live-brain-log-minimal-surface) --- 1 message
+1. [2026-06-19 (shell-live-brain-log-minimal-surface)](#session-2026-06-19-shell-live-brain-log-minimal-surface) --- 2 messages
 1. [2026-06-19 (mac-mini-project-clarity-skill-sync-proof)](#session-2026-06-19-mac-mini-project-clarity-skill-sync-proof) --- 1 message
 1. [2026-06-19 (project-clarity-audit-shared-skill)](#session-2026-06-19-project-clarity-audit-shared-skill) --- 1 message
 1. [2026-06-19 (mac-mini-trusted-device-restore-followup)](#session-2026-06-19-mac-mini-trusted-device-restore-followup) --- 1 message
@@ -146,6 +146,18 @@ Auto-maintained — new messages appended each session.
 > we gotta really think about - what are the core things we want the user to see - what are our platform's CORE object primitives - and how can we simplify our whole product surface through brutalist reductionism and minimal-surface skill design standards etc and soften the whole overly boxy/straight CLI aesthetic a little bit to lessen the actual number of hard line borders and make this thing look really amazing and more familiar and useful etc.
 >
 > here are also the results of the latest project-clarity-audit in this project for additional guidance and insights:
+
+**2026-06-19 08:25:00 UTC**
+> # In app browser:
+> - The user has the in-app browser open.
+>
+> ## My request for Codex:
+> now continue next Best Next Steps
+> Make the live log use one durable brainActivity stream as its canonical source.
+> Collapse shell IA toward Home, Brain, Projects, Settings, with advanced surfaces hidden.
+> Reuse this same live-log primitive in /desktop-demo System Status so the demo and real app converge.
+>
+> then continue
 
 ## Session: 2026-06-19 (mac-mini-secret-vault-feedback)
 

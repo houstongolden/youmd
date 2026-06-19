@@ -7,17 +7,19 @@ Last Updated: 2026-06-19
 ## 2026-06-19 — Live brain log and minimum shell surface
 
 ### 141. Make hidden cross-machine/agent activity visible as a terminal-style live log
-**Status:** DONE local first slice
-**Verified:** PARTIAL (root TypeScript passed; production build pending in this session)
-**Production Verified:** NO
+**Status:** VERIFIED LOCAL / CONVEX PROD DEPLOYED
+**Verified:** YES locally (root TypeScript pass, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser visual checks for `/shell` Live Log plus `/desktop-demo` System Status)
+**Production Verified:** BACKEND YES / FRONTEND PENDING
 **Source:** 2026-06-19 — Houston: "we can also just make it look like a real live server logs in a terminal and just have it as a toggle tab on the shell chat area basically - showing all the activity and updates the full central log of all updates across projects, skills, synced apps, crons, new inputs/sources etc..."
 **Actionable Scope:**
 1. Add a shell-chat-area toggle for a terminal-style live log instead of adding another right-pane tab. **DONE locally.**
 2. Show high-signal realtime activity and sync proof as a product magic moment. **DONE local first slice:** realtime agent bus, shell agent progress, repo sync, identity bundle, local daemon health, skill mesh proof, Secret Vault metadata, machine proof, and recent chats.
 3. Keep secrets out of the browser. **DONE local first slice:** only safe readiness metadata is rendered; raw `.env.local` values remain local/encrypted.
-4. Use `minimal-surface` and the latest Project Clarity Audit direction to reduce the shell toward fewer core surfaces. **PARTIAL:** this change avoids a new pane and makes Chat/Live Log the left-column modes; broader IA reduction remains open.
-5. Make the actual brain graph the canonical source for all project/skill/source/task/sync events. **PENDING:** current UI assembles existing partial sources; next pass should persist all major events into one durable activity stream.
-**Progress (2026-06-19):** Added a `chat` / `live log` toggle inside `TerminalShell` and a terminal-style `central brain log` renderer. `DashboardContent` now subscribes to owner-gated `api.agentBus.listMessages`, polls authenticated local machine readiness every 10 seconds, and composes log entries from realtime bus messages, current agent progress, GitHub mirror/update state, identity bundle state, recent chat sessions, skill mesh proof, daemon health, Secret Vault metadata, machine readiness, and latest proof reports. The design intentionally keeps this in the chat column so it surfaces the magic moment without expanding the right-pane/navigation sprawl.
+4. Use `minimal-surface` and the latest Project Clarity Audit direction to reduce the shell toward fewer core surfaces. **DONE local slice:** visible shell IA is now `Home`, `Brain`, `Projects`, and `Settings`; advanced surfaces are hidden under Settings.
+5. Make the actual brain graph the canonical source for all project/skill/source/task/sync events. **DONE first durable slice:** owner-gated Convex `brainActivities` is the canonical stream; new realtime agent-bus messages mirror into it; shell Live Log reads it first. **OPEN producer expansion:** repo updates, skill self-improvements, task changes, portfolio hydrations, source crawls, and daemon checkpoints should write to `brainActivities` directly.
+6. Reuse the same live-log primitive in `/desktop-demo` System Status so demo and real app converge. **DONE:** `LiveBrainLog` is now shared by the shell and desktop demo System Status.
+**Progress (2026-06-19):** Added a `chat` / `live log` toggle inside `TerminalShell` and a terminal-style `central brain log` renderer. `DashboardContent` now reads owner-gated `api.brainActivity.listRecent`, polls authenticated local machine readiness every 10 seconds, and composes log entries from durable brain activity plus current agent progress, GitHub mirror/update state, identity bundle state, recent chat sessions, skill mesh proof, daemon health, Secret Vault metadata, machine readiness, and latest proof reports. The design intentionally keeps this in the chat column so it surfaces the magic moment without expanding the right-pane/navigation sprawl.
+**Progress (2026-06-19 follow-up):** Added durable Convex `brainActivities` with indexes for user/source/kind/project/time, owner-gated `brainActivity.recordActivity` and `brainActivity.listRecent`, and agent-bus mirroring into the durable stream with redaction and `secretValuesExposed: false`. Extracted `LiveBrainLog` into `src/components/terminal/LiveBrainLog.tsx`, moved the shell query to `api.brainActivity.listRecent`, collapsed top shell IA to `Home`, `Brain`, `Projects`, and `Settings`, simplified the left sidebar to the same four groups, and reused `LiveBrainLog` in `/desktop-demo` System Status. Local in-app Browser proof confirmed `/shell` renders with no Convex render error, the `live log` button opens `CENTRAL BRAIN LOG` with `brain stream live`, and `/desktop-demo` System Status shows one `CENTRAL BRAIN LOG` with bus/daemon/machine rows.
 
 ---
 

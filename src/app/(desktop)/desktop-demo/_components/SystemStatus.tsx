@@ -1,9 +1,23 @@
 "use client";
 
 import { motion } from "motion/react";
+import { LiveBrainLog, type LiveLogEntry } from "@/components/terminal/LiveBrainLog";
 import { DAEMONS, DEVICES, AGENT_BUS, WORKSPACE } from "../_data/mock";
 import { Icon } from "./icons";
 import { Dot, SectionLabel } from "./primitives";
+
+function mockTimeAgo(value: string): number {
+  const now = Date.now();
+  if (value === "now" || value === "just now") return now;
+  const match = value.match(/^(\d+)(s|m|h|d) ago$/);
+  if (!match) return now;
+  const amount = Number(match[1]);
+  const unit = match[2];
+  if (unit === "s") return now - amount * 1_000;
+  if (unit === "m") return now - amount * 60_000;
+  if (unit === "h") return now - amount * 60 * 60_000;
+  return now - amount * 24 * 60 * 60_000;
+}
 
 // The "behind the scenes" panel. This is the product's answer to "what runs in
 // the background vs. what the user sees": everything here is AWARENESS ONLY —
@@ -13,6 +27,38 @@ export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => 
   if (!open) return null;
 
   const online = DEVICES.filter((d) => d.status !== "idle").length;
+  const logEntries: LiveLogEntry[] = [
+    ...AGENT_BUS.map((message) => ({
+      id: `bus-${message.id}`,
+      at: mockTimeAgo(message.at),
+      source: "bus",
+      channel: message.channel,
+      kind: "message",
+      title: `${message.from} @ ${message.device}`,
+      detail: message.text,
+      status: "live" as const,
+    })),
+    ...DAEMONS.map((daemon) => ({
+      id: `daemon-${daemon.name}`,
+      at: mockTimeAgo(daemon.last),
+      source: "daemon",
+      channel: daemon.name,
+      kind: "loaded",
+      title: daemon.name,
+      detail: daemon.detail,
+      status: "ok" as const,
+    })),
+    ...DEVICES.map((device) => ({
+      id: `device-${device.name}`,
+      at: mockTimeAgo(device.lastSync),
+      source: "machine",
+      channel: device.name,
+      kind: device.status,
+      title: `${device.name}${device.current ? " · this machine" : ""}`,
+      detail: device.agents.join(", "),
+      status: device.status === "idle" ? "warn" as const : "ok" as const,
+    })),
+  ].sort((a, b) => Number(a.at ?? 0) - Number(b.at ?? 0));
 
   return (
     <div className="fixed inset-0 z-50">
@@ -71,14 +117,8 @@ export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => 
           </div>
 
           {/* recent background activity */}
-          <SectionLabel className="mb-1.5 px-1">Recent activity</SectionLabel>
-          <div className="space-y-1.5">
-            {AGENT_BUS.slice(0, 3).map((m) => (
-              <div key={m.id} className="px-1 text-[11px] leading-snug text-[hsl(var(--text-secondary))]">
-                <span className="text-[hsl(var(--accent))]">{m.from}</span> · {m.text}
-              </div>
-            ))}
-          </div>
+          <SectionLabel className="mb-1.5 px-1">Central brain log</SectionLabel>
+          <LiveBrainLog entries={logEntries} compact maxEntries={9} showIntro={false} />
         </div>
 
         <div className="border-t border-[hsl(var(--border))] px-4 py-2.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/45">

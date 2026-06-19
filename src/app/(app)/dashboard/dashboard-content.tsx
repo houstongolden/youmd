@@ -15,7 +15,8 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AsciiAvatar from "@/components/AsciiAvatar";
 import { useYouAgent, type RestorableChatSession, type RightPane } from "@/hooks/useYouAgent";
-import { TerminalShell, type LiveLogEntry } from "@/components/terminal/TerminalShell";
+import { TerminalShell } from "@/components/terminal/TerminalShell";
+import type { LiveLogEntry } from "@/components/terminal/LiveBrainLog";
 import { EditPane, type EditSubTab } from "@/components/panes/EditPane";
 import { SharePane } from "@/components/panes/SharePane";
 import { SettingsPane } from "@/components/panes/SettingsPane";
@@ -40,13 +41,11 @@ import {
   MessageSquareText,
   Monitor,
   Moon,
-  Plug,
   Plus,
   Radar,
   Search,
   Settings,
   Share2,
-  Shield,
   Sun,
   UserRound,
   Wrench,
@@ -106,7 +105,7 @@ import { HomePane, TasksPane } from "@/components/panes/TaskPanes";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { LocalMachineReadiness } from "@/lib/local-machine-readiness.server";
 
-type PrimaryPaneGroup = "home" | "projects" | "workbench" | "integrations" | "identity" | "insights" | "account";
+type PrimaryPaneGroup = "home" | "brain" | "projects" | "settings";
 
 const PANE_GROUPS: Array<{
   key: PrimaryPaneGroup;
@@ -124,63 +123,40 @@ const PANE_GROUPS: Array<{
     ],
   },
   {
+    key: "brain",
+    label: "brain",
+    defaultPane: "profile",
+    panes: [
+      { key: "profile", label: "profile" },
+      { key: "edit", label: "context" },
+      { key: "files", label: "files" },
+      { key: "share", label: "share" },
+    ],
+  },
+  {
     key: "projects",
     label: "projects",
     defaultPane: "portfolio",
     panes: [
       { key: "portfolio", label: "portfolio" },
-      { key: "files", label: "files" },
-      { key: "edit", label: "context" },
-      { key: "history", label: "history" },
-    ],
-  },
-  {
-    key: "workbench",
-    label: "stacks",
-    defaultPane: "stacks",
-    panes: [
       { key: "stacks", label: "stacks" },
       { key: "skills", label: "skills" },
-      { key: "machine", label: "machine" },
-      { key: "agents", label: "activity" },
-    ],
-  },
-  {
-    key: "integrations",
-    label: "apis",
-    defaultPane: "apis",
-    panes: [
-      { key: "apis", label: "apis/env" },
-      { key: "github", label: "api/mcp" },
-    ],
-  },
-  {
-    key: "identity",
-    label: "identity",
-    defaultPane: "profile",
-    panes: [
-      { key: "profile", label: "profile" },
-      { key: "files", label: "files" },
-      { key: "share", label: "share" },
-      { key: "portrait", label: "portrait" },
-    ],
-  },
-  {
-    key: "insights",
-    label: "stats",
-    defaultPane: "analytics",
-    panes: [
-      { key: "analytics", label: "analytics" },
       { key: "history", label: "history" },
     ],
   },
   {
-    key: "account",
-    label: "account",
+    key: "settings",
+    label: "settings",
     defaultPane: "settings",
     panes: [
       { key: "settings", label: "settings" },
-      { key: "vault", label: "secrets" },
+      { key: "machine", label: "machine" },
+      { key: "apis", label: "apis/env" },
+      { key: "github", label: "api/mcp" },
+      { key: "vault", label: "vault" },
+      { key: "agents", label: "activity" },
+      { key: "analytics", label: "stats" },
+      { key: "portrait", label: "portrait" },
       { key: "help", label: "help" },
     ],
   },
@@ -682,7 +658,6 @@ function ShellSidebar({
   version,
   isPublished,
   syncedAt,
-  githubRepoName,
   recentSessions,
   activeSessionId,
   loadingSessionId,
@@ -702,7 +677,6 @@ function ShellSidebar({
   version: number | string | null;
   isPublished: boolean;
   syncedAt: number | null;
-  githubRepoName?: string | null;
   recentSessions?: ShellChatSession[];
   activeSessionId?: string | null;
   loadingSessionId?: string | null;
@@ -718,7 +692,6 @@ function ShellSidebar({
   const [theme, setTheme] = useState<ThemePreference>(() => readThemePreference());
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const accountRef = useRef<HTMLDivElement | null>(null);
-  const repoDetail = githubRepoName ?? "connect github";
   const displayLabel = displayName || username;
   const userInitial = (displayLabel || username || "you").slice(0, 1).toUpperCase();
 
@@ -754,7 +727,16 @@ function ShellSidebar({
       items: [
         { label: "Home", detail: "tasks + focus", icon: Home, pane: "home", status: "new" },
         { label: "Tasks", detail: "me vs agent", icon: ListTodo, pane: "tasks", status: "new" },
-        { label: "Activity", detail: "agent run log", icon: Activity, pane: "agents" },
+      ],
+    },
+    {
+      label: "brain",
+      icon: UserRound,
+      items: [
+        { label: "Profile", detail: `you.md/${username}`, icon: UserRound, pane: "profile" },
+        { label: "Context", detail: "sources + markdown", icon: Radar, pane: "edit", subTab: "sources" },
+        { label: "Files", detail: "repo-backed brain", icon: FileText, pane: "files" },
+        { label: "Share", detail: "links + publish", icon: Share2, pane: "share" },
       ],
     },
     {
@@ -762,53 +744,23 @@ function ShellSidebar({
       icon: FolderGit2,
       items: [
         { label: "Portfolio", detail: "projects + graph", icon: FolderGit2, pane: "portfolio" },
-        {
-          label: githubRepoName ? "Synced Repo" : "GitHub Repo",
-          detail: repoDetail,
-          icon: FolderGit2,
-          pane: githubRepoName ? "files" : "github",
-          status: githubRepoName ? "live" : "setup",
-        },
-        { label: "Files", detail: "markdown brain", icon: FileText, pane: "files" },
+        { label: "YouStack", detail: "shared stack layer", icon: Layers3, pane: "stacks" },
+        { label: "Skills", detail: "synced agent skills", icon: Wrench, pane: "skills" },
+        { label: "Shipped", detail: "timeline + history", icon: Clock3, pane: "history" },
       ],
     },
     {
-      label: "apis",
-      icon: Code2,
+      label: "settings",
+      icon: Settings,
       items: [
+        { label: "Settings", detail: "account + app", icon: Settings, pane: "settings" },
+        { label: "Machine", detail: "sync + readiness", icon: Monitor, pane: "machine", status: "new" },
         { label: "APIs / Env", detail: "providers + key map", icon: Database, pane: "apis" },
         { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
-        { label: "Vault", detail: "secrets", icon: BookOpen, pane: "vault" },
-      ],
-    },
-    {
-      label: "skillstacks",
-      icon: Layers3,
-      items: [
-        { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
-        { label: "Skills", detail: "templates + tools", icon: Wrench, pane: "skills" },
-        { label: "Machine", detail: "sync + readiness", icon: Monitor, pane: "machine", status: "new" },
-      ],
-    },
-    {
-      label: "connect",
-      icon: Plug,
-      items: [
-        { label: "Connectors", detail: "apps + crawlers", icon: Plug, pane: "github" },
-        { label: "Loops", detail: "crons + reports", icon: Clock3, pane: "github" },
-        { label: "Shared Links", detail: "scoped context", icon: Shield, pane: "share" },
-      ],
-    },
-    {
-      label: "identity",
-      icon: UserRound,
-      items: [
-        { label: "Profile", detail: `you.md/${username}`, icon: UserRound, pane: "profile" },
-        { label: "Sources", detail: "web + repo context", icon: Radar, pane: "edit", subTab: "sources" },
-        { label: "Share", detail: "links + publish", icon: Share2, pane: "share" },
-        { label: "Portrait", detail: "ascii identity", icon: Image, pane: "portrait" },
+        { label: "Vault", detail: "encrypted secrets", icon: BookOpen, pane: "vault" },
+        { label: "Activity", detail: "central log + agents", icon: Activity, pane: "agents" },
         { label: "Analytics", detail: "reads + views", icon: BarChart3, pane: "analytics" },
-        { label: "Account", detail: "settings", icon: Settings, pane: "settings" },
+        { label: "Portrait", detail: "ascii identity", icon: Image, pane: "portrait" },
       ],
     },
   ];
@@ -820,12 +772,9 @@ function ShellSidebar({
       pane: "home",
       status: "new",
     },
-    { label: "Tasks", detail: "me vs agent", icon: ListTodo, pane: "tasks" },
+    { label: "Brain", detail: "identity + context", icon: UserRound, pane: "profile" },
     { label: "Portfolio", detail: "projects + graph", icon: FolderGit2, pane: "portfolio" },
-    { label: "APIs / Env", detail: "providers + key map", icon: Database, pane: "apis" },
-    { label: "YouStack", detail: "your default stack", icon: Layers3, pane: "stacks" },
-    { label: "Machine", detail: "sync + readiness", icon: Monitor, pane: "machine" },
-    { label: "Connectors", detail: "github + apps", icon: Plug, pane: "github" },
+    { label: "Settings", detail: "machine + APIs", icon: Settings, pane: "settings" },
   ];
   const toggleGroup = (label: string) => {
     setOpenGroups((current) => ({ ...current, [label]: !current[label] }));
@@ -1205,9 +1154,9 @@ export function DashboardContent() {
       ? { clerkId: user.id, userId: convexUser._id, limit: 8 }
       : "skip"
   );
-  const realtimeAgentMessages = useQuery(
-    api.agentBus.listMessages,
-    isAuthenticated && user?.id ? { clerkId: user.id, limit: 50 } : "skip"
+  const brainActivities = useQuery(
+    api.brainActivity.listRecent,
+    isAuthenticated && user?.id ? { clerkId: user.id, limit: 80 } : "skip"
   );
   const shellUsername =
     convexUser?.username ||
@@ -1789,6 +1738,19 @@ export function DashboardContent() {
     const push = (entry: LiveLogEntry) => entries.push(entry);
     const now = Date.now();
 
+    for (const activity of brainActivities ?? []) {
+      push({
+        id: `brain-${activity.activityId}`,
+        at: activity.occurredAt,
+        source: activity.source === "agent-bus" ? "bus" : activity.source,
+        channel: activity.channel ?? undefined,
+        kind: activity.kind,
+        title: activity.title,
+        detail: activity.detail ?? undefined,
+        status: activity.status,
+      });
+    }
+
     if (repoUpdateBusy) {
       push({
         id: "repo-update-running",
@@ -1840,8 +1802,8 @@ export function DashboardContent() {
     }
 
     const busMessages =
-      realtimeAgentMessages && Array.isArray(realtimeAgentMessages)
-        ? realtimeAgentMessages
+      brainActivities && brainActivities.length > 0
+        ? []
         : machineReadiness?.agentBus.messages ?? [];
     for (const message of busMessages.slice(-30)) {
       push({
@@ -1952,7 +1914,7 @@ export function DashboardContent() {
         return atA - atB;
       });
   })();
-  const liveLogStatus = `${liveLogEntries.length} events · ${machineReadiness?.agentBus.state ?? "bus pending"}`;
+  const liveLogStatus = `${liveLogEntries.length} events · brain stream ${brainActivities === undefined ? "loading" : "live"}`;
 
   // Which mobile tab is active?
   const activeMobileTab = mobileView === "terminal" ? "terminal" : activePreviewTab;
@@ -1969,7 +1931,6 @@ export function DashboardContent() {
           version={version}
           isPublished={isPublished}
           syncedAt={syncedAt}
-          githubRepoName={githubConnection?.repoFullName ?? null}
           recentSessions={recentSessions as ShellChatSession[] | undefined}
           activeSessionId={agent.currentSessionId}
           loadingSessionId={loadingSessionId}

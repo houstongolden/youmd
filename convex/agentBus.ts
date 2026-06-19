@@ -87,6 +87,14 @@ function toPublicMessage(row: Doc<"realtimeAgentMessages">) {
   };
 }
 
+function brainActivityStatus(kind: string): "live" | "ok" | "warn" | "error" | "info" {
+  if (kind === "error" || kind === "failed" || kind === "blocked") return "error";
+  if (kind === "status" || kind === "running" || kind === "syncing") return "live";
+  if (kind === "success" || kind === "ready" || kind === "synced") return "ok";
+  if (kind === "warning" || kind === "warn" || kind === "pending") return "warn";
+  return "info";
+}
+
 export const sendMessage = mutation({
   args: {
     clerkId: v.string(),
@@ -121,6 +129,24 @@ export const sendMessage = mutation({
     });
     const row = await ctx.db.get(rowId);
     if (!row) throw new Error("Agent message failed to save");
+    await ctx.db.insert("brainActivities", {
+      userId: user._id,
+      activityId: `agent-bus:${messageId}`,
+      source: "agent-bus",
+      channel: row.channel,
+      kind: row.kind,
+      title: `${row.sourceAgent}${row.sourceHost ? ` @ ${row.sourceHost}` : ""}`,
+      detail: row.body,
+      status: brainActivityStatus(row.kind),
+      sourceHost: row.sourceHost,
+      sourceAgent: row.sourceAgent,
+      sourceRuntime: row.sourceRuntime,
+      metadata: row.metadata,
+      occurredAt: row.createdAt,
+      createdAt: now,
+      updatedAt: now,
+      secretValuesExposed: false,
+    });
     return toPublicMessage(row);
   },
 });

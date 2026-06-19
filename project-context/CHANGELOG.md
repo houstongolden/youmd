@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-19 — Canonical brain activity stream + shell IA reduction
+
+### feat(shell): back the live log with durable brain activity
+- Added owner-gated Convex `brainActivities` records as the canonical durable activity stream for the live brain log.
+- Mirrored new realtime agent-bus messages into `brainActivities` with redacted text/metadata and `secretValuesExposed: false`.
+- Extracted `LiveBrainLog` from `TerminalShell` into a shared terminal primitive used by both the real shell and `/desktop-demo` System Status.
+- Moved the shell reader to `api.brainActivity.listRecent` first, while retaining safe local readiness/current shell state as supplementary proof rows.
+- Collapsed visible shell IA to `Home`, `Brain`, `Projects`, and `Settings`; APIs, Machine, Vault, Activity, Stats, and Portrait are now advanced settings surfaces instead of peer-level top nav.
+- Verified with root TypeScript, production Next build, Convex dev sync, Convex production deploy, local `next start -p 3100`, and Codex in-app Browser visual checks for `/shell` and `/desktop-demo`.
+
 ## 2026-06-19 — Shell live brain log
 
 ### feat(shell): add a chat-column live log for realtime mesh proof

@@ -913,6 +913,33 @@ export default defineSchema({
     .index("by_userId_channel_createdAt", ["userId", "channel", "createdAt"])
     .index("by_userId_messageId", ["userId", "messageId"]),
 
+  brainActivities: defineTable({
+    userId: v.id("users"),
+    activityId: v.string(),
+    source: v.string(), // "agent-bus" | "repo" | "skill-sync" | "machine" | "vault" | ...
+    channel: v.optional(v.string()),
+    kind: v.string(),
+    title: v.string(),
+    detail: v.optional(v.string()),
+    status: v.optional(v.string()), // "live" | "ok" | "warn" | "error" | "info" or domain status
+    projectSlug: v.optional(v.string()),
+    entityType: v.optional(v.string()),
+    entityId: v.optional(v.string()),
+    sourceHost: v.optional(v.string()),
+    sourceAgent: v.optional(v.string()),
+    sourceRuntime: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    occurredAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    secretValuesExposed: v.boolean(),
+  })
+    .index("by_userId_occurredAt", ["userId", "occurredAt"])
+    .index("by_userId_source_occurredAt", ["userId", "source", "occurredAt"])
+    .index("by_userId_kind_occurredAt", ["userId", "kind", "occurredAt"])
+    .index("by_userId_project_occurredAt", ["userId", "projectSlug", "occurredAt"])
+    .index("by_userId_activityId", ["userId", "activityId"]),
+
   // ── Connected-app grants ───────────────────────────────────
   // Product/app-level grants are distinct from owner API keys. They let the
   // owner authorize a named app, host, or integration to read/write specific
