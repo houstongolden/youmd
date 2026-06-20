@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(skills): add app-facing Skill Mesh view
+- Added a `skill catalog` / `skill mesh` mode switch to the Skills pane.
+- The Skill Mesh view reads the existing owner-gated Convex `agentStackInventories` data and renders machine inventory counts, latest machine/root, ownership/sync/provenance rollups, catalog-gap samples, DRY review queues, healthy mirror samples, synced machine rows, and copyable verify/compare commands.
+- Added `/skillmesh` and `/mesh` shell aliases plus command-palette discovery; `/shell?tab=skills&view=mesh` opens the view directly.
+- The view renders safe metadata only and repeats the no-raw-secrets contract for skill bodies, prompt logs, `.env.local` values, auth tokens, and secret material.
+
 ### feat(machine): include agent stack inventory in machine proof
 - `youmd machine verify` now loads the latest local agent-stack inventory JSON from `~/.youmd/agent-stack-inventory` and prints the core skill mesh counts in the readiness header.
 - Machine proof JSON now includes a secret-safe `agentStackInventory` block with report paths, host/root metadata, unique skill counts, catalog gaps, DRY review counts, mirror clusters, and `secretValuesExposed: false`.

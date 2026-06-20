@@ -8,6 +8,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { PaneCallout, PaneSectionLabel, PaneDivider } from "./shared";
 import { skillPropagation } from "@/data/portfolioGraph";
+import type { Doc } from "../../../convex/_generated/dataModel";
 
 interface SkillEntry {
   name: string;
@@ -22,6 +23,10 @@ type InstalledSkillSummary = {
   skillName: string;
   useCount?: number;
 };
+
+type AgentStackInventory = Doc<"agentStackInventories">;
+
+type SkillPaneMode = "catalog" | "mesh";
 
 const BUNDLED_SKILLS: SkillEntry[] = [
   {
@@ -117,6 +122,224 @@ function IdentityFieldTag({ field }: { field: string }) {
     >
       {`{{${field}}}`}
     </span>
+  );
+}
+
+function formatCount(value: number | undefined) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value.toLocaleString()
+    : "--";
+}
+
+function formatInventoryTime(value: number | undefined) {
+  if (!value) return "unknown";
+  const diffMs = Date.now() - value;
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
+
+function numericRollupEntries(rollup: Record<string, unknown> | undefined, limit = 8) {
+  if (!rollup) return [];
+  return Object.entries(rollup)
+    .flatMap(([label, raw]) => {
+      const value = typeof raw === "number" && Number.isFinite(raw) ? raw : undefined;
+      return value === undefined ? [] : [{ label, value }];
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function MeshMetric({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "neutral" | "accent" | "warn" | "ok" }) {
+  const color = tone === "accent"
+    ? "text-[hsl(var(--accent))]"
+    : tone === "warn"
+      ? "text-yellow-500"
+      : tone === "ok"
+        ? "text-[hsl(var(--success))]"
+        : "text-[hsl(var(--text-primary))]";
+  return (
+    <div className="border-t border-[hsl(var(--border))]/45 pt-2">
+      <div className={`font-mono text-[17px] leading-none ${color}`}>{value}</div>
+      <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function RollupColumn({ title, rows }: { title: string; rows: Array<{ label: string; value: number }> }) {
+  return (
+    <div>
+      <PaneSectionLabel>{title}</PaneSectionLabel>
+      <div className="space-y-1.5 font-mono text-[10px]">
+        {rows.length ? rows.map((row) => (
+          <div key={row.label} className="flex items-center gap-2 border-t border-[hsl(var(--border))]/35 pt-1.5">
+            <span className="min-w-0 flex-1 truncate text-[hsl(var(--text-secondary))] opacity-62">{row.label}</span>
+            <span className="text-[hsl(var(--text-primary))] opacity-80">{row.value.toLocaleString()}</span>
+          </div>
+        )) : (
+          <p className="text-[hsl(var(--text-secondary))] opacity-38">no rollup yet</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SampleList({ title, values }: { title: string; values: string[] }) {
+  return (
+    <div>
+      <PaneSectionLabel>{title}</PaneSectionLabel>
+      <div className="flex flex-wrap gap-1.5">
+        {values.length ? values.slice(0, 18).map((value) => (
+          <span
+            key={value}
+            className="max-w-full truncate border border-[hsl(var(--border))]/70 px-2 py-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-65"
+            style={{ borderRadius: "var(--radius)" }}
+            title={value}
+          >
+            {value}
+          </span>
+        )) : (
+          <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-38">none</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SkillMeshView({
+  inventories,
+  isLoading,
+}: {
+  inventories: AgentStackInventory[] | undefined;
+  isLoading: boolean;
+}) {
+  const latest = inventories?.[0];
+  const machineCount = inventories?.length ?? 0;
+  const secretLeak = inventories?.some((inventory) => inventory.secretValuesExposed) ?? false;
+  const ownershipRows = numericRollupEntries(latest?.ownershipRollup as Record<string, unknown> | undefined);
+  const syncRows = numericRollupEntries(latest?.syncPolicyRollup as Record<string, unknown> | undefined);
+  const provenanceRows = numericRollupEntries(latest?.provenanceRollup as Record<string, unknown> | undefined);
+
+  return (
+    <div className="space-y-6">
+      <PaneCallout label="skill mesh">
+        <p className="font-mono text-[11px] leading-relaxed text-[hsl(var(--text-primary))] opacity-78">
+          Local/global skill inventory from trusted machines. This is the productized version of the HTML/Mermaid audit:
+          ownership, source/provenance, DRY review queues, mirror clusters, catalog gaps, and second-machine proof.
+        </p>
+        <p className="border-t border-[hsl(var(--accent))]/25 pt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+          Safe metadata only. Raw skill bodies, prompt logs, `.env.local` values, auth tokens, and secret material are excluded.
+        </p>
+      </PaneCallout>
+
+      {isLoading && (
+        <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
+          loading synced agent stack inventories...
+        </p>
+      )}
+
+      {!isLoading && !latest && (
+        <div className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+          <PaneSectionLabel>no inventory synced yet</PaneSectionLabel>
+          <p className="font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+            Run the inventory command on this Mac or the Mac mini, then refresh this pane.
+          </p>
+          <div className="mt-3">
+            <CommandRow
+              command="youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync"
+              description="generate HTML/JSON and persist safe counts to You.md"
+            />
+          </div>
+        </div>
+      )}
+
+      {latest && (
+        <>
+          <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <PaneSectionLabel>latest machine</PaneSectionLabel>
+                <h2 className="font-mono text-[15px] leading-tight text-[hsl(var(--text-primary))]">
+                  {latest.hostName}
+                </h2>
+                <p className="mt-2 max-w-3xl truncate font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-52">
+                  {latest.rootDir}
+                </p>
+              </div>
+              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-48">
+                {formatInventoryTime(latest.generatedAt)} / {machineCount} machine{machineCount === 1 ? "" : "s"}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <MeshMetric label="unique skills" value={formatCount(latest.uniqueSkillNames)} tone="accent" />
+              <MeshMetric label="real SKILL.md files" value={formatCount(latest.uniqueRealSkillFiles)} />
+              <MeshMetric label="catalog gaps" value={formatCount(latest.missingFromYoumdCatalog)} tone={latest.missingFromYoumdCatalog > 0 ? "warn" : "ok"} />
+              <MeshMetric label="DRY review cases" value={formatCount(latest.duplicateNameDifferentRealpaths)} tone={latest.duplicateNameDifferentRealpaths > 0 ? "warn" : "ok"} />
+              <MeshMetric label="host exposures" value={formatCount(latest.directExposureSkillRecords)} />
+              <MeshMetric label="canonical files" value={formatCount(latest.canonicalSkillFiles)} />
+              <MeshMetric label="mirror clusters" value={formatCount(latest.sameRealpathMirrors)} tone="ok" />
+              <MeshMetric label="project signals" value={formatCount(latest.projectSignals)} />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-[hsl(var(--border))]/45 pt-3 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-58">
+              <span>schema: {latest.inventorySchemaVersion ?? "unknown"}</span>
+              <span>source: {latest.source}</span>
+              <span>agent: {latest.agentName ?? "unknown"}</span>
+              <span className={secretLeak ? "text-yellow-500" : "text-[hsl(var(--success))]"}>
+                secrets: {secretLeak ? "review required" : "not exposed"}
+              </span>
+            </div>
+          </section>
+
+          <section className="grid gap-4 xl:grid-cols-3">
+            <RollupColumn title="ownership" rows={ownershipRows} />
+            <RollupColumn title="sync policy" rows={syncRows} />
+            <RollupColumn title="provenance" rows={provenanceRows} />
+          </section>
+
+          <section className="grid gap-4 xl:grid-cols-3">
+            <SampleList title="catalog gaps" values={latest.missingCatalogSamples ?? []} />
+            <SampleList title="DRY review queue" values={latest.duplicateNameSamples ?? []} />
+            <SampleList title="healthy mirrors" values={latest.mirrorSamples ?? []} />
+          </section>
+
+          <section>
+            <PaneSectionLabel>trusted machine snapshots</PaneSectionLabel>
+            <div className="space-y-2">
+              {(inventories ?? []).map((inventory) => (
+                <div
+                  key={inventory._id}
+                  className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto]"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
+                    <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">{inventory.rootDir}</div>
+                  </div>
+                  <span className="text-[hsl(var(--accent))]">{inventory.uniqueSkillNames.toLocaleString()} skills</span>
+                  <span className="text-[hsl(var(--text-secondary))] opacity-58">{inventory.missingFromYoumdCatalog.toLocaleString()} gaps</span>
+                  <span className="text-[hsl(var(--text-secondary))] opacity-42">{formatInventoryTime(inventory.generatedAt)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <PaneSectionLabel>verify and compare</PaneSectionLabel>
+            <div className="space-y-2">
+              <CommandRow command="youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync" description="refresh this machine's local/global skill mesh and sync safe metadata" />
+              <CommandRow command="youmd machine verify --write-report --sync-report" description="write machine readiness proof with the latest skill mesh counts attached" />
+              <CommandRow command="youmd skill inventory diff macbook.json mac-mini.json" description="compare two trusted machine snapshots before calling sync parity clean" />
+            </div>
+          </section>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -335,8 +558,10 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const installs = useQuery(api.skills.listInstalls, clerkId ? { clerkId, userId } : "skip");
   // Query published skills from registry
   const registrySkills = useQuery(api.skills.listPublished, { limit: 20 });
+  const agentStackInventories = useQuery(api.portfolio.listAgentStackInventories, clerkId ? { clerkId, limit: 12 } : "skip");
 
   const isLoading = installs === undefined || registrySkills === undefined;
+  const meshLoading = agentStackInventories === undefined;
   const installMap = new Map<string, InstalledSkillSummary>(
     (installs ?? []).map((install) => [
       install.skillName,
@@ -347,6 +572,9 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
 
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [mcpCopied, setMcpCopied] = useState(false);
+  const [localMode, setLocalMode] = useState<SkillPaneMode>(() => searchParams.get("view") === "mesh" ? "mesh" : "catalog");
+  const requestedView = searchParams.get("view");
+  const mode: SkillPaneMode = requestedView === "mesh" || requestedView === "catalog" ? requestedView : localMode;
 
   // Merge bundled + registry skills, deduplicating by name
   const allSkills: SkillEntry[] = [...BUNDLED_SKILLS];
@@ -519,6 +747,32 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
         </div>
       </PaneCallout>
 
+      <div className="flex flex-wrap items-center gap-2 border-y border-[hsl(var(--border))]/55 py-2">
+        {(["catalog", "mesh"] as const).map((nextMode) => (
+          <button
+            key={nextMode}
+            type="button"
+            onClick={() => setLocalMode(nextMode)}
+            className={[
+              "px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] transition-[background,color,opacity]",
+              mode === nextMode
+                ? "bg-[hsl(var(--shell-active))] text-[hsl(var(--text-primary))]"
+                : "text-[hsl(var(--text-secondary))] opacity-50 hover:bg-[hsl(var(--shell-chrome-hover))] hover:opacity-85",
+            ].join(" ")}
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            {nextMode === "catalog" ? "skill catalog" : "skill mesh"}
+          </button>
+        ))}
+        <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-35">
+          {mode === "mesh" ? "machine inventory + drift" : "installed + available"}
+        </span>
+      </div>
+
+      {mode === "mesh" ? (
+        <SkillMeshView inventories={agentStackInventories} isLoading={meshLoading} />
+      ) : (
+        <>
       <div>
         <PaneSectionLabel>local agent sync</PaneSectionLabel>
         <div className="space-y-2 border-l border-[hsl(var(--border))]/80 pl-4 font-mono text-[11px]">
@@ -751,6 +1005,8 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

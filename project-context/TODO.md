@@ -31,10 +31,11 @@ PRD Version: 2.3
 - [x] Add `agent-stack/` to the server-side repo mirror so hosted MCP can read the repo-backed snapshot files
 - [x] Harden install-time inventory scanning with bounded traversal, repeated-scan caching, and visible `walkIssues`
 - [x] Teach `youmd machine verify` to load the latest local agent-stack inventory proof and include skill mesh counts/report paths in the secret-safe machine proof JSON
+- [x] Add first app-facing Skill Mesh view under Skills for synced machine inventory counts, ownership/provenance rollups, catalog gaps, DRY queues, mirror clusters, and verification commands
 - [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [ ] Next pass: add richer API/MCP drift query models and optional MCP resources for agent stack topology
-- [ ] Build the web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views
+- [ ] Build the full web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views beyond the first Skills-pane view
 - [ ] Add resident realtime reconciliation for skills/stacks/context metadata across trusted machines and agents
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly

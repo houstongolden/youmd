@@ -20,6 +20,7 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/connectors", description: "apps, grants, custom API/MCP", category: "navigation" },
   { command: "/crawlers", description: "sources, crawlers, crons, loops", category: "navigation" },
   { command: "/skills", description: "skills inside your stacks", category: "navigation" },
+  { command: "/skillmesh", description: "machine skill inventory and drift", category: "navigation" },
   { command: "/stacks", description: "named private/public expertise stacks", category: "navigation" },
   { command: "/new computer", description: "generate fresh-machine setup command", category: "action" },
   { command: "/share", description: "create a shareable identity link", category: "action" },
