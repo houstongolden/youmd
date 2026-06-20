@@ -103,7 +103,7 @@ describe("skill catalog inventory registration", () => {
     originalHome = process.env.HOME;
     tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-skill-catalog-"));
     process.env.HOME = tmpHome;
-    const inventoryDir = path.join(tmpHome, ".youmd", "agent-stack-inventory");
+    const inventoryDir = path.join(tmpHome, ".you", "agent-stack-inventory");
     fs.mkdirSync(inventoryDir, { recursive: true });
     fs.writeFileSync(
       path.join(inventoryDir, "local-agent-stack-inventory-2026-06-20.json"),
@@ -124,6 +124,41 @@ describe("skill catalog inventory registration", () => {
     const { readSkillCatalog } = await import("../lib/skill-catalog");
     const hydrated = readSkillCatalog();
     const entry = hydrated.skills.find((skill) => skill.name === "machine-sync");
+
+    expect(entry).toMatchObject({
+      source: `local:${tmpHome}/.agent-shared/claude-skills/machine-sync/SKILL.md`,
+      installed: false,
+      catalog_origin: "agent-stack-inventory",
+      owner_classes: ["houston-owned-shared"],
+      sync_policies: ["syncable-canonical"],
+    });
+  });
+
+  it("hydrates readSkillCatalog from legacy .youmd inventory when canonical .you is absent", async () => {
+    originalHome = process.env.HOME;
+    tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-skill-catalog-legacy-"));
+    process.env.HOME = tmpHome;
+    const inventoryDir = path.join(tmpHome, ".youmd", "agent-stack-inventory");
+    fs.mkdirSync(inventoryDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(inventoryDir, "local-agent-stack-inventory-2026-06-20.json"),
+      JSON.stringify({
+        missingFromCatalog: [
+          {
+            name: "legacy-machine-sync",
+            ownerClasses: ["houston-owned-shared"],
+            provenances: ["legacy ~/.youmd inventory"],
+            syncPolicies: ["syncable-canonical"],
+            samplePaths: ["~/.agent-shared/claude-skills/machine-sync/SKILL.md"],
+          },
+        ],
+      })
+    );
+
+    vi.resetModules();
+    const { readSkillCatalog } = await import("../lib/skill-catalog");
+    const hydrated = readSkillCatalog();
+    const entry = hydrated.skills.find((skill) => skill.name === "legacy-machine-sync");
 
     expect(entry).toMatchObject({
       source: `local:${tmpHome}/.agent-shared/claude-skills/machine-sync/SKILL.md`,

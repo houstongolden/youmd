@@ -174,8 +174,8 @@ describe("portfolio repo update history", () => {
       missingCatalogSamples: ["academic-paper", "bigbounce-status"],
       duplicateNameSamples: ["autoplan", "browse"],
       mirrorSamples: ["agent-stack-inventory"],
-      reportJsonPath: "/Users/houston/.youmd/agent-stack-inventory/latest.json",
-      reportHtmlPath: "/Users/houston/.youmd/agent-stack-inventory/latest.html",
+      reportJsonPath: "/Users/houston/.you/agent-stack-inventory/latest.json",
+      reportHtmlPath: "/Users/houston/.you/agent-stack-inventory/latest.html",
       source: "youmd-cli",
       agentName: "youmd skill inventory",
       secretValuesExposed: false,
@@ -203,8 +203,8 @@ describe("portfolio repo update history", () => {
       missingCatalogSamples: ["academic-paper"],
       duplicateNameSamples: ["autoplan"],
       mirrorSamples: ["agent-stack-inventory"],
-      reportJsonPath: "/Users/houston/.youmd/agent-stack-inventory/latest.json",
-      reportHtmlPath: "/Users/houston/.youmd/agent-stack-inventory/latest.html",
+      reportJsonPath: "/Users/houston/.you/agent-stack-inventory/latest.json",
+      reportHtmlPath: "/Users/houston/.you/agent-stack-inventory/latest.html",
       source: "youmd-cli",
       agentName: "youmd skill inventory",
       secretValuesExposed: false,
@@ -378,7 +378,7 @@ describe("portfolio repo update history", () => {
     expect(mini?.issues).toContain("3 fewer skill names than baseline");
     expect(mini?.repairCommands).toContain("youmd stack sync");
     expect(mini?.repairCommands).toContain("youmd skill sync");
-    expect(mini?.repairCommands).toContain("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync");
+    expect(mini?.repairCommands).toContain("youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync");
   });
 
   it("persists repo update runs with ordered steps", async () => {

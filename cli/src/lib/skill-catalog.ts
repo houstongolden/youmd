@@ -270,12 +270,16 @@ function inventoryDescription(skill: InventoryCatalogSkill): string {
 }
 
 function latestInventoryJsonPath(): string | null {
-  const dir = path.join(os.homedir(), ".youmd", "agent-stack-inventory");
-  if (!fs.existsSync(dir)) return null;
-  const files = fs.readdirSync(dir)
-    .filter((file) => /^local-agent-stack-inventory-.*\.json$/.test(file))
-    .map((file) => path.join(dir, file))
-    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs || path.basename(b).localeCompare(path.basename(a)));
+  const dirs = [
+    path.join(os.homedir(), ".you", "agent-stack-inventory"),
+    path.join(os.homedir(), ".youmd", "agent-stack-inventory"),
+  ];
+  const files = dirs.flatMap((dir) => {
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir)
+      .filter((file) => /^local-agent-stack-inventory-.*\.json$/.test(file))
+      .map((file) => path.join(dir, file));
+  }).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs || path.basename(b).localeCompare(path.basename(a)));
   return files[0] || null;
 }
 
