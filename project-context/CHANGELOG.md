@@ -2,6 +2,13 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): add canonical synced brain graph DTO
+- Added owner-gated Convex `getSyncedBrainGraph`, joining persisted agent-stack inventories, machine proof reports, canonical `brainActivities`, and optional portfolio/task signals into one graph DTO for apps, API clients, and agents.
+- Exposed the graph through authenticated `GET /api/v1/me/synced-brain/graph` and hosted MCP `get_synced_brain_graph`, with generated docs/openapi/llms surfaces updated to 107 endpoints and 12 hosted MCP tools.
+- Rewired Machine readiness to prefer the canonical DTO and simplified the first mesh surface around the real graph plus three proof facts instead of host chips plus six duplicated metric tiles.
+- Kept liveness evidence persisted-only: recent activity timestamps, machine/inventory proof freshness, project activity, and safe secret-exposure booleans only; no fake neuron firing or raw secret values.
+- Verified with Convex codegen, focused portfolio tests, root TypeScript, production Next build, and generated docs.
+
 ### feat(skills): simplify Skill Mesh detail surface
 - Reframed the Skill Mesh first viewport around the real synced brain graph plus three decision signals: owned source of truth, proof coverage, and attention queue.
 - Collapsed deeper source, machine-proof, and audit rollups behind a compact detail switch so the page preserves full inventory intelligence without making users read every table at once.

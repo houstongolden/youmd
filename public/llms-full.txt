@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: 17d5926cf3fa4aa1add2b8d6f891a1c50d2595aee3036ede967c7e9474be221e. CLI version: 0.8.12. Endpoints: 106 documented (9 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 11. CLI commands: 31. Reference intelligence: 2026-06-19T15:31:38.182Z.
+> Generated full agent context. Source hash: 61b16529df55d0902951de3d97f5d76c85611e132e4588164e993e44814ce95f. CLI version: 0.8.12. Endpoints: 107 documented (9 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 12. CLI commands: 31. Reference intelligence: 2026-06-18T22:52:02.362Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -185,7 +185,7 @@ All 31 registered runtime commands, generated from the commander registrations i
 You.md has two MCP surfaces with distinct tool sets:
 
 - Local stdio MCP through the runtime: 6 tools. This is the preferred surface for Claude Code, Codex, Cursor, and other local coding agents.
-- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 11 tools, for web-capable clients.
+- Hosted same-origin JSON-RPC MCP at `POST /api/v1/mcp`: 12 tools, for web-capable clients.
 
 Discovery:
 
@@ -228,6 +228,7 @@ Hosted MCP tools (`POST /api/v1/mcp`):
 - `search_profiles` (public): Search or list public profiles on you.md.
 - `get_my_identity` (Bearer API key required): Get the authenticated user's full identity bundle, including private context. Requires a you.md API key passed as Bearer token in the Authorization header.
 - `get_agent_stack_inventory` (Bearer API key required): Read the authenticated user's latest You.md agent-stack inventory snapshots: skill/stack counts, machine roots, You.md catalog gaps, DRY review queues, mirror clusters, provenance/source rollups, and repo snapshot files. Use to audit cross-machine skill drift and sync health without exposing secrets.
+- `get_synced_brain_graph` (Bearer API key required): Return the authenticated user's canonical synced brain graph DTO for machines, skills, agent activity, vault signals, and optional portfolio/task signals. Use this instead of inventing fake liveness from local fallback text.
 - `get_my_stacks` (Bearer API key required): List the YouStacks the authenticated user hosts in their own GitHub repo (from the You.md server-side mirror). Requires a you.md API key as Bearer token.
 - `get_repo_file` (Bearer API key required): Read one file (e.g. you.md, you.json, or a stacks/<slug>/... file) from the authenticated user's repo via the You.md server-side mirror. Requires a you.md API key as Bearer token.
 - `search_memories` (Bearer API key required): Full-text search the authenticated user's durable memories on you.md. Use this to recall specific facts, preferences, decisions, or context the user has stored - e.g. before answering a question about their past work or stated preferences. Returns one memory per line as plain text, relevance-ordered. Requires a you.md API key with the read:private scope...
@@ -384,7 +385,7 @@ You.md keeps these as first-class inspiration and monitoring sources:
 
 - GStack: https://github.com/garrytan/gstack (main @ a861c00cfac6; No new commits since last sync (a861c00))
 - GBrain: https://github.com/garrytan/gbrain (master @ 9bf96db807c2; No new commits since last sync (9bf96db))
-- Agent Scripts: https://github.com/steipete/agent-scripts (main @ 0a629f2d56f4; Changes since 6e512e6)
+- Agent Scripts: https://github.com/steipete/agent-scripts (main @ 6e512e6fe054; No new commits since last sync (6e512e6))
 - The Library: https://github.com/disler/the-library (main @ 47f455cd139b; No new commits since last sync (47f455c))
 
 The monitor writes:

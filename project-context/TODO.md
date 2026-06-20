@@ -37,6 +37,10 @@ PRD Version: 2.3
 - [x] Teach `youmd machine verify` to load the latest local agent-stack inventory proof and include skill mesh counts/report paths in the secret-safe machine proof JSON
 - [x] Add first app-facing Skill Mesh view under Skills for synced machine inventory counts, ownership/provenance rollups, catalog gaps, DRY queues, mirror clusters, and verification commands
 - [x] Add `youmd skill inventory status` for local-vs-synced machine inventory rows, count drift, JSON output, and exact Mac-to-Mac refresh/verify/diff commands
+- [x] Add canonical Convex synced brain graph DTO/query, authenticated API route, hosted MCP tool, generated docs, and Machine pane wiring
+- [x] Apply a minimal-surface pass to Machine's sync mesh first viewport so it shows the live graph plus three useful proof facts instead of duplicated metric clutter
+- [ ] Next pass: wire Home and Skills/Skill Mesh to the canonical synced brain graph DTO and remove remaining fallback liveness paths
+- [ ] Next pass: live-smoke `/api/v1/me/synced-brain/graph` and hosted MCP `get_synced_brain_graph` against production after deploy
 - [ ] Next pass: publish `youmd@0.8.11` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison

@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "17d5926cf3fa4aa1add2b8d6f891a1c50d2595aee3036ede967c7e9474be221e",
+  "sourceHash": "61b16529df55d0902951de3d97f5d76c85611e132e4588164e993e44814ce95f",
   "cli": {
     "version": "0.8.12"
   },
   "counts": {
-    "endpoints": 106,
+    "endpoints": 107,
     "internalRoutes": 9,
     "mcpTools": 6,
-    "hostedMcpTools": 11,
+    "hostedMcpTools": 12,
     "cliCommands": 31,
-    "convexRoutes": 87,
+    "convexRoutes": 88,
     "nextRoutes": 27
   },
   "endpoints": [
@@ -524,6 +524,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Add a source",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/synced-brain/graph",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Canonical graph DTO for synced machines, skills, activity, and portfolio signals.",
       "sources": [
         "convex"
       ]
@@ -1401,6 +1412,18 @@ export const docsReference = {
         "limit",
         "include_repo_snapshot",
         "include_drift"
+      ],
+      "required": [],
+      "requiresAuth": true
+    },
+    {
+      "name": "get_synced_brain_graph",
+      "description": "Return the authenticated user's canonical synced brain graph DTO for machines, skills, agent activity, vault signals, and optional portfolio/task signals. Use this instead of inventing fake liveness from local fallback text.",
+      "inputFields": [
+        "limit",
+        "include_portfolio_signals",
+        "include_done_tasks",
+        "project_slug"
       ],
       "required": [],
       "requiresAuth": true

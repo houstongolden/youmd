@@ -882,6 +882,47 @@ export const HOSTED_MCP_TOOLS: McpToolSpec[] = [
     },
   },
 
+  // ── get_synced_brain_graph ─────────────────────────────────────────────────
+  {
+    name: "get_synced_brain_graph",
+    description:
+      "Return the authenticated user's canonical synced brain graph DTO for machines, skills, agent activity, vault signals, and optional portfolio/task signals. Use this instead of inventing fake liveness from local fallback text.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Maximum persisted rows per source to inspect (default 12, max 50).",
+        },
+        include_portfolio_signals: {
+          type: "boolean",
+          description: "Include focused project, open task, and latest project activity signals (default false).",
+        },
+        include_done_tasks: {
+          type: "boolean",
+          description: "Include done/cancelled tasks when portfolio signals are enabled (default false).",
+        },
+        project_slug: {
+          type: "string",
+          description: "Optional project slug to scope brain activity and project activity signals.",
+        },
+      },
+    },
+    scopes: ["read:private"],
+    async handler(ctx, args, auth) {
+      if (!auth) return errorResult("authentication required — pass your you.md API key as Bearer token");
+      const graph = await ctx.runQuery(api.portfolio.getSyncedBrainGraph, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        limit: boundedNumber(args.limit, 12, 4, 50),
+        includePortfolioSignals: args.include_portfolio_signals === true,
+        includeDoneTasks: args.include_done_tasks === true,
+        projectSlug: typeof args.project_slug === "string" ? args.project_slug : undefined,
+      });
+      return textResult(JSON.stringify(graph, null, 2), "application/json");
+    },
+  },
+
   // ── get_my_stacks ────────────────────────────────────────────────────────────
   {
     name: "get_my_stacks",

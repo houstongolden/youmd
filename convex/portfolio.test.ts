@@ -381,10 +381,170 @@ describe("portfolio repo update history", () => {
     expect(mini?.repairCommands).toContain("you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync");
   });
 
+  it("builds a canonical synced brain graph from persisted sync evidence", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+    const asOther = t.withIdentity({ subject: OTHER_CLERK });
+    const now = Date.now();
+
+    await asOwner.mutation(api.portfolio.upsertMachineProof, {
+      clerkId: CLERK,
+      machineKey: "macbook-youmd",
+      hostName: "houston-macbook",
+      platform: "darwin 25.0.0",
+      rootDir: "/Users/houston/Desktop/CODE_2025/youmd",
+      proofSchemaVersion: 1,
+      status: "ready",
+      scanned: 12,
+      ready: 12,
+      needsEnv: 0,
+      partial: 0,
+      installPassed: 4,
+      checksPassed: 8,
+      serversPassed: 3,
+      daemonsLoaded: 4,
+      daemonsTotal: 4,
+      legacyDaemonsLoaded: 0,
+      daemonWarnings: [],
+      daemonLabels: ["com.you.realtime-sync", "com.you.skillstack-sync"],
+      failures: 0,
+      warnings: [],
+      secretValuesExposed: false,
+      source: "cli",
+      generatedAt: now,
+    });
+
+    await asOwner.mutation(api.portfolio.upsertAgentStackInventory, {
+      clerkId: CLERK,
+      machineKey: "macbook-youmd-agent-stack",
+      hostName: "houston-macbook",
+      platform: "darwin 25.0.0",
+      rootDir: "/Users/houston/Desktop/CODE_2025/youmd",
+      inventorySchemaVersion: "local-agent-stack-inventory/v1",
+      uniqueSkillNames: 430,
+      uniqueRealSkillFiles: 828,
+      directExposureSkillRecords: 412,
+      canonicalSkillFiles: 818,
+      youmdCatalogSkills: 14,
+      missingFromYoumdCatalog: 416,
+      duplicateNameDifferentRealpaths: 70,
+      sameRealpathMirrors: 136,
+      projectSignals: 94,
+      ownershipRollup: {},
+      syncPolicyRollup: {},
+      provenanceRollup: {},
+      missingCatalogSamples: ["academic-paper"],
+      duplicateNameSamples: ["autoplan"],
+      mirrorSamples: ["agent-stack-inventory"],
+      source: "youmd-cli",
+      agentName: "you skill inventory",
+      secretValuesExposed: false,
+      generatedAt: now,
+    });
+
+    await asOwner.mutation(api.brainActivity.recordActivity, {
+      clerkId: CLERK,
+      activityId: "agent-bus:test-live",
+      source: "agent-bus",
+      channel: "agents",
+      kind: "message",
+      title: "Codex reported machine sync progress",
+      status: "live",
+      occurredAt: now,
+    });
+
+    await asOwner.mutation(api.portfolio.upsertProject, {
+      clerkId: CLERK,
+      slug: "youmd",
+      name: "You.md",
+      stackName: "YouStack",
+      status: "active",
+      summary: "Agent brain and portfolio graph.",
+      tags: ["youstack"],
+      lastActivityAt: now,
+    });
+    await asOwner.mutation(api.portfolio.updateProjectFocus, {
+      clerkId: CLERK,
+      projectSlug: "youmd",
+      focusStatus: "top-priority",
+      focusRank: 1,
+    });
+    await asOwner.mutation(api.portfolio.upsertTask, {
+      clerkId: CLERK,
+      projectSlug: "youmd",
+      title: "Prove synced graph DTO",
+      ownerType: "agent",
+      ownerLabel: "Codex",
+      status: "in_progress",
+      priority: "high",
+      tags: ["sync", "graph"],
+    });
+    await asOwner.mutation(api.portfolio.upsertProjectActivityBatch, {
+      clerkId: CLERK,
+      projectSlug: "youmd",
+      activities: [{
+        kind: "summary",
+        title: "Synced graph DTO wired",
+        source: "test",
+        tags: ["sync"],
+        occurredAt: now,
+      }],
+    });
+
+    const graph = await asOwner.query(api.portfolio.getSyncedBrainGraph, {
+      clerkId: CLERK,
+      includePortfolioSignals: true,
+      limit: 8,
+    });
+
+    expect(graph.schemaVersion).toBe("you-md/synced-brain-graph/v1");
+    expect(graph.evidence).toMatchObject({
+      inventoryCount: 1,
+      machineProofCount: 1,
+      matchedInventoryProofCount: 1,
+      focusedProjectCount: 1,
+      openTaskCount: 1,
+      secretValuesExposed: false,
+    });
+    expect(graph.nodes.find((node) => node.id === "machines")).toMatchObject({
+      value: "1",
+      live: true,
+      tone: "success",
+    });
+    expect(graph.nodes.find((node) => node.id === "skills")).toMatchObject({
+      value: "430",
+      live: true,
+    });
+    expect(graph.nodes.find((node) => node.id === "projects")).toMatchObject({
+      value: "1/1",
+      live: true,
+    });
+    expect(graph.nodes.find((node) => node.id === "agents")).toMatchObject({
+      value: "active",
+      live: true,
+    });
+    expect(graph.signals).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: "machine proof", value: "1/1 matched", live: true }),
+      expect.objectContaining({ label: "secret exposure", value: "none", live: true }),
+    ]));
+    expect(graph.latestActivity.map((row) => row.source)).toContain("agent-bus");
+
+    const otherGraph = await asOther.query(api.portfolio.getSyncedBrainGraph, {
+      clerkId: OTHER_CLERK,
+      includePortfolioSignals: true,
+      limit: 8,
+    });
+    expect(otherGraph.evidence.inventoryCount).toBe(0);
+    expect(otherGraph.evidence.machineProofCount).toBe(0);
+    expect(otherGraph.evidence.brainActivityCount).toBe(0);
+  });
+
   it("persists repo update runs with ordered steps", async () => {
     const t = convexTest(schema);
     await seedUsers(t);
     const asOwner = t.withIdentity({ subject: CLERK });
+    const baseTime = Date.now();
 
     const { runId } = await asOwner.mutation(api.portfolio.startRepoUpdateRun, {
       clerkId: CLERK,
@@ -405,7 +565,7 @@ describe("portfolio repo update history", () => {
       status: "success",
       detail: "published v108",
       metadata: { version: 108 },
-      completedAt: Date.now(),
+      completedAt: baseTime + 1,
     });
     await asOwner.mutation(api.portfolio.appendRepoUpdateStep, {
       clerkId: CLERK,
@@ -416,7 +576,7 @@ describe("portfolio repo update history", () => {
       status: "pending",
       detail: "required checks are still pending",
       metadata: { prNumber: 11, checkState: "pending" },
-      completedAt: Date.now(),
+      completedAt: baseTime + 2,
     });
     await asOwner.mutation(api.portfolio.appendRepoUpdateStep, {
       clerkId: CLERK,
@@ -427,7 +587,7 @@ describe("portfolio repo update history", () => {
       status: "success",
       detail: "merged PR #11",
       metadata: { prNumber: 11 },
-      completedAt: Date.now(),
+      completedAt: baseTime + 3,
     });
     await asOwner.mutation(api.portfolio.completeRepoUpdateRun, {
       clerkId: CLERK,

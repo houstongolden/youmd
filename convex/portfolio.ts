@@ -197,6 +197,70 @@ function buildAgentStackInventoryDrift(inventories: Doc<"agentStackInventories">
   };
 }
 
+const GRAPH_RECENT_ACTIVITY_MINUTES = 12;
+const GRAPH_RECENT_MACHINE_MINUTES = 30;
+const GRAPH_RECENT_PROJECT_MINUTES = 24 * 60;
+
+function isRecentTimestamp(value: number | undefined, now: number, minutes: number): boolean {
+  return Number.isFinite(value) && now - value! < minutes * 60 * 1000;
+}
+
+function normalizeMachineKeyPart(value: string | undefined) {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^~(?=\/|$)/, "")
+    .replace(/^\/users\/[^/]+(?=\/|$)/, "")
+    .replace(/\/+$/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function machineHostRootKey(row: Pick<Doc<"agentStackInventories"> | Doc<"machineProofReports">, "hostName" | "rootDir">) {
+  return `${normalizeMachineKeyPart(row.hostName)}::${normalizeMachineKeyPart(row.rootDir)}`;
+}
+
+function machineProofKeys(row: Pick<Doc<"agentStackInventories"> | Doc<"machineProofReports">, "machineKey" | "hostName" | "rootDir">) {
+  const direct = normalizeMachineKeyPart(row.machineKey);
+  const hostRoot = machineHostRootKey(row);
+  const keys = new Set<string>([hostRoot]);
+  if (direct) {
+    keys.add(direct);
+    keys.add(direct.replace(/-agent-stack$/, ""));
+  }
+  return Array.from(keys).filter(Boolean);
+}
+
+function graphTone(status?: string): "success" | "accent" | "muted" | "danger" {
+  if (status === "ready" || status === "active" || status === "live" || status === "ok" || status === "synced") return "success";
+  if (status === "blocked" || status === "failed" || status === "missing" || status === "error") return "danger";
+  if (status === "warn" || status === "needs-env" || status === "partial" || status === "scope-missing") return "accent";
+  return "muted";
+}
+
+function graphPixelStatus(status?: string): "ready" | "active" | "warn" | "blocked" | "idle" | "unknown" {
+  if (status === "ready" || status === "ok" || status === "synced") return "ready";
+  if (status === "active" || status === "live" || status === "running") return "active";
+  if (status === "warn" || status === "needs-env" || status === "partial") return "warn";
+  if (status === "failed" || status === "blocked" || status === "missing" || status === "error") return "blocked";
+  if (status === "quiet" || status === "waiting") return "idle";
+  return "unknown";
+}
+
+function graphActivityStatus(row: Doc<"brainActivities">): "live" | "ok" | "warn" | "error" | "info" {
+  const value = row.status;
+  if (value === "live" || value === "ok" || value === "warn" || value === "error" || value === "info") return value;
+  return brainActivityStatus(value ?? row.kind);
+}
+
+function publicGraphActivity(row: Doc<"brainActivities">) {
+  return {
+    id: row.activityId,
+    source: row.source,
+    title: row.title,
+  };
+}
+
 function projectFocusRank(status: string, suppliedRank?: number): number {
   if (Number.isFinite(suppliedRank)) return Math.max(0, Math.min(9, Math.round(suppliedRank!)));
   if (status === "top-priority") return 1;
@@ -538,6 +602,276 @@ export const listPortfolioGraph = query({
       reusablePatterns: reusablePatterns.sort((a, b) => a.slug.localeCompare(b.slug)),
       tasks: tasks.sort((a, b) => b.updatedAt - a.updatedAt),
       recentCaptures,
+    };
+  },
+});
+
+export const getSyncedBrainGraph = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    includePortfolioSignals: v.optional(v.boolean()),
+    includeDoneTasks: v.optional(v.boolean()),
+    projectSlug: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const now = Date.now();
+    const limit = Math.max(4, Math.min(Number(args.limit ?? 12), 50));
+    const projectSlug = args.projectSlug ? slugify(args.projectSlug) : null;
+
+    const [inventories, machineProofs, brainActivities, projects, tasks, projectActivities] = await Promise.all([
+      ctx.db
+        .query("agentStackInventories")
+        .withIndex("by_userId_generatedAt", (q) => q.eq("userId", user._id))
+        .order("desc")
+        .take(limit),
+      ctx.db
+        .query("machineProofReports")
+        .withIndex("by_userId_generatedAt", (q) => q.eq("userId", user._id))
+        .order("desc")
+        .take(limit),
+      projectSlug
+        ? ctx.db
+            .query("brainActivities")
+            .withIndex("by_userId_project_occurredAt", (q) => q.eq("userId", user._id).eq("projectSlug", projectSlug))
+            .order("desc")
+            .take(limit * 2)
+        : ctx.db
+            .query("brainActivities")
+            .withIndex("by_userId_occurredAt", (q) => q.eq("userId", user._id))
+            .order("desc")
+            .take(limit * 2),
+      args.includePortfolioSignals
+        ? ctx.db
+            .query("portfolioProjects")
+            .withIndex("by_userId", (q) => q.eq("userId", user._id))
+            .collect()
+        : Promise.resolve([] as Doc<"portfolioProjects">[]),
+      args.includePortfolioSignals
+        ? ctx.db
+            .query("portfolioTasks")
+            .withIndex("by_userId", (q) => q.eq("userId", user._id))
+            .collect()
+        : Promise.resolve([] as Doc<"portfolioTasks">[]),
+      args.includePortfolioSignals
+        ? projectSlug
+          ? ctx.db
+              .query("portfolioProjectActivities")
+              .withIndex("by_userId_project_occurredAt", (q) => q.eq("userId", user._id).eq("projectSlug", projectSlug))
+              .order("desc")
+              .take(limit)
+          : ctx.db
+              .query("portfolioProjectActivities")
+              .withIndex("by_userId", (q) => q.eq("userId", user._id))
+              .collect()
+        : Promise.resolve([] as Doc<"portfolioProjectActivities">[]),
+    ]);
+
+    const latestInventory = inventories[0] ?? null;
+    const latestProof = machineProofs[0] ?? null;
+    const proofKeySet = new Set(machineProofs.flatMap((proof) => machineProofKeys(proof)));
+    const matchedInventoryCount = inventories.filter((inventory) =>
+      machineProofKeys(inventory).some((key) => proofKeySet.has(key))
+    ).length;
+    const hosts = Array.from(new Set([
+      ...machineProofs.map((proof) => proof.hostName),
+      ...inventories.map((inventory) => inventory.hostName),
+    ].filter(Boolean))).slice(0, 5);
+    const persistedMachineLive = [...machineProofs, ...inventories].some((row) =>
+      isRecentTimestamp(row.updatedAt, now, GRAPH_RECENT_MACHINE_MINUTES) ||
+      isRecentTimestamp(row.generatedAt, now, GRAPH_RECENT_MACHINE_MINUTES)
+    );
+    const recentActivities = brainActivities.filter((activity) =>
+      graphActivityStatus(activity) === "live" ||
+      isRecentTimestamp(activity.occurredAt, now, GRAPH_RECENT_ACTIVITY_MINUTES)
+    );
+    const agentActivities = brainActivities.filter((activity) =>
+      activity.source === "agent-bus" ||
+      activity.channel === "agents" ||
+      activity.source.includes("agent")
+    );
+    const skillActivities = brainActivities.filter((activity) =>
+      activity.source === "skill" ||
+      activity.channel === "skills" ||
+      activity.channel === "agent-stack-inventory" ||
+      activity.entityType === "agentStackInventory"
+    );
+    const vaultActivities = brainActivities.filter((activity) =>
+      activity.source === "vault" ||
+      activity.channel === "vault" ||
+      activity.entityType?.toLowerCase().includes("vault")
+    );
+    const openTasks = tasks.filter((task) =>
+      args.includeDoneTasks || (task.status !== "done" && task.status !== "cancelled")
+    );
+    const focusedProjects = projects.filter((project) => {
+      const focus = project.focusStatus ?? "";
+      return project.status === "active" || focus === "top-priority" || focus === "focusing";
+    });
+    const sortedProjectActivities = projectActivities
+      .slice()
+      .sort((a, b) => b.occurredAt - a.occurredAt);
+    const latestProjectActivity = sortedProjectActivities[0] ?? null;
+    const projectLive = Boolean(latestProjectActivity && isRecentTimestamp(latestProjectActivity.occurredAt, now, GRAPH_RECENT_PROJECT_MINUTES));
+    const skillStatus = latestInventory?.secretValuesExposed
+      ? "warn"
+      : latestInventory
+        ? "synced"
+        : "missing";
+    const machineStatus = latestProof?.status ?? (latestInventory ? "synced" : "missing");
+    const agentLive = agentActivities.some((activity) =>
+      graphActivityStatus(activity) === "live" ||
+      isRecentTimestamp(activity.occurredAt, now, GRAPH_RECENT_ACTIVITY_MINUTES)
+    );
+    const skillLive = skillActivities.some((activity) =>
+      graphActivityStatus(activity) === "live" ||
+      isRecentTimestamp(activity.occurredAt, now, GRAPH_RECENT_ACTIVITY_MINUTES)
+    ) || Boolean(latestInventory && isRecentTimestamp(latestInventory.updatedAt, now, GRAPH_RECENT_MACHINE_MINUTES));
+    const vaultLive = vaultActivities.some((activity) =>
+      graphActivityStatus(activity) === "live" ||
+      isRecentTimestamp(activity.occurredAt, now, GRAPH_RECENT_ACTIVITY_MINUTES)
+    );
+    const secretValuesExposed = machineProofs.some((proof) => proof.secretValuesExposed) ||
+      inventories.some((inventory) => inventory.secretValuesExposed) ||
+      brainActivities.some((activity) => activity.secretValuesExposed);
+
+    const nodes = [
+      {
+        id: "brain",
+        label: "you.md brain",
+        value: recentActivities.length > 0 ? `${recentActivities.length} live` : "ready",
+        detail: "Convex sync stream, proofs, inventory, and project signals",
+        x: 50,
+        y: 46,
+        kind: "shell" as const,
+        status: recentActivities.length > 0 ? "active" as const : "ready" as const,
+        live: recentActivities.length > 0,
+        tone: recentActivities.length > 0 ? "success" as const : "muted" as const,
+      },
+      {
+        id: "machines",
+        label: "trusted Macs",
+        value: `${hosts.length}`,
+        detail: hosts.join(" / ") || "waiting for synced proof",
+        x: 18,
+        y: 20,
+        kind: "machine" as const,
+        status: graphPixelStatus(machineStatus),
+        live: persistedMachineLive,
+        tone: graphTone(machineStatus),
+      },
+      {
+        id: "skills",
+        label: "skills",
+        value: latestInventory ? `${latestInventory.uniqueSkillNames}` : "sync",
+        detail: latestInventory
+          ? `${latestInventory.youmdCatalogSkills} cataloged / ${latestInventory.missingFromYoumdCatalog} gaps`
+          : "no synced inventory yet",
+        x: 78,
+        y: 20,
+        kind: "agent" as const,
+        status: graphPixelStatus(skillStatus),
+        live: skillLive,
+        tone: graphTone(skillStatus),
+      },
+      {
+        id: "projects",
+        label: "projects",
+        value: args.includePortfolioSignals ? `${focusedProjects.length}/${projects.length}` : "signals",
+        detail: latestProjectActivity
+          ? `${latestProjectActivity.projectSlug} / ${latestProjectActivity.title}`
+          : args.includePortfolioSignals
+            ? `${openTasks.length} open tasks / portfolio graph`
+            : "portfolio signals disabled",
+        x: 82,
+        y: 72,
+        kind: "shell" as const,
+        status: projectLive || focusedProjects.length > 0 ? "ready" as const : "idle" as const,
+        live: projectLive,
+        tone: projectLive || focusedProjects.length > 0 ? "success" as const : "muted" as const,
+      },
+      {
+        id: "vault",
+        label: "vault",
+        value: vaultLive ? "recent" : "quiet",
+        detail: vaultActivities[0]?.title ?? "encrypted metadata only",
+        x: 22,
+        y: 72,
+        kind: "shell" as const,
+        status: vaultLive ? "active" as const : "idle" as const,
+        live: vaultLive,
+        tone: vaultLive ? "success" as const : "muted" as const,
+      },
+      {
+        id: "agents",
+        label: "agents",
+        value: agentLive ? "active" : `${agentActivities.length}`,
+        detail: agentActivities[0]?.title ?? "agent bus durable stream",
+        x: 50,
+        y: 10,
+        kind: "agent" as const,
+        status: agentLive ? "active" as const : "idle" as const,
+        live: agentLive,
+        tone: agentLive ? "success" as const : "muted" as const,
+      },
+      {
+        id: "activity",
+        label: "activity",
+        value: `${brainActivities.length}`,
+        detail: brainActivities[0]?.title ?? "durable brain stream",
+        x: 50,
+        y: 84,
+        kind: "agent" as const,
+        status: recentActivities.length > 0 ? "active" as const : "idle" as const,
+        live: recentActivities.length > 0,
+        tone: recentActivities.length > 0 ? "success" as const : "muted" as const,
+      },
+    ];
+
+    const links = [
+      { from: "machines", to: "brain", active: persistedMachineLive || machineProofs.length > 0 },
+      { from: "agents", to: "brain", active: agentLive },
+      { from: "skills", to: "brain", active: skillLive || Boolean(latestInventory) },
+      { from: "projects", to: "brain", active: projectLive || focusedProjects.length > 0 },
+      { from: "vault", to: "brain", active: vaultLive },
+      { from: "activity", to: "brain", active: recentActivities.length > 0 },
+      { from: "skills", to: "projects", active: Boolean(latestInventory && (latestInventory.projectSignals > 0 || projects.length > 0)) },
+      { from: "agents", to: "activity", active: agentLive },
+    ];
+
+    const signals = [
+      { label: "persisted activities", value: `${recentActivities.length}/${brainActivities.length} recent`, live: recentActivities.length > 0 },
+      { label: "machine proof", value: `${matchedInventoryCount}/${Math.max(inventories.length, machineProofs.length)} matched`, live: matchedInventoryCount > 0 && matchedInventoryCount === inventories.length },
+      { label: "skill mesh", value: latestInventory ? `${latestInventory.uniqueSkillNames} skills` : "waiting", live: skillLive },
+      { label: "project graph", value: args.includePortfolioSignals ? `${focusedProjects.length} focused` : "disabled", live: projectLive },
+      { label: "open tasks", value: args.includePortfolioSignals ? `${openTasks.length}` : "disabled", live: args.includePortfolioSignals === true && openTasks.length > 0 },
+      { label: "secret exposure", value: secretValuesExposed ? "review" : "none", live: !secretValuesExposed },
+    ];
+
+    return {
+      schemaVersion: "you-md/synced-brain-graph/v1",
+      generatedAt: now,
+      nodes,
+      links,
+      signals,
+      latestActivity: brainActivities.slice(0, 4).map(publicGraphActivity),
+      evidence: {
+        inventoryCount: inventories.length,
+        machineProofCount: machineProofs.length,
+        matchedInventoryProofCount: matchedInventoryCount,
+        brainActivityCount: brainActivities.length,
+        recentBrainActivityCount: recentActivities.length,
+        projectCount: projects.length,
+        focusedProjectCount: focusedProjects.length,
+        openTaskCount: openTasks.length,
+        latestInventoryAt: latestInventory?.generatedAt ?? null,
+        latestMachineProofAt: latestProof?.generatedAt ?? null,
+        latestBrainActivityAt: brainActivities[0]?.occurredAt ?? null,
+        latestProjectActivityAt: latestProjectActivity?.occurredAt ?? null,
+        secretValuesExposed,
+      },
     };
   },
 });

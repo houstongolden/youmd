@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Copy, RefreshCw } from "lucide-react";
@@ -15,6 +15,10 @@ import { PixelCharacter, type PixelCharacterStatus } from "@/components/ui/Pixel
 import { buildMachineBrainGraphModel } from "@/components/sync/machineBrainGraphModel";
 import {
   SyncedBrainGraph,
+  type SyncedBrainGraphActivity,
+  type SyncedBrainGraphLink,
+  type SyncedBrainGraphNode,
+  type SyncedBrainGraphSignal,
 } from "@/components/sync/SyncedBrainGraph";
 import {
   FRESH_MACHINE_BOOTSTRAP_DAYS,
@@ -70,6 +74,22 @@ type SyncedBrainActivity = {
   occurredAt: number;
   sourceHost?: string | null;
   sourceAgent?: string | null;
+};
+
+type SyncedBrainGraphDto = {
+  schemaVersion: string;
+  generatedAt: number;
+  nodes: SyncedBrainGraphNode[];
+  links: SyncedBrainGraphLink[];
+  signals: SyncedBrainGraphSignal[];
+  latestActivity?: SyncedBrainGraphActivity[];
+  evidence?: {
+    machineProofCount?: number;
+    matchedInventoryProofCount?: number;
+    focusedProjectCount?: number;
+    openTaskCount?: number;
+    secretValuesExposed?: boolean;
+  };
 };
 
 function statusClass(status: LocalReadinessStatus | LocalProjectReadiness["status"]) {
@@ -261,54 +281,18 @@ function SkillSyncProofPanel({ skillSync }: { skillSync: LocalMachineReadiness["
   );
 }
 
-function MeshMetric({
-  label,
-  value,
-  detail,
-  tone = "muted",
-  character,
-}: {
-  label: string;
-  value: string | number;
-  detail: string;
-  tone?: "success" | "accent" | "muted";
-  character?: ReactNode;
-}) {
-  const toneClass =
-    tone === "success"
-      ? "text-[hsl(var(--success))]"
-      : tone === "accent"
-        ? "text-[hsl(var(--accent))]"
-        : "text-[hsl(var(--text-primary))]";
-
-  return (
-    <div className="min-w-0 border-l border-[hsl(var(--border))]/65 px-3 py-2">
-      <div className="flex min-w-0 items-start gap-2">
-        {character && <div className="pt-0.5">{character}</div>}
-        <div className="min-w-0">
-          <div className={`truncate font-mono text-[17px] leading-tight ${toneClass}`}>{value}</div>
-          <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-42">
-            {label}
-          </div>
-        </div>
-      </div>
-      <div className="mt-2 min-h-8 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
-        {detail}
-      </div>
-    </div>
-  );
-}
-
 function MachineSyncedBrainGraph({
   report,
   syncedProofs,
   brainActivities,
+  graphDto,
 }: {
   report: LocalMachineReadiness | null;
   syncedProofs?: SyncedMachineProof[];
   brainActivities?: SyncedBrainActivity[];
+  graphDto?: SyncedBrainGraphDto;
 }) {
-  const graph = buildMachineBrainGraphModel({ report, syncedProofs, brainActivities });
+  const graph = graphDto ?? buildMachineBrainGraphModel({ report, syncedProofs, brainActivities });
 
   return (
     <SyncedBrainGraph nodes={graph.nodes} links={graph.links} signals={graph.signals} latestActivity={graph.latestActivity} />
@@ -319,6 +303,7 @@ function MachineSyncMeshPanel({
   report,
   syncedProofs,
   brainActivities,
+  graphDto,
   rootMode,
   loading,
   onRefresh,
@@ -326,6 +311,7 @@ function MachineSyncMeshPanel({
   report: LocalMachineReadiness | null;
   syncedProofs?: SyncedMachineProof[];
   brainActivities?: SyncedBrainActivity[];
+  graphDto?: SyncedBrainGraphDto;
   rootMode: RootMode;
   loading: boolean;
   onRefresh: () => void;
@@ -333,15 +319,33 @@ function MachineSyncMeshPanel({
   const proofCount = syncedProofs?.length ?? 0;
   const latestProof = syncedProofs?.[0] ?? null;
   const currentHost = report?.hostName ?? latestProof?.hostName ?? "local";
-  const trustedHosts = Array.from(
-    new Set(
-      (syncedProofs ?? [])
-        .map((proof) => proof.hostName)
-        .filter((host): host is string => Boolean(host))
-    )
-  ).slice(0, 5);
-  const visibleHosts = Array.from(new Set([currentHost, ...trustedHosts].filter((host): host is string => Boolean(host)))).slice(0, 5);
   const status = report?.summary.status ?? latestProof?.status ?? "unknown";
+  const matchedProofs = graphDto?.evidence?.matchedInventoryProofCount ?? 0;
+  const focusedProjects = graphDto?.evidence?.focusedProjectCount ?? null;
+  const openTasks = graphDto?.evidence?.openTaskCount ?? null;
+  const syncFacts = [
+    {
+      label: "this mac",
+      value: currentHost,
+      detail: `${rootMode} root / ${formatTime(report?.generatedAt ?? latestProof?.generatedAt)}`,
+      tone: status === "ready" ? "text-[hsl(var(--success))]" : status === "warn" ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))]",
+      character: <PixelCharacter kind="machine" seed={currentHost} status={pixelStatus(status)} size="sm" />,
+    },
+    {
+      label: "trusted proof",
+      value: proofCount > 0 ? `${matchedProofs}/${proofCount}` : "pending",
+      detail: proofCount > 0 ? "inventory matched to machine proof" : "waiting for first synced proof",
+      tone: matchedProofs > 0 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]",
+      character: <PixelCharacter kind="machine" seed="trusted-proof" status={matchedProofs > 0 ? "ready" : "idle"} size="sm" />,
+    },
+    {
+      label: "focus",
+      value: focusedProjects !== null ? `${focusedProjects} projects` : report ? `${report.summary.projectReady}/${report.summary.projectScanned}` : "loading",
+      detail: openTasks !== null ? `${openTasks} open tasks in the graph` : "local project readiness proof",
+      tone: (focusedProjects ?? report?.summary.projectReady ?? 0) > 0 ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))]",
+      character: <PixelCharacter kind="shell" seed="project-focus" status={(focusedProjects ?? report?.summary.projectReady ?? 0) > 0 ? "ready" : "idle"} size="sm" />,
+    },
+  ];
 
   return (
     <section className="mt-4 border-l border-[hsl(var(--success))]/60 bg-[hsl(var(--bg))]/30 px-4 py-4">
@@ -349,86 +353,39 @@ function MachineSyncMeshPanel({
         <div className="min-w-0">
           <PaneSectionLabel>you sync mesh</PaneSectionLabel>
           <h2 className="max-w-3xl font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
-            Machines, agents, skills, vaults, and project context moving through one live brain stream.
+            One live graph for machines, skills, agents, vault proofs, and project focus.
           </h2>
           <p className="mt-2 max-w-4xl font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
-            Real local + Convex-backed sync signals only. Secret values stay local or encrypted; this panel shows routing, readiness, and proof metadata.
+            Real local + Convex-backed signals only. No simulated liveness; secret values stay local or encrypted.
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {visibleHosts.map((host, index) => (
-              <div
-                key={host}
-                className="flex items-center gap-2 border-l border-[hsl(var(--border))]/65 bg-[hsl(var(--bg-raised))]/24 px-2.5 py-1.5"
-              >
-                <PixelCharacter kind="machine" seed={host} status={pixelStatus(index === 0 ? status : "ready")} size="sm" />
-                <span className="max-w-32 truncate font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
-                  {index === 0 ? "this mac" : host}
-                </span>
-              </div>
-            ))}
-            <div className="flex items-center gap-2 border-l border-[hsl(var(--success))]/55 bg-[hsl(var(--bg-raised))]/24 px-2.5 py-1.5">
-              <PixelCharacter kind="agent" seed="agent-bus" status={pixelStatus(report?.agentBus?.state)} size="sm" />
-              <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-55">
-                agent bus
-              </span>
-            </div>
-          </div>
         </div>
         <button
           type="button"
           onClick={onRefresh}
-          className="ml-auto flex h-8 items-center gap-2 bg-[hsl(var(--bg))]/60 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-60 transition-opacity hover:opacity-90"
+          className="ml-auto flex h-8 cursor-pointer items-center gap-2 bg-[hsl(var(--bg))]/60 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-60 transition-opacity hover:opacity-90"
         >
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           refresh
         </button>
       </div>
 
-      <MachineSyncedBrainGraph report={report} syncedProofs={syncedProofs} brainActivities={brainActivities} />
+      <MachineSyncedBrainGraph report={report} syncedProofs={syncedProofs} brainActivities={brainActivities} graphDto={graphDto} />
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        <MeshMetric
-          label="this mac"
-          value={currentHost}
-          detail={`${rootMode} root / ${formatTime(report?.generatedAt)}`}
-          tone={status === "ready" ? "success" : status === "warn" ? "accent" : "muted"}
-          character={<PixelCharacter kind="machine" seed={currentHost} status={pixelStatus(status)} size="sm" />}
-        />
-        <MeshMetric
-          label="trusted machines"
-          value={proofCount}
-          detail={trustedHosts.length > 0 ? trustedHosts.join(" / ") : "no synced machine proofs yet"}
-          tone={proofCount > 0 ? "success" : "accent"}
-          character={<PixelCharacter kind="machine" seed="trusted-machines" status={proofCount > 0 ? "ready" : "idle"} size="sm" />}
-        />
-        <MeshMetric
-          label="agent bus"
-          value={report?.agentBus?.state ?? "unknown"}
-          detail={report?.agentBus ? `${report.agentBus.recentCount} msgs / ${report.agentBus.channelCount} channels` : "daemon status not loaded"}
-          tone={report?.agentBus?.state === "active" ? "success" : "accent"}
-          character={<PixelCharacter kind="agent" seed="agent-bus-metric" status={pixelStatus(report?.agentBus?.state)} size="sm" />}
-        />
-        <MeshMetric
-          label="skill mesh"
-          value={report?.skillSync.status ?? "unknown"}
-          detail={report?.skillSync ? `${report.skillSync.canonicalCount} shared / ${report.skillSync.codexMirrorCount} codex` : "waiting for local proof"}
-          tone={report?.skillSync.status === "ready" ? "success" : "accent"}
-          character={<PixelCharacter kind="agent" seed="skill-mesh" status={pixelStatus(report?.skillSync.status)} size="sm" />}
-        />
-        <MeshMetric
-          label="project graph"
-          value={report ? `${report.summary.projectReady}/${report.summary.projectScanned}` : latestProof ? `${latestProof.ready}/${latestProof.scanned}` : "pending"}
-          detail={report ? `${report.summary.envLocal} env locals / ${report.summary.projectContext} contexts` : "use local refresh for live root"}
-          tone={report?.summary.status === "ready" ? "success" : report ? "accent" : "muted"}
-          character={<PixelCharacter kind="shell" seed="project-graph" status={pixelStatus(report?.summary.status)} size="sm" />}
-        />
-        <MeshMetric
-          label="secret vault"
-          value={report?.envVault.accountSnapshotStatus ?? "unknown"}
-          detail={report?.envVault.accountSnapshotSummary ?? "encrypted snapshot metadata only"}
-          tone={report?.envVault.accountSnapshotStatus === "ready" ? "success" : "accent"}
-          character={<PixelCharacter kind="shell" seed="secret-vault" status={pixelStatus(report?.envVault.accountSnapshotStatus)} size="sm" />}
-        />
+      <div className="mt-4 grid gap-2 md:grid-cols-3">
+        {syncFacts.map((fact) => (
+          <div key={fact.label} className="flex min-w-0 items-start gap-2 border-l border-[hsl(var(--border))]/60 bg-[hsl(var(--bg))]/26 px-3 py-2">
+            <div className="pt-0.5">{fact.character}</div>
+            <div className="min-w-0">
+              <div className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-42">
+                {fact.label}
+              </div>
+              <div className={`mt-1 truncate font-mono text-[13px] leading-tight ${fact.tone}`}>{fact.value}</div>
+              <div className="mt-1 truncate font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-50">
+                {fact.detail}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {report && (
@@ -477,7 +434,7 @@ function MachineSyncMeshPanel({
               daemons {latestProof.daemonsLoaded ?? 0}/{latestProof.daemonsTotal ?? 0}
               {(latestProof.legacyDaemonsLoaded ?? 0) > 0 ? ` / legacy ${latestProof.legacyDaemonsLoaded}` : ""}
             </span>
-            <span className="ml-2 opacity-45">secret values exposed: {String(latestProof.secretValuesExposed)}</span>
+            {latestProof.secretValuesExposed && <span className="ml-2 text-[hsl(var(--accent))]">secret exposure needs review</span>}
           </div>
         </div>
       )}
@@ -672,6 +629,10 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
   const [setupCollapsed, setSetupCollapsed] = useState(false);
   const syncedProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 8 } : "skip");
   const brainActivities = useQuery(api.brainActivity.listRecent, clerkId ? { clerkId, limit: 24 } : "skip");
+  const syncedBrainGraph = useQuery(
+    api.portfolio.getSyncedBrainGraph,
+    clerkId ? { clerkId, limit: 8, includePortfolioSignals: true } : "skip",
+  ) as SyncedBrainGraphDto | undefined;
 
   const load = useCallback(async (forceRefresh = false) => {
     setLoading(true);
@@ -803,6 +764,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
           report={report}
           syncedProofs={syncedProofs}
           brainActivities={brainActivities}
+          graphDto={syncedBrainGraph}
           rootMode={rootMode}
           loading={loading}
           onRefresh={() => void load(true)}

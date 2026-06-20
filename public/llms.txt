@@ -1,6 +1,6 @@
 # You.md
 
-> Generated agent index. Source hash: 17d5926cf3fa4aa1add2b8d6f891a1c50d2595aee3036ede967c7e9474be221e. CLI version: 0.8.12. Reference intelligence: 2026-06-19T15:31:38.182Z.
+> Generated agent index. Source hash: 61b16529df55d0902951de3d97f5d76c85611e132e4588164e993e44814ce95f. CLI version: 0.8.12. Reference intelligence: 2026-06-18T22:52:02.362Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -15,7 +15,7 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 
 ## Agent-Readable Surfaces
 
-- [Docs Reference](https://you.md/api/v1/docs/reference): Machine-readable docs manifest generated from 106 documented routes (9 internal/retired routes excluded), 6 local MCP tools, 11 hosted MCP tools, and 31 CLI commands.
+- [Docs Reference](https://you.md/api/v1/docs/reference): Machine-readable docs manifest generated from 107 documented routes (9 internal/retired routes excluded), 6 local MCP tools, 12 hosted MCP tools, and 31 CLI commands.
 - [OpenAPI Inventory](https://you.md/api/v1/docs/openapi.json): Generated OpenAPI-style API inventory.
 - [MCP Discovery](https://you.md/.well-known/mcp.json): MCP discovery metadata for web-capable agents.
 - [MCP Endpoint](https://you.md/api/v1/mcp): Same-origin JSON-RPC endpoint for web-capable MCP clients.
@@ -44,7 +44,7 @@ You.md is an MCP where the context is you: the tools below resolve a specific pe
 
 - [MCP Server](https://you.md/docs#mcp-server): Local stdio MCP and same-origin JSON-RPC MCP surfaces.
 - Local stdio MCP (via the runtime) exposes 6 tools, including `whoami`, `get_identity`, `get_agent_brief`, `get_project_context`, `add_memory`, `add_project_memory`, `get_stack_manifest`, `get_stack_capabilities`, `route_stack_request`, and `smoke_stack`.
-- Hosted JSON-RPC MCP (`POST /api/v1/mcp`) exposes 11 tools: `whoami`, `get_agent_brief`, `get_identity`, `ask_public_profile`, `search_profiles`, `get_my_identity`, `get_agent_stack_inventory`, `get_my_stacks`, `get_repo_file`, `search_memories`, `report_skill_outcome`.
+- Hosted JSON-RPC MCP (`POST /api/v1/mcp`) exposes 12 tools: `whoami`, `get_agent_brief`, `get_identity`, `ask_public_profile`, `search_profiles`, `get_my_identity`, `get_agent_stack_inventory`, `get_synced_brain_graph`, `get_my_stacks`, `get_repo_file`, `search_memories`, `report_skill_outcome`.
 - Preferred local setup: `curl -fsSL https://you.md/install.sh | bash`, then `you mcp --install codex --auto` or `you mcp --install claude --auto`. The installed `youmd` binary remains a compatibility alias for existing scripts.
 
 ## Agent Workflows

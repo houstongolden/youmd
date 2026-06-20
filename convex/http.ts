@@ -2671,6 +2671,42 @@ http.route({
   }),
 });
 
+// GET /api/v1/me/synced-brain/graph — Canonical graph DTO for synced machines, skills, activity, and portfolio signals.
+http.route({
+  path: "/api/v1/me/synced-brain/graph",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private", "projects");
+    if (denied) return denied;
+
+    const url = new URL(request.url);
+    const limit = cleanFiniteNumber(url.searchParams.get("limit"), 12);
+    const includePortfolioSignals =
+      url.searchParams.get("includePortfolioSignals") === "1" ||
+      url.searchParams.get("includePortfolioSignals") === "true";
+    const includeDoneTasks =
+      url.searchParams.get("includeDoneTasks") === "1" ||
+      url.searchParams.get("includeDoneTasks") === "true";
+    const projectSlug = cleanOptionalString(url.searchParams.get("projectSlug"), 120);
+
+    try {
+      const graph = await ctx.runQuery(api.portfolio.getSyncedBrainGraph, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        includePortfolioSignals,
+        includeDoneTasks,
+        projectSlug,
+        limit,
+      });
+      return json(graph);
+    } catch (err) {
+      return serverErrorResponse("me/synced-brain/graph", err, "Failed to build synced brain graph");
+    }
+  }),
+});
+
 // POST /api/v1/me/realtime-sync/session — Mint a short-lived websocket credential for trusted local daemons.
 http.route({
   path: "/api/v1/me/realtime-sync/session",
@@ -5089,6 +5125,7 @@ http.route({ path: "/api/v1/me/portfolio/tasks", method: "OPTIONS", handler: cor
 http.route({ path: "/api/v1/me/portfolio/tasks/triage", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/tasks/update", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/synced-brain/graph", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/realtime-sync/session", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/agent-bus/messages", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/brain-activities", method: "OPTIONS", handler: corsPreflight });
