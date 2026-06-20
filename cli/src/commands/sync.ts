@@ -454,7 +454,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
           const inventoryDir = resolveAgentStackInventoryDir();
           runYoumdSubcommand(
             "agent stack inventory sync",
-            ["skill", "inventory", "--out-dir", inventoryDir, "--sync"],
+            ["skill", "inventory", "--out-dir", inventoryDir, "--register-catalog", "--sync"],
             commandTimeoutMs,
           );
         }
@@ -487,7 +487,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
               runYoumdSubcommand("installed skill render repair", ["skill", "sync"], commandTimeoutMs);
               runYoumdSubcommand(
                 "agent stack inventory repair proof",
-                ["skill", "inventory", "--out-dir", inventoryDir, "--sync"],
+                ["skill", "inventory", "--out-dir", inventoryDir, "--register-catalog", "--sync"],
                 commandTimeoutMs,
               );
               runYoumdSubcommand("machine proof repair", ["machine", "verify", "--write-report", "--sync-report"], commandTimeoutMs);

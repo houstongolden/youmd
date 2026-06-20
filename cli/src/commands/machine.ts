@@ -587,7 +587,7 @@ async function machineVerifyCommand(opts: {
       console.log(chalk.dim(`  skill mesh report: ${agentStackInventory.htmlPath}`));
     }
   } else {
-    console.log(chalk.dim("  skill mesh: no local inventory proof yet; run ") + chalk.cyan("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync"));
+    console.log(chalk.dim("  skill mesh: no local inventory proof yet; run ") + chalk.cyan("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync"));
   }
   console.log("");
 

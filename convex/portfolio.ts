@@ -148,7 +148,7 @@ function buildAgentStackInventoryDrift(inventories: Doc<"agentStackInventories">
       "youmd pull",
       "youmd stack sync",
       "youmd skill sync",
-      "youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync",
+      "youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync",
       "youmd machine verify --write-report --sync-report",
     ];
     return {

@@ -25,6 +25,7 @@ type InstalledSkillSummary = {
 };
 
 type AgentStackInventory = Doc<"agentStackInventories">;
+type MachineProofReport = Doc<"machineProofReports">;
 type AgentStackDrift = {
   baseline: null | {
     hostName: string;
@@ -188,6 +189,22 @@ function numericRollupEntries(rollup: Record<string, unknown> | undefined, limit
     .slice(0, limit);
 }
 
+function machineProofKey(row: Pick<AgentStackInventory | MachineProofReport, "machineKey" | "hostName" | "rootDir">) {
+  return row.machineKey || `${row.hostName}::${row.rootDir}`;
+}
+
+function machineProofForInventory(
+  inventory: AgentStackInventory,
+  proofByKey: Map<string, MachineProofReport>
+) {
+  return proofByKey.get(machineProofKey(inventory));
+}
+
+function isMachineProofStale(proof: MachineProofReport | undefined) {
+  if (!proof) return true;
+  return Date.now() - proof.updatedAt > 6 * 60 * 60 * 1000;
+}
+
 function MeshMetric({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "neutral" | "accent" | "warn" | "ok" }) {
   const color = tone === "accent"
     ? "text-[hsl(var(--accent))]"
@@ -249,16 +266,30 @@ function SampleList({ title, values }: { title: string; values: string[] }) {
 function SkillMeshView({
   inventories,
   drift,
+  machineProofs,
   isLoading,
 }: {
   inventories: AgentStackInventory[] | undefined;
   drift: AgentStackDrift | undefined;
+  machineProofs: MachineProofReport[] | undefined;
   isLoading: boolean;
 }) {
   const latest = inventories?.[0];
   const machineCount = inventories?.length ?? 0;
   const secretLeak = inventories?.some((inventory) => inventory.secretValuesExposed) ?? false;
   const driftByMachineKey = new Map((drift?.machines ?? []).map((machine) => [machine.machineKey, machine]));
+  const proofByMachineKey = new Map((machineProofs ?? []).map((proof) => [machineProofKey(proof), proof]));
+  const proofSummary = (inventories ?? []).reduce(
+    (acc, inventory) => {
+      const proof = machineProofForInventory(inventory, proofByMachineKey);
+      if (proof) acc.matched += 1;
+      else acc.missing += 1;
+      if (isMachineProofStale(proof)) acc.stale += 1;
+      if (proof?.secretValuesExposed || inventory.secretValuesExposed) acc.unsafe += 1;
+      return acc;
+    },
+    { matched: 0, missing: 0, stale: 0, unsafe: 0 }
+  );
   const ownershipRows = numericRollupEntries(latest?.ownershipRollup as Record<string, unknown> | undefined);
   const syncRows = numericRollupEntries(latest?.syncPolicyRollup as Record<string, unknown> | undefined);
   const provenanceRows = numericRollupEntries(latest?.provenanceRollup as Record<string, unknown> | undefined);
@@ -289,7 +320,7 @@ function SkillMeshView({
           </p>
           <div className="mt-3">
             <CommandRow
-              command="youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync"
+              command="youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync"
               description="generate HTML/JSON and persist safe counts to You.md"
             />
           </div>
@@ -347,7 +378,7 @@ function SkillMeshView({
                     {drift.baseline.rootDir}
                   </p>
                 </div>
-                <div className="grid grid-cols-4 gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
+              <div className="grid grid-cols-4 gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
                   <span className="text-[hsl(var(--text-secondary))] opacity-55">{drift.summary.machineCount} machines</span>
                   <span className={drift.summary.driftCount > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
                     {drift.summary.driftCount} drift
@@ -382,6 +413,60 @@ function SkillMeshView({
             </section>
           )}
 
+          <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <PaneSectionLabel>machine proof</PaneSectionLabel>
+                <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+                  inventory plus readiness attestation
+                </h3>
+                <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
+                  Fresh-machine proof joins the skill mesh with project/env/MCP readiness. This is the check before calling a second Mac synced.
+                </p>
+              </div>
+              <div className="grid grid-cols-4 gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
+                <span className={proofSummary.matched === machineCount ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+                  {proofSummary.matched}/{machineCount} proof
+                </span>
+                <span className={proofSummary.missing > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
+                  {proofSummary.missing} missing
+                </span>
+                <span className={proofSummary.stale > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
+                  {proofSummary.stale} stale
+                </span>
+                <span className={proofSummary.unsafe > 0 ? "text-yellow-500" : "text-[hsl(var(--success))]"}>
+                  {proofSummary.unsafe} unsafe
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {(inventories ?? []).slice(0, 6).map((inventory) => {
+                const proof = machineProofForInventory(inventory, proofByMachineKey);
+                const stale = isMachineProofStale(proof);
+                return (
+                  <div key={inventory._id} className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto]">
+                    <div className="min-w-0">
+                      <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
+                      <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">
+                        {proof?.warnings?.[0] ?? (proof ? "latest proof has no warnings" : "no machine proof synced yet")}
+                      </div>
+                    </div>
+                    <span className={proof?.status === "ready" ? "text-[hsl(var(--success))]" : proof ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))] opacity-45"}>
+                      {proof?.status ?? "missing"}
+                    </span>
+                    <span className={stale ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
+                      {proof ? formatInventoryTime(proof.updatedAt) : "no proof"}
+                    </span>
+                    <span className={proof?.secretValuesExposed ? "text-yellow-500" : "text-[hsl(var(--text-secondary))] opacity-52"}>
+                      secrets {proof?.secretValuesExposed ? "review" : "safe"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="grid gap-4 xl:grid-cols-3">
             <RollupColumn title="ownership" rows={ownershipRows} />
             <RollupColumn title="sync policy" rows={syncRows} />
@@ -402,6 +487,7 @@ function SkillMeshView({
                   key={inventory._id}
                   inventory={inventory}
                   drift={driftByMachineKey.get(inventory.machineKey)}
+                  proof={machineProofForInventory(inventory, proofByMachineKey)}
                 />
               ))}
             </div>
@@ -410,7 +496,7 @@ function SkillMeshView({
           <section>
             <PaneSectionLabel>verify and compare</PaneSectionLabel>
             <div className="space-y-2">
-              <CommandRow command="youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync" description="refresh this machine's local/global skill mesh and sync safe metadata" />
+              <CommandRow command="youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync" description="refresh this machine's local/global skill mesh, catalog discovered references, and sync safe metadata" />
               <CommandRow command="youmd machine verify --write-report --sync-report" description="write machine readiness proof with the latest skill mesh counts attached" />
               <CommandRow command="youmd skill inventory diff macbook.json mac-mini.json" description="compare two trusted machine snapshots before calling sync parity clean" />
             </div>
@@ -424,13 +510,16 @@ function SkillMeshView({
 function MachineSnapshotRow({
   inventory,
   drift,
+  proof,
 }: {
   inventory: AgentStackInventory;
   drift?: AgentStackDrift["machines"][number];
+  proof?: MachineProofReport;
 }) {
   const driftOk = drift?.status === "baseline" || drift?.status === "ok";
+  const proofStale = isMachineProofStale(proof);
   return (
-    <div className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto_auto]">
+    <div className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto_auto_auto]">
       <div className="min-w-0">
         <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
         <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">{inventory.rootDir}</div>
@@ -439,6 +528,9 @@ function MachineSnapshotRow({
       <span className="text-[hsl(var(--text-secondary))] opacity-58">{inventory.missingFromYoumdCatalog.toLocaleString()} gaps</span>
       <span className={driftOk ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
         {drift?.status ?? "unknown"}
+      </span>
+      <span className={proof && !proofStale && proof.status === "ready" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+        proof {proof?.status ?? "missing"}
       </span>
       <span className="text-[hsl(var(--text-secondary))] opacity-42">{formatInventoryTime(inventory.generatedAt)}</span>
     </div>
@@ -662,9 +754,10 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const registrySkills = useQuery(api.skills.listPublished, { limit: 20 });
   const agentStackInventories = useQuery(api.portfolio.listAgentStackInventories, clerkId ? { clerkId, limit: 12 } : "skip");
   const agentStackDrift = useQuery(api.portfolio.getAgentStackInventoryDrift, clerkId ? { clerkId, limit: 12 } : "skip");
+  const machineProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 12 } : "skip");
 
   const isLoading = installs === undefined || registrySkills === undefined;
-  const meshLoading = agentStackInventories === undefined || agentStackDrift === undefined;
+  const meshLoading = agentStackInventories === undefined || agentStackDrift === undefined || machineProofs === undefined;
   const installMap = new Map<string, InstalledSkillSummary>(
     (installs ?? []).map((install) => [
       install.skillName,
@@ -873,7 +966,12 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
       </div>
 
       {mode === "mesh" ? (
-        <SkillMeshView inventories={agentStackInventories} drift={agentStackDrift as AgentStackDrift | undefined} isLoading={meshLoading} />
+        <SkillMeshView
+          inventories={agentStackInventories}
+          drift={agentStackDrift as AgentStackDrift | undefined}
+          machineProofs={machineProofs}
+          isLoading={meshLoading}
+        />
       ) : (
         <>
       <div>

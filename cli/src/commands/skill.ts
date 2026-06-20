@@ -1615,7 +1615,7 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
     }
   } else {
     console.log(chalk.yellow("  local latest: missing"));
-    console.log(DIM("  repair: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --sync`));
+    console.log(DIM("  repair: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --register-catalog --sync`));
   }
 
   console.log("");
@@ -1664,7 +1664,7 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
   renderInventoryDrift(drift);
 
   console.log("");
-  console.log(DIM("  refresh: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --sync`));
+  console.log(DIM("  refresh: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --register-catalog --sync`));
   console.log(DIM("  verify:  ") + chalk.cyan("youmd machine verify --write-report --sync-report"));
   console.log(DIM("  exact diff needs two local JSON files: ") + chalk.cyan("youmd skill inventory diff macbook.json mac-mini.json"));
   console.log("");

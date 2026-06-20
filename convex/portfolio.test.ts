@@ -362,7 +362,7 @@ describe("portfolio repo update history", () => {
     expect(mini?.issues).toContain("3 fewer skill names than baseline");
     expect(mini?.repairCommands).toContain("youmd stack sync");
     expect(mini?.repairCommands).toContain("youmd skill sync");
-    expect(mini?.repairCommands).toContain("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync");
+    expect(mini?.repairCommands).toContain("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync");
   });
 
   it("persists repo update runs with ordered steps", async () => {
