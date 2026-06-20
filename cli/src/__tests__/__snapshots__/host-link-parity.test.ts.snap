@@ -114,8 +114,8 @@ This file is generated from \`youstack.json\`.
 
 ## Startup
 
-1. Run \`~/.youmd/bin/youmd-auto-upgrade --quiet || true\` when the helper exists.
-2. Run \`youmd stack smoke\` from the stack or project root before relying on this stack.
+1. Run \`~/.you/bin/youmd-auto-upgrade --quiet || true\` when the helper exists.
+2. Run \`you stack smoke\` from the stack or project root before relying on this stack.
 3. Read local project instructions and project-context files before acting.
 4. Use local/static stack files first.
 5. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.
@@ -149,18 +149,18 @@ This file is generated from \`youstack.json\`.
 - Update check: youmd stack smoke
 - Update source: local
 - Auto-apply local updates: no
-- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run \`youmd stack smoke\`.
+- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run \`you stack smoke\`.
 - Use the bundled \`youstack-maintainer\` skill for stack organization, visibility review, public-readiness checks, and safe self-updates.
 - Never auto-write protected brain data, private context, connected tools, or remote repos unless the manifest policy and user approval both allow it.
 
 ## Local Commands
 
 \`\`\`bash
-youmd stack inspect
-youmd stack doctor
-youmd stack smoke
-youmd stack capabilities
-youmd stack route "<request>"
+you stack inspect
+you stack doctor
+you stack smoke
+you stack capabilities
+you stack route "<request>"
 \`\`\`
 "
 `;
@@ -186,8 +186,8 @@ This file is generated from \`youstack.json\`.
 
 ## Startup
 
-1. Run \`~/.youmd/bin/youmd-auto-upgrade --quiet || true\` when the helper exists.
-2. Run \`youmd stack smoke\` from the stack or project root before relying on this stack.
+1. Run \`~/.you/bin/youmd-auto-upgrade --quiet || true\` when the helper exists.
+2. Run \`you stack smoke\` from the stack or project root before relying on this stack.
 3. Read local project instructions and project-context files before acting.
 4. Use local/static stack files first.
 5. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.
@@ -221,18 +221,18 @@ This file is generated from \`youstack.json\`.
 - Update check: youmd stack smoke
 - Update source: local
 - Auto-apply local updates: no
-- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run \`youmd stack smoke\`.
+- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run \`you stack smoke\`.
 - Use the bundled \`youstack-maintainer\` skill for stack organization, visibility review, public-readiness checks, and safe self-updates.
 - Never auto-write protected brain data, private context, connected tools, or remote repos unless the manifest policy and user approval both allow it.
 
 ## Local Commands
 
 \`\`\`bash
-youmd stack inspect
-youmd stack doctor
-youmd stack smoke
-youmd stack capabilities
-youmd stack route "<request>"
+you stack inspect
+you stack doctor
+you stack smoke
+you stack capabilities
+you stack route "<request>"
 \`\`\`
 ",
     "relativePath": ".codex/skills/youstacks/parity-stack/SKILL.md",
@@ -256,8 +256,8 @@ This file is generated from \`youstack.json\`.
 
 ## Startup
 
-1. Run \`~/.youmd/bin/youmd-auto-upgrade --quiet || true\` when the helper exists.
-2. Run \`youmd stack smoke\` from the stack or project root before relying on this stack.
+1. Run \`~/.you/bin/youmd-auto-upgrade --quiet || true\` when the helper exists.
+2. Run \`you stack smoke\` from the stack or project root before relying on this stack.
 3. Read local project instructions and project-context files before acting.
 4. Use local/static stack files first.
 5. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.
@@ -291,18 +291,18 @@ This file is generated from \`youstack.json\`.
 - Update check: youmd stack smoke
 - Update source: local
 - Auto-apply local updates: no
-- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run \`youmd stack smoke\`.
+- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run \`you stack smoke\`.
 - Use the bundled \`youstack-maintainer\` skill for stack organization, visibility review, public-readiness checks, and safe self-updates.
 - Never auto-write protected brain data, private context, connected tools, or remote repos unless the manifest policy and user approval both allow it.
 
 ## Local Commands
 
 \`\`\`bash
-youmd stack inspect
-youmd stack doctor
-youmd stack smoke
-youmd stack capabilities
-youmd stack route "<request>"
+you stack inspect
+you stack doctor
+you stack smoke
+you stack capabilities
+you stack route "<request>"
 \`\`\`
 ",
     "relativePath": ".cursor/rules/youstacks-parity-stack.md",
@@ -326,8 +326,8 @@ This file is generated from \`youstack.json\`.
 
 ## Startup
 
-1. Run \`~/.youmd/bin/youmd-auto-upgrade --quiet || true\` when the helper exists.
-2. Run \`youmd stack smoke\` from the stack or project root before relying on this stack.
+1. Run \`~/.you/bin/youmd-auto-upgrade --quiet || true\` when the helper exists.
+2. Run \`you stack smoke\` from the stack or project root before relying on this stack.
 3. Read local project instructions and project-context files before acting.
 4. Use local/static stack files first.
 5. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.
@@ -361,18 +361,18 @@ This file is generated from \`youstack.json\`.
 - Update check: youmd stack smoke
 - Update source: local
 - Auto-apply local updates: no
-- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run \`youmd stack smoke\`.
+- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run \`you stack smoke\`.
 - Use the bundled \`youstack-maintainer\` skill for stack organization, visibility review, public-readiness checks, and safe self-updates.
 - Never auto-write protected brain data, private context, connected tools, or remote repos unless the manifest policy and user approval both allow it.
 
 ## Local Commands
 
 \`\`\`bash
-youmd stack inspect
-youmd stack doctor
-youmd stack smoke
-youmd stack capabilities
-youmd stack route "<request>"
+you stack inspect
+you stack doctor
+you stack smoke
+you stack capabilities
+you stack route "<request>"
 \`\`\`
 ",
     "relativePath": ".you/adapters/windsurf/parity-stack.md",

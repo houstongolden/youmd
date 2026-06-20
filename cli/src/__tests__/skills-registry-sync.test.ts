@@ -38,7 +38,7 @@ describe("skills lib", () => {
     originalSharedSkillsDir = process.env.YOUMD_SHARED_SKILLS_DIR;
     process.env.HOME = tmpHome;
     delete process.env.YOUMD_SHARED_SKILLS_DIR;
-    // chdir away from the repo so a local .youmd bundle can't leak in
+    // chdir away from the repo so a local .you/.youmd bundle can't leak in
     process.chdir(workDir);
     vi.resetModules();
   });
@@ -109,7 +109,7 @@ describe("skills lib", () => {
       expect(asyncResult.ok).toBe(true);
 
       const installedPath = path.join(
-        tmpHome, ".youmd", "skills", "growth-playbook", "SKILL.md"
+        tmpHome, ".you", "skills", "growth-playbook", "SKILL.md"
       );
       expect(fs.existsSync(installedPath)).toBe(true);
       expect(fs.readFileSync(installedPath, "utf-8")).toContain("# growth-playbook");
@@ -178,7 +178,7 @@ describe("skills lib", () => {
       expect(result.ok).toBe(true);
       const installedPath = path.join(
         tmpHome,
-        ".youmd",
+        ".you",
         "skills",
         "portfolio-graph-auditor",
         "SKILL.md"
@@ -189,13 +189,13 @@ describe("skills lib", () => {
 
   describe("sync timestamp + identity change detection (L11)", () => {
     function seedInstalledSkill(name: string): void {
-      const skillDir = path.join(tmpHome, ".youmd", "skills", name);
+      const skillDir = path.join(tmpHome, ".you", "skills", name);
       fs.mkdirSync(skillDir, { recursive: true });
       fs.writeFileSync(
         path.join(skillDir, "SKILL.md"),
         `---\nname: ${name}\n---\n\n# ${name}\n`
       );
-      const catalogDir = path.join(tmpHome, ".youmd", "skills");
+      const catalogDir = path.join(tmpHome, ".you", "skills");
       fs.mkdirSync(catalogDir, { recursive: true });
     }
 
@@ -237,7 +237,7 @@ describe("skills lib", () => {
     });
 
     it("getIdentityLastChangedAt tracks identity file mtimes", async () => {
-      const profileDir = path.join(tmpHome, ".youmd", "profile");
+      const profileDir = path.join(tmpHome, ".you", "profile");
       fs.mkdirSync(profileDir, { recursive: true });
       fs.writeFileSync(path.join(profileDir, "about.md"), "# About\n\nfounder.\n");
 

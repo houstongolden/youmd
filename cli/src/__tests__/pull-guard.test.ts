@@ -14,9 +14,9 @@ vi.mock("../lib/api", async (importOriginal) => {
   };
 });
 
-// All modules that capture ~/.youmd paths at import time are imported
+// All modules that capture ~/.you paths at import time are imported
 // dynamically AFTER we point HOME at a temp directory, so these tests can
-// never touch the real ~/.youmd.
+// never touch the real ~/.you or legacy ~/.youmd.
 let tmpHome: string;
 let api: typeof import("../lib/api");
 let pull: typeof import("../commands/pull");
@@ -43,11 +43,11 @@ beforeAll(async () => {
 });
 
 function globalConfigPath(): string {
-  return path.join(tmpHome, ".youmd", "config.json");
+  return path.join(tmpHome, ".you", "config.json");
 }
 
 function writeGlobalConfigRaw(data: unknown): void {
-  fs.mkdirSync(path.join(tmpHome, ".youmd"), { recursive: true });
+  fs.mkdirSync(path.join(tmpHome, ".you"), { recursive: true });
   fs.writeFileSync(globalConfigPath(), JSON.stringify(data, null, 2) + "\n");
 }
 
@@ -61,6 +61,9 @@ describe("pull dirty-check guard", () => {
     tmpCwd = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-pull-guard-cwd-"));
     process.chdir(tmpCwd);
     bundleDir = path.join(fs.realpathSync(tmpCwd), ".youmd");
+
+    fs.rmSync(path.join(tmpHome, ".you"), { recursive: true, force: true });
+    fs.rmSync(path.join(tmpHome, ".youmd"), { recursive: true, force: true });
 
     // T7 — pull is home-first by default; these tests exercise a deliberate
     // project-local bundle, marked the way init / --local would mark it.
@@ -268,7 +271,7 @@ describe("pull dirty-check guard", () => {
     expect(state.dirty).toBe(true);
   });
 
-  it("T7: without a marker or --local, pull targets ~/.youmd, not cwd/.youmd", async () => {
+  it("T7: without a marker or --local, pull targets ~/.you, not cwd/.youmd", async () => {
     // Remove the deliberate-local marker — cwd/.youmd is now just a stray dir
     fs.rmSync(path.join(bundleDir, "youmd.local.json"), { force: true });
 
@@ -276,20 +279,20 @@ describe("pull dirty-check guard", () => {
     expect(result).toBe("ok");
 
     // Identity landed in the home brain
-    const homeYouJson = path.join(tmpHome, ".youmd", "you.json");
+    const homeYouJson = path.join(tmpHome, ".you", "you.json");
     expect(fs.existsSync(homeYouJson)).toBe(true);
     expect(JSON.parse(fs.readFileSync(homeYouJson, "utf-8")).identity.name).toBe("Remote Person");
     // ...and NOT scattered into the project-local dir
     expect(fs.existsSync(path.join(bundleDir, "you.json"))).toBe(false);
-    // The auth token in ~/.youmd/config.json survived the baseline writes
+    // The auth token in ~/.you/config.json survived the baseline writes
     const homeConfig = JSON.parse(fs.readFileSync(globalConfigPath(), "utf-8"));
     expect(homeConfig.token).toBe("test-token");
     expect(homeConfig.lastPulledHash).toBeTruthy();
 
     // Clean up home identity files so other tests see a fresh home bundle
-    for (const f of fs.readdirSync(path.join(tmpHome, ".youmd"))) {
+    for (const f of fs.readdirSync(path.join(tmpHome, ".you"))) {
       if (f !== "config.json") {
-        fs.rmSync(path.join(tmpHome, ".youmd", f), { recursive: true, force: true });
+        fs.rmSync(path.join(tmpHome, ".you", f), { recursive: true, force: true });
       }
     }
   });
@@ -326,6 +329,7 @@ describe("pull dirty-check guard", () => {
 
 describe("atomic config writes", () => {
   beforeEach(() => {
+    fs.rmSync(path.join(tmpHome, ".you"), { recursive: true, force: true });
     fs.rmSync(path.join(tmpHome, ".youmd"), { recursive: true, force: true });
   });
 
@@ -362,10 +366,10 @@ describe("atomic config writes", () => {
     expect(leftovers).toEqual([]);
   });
 
-  it("readGlobalConfig fixes loose permissions on ~/.youmd and config.json", () => {
+  it("readGlobalConfig fixes loose permissions on ~/.you and config.json", () => {
     if (process.platform === "win32") return;
     writeGlobalConfigRaw({ token: "x" });
-    const dir = path.join(tmpHome, ".youmd");
+    const dir = path.join(tmpHome, ".you");
     fs.chmodSync(dir, 0o755);
     fs.chmodSync(globalConfigPath(), 0o644);
 
@@ -387,7 +391,7 @@ describe("atomic config writes", () => {
   });
 
   it("writeGlobalConfig does not deadlock when a foreign lockfile is held", () => {
-    fs.mkdirSync(path.join(tmpHome, ".youmd"), { recursive: true });
+    fs.mkdirSync(path.join(tmpHome, ".you"), { recursive: true });
     const lockPath = globalConfigPath() + ".lock";
     fs.writeFileSync(lockPath, "12345"); // fresh lock held by "another" process
 
@@ -399,7 +403,7 @@ describe("atomic config writes", () => {
   });
 
   it("writeGlobalConfig clears a stale lockfile", () => {
-    fs.mkdirSync(path.join(tmpHome, ".youmd"), { recursive: true });
+    fs.mkdirSync(path.join(tmpHome, ".you"), { recursive: true });
     const lockPath = globalConfigPath() + ".lock";
     fs.writeFileSync(lockPath, "999");
     const old = new Date(Date.now() - 60_000);

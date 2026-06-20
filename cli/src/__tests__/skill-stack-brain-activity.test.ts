@@ -70,7 +70,7 @@ describe("skill/stack brain activity producers", () => {
   });
 
   function seedSkillCatalog(): void {
-    const catalogDir = path.join(tmpHome, ".youmd", "skills");
+    const catalogDir = path.join(tmpHome, ".you", "skills");
     fs.mkdirSync(path.join(catalogDir, "project-clarity-audit"), { recursive: true });
     fs.writeFileSync(
       path.join(catalogDir, "project-clarity-audit", "SKILL.md"),
