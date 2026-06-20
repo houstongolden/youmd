@@ -104,6 +104,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('strict proof is waiting for trusted-device Secret Vault share or an explicitly provided local vault');
     expect(command).toContain('[ "${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]');
     expect(command).toContain('youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report');
+    expect(command).toContain("running final one-command machine sync/proof consolidation");
+    expect(command).toContain('youmd machine sync-now --root "$ROOT" --max-projects "$LIMIT"');
     expect(command).toContain('YOUMD_RUN_CHECKS');
     expect(command).toContain('--run-checks --max-check-projects "${YOUMD_MAX_CHECK_PROJECTS:-8}"');
     expect(command).toContain('YOUMD_INSTALL_DEPS');
@@ -123,6 +125,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("Behind-the-scenes operating rule");
     expect(prompt).toContain("use the You.md CLI and You Agent yourself before asking Houston");
     expect(prompt).toContain("youmd skill inventory");
+    expect(prompt).toContain("youmd machine sync-now");
     expect(prompt).toContain("youmd env vault pull");
     expect(prompt).toContain("youmd env vault device-register");
     expect(prompt).toContain("Interrupt Houston only for true human-gated steps");

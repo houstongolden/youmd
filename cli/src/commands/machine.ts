@@ -98,6 +98,8 @@ function printHelp(): void {
   console.log("");
   console.log("  " + chalk.hex("#C46A3A")("Commands"));
   console.log("    " + chalk.cyan("setup") + chalk.dim("     bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons"));
+  console.log("    " + chalk.cyan("sync-now") + chalk.dim("  reconcile identity, shared skills/stacks, inventory, MCP, daemons, and proof"));
+  console.log("    " + chalk.cyan("full-sync") + chalk.dim(" reconcile skills plus clone active projects, pull Secret Vault, and proof"));
   console.log("    " + chalk.cyan("projects") + chalk.dim("  create/clone active You.md project repos into a Desktop code root"));
   console.log("    " + chalk.cyan("verify") + chalk.dim("    audit cloned project readiness without reading secret values"));
   console.log("    " + chalk.cyan("prompt") + chalk.dim("    print a one-command Claude Code/Codex fresh-computer setup prompt"));
@@ -189,6 +191,153 @@ function cloneProject(candidate: MachineProjectCandidate, targetDir: string): "c
     : child_process.spawnSync("git", ["clone", candidate.githubUrl, targetDir], { stdio: "inherit" });
 
   return result.status === 0 ? "cloned" : "failed";
+}
+
+function runYoumdMachineStep(label: string, args: string[], opts: { required?: boolean; timeoutMs?: number } = {}): boolean {
+  const command = `youmd ${args.map((arg) => /\s/.test(arg) ? JSON.stringify(arg) : arg).join(" ")}`;
+  console.log(chalk.dim(`  -- ${label}: `) + chalk.cyan(command));
+  const timeout = opts.timeoutMs ?? 10 * 60 * 1000;
+  const run = (cmd: string, cmdArgs: string[]) =>
+    child_process.spawnSync(cmd, cmdArgs, {
+      stdio: "inherit",
+      env: process.env,
+      timeout,
+    });
+
+  let result = run("youmd", args);
+  if (result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT" && process.argv[1]) {
+    result = run(process.execPath, [process.argv[1], ...args]);
+  }
+
+  if (result.error) {
+    console.log(chalk.yellow(`  ${label} warning: ${result.error.message}`));
+    if (opts.required) process.exitCode = 1;
+    return false;
+  }
+  if (typeof result.status === "number" && result.status !== 0) {
+    console.log(chalk.yellow(`  ${label} exited ${result.status}`));
+    if (opts.required) process.exitCode = result.status;
+    return false;
+  }
+  return true;
+}
+
+async function machineSyncNowCommand(opts: {
+  root?: string;
+  maxProjects?: string | number;
+  full?: boolean;
+  days?: string | number;
+  limit?: string | number;
+  maxCloneProjects?: string | number;
+  recentOnly?: boolean;
+  includeInactive?: boolean;
+  installDeps?: boolean;
+  runChecks?: boolean;
+  probeServers?: boolean;
+  github?: boolean;
+  clone?: boolean;
+  yes?: boolean;
+} = {}): Promise<void> {
+  if (!isAuthenticated()) {
+    console.log("");
+    console.log(chalk.hex("#C46A3A")("  not authenticated. run: ") + chalk.cyan("youmd login"));
+    console.log("");
+    process.exitCode = 1;
+    return;
+  }
+
+  const rootDir = expandHome(opts.root || path.join(os.homedir(), "Desktop", "CODE_YOU"));
+  const inventoryDir = path.join(os.homedir(), ".youmd", "agent-stack-inventory");
+  fs.mkdirSync(inventoryDir, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(rootDir, { recursive: true });
+
+  console.log("");
+  console.log("  " + chalk.bold(opts.full ? "machine full sync" : "machine sync now"));
+  console.log(chalk.dim(`  root: ${rootDir}`));
+  console.log(chalk.dim(`  inventory: ${inventoryDir}`));
+  console.log(chalk.dim("  secret rule: sync reads metadata and file names only; .env.local values are never printed."));
+  console.log("");
+
+  const required = { required: true };
+  runYoumdMachineStep("pull identity bundle", ["pull"], required);
+  runYoumdMachineStep("sync identity bundle", ["sync", "--daemon"], required);
+  runYoumdMachineStep("sync shared skill/stack git roots", ["stack", "sync"], required);
+  runYoumdMachineStep("install catalog skills", ["skill", "install", "all"]);
+  runYoumdMachineStep("render installed skills", ["skill", "sync"], required);
+  runYoumdMachineStep("install Claude MCP config", ["mcp", "--install", "claude", "--auto"]);
+  runYoumdMachineStep("install Codex MCP config", ["mcp", "--install", "codex", "--auto"]);
+
+  if (opts.full) {
+    await machineProjectsCommand({
+      root: rootDir,
+      days: opts.days,
+      maxCloneProjects: opts.maxCloneProjects,
+      recentOnly: opts.recentOnly ?? true,
+      dryRun: false,
+      yes: opts.yes,
+      clone: opts.clone,
+      github: opts.github,
+      includeInactive: opts.includeInactive,
+    });
+    runYoumdMachineStep("register Secret Vault device", ["env", "vault", "device-register"]);
+    runYoumdMachineStep("pull Secret Vault envs", [
+      "env",
+      "vault",
+      "pull",
+      "--restore",
+      "--root",
+      rootDir,
+      "--map-existing",
+      "--existing-only",
+      "--skip-agent-auth",
+    ]);
+    runYoumdMachineStep("rehydrate portfolio graph", [
+      "project",
+      "portfolio-hydrate",
+      "--root",
+      rootDir,
+      "--days",
+      String(opts.days || 30),
+      "--limit",
+      String(opts.limit || 80),
+    ]);
+  }
+
+  runYoumdMachineStep("sync agent stack inventory", [
+    "skill",
+    "inventory",
+    "--out-dir",
+    inventoryDir,
+    "--sync",
+  ], required);
+
+  const verifyArgs = [
+    "machine",
+    "verify",
+    "--root",
+    rootDir,
+    "--max-projects",
+    String(opts.maxProjects || opts.limit || 80),
+    "--write-report",
+    "--sync-report",
+  ];
+  if (opts.installDeps) {
+    verifyArgs.push("--install-deps");
+  }
+  if (opts.runChecks) {
+    verifyArgs.push("--run-checks");
+  }
+  if (opts.probeServers) {
+    verifyArgs.push("--probe-servers");
+  }
+  runYoumdMachineStep("write/sync machine proof", verifyArgs, required);
+  runYoumdMachineStep("show synced Skill Mesh status", ["skill", "inventory", "status", "--limit", "10"]);
+  runYoumdMachineStep("install resident daemons", ["stack", "daemon", "install"]);
+
+  console.log("");
+  console.log(chalk.green("  machine sync pass complete."));
+  console.log(chalk.dim("  keep it live with: ") + chalk.cyan("youmd sync --live --daemon"));
+  console.log("");
 }
 
 function readRecentGithubProjectsFromGh(days: number): GithubProjectSource[] {
@@ -658,6 +807,16 @@ export async function machineCommand(subcommand: string, opts: { force?: boolean
 
   if (subcommand === "verify" || subcommand === "readiness" || subcommand === "doctor") {
     await machineVerifyCommand(opts);
+    return;
+  }
+
+  if (subcommand === "sync-now" || subcommand === "repair" || subcommand === "reconcile") {
+    await machineSyncNowCommand(opts);
+    return;
+  }
+
+  if (subcommand === "full-sync" || subcommand === "full-setup") {
+    await machineSyncNowCommand({ ...opts, full: true });
     return;
   }
 

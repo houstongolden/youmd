@@ -414,6 +414,8 @@ echo "[you.md] confirming resident realtime/identity/skillstack/project-context 
 youmd stack daemon install || true
 youmd stack daemon status || true
 run_agent_stack_inventory
+echo "[you.md] running final one-command machine sync/proof consolidation"
+youmd machine sync-now --root "$ROOT" --max-projects "$LIMIT" || true
 youmd status
 if [ "$FULL_PROJECT_SET_COMPLETE" = "1" ]; then
   echo "[you.md] fresh-machine full \${EXPAND_DAYS}-day project setup complete: $ROOT"

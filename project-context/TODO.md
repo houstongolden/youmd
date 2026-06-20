@@ -23,6 +23,7 @@ PRD Version: 2.3
 - [x] Bundle the agent stack inventory scanner inside the CLI package so fresh installs can run inventory before shared skills are restored
 - [x] Add a curl install hook that writes a best-effort secret-safe inventory to `~/.youmd/agent-stack-inventory`
 - [x] Add fresh-machine bootstrap inventory proof after shared skills/MCP restore and again near final readiness proof
+- [x] Add `youmd machine sync-now` / `youmd machine full-sync` so the Mac Mini setup runbook is a first-class CLI command instead of a long manual checklist
 - [x] Add Convex persistence for safe machine inventory snapshots, sync events, drift summaries, and DRY review counts
 - [x] Add owner-gated API endpoints for posting/listing safe agent stack inventory summaries
 - [x] Add `youmd skill inventory --sync` so curl install and machine bootstrap can persist the generated inventory when authenticated

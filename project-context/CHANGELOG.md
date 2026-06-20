@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(machine): add one-command machine sync proof
+- Added `youmd machine sync-now` to reconcile a trusted Mac in one command: identity pull/sync, shared stack sync, catalog skill install, skill render, Claude/Codex MCP install, agent-stack inventory sync, machine proof sync, Skill Mesh status, and resident daemon install.
+- Added `youmd machine full-sync` for the larger new-Mac path: the same reconciliation plus graph-backed active project clone, Secret Vault device registration/pull attempt, portfolio hydrate, inventory, and proof.
+- Updated the generated fresh-machine bootstrap script to finish with `youmd machine sync-now --root "$ROOT" --max-projects "$LIMIT"` so manual recovery and curl/new-machine setup converge on the same implementation.
+- Verified with focused CLI tests, CLI TypeScript build, focused ESLint, compiled help smoke, generated prompt smoke, and `git diff --check`.
+
 ### feat(sync): add resident Skill Mesh drift repair
 - Changed agent-stack drift baseline selection from "newest snapshot" to "best complete safe snapshot" so a newly synced but incomplete Mac cannot become the trusted baseline by accident.
 - Drift repair commands now include the safe reconciliation chain: `youmd pull`, `youmd stack sync`, `youmd skill sync`, inventory sync, and machine proof sync.
