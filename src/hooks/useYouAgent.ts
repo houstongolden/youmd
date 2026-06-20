@@ -163,7 +163,7 @@ DAYS="\${YOU_ACTIVE_DAYS:-\${YOUMD_ACTIVE_DAYS:-30}}"
 EXPAND_DAYS="\${YOU_EXPAND_ACTIVE_DAYS:-\${YOUMD_EXPAND_ACTIVE_DAYS:-90}}"
 LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
 HYDRATE_TIMEOUT="\${YOU_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}}"
-MIN_YOUMD_VERSION="\${YOU_MIN_VERSION:-\${YOUMD_MIN_VERSION:-0.8.11}}"
+MIN_YOUMD_VERSION="\${YOU_MIN_VERSION:-\${YOUMD_MIN_VERSION:-0.8.12}}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -221,6 +221,17 @@ run_with_timeout() {
     kill "$watcher" >/dev/null 2>&1 || true
     wait "$watcher" 2>/dev/null || true
     return "$status"
+  fi
+}
+run_agent_stack_inventory() {
+  INVENTORY_DIR="\${YOU_AGENT_STACK_INVENTORY_DIR:-\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.you/agent-stack-inventory}}"
+  mkdir -p "$INVENTORY_DIR"
+  echo "[you.md] running local/global agent stack inventory into $INVENTORY_DIR"
+  if you skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync; then
+    you agent send --channel machine-sync --kind status "fresh machine \$(hostname) generated agent stack inventory at $INVENTORY_DIR" || true
+  else
+    echo "[you.md] agent stack inventory did not complete; continuing setup so sync can self-heal, then rerun: you skill inventory --out-dir $INVENTORY_DIR --register-catalog --sync"
+    you agent send --channel machine-sync --kind status "fresh machine \$(hostname) could not complete agent stack inventory yet; rerun after shared skill sync" || true
   fi
 }
 
@@ -294,6 +305,8 @@ if ! command_exists you; then
   exit 1
 fi
 ensure_youmd_min_version
+echo "[you.md] proving canonical ~/.you home migration"
+you machine migrate-home --yes || true
 
 YOU_BOOTSTRAP_API_KEY="\${YOU_API_KEY:-\${YOUMD_API_KEY:-}}"
 if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
@@ -330,6 +343,7 @@ you mcp --install claude --auto || true
 you mcp --install codex --auto || true
 you skill link claude || true
 you skill link codex || true
+run_agent_stack_inventory
 you agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored shared skills/stacks and MCP config" || true
 
 if [ "$GITHUB_READY" != "1" ]; then
@@ -414,7 +428,7 @@ elif [ -n "$ENV_VAULT_PATH" ]; then
     exit 1
   fi
   if [ -z "\${ENV_VAULT_PASS:-}" ] && command_exists security; then
-    KEYCHAIN_SERVICE="\${YOU_ENV_VAULT_KEYCHAIN_SERVICE:-\${YOU_ENV_VAULT_KEYCHAIN_SERVICE:-you-env-vault}}"
+    KEYCHAIN_SERVICE="\${YOU_ENV_VAULT_KEYCHAIN_SERVICE:-\${YOUMD_ENV_VAULT_KEYCHAIN_SERVICE:-you-env-vault}}"
     if ENV_VAULT_PASS_FROM_KEYCHAIN="$(security find-generic-password -a "\${USER:-\${LOGNAME:-houston}}" -s "$KEYCHAIN_SERVICE" -w 2>/dev/null)"; then
       export ENV_VAULT_PASS="$ENV_VAULT_PASS_FROM_KEYCHAIN"
       unset ENV_VAULT_PASS_FROM_KEYCHAIN
@@ -445,7 +459,7 @@ else
   echo "YOU_ENV_VAULT=/path/to/env-vault-YYYYMMDDTHHMMZ.tar.enc YOU_REQUIRE_ENV_VAULT=1 <same command>"
   echo "[you.md] Or restore manually after clone:"
   echo "you env restore <vault> --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
-  if [ "\${YOU_REQUIRE_ENV_VAULT:-\${YOU_REQUIRE_ENV_VAULT:-}}" = "1" ]; then
+  if [ "\${YOU_REQUIRE_ENV_VAULT:-\${YOUMD_REQUIRE_ENV_VAULT:-}}" = "1" ]; then
     echo "[you.md] strict proof is waiting for trusted-device Secret Vault share or an explicitly provided local vault; stopping before readiness is marked complete" >&2
     you agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: waiting for trusted-device Secret Vault share or explicit local vault fallback" || true
     exit 1
@@ -507,6 +521,9 @@ fi
 echo "[you.md] confirming resident realtime/identity/skillstack/project-context daemons"
 you stack daemon install || true
 you stack daemon status || true
+run_agent_stack_inventory
+echo "[you.md] running final one-command machine sync/proof consolidation"
+you machine sync-now --root "$ROOT" --max-projects "$LIMIT" || true
 you status
 if [ "$FULL_PROJECT_SET_COMPLETE" = "1" ]; then
   echo "[you.md] fresh-machine full \${EXPAND_DAYS}-day project setup complete: $ROOT"
@@ -537,7 +554,7 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
   return [
     "You are Claude Code or Codex running on my brand-new Mac.",
     "",
-    "Goal: set up this blank computer so it has my You.md identity context, shared skills/stacks, MCP wiring, agent preferences/prompts, active project repos, encrypted `.env.local` files, machine proof sync, and resident sync behavior from my source Mac.",
+    "Goal: set up this blank computer so it has my You.md identity context, shared skills/stacks, MCP wiring, agent preferences/prompts, active project repos, encrypted `.env.local` files, local/global agent stack inventory, machine proof sync, and resident sync behavior from my source Mac.",
     "",
     "Do not just explain this. Execute the setup, stream progress, and verify the result. Run the exact command below in the terminal first.",
     "",
@@ -554,11 +571,13 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     "What it will do:",
     "- check/install the local prerequisites first: Homebrew, Node 22/npm, git, GitHub CLI, bun, and pnpm/corepack",
     "- install You.md from the curl runtime and force the You.md/Homebrew/Node 22 paths into this setup shell",
+    "- prove the canonical `~/.you` home migration while preserving legacy `~/.youmd` fallback",
     "- authenticate and pull/sync your identity bundle",
     "- install resident realtime sync daemons early so identity/skill/project-context sync is not deferred until the end",
     "- require GitHub CLI auth before private shared-skill/project repos clone; if browser auth fails inside Claude/Codex, it prints the exact Terminal command to run and stops cleanly",
     "- install/configure MCP for Claude Code and Codex",
     "- restore shared agent skills, stack config, Claude/Codex links, and agent host config",
+    "- generate a secret-safe local/global agent stack inventory under `~/.you/agent-stack-inventory` after shared skills are restored and again near final proof",
     "- use the installed You.md CLI behind the scenes for status, skill sync, Secret Vault pull, portfolio graph hydration, machine verification, and You Agent context routing instead of making Houston manually drive those steps",
     "- publish setup milestones through `you agent send` so Houston's source Mac and realtime daemon can see the Mac mini come online without clipboard babysitting",
     "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
@@ -567,17 +586,18 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     "- check env-vault tooling, register this Mac as a trusted Secret Vault device, pull the latest account-backed You.md Secret Vault encrypted snapshot when available, unwrap the vault passphrase locally through a trusted-device key envelope, restore env files into existing cloned project dirs with `--map-existing --existing-only --skip-agent-auth`, or stop with the exact source-Mac `you env vault share` action instead of asking for a passphrase on the new Mac. Local/iCloud passphrase fallback runs only when `YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOU_ENV_VAULT` is explicitly provided. After env handling, rehydrate local project/env evidence.",
     "- reconcile `you pull && you sync` after env-vault handling so source-Mac bundle updates, new trusted-device envelopes, shared skills, and machine proof state do not leave this Mac showing `remote ahead`",
     "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
-    "- bound portfolio hydration with `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
+    "- bound portfolio hydration with `YOU_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
     "",
     "After the command finishes, report:",
     "- the `you status` sync state",
     "- the `~/Desktop/CODE_YOU` project count",
     "- whether the encrypted env vault restored",
     "- whether Claude/Codex MCP config was installed",
+    "- where the agent stack inventory JSON/HTML was written",
     "- the synced machine proof status",
     "- whether I should expand to the 90-day active project set if I have not answered yet",
     "",
-    "Secret rule: raw `.env.local` values are not embedded in this prompt. Best path: on the old/source Mac, run `you env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` once, then after the new Mac registers itself run `you env vault share` on the source Mac. That uploads only encrypted archive bytes plus safe manifest metadata, and stores only per-device encrypted passphrase envelopes. A trusted new Mac pulls the encrypted snapshot after login and decrypts locally with its private device key; raw env values never hit the browser, chat, or You.md servers. If the envelope is missing, the command stops and sends a machine-sync status telling the source Mac to run `you env vault share`. Local fallback is opt-in only: run `you env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to the new machine, then rerun with `YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or explicit `YOU_ENV_VAULT=/path/to/env-vault-*.tar.enc`. Vault listing prints variable names/counts and target paths only, never values, maps old folder names onto cloned dirs, and skips agent auth config so it does not clobber the new machine's active Claude/Codex login.",
+    "Secret rule: raw `.env.local` values are not embedded in this prompt. Best path: on the old/source Mac, run `you env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` once, then after the new Mac registers itself run `you env vault share` on the source Mac. That uploads only encrypted archive bytes plus safe manifest metadata, and stores only per-device encrypted passphrase envelopes. A trusted new Mac pulls the encrypted snapshot after login and decrypts locally with its private device key; raw env values never hit the browser, chat, or You.md servers. If the envelope is missing, the command stops and sends a machine-sync status telling the source Mac to run `you env vault share`. Local fallback is opt-in only: run `you env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to the new machine, then rerun with `YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or explicit `YOU_ENV_VAULT=/path/to/env-vault-*.tar.enc`. Legacy `YOUMD_*` env aliases still work while new prompts lead with `YOU_*`. Vault listing prints variable names/counts and target paths only, never values, maps old folder names onto cloned dirs, and skips agent auth config so it does not clobber the new machine's active Claude/Codex login.",
     "Project gate: inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default. Manually mark a project Active and Top Priority/Focusing in Portfolio before expecting it to clone on the new computer.",
     "Done-ness rule: this web-shell command includes `YOU_REQUIRE_ENV_VAULT=1`, so it fails instead of pretending setup is complete when the encrypted env vault is missing.",
   ].join("\n");

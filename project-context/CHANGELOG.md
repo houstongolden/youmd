@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(app): align fresh-computer prompt with `you` setup
+- Updated the dashboard/web fresh-computer bootstrap prompt to require `0.8.12+`, prove `~/.you` migration, generate local/global agent stack inventory, and finish with `you machine sync-now`.
+- Web setup copy now leads with canonical `YOU_*` env names, `you` commands, and `~/.you` inventory paths while preserving legacy `YOUMD_*` fallbacks inside the shell.
+- Tightened the web parity test so the app prompt stays aligned with the machine setup proof path.
+
 ### feat(install): run home migration during curl setup
 - The curl installer now verifies the canonical `you` binary, runs `you machine migrate-home --yes` by default when legacy or canonical home state exists, and keeps `YOU_INSTALL_MIGRATE_HOME=0` / `YOUMD_INSTALL_MIGRATE_HOME=0` as an escape hatch.
 - Fresh-machine bootstrap now requires `you`/`youmd` `0.8.12+` and proves the canonical `~/.you` migration immediately after source install before login, inventory, Secret Vault, project clone, and machine proof work.
