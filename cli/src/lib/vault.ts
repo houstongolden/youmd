@@ -4,13 +4,13 @@
  * Uses AES-256-GCM for data encryption and PBKDF2 for key derivation
  * from a user-chosen vault passphrase. The vault key is a random
  * 256-bit key that gets wrapped (encrypted) with the PBKDF2-derived
- * key and stored locally at ~/.youmd/vault-key.enc.
+ * key and stored locally at ~/.you/vault-key.enc.
  */
 
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import * as os from "os";
+import { getWritableHomeBundleDir, getLegacyHomeBundleDir } from "./config";
 
 const ALGORITHM = "aes-256-gcm";
 const PBKDF2_ITERATIONS = 100_000;
@@ -19,7 +19,8 @@ const IV_LENGTH = 12; // GCM standard
 const SALT_LENGTH = 32;
 const AUTH_TAG_LENGTH = 16;
 
-const VAULT_KEY_FILE = path.join(os.homedir(), ".youmd", "vault-key.enc");
+const VAULT_KEY_FILE = path.join(getWritableHomeBundleDir(), "vault-key.enc");
+const LEGACY_VAULT_KEY_FILE = path.join(getLegacyHomeBundleDir(), "vault-key.enc");
 
 // ── Key generation ────────────────────────────────────────────
 
@@ -167,7 +168,7 @@ export function decryptData(
  */
 const VAULT_FILE_VERSION = 1;
 
-/** Save the wrapped vault key to ~/.youmd/vault-key.enc */
+/** Save the wrapped vault key to ~/.you/vault-key.enc */
 export function saveVaultKey(wrapped: WrappedVaultKey): void {
   const dir = path.dirname(VAULT_KEY_FILE);
   if (!fs.existsSync(dir)) {
@@ -193,13 +194,14 @@ export function saveVaultKey(wrapped: WrappedVaultKey): void {
   fs.writeFileSync(VAULT_KEY_FILE, buf, { mode: 0o600 });
 }
 
-/** Load the wrapped vault key from ~/.youmd/vault-key.enc */
+/** Load the wrapped vault key from ~/.you/vault-key.enc, with legacy fallback. */
 export function loadVaultKey(): WrappedVaultKey | null {
-  if (!fs.existsSync(VAULT_KEY_FILE)) {
+  const keyFile = fs.existsSync(VAULT_KEY_FILE) ? VAULT_KEY_FILE : LEGACY_VAULT_KEY_FILE;
+  if (!fs.existsSync(keyFile)) {
     return null;
   }
 
-  const buf = fs.readFileSync(VAULT_KEY_FILE);
+  const buf = fs.readFileSync(keyFile);
 
   const version = buf.readUInt8(0);
   if (version !== VAULT_FILE_VERSION) {
@@ -223,7 +225,7 @@ export function loadVaultKey(): WrappedVaultKey | null {
 
 /** Check if the vault has been initialized locally. */
 export function isVaultInitialized(): boolean {
-  return fs.existsSync(VAULT_KEY_FILE);
+  return fs.existsSync(VAULT_KEY_FILE) || fs.existsSync(LEGACY_VAULT_KEY_FILE);
 }
 
 // ── Helpers for binary <-> base64 transport ───────────────────

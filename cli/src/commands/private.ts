@@ -646,7 +646,7 @@ function promptPassphrase(prompt: string): Promise<string> {
 async function vaultInit() {
   if (isVaultInitialized()) {
     console.log(chalk.yellow("  vault already initialized locally."));
-    console.log(chalk.dim("  to re-initialize, delete ~/.youmd/vault-key.enc first."));
+    console.log(chalk.dim("  to re-initialize, delete ~/.you/vault-key.enc first."));
     return;
   }
 
@@ -696,7 +696,7 @@ async function vaultInit() {
 
   spinner.stop();
   console.log(chalk.green("  vault initialized."));
-  console.log(chalk.dim("  vault key saved to ~/.youmd/vault-key.enc"));
+  console.log(chalk.dim("  vault key saved to ~/.you/vault-key.enc"));
   console.log(chalk.dim("  wrapped key synced to server for recovery."));
 }
 

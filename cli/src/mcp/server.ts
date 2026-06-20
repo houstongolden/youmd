@@ -1551,7 +1551,7 @@ export async function startMcpServer(): Promise<void> {
         // smoke_stack, get_identity, get_section — migrated to registry.ts (T14).
         {
           name: "update_section",
-          description: "Update a section of the user's identity. Writes markdown content to the local .youmd/ directory. Use after the user explicitly asks to change their profile, preferences, voice, or directives. Always confirm changes with the user before calling. Does NOT auto-push — call push_bundle afterward if the user wants to publish.",
+          description: "Update a section of the user's identity. Writes markdown content to the local .you/ directory, with legacy .youmd fallback. Use after the user explicitly asks to change their profile, preferences, voice, or directives. Always confirm changes with the user before calling. Does NOT auto-push — call push_bundle afterward if the user wants to publish.",
           inputSchema: {
             type: "object" as const,
             properties: {

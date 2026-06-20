@@ -1117,7 +1117,7 @@ export default function DocsContent() {
                 },
                 {
                   title: "Markdown source",
-                  body: "Local files in .youmd/ stay human-editable: profile/about.md, preferences/agent.md, voice/voice.md, directives/agent.md, and project context.",
+                  body: "Local files in .you/ stay human-editable: profile/about.md, preferences/agent.md, voice/voice.md, directives/agent.md, and project context. Legacy .youmd/ folders are read during migration.",
                 },
                 {
                   title: "Compiled bundle",
@@ -1414,7 +1414,7 @@ Link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="applicati
                 <InlineCode>youmd memories add</InlineCode> commands
               </Step>
               <Step n={3}>
-                Edit your <InlineCode>.youmd/</InlineCode> files directly (they&apos;re
+                Edit your <InlineCode>.you/</InlineCode> files directly (they&apos;re
                 just markdown) and run{" "}
                 <InlineCode>youmd push</InlineCode> to sync
               </Step>
@@ -1516,7 +1516,7 @@ preferences: terminal-native, monochrome
             </Callout>
 
             <H3 id="file-structure">Local File Structure</H3>
-            <CodeBlock title=".youmd/">{`.youmd/
+            <CodeBlock title=".you/">{`.you/
   profile/
     about.md
     now.md
@@ -1733,7 +1733,7 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
             <P>
               Install skills from the public registry, create your own, or
               publish them for others. The skill system is fully local-first --
-              installed skills live in <InlineCode>.youmd/skills/</InlineCode>{" "}
+              installed skills live in <InlineCode>.you/skills/</InlineCode>{" "}
               and sync with push/pull.
             </P>
 
@@ -1820,7 +1820,7 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
             <H3 id="skills-sync">Skill Sync</H3>
             <P>
               Installed skills are stored in your local{" "}
-              <InlineCode>.youmd/skills/</InlineCode> directory and tracked in
+              <InlineCode>.you/skills/</InlineCode> directory and tracked in
               your bundle manifest. When you run{" "}
               <InlineCode>youmd push</InlineCode>, your skill installs are
               synced to the cloud. When you run{" "}
@@ -2147,7 +2147,7 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
             <CommandTable
               commands={[
                 { cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "Install the You.md runtime, bundled skills, auto-upgrade helper, and stack starter files" },
-                { cmd: "curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_DAEMON=1 bash", desc: "Install the runtime and opt into resident sync on macOS" },
+                { cmd: "curl -fsSL https://you.md/install.sh | YOU_INSTALL_DAEMON=1 bash", desc: "Install the runtime and opt into resident sync on macOS" },
                 { cmd: "youmd stack inspect --path DIR", desc: "Show name, slug, domain, manifest metadata, files, scopes, adapters, and validation warnings" },
                 { cmd: "youmd stack doctor --path DIR", desc: "Run read-only diagnostics for manifest bloat, route drift, stale adapters, update hygiene, and public-readiness gaps" },
                 { cmd: "youmd stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },
@@ -2221,14 +2221,14 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
             <H3 id="youstacks-auto-update">Auto-Update</H3>
             <P>
               The curl installer writes a best-effort auto-upgrade helper at{" "}
-              <InlineCode>~/.youmd/bin/youmd-auto-upgrade</InlineCode>. Host
+              <InlineCode>~/.you/bin/youmd-auto-upgrade</InlineCode>. Host
               adapter files and the <InlineCode>youstack-maintainer</InlineCode>{" "}
               skill can run it quietly before stack work, just like the BAMFStack
               preamble. The helper is throttled by default so it does not rebuild
               on every agent message.
             </P>
-            <CodeBlock title="agent preamble">{`if [ -x "$HOME/.youmd/bin/youmd-auto-upgrade" ]; then
-  "$HOME/.youmd/bin/youmd-auto-upgrade" --quiet || true
+            <CodeBlock title="agent preamble">{`if [ -x "$HOME/.you/bin/youmd-auto-upgrade" ]; then
+  "$HOME/.you/bin/youmd-auto-upgrade" --quiet || true
 fi`}</CodeBlock>
 
             <H3 id="youstacks-bamfstack">BAMFStack Lighthouse</H3>
@@ -2470,7 +2470,7 @@ Content-Type: application/json
               respond to you. Think of them as persistent system prompts keyed
               to your preferences.
             </P>
-            <CodeBlock title=".youmd/preferences/agent.md">{`# Agent Directives
+            <CodeBlock title=".you/preferences/agent.md">{`# Agent Directives
 
 ## Tone
 Direct and concise. No filler. No corporate speak.

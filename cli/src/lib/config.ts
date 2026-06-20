@@ -124,11 +124,11 @@ export function resolveActiveBundleDir(): string | null {
 // ─── T7: home-first bundle resolution for identity sync ──────────────
 //
 // pull/push/sync are IDENTITY operations — they default to the home brain
-// (~/.youmd/) ALWAYS. Operating on a project-local .youmd/ requires either
+// (~/.you/) ALWAYS. Operating on a project-local .you/ requires either
 // the explicit --local flag or a deliberate marker file
-// (.youmd/youmd.local.json) written by `youmd init` / a previous --local
+// (.you/youmd.local.json) written by `youmd init` / a previous --local
 // run. This stops `youmd pull` inside a random repo from scattering
-// identity copies into project-local .youmd/ directories.
+// identity copies into project-local .you/ directories.
 
 const LOCAL_BUNDLE_MARKER_FILE = "youmd.local.json";
 
@@ -138,7 +138,7 @@ export interface BundleDirResolution {
   scope: "home" | "local";
   /** Why this scope was chosen. */
   reason: "flag" | "marker" | "default" | "home-is-cwd";
-  /** Whether an initialized project-local .youmd/ exists in cwd. */
+  /** Whether an initialized project-local .you/ or legacy .youmd/ exists in cwd. */
   localBundlePresent: boolean;
 }
 
@@ -173,7 +173,7 @@ export function isHomeBundleDir(bundleDir: string): boolean {
 }
 
 /**
- * Mark a project-local .youmd/ as a deliberate local bundle. Idempotent.
+ * Mark a project-local .you/ as a deliberate local bundle. Idempotent.
  * Never marks the home bundle dir — home needs no marker.
  */
 export function markLocalBundle(bundleDir: string): void {
@@ -188,9 +188,9 @@ export function markLocalBundle(bundleDir: string): void {
 /**
  * Resolve the bundle dir for identity sync operations (pull/push/sync).
  *
- * Home-first: defaults to ~/.youmd/. A project-local .youmd/ is used only
+ * Home-first: defaults to ~/.you/. A project-local .you/ is used only
  * when explicitly requested (--local) or deliberately marked
- * (.youmd/youmd.local.json). When cwd IS the home directory, local and home
+ * (.you/youmd.local.json). When cwd IS the home directory, local and home
  * are the same dir.
  */
 export function resolveSyncBundleDir(options: { local?: boolean } = {}): BundleDirResolution {
@@ -224,16 +224,16 @@ export function resolveSyncBundleDir(options: { local?: boolean } = {}): BundleD
  */
 export function bundleResolutionNotice(res: BundleDirResolution): string | null {
   if (res.scope === "home" && res.localBundlePresent) {
-    return `using home bundle ${res.dir} (project-local .youmd/ ignored — pass --local to target it)`;
+    return `using home bundle ${res.dir} (project-local .you/.youmd ignored — pass --local to target it)`;
   }
   if (res.scope === "local") {
     const why = res.reason === "flag" ? "--local" : "youmd.local.json marker";
-    return `using project-local bundle ${res.dir} (${why}) — omit --local and remove the marker to target ~/.youmd`;
+    return `using project-local bundle ${res.dir} (${why}) — omit --local and remove the marker to target ~/.you`;
   }
   return null;
 }
 
-// ─── T7: auto-gitignore project-local .youmd/ ─────────────────────────
+// ─── T7: auto-gitignore project-local .you/ ─────────────────────────
 
 /** Walk up from startDir looking for a .git directory. */
 export function findGitRoot(startDir: string): string | null {
@@ -247,6 +247,12 @@ export function findGitRoot(startDir: string): string | null {
 }
 
 const GITIGNORE_YOUMD_PATTERNS = new Set([
+  ".you",
+  ".you/",
+  "/.you",
+  "/.you/",
+  "**/.you",
+  "**/.you/",
   ".youmd",
   ".youmd/",
   "/.youmd",
@@ -256,11 +262,12 @@ const GITIGNORE_YOUMD_PATTERNS = new Set([
 ]);
 
 const GITIGNORE_YOUMD_BLOCK =
-  "# You.md identity bundle — never commit identity data\n.youmd/\n";
+  "# You.md identity bundle — never commit identity data\n.you/\n.youmd/\n";
 
 /**
- * Ensure the repo containing a project-local .youmd/ gitignores it, so
- * identity data is never silently committed. Appends `.youmd/` when a
+ * Ensure the repo containing a project-local .you/ gitignores it, so
+ * identity data is never silently committed. Appends `.you/` and legacy
+ * `.youmd/` when a
  * .gitignore exists without coverage; creates one at the git root when the
  * repo has none; no-ops outside a git repo or when already covered.
  */
@@ -289,21 +296,22 @@ export function ensureYoumdGitignored(
 }
 
 // ─── Headless auth env overrides ─────────────────────────────────────
-// YOUMD_API_KEY / YOUMD_API_URL let agents and CI run authenticated
-// commands with zero filesystem state (no ~/.youmd/config.json needed).
+// YOU_API_KEY / YOU_API_URL let agents and CI run authenticated
+// commands with zero filesystem state (no ~/.you/config.json needed).
+// YOUMD_* remains supported as a legacy alias.
 // Env always wins over the config file.
 
 export function getEnvApiKey(): string | undefined {
-  const key = process.env.YOUMD_API_KEY?.trim();
+  const key = process.env.YOU_API_KEY?.trim() || process.env.YOUMD_API_KEY?.trim();
   return key || undefined;
 }
 
 export function getEnvApiUrl(): string | undefined {
-  const url = process.env.YOUMD_API_URL?.trim();
+  const url = process.env.YOU_API_URL?.trim() || process.env.YOUMD_API_URL?.trim();
   return url || undefined;
 }
 
-/** Resolve the auth token: YOUMD_API_KEY env var first, then config file. */
+/** Resolve the auth token: YOU_API_KEY env var first, then config file. */
 export function getAuthToken(): string | undefined {
   return getEnvApiKey() || readGlobalConfig().token || undefined;
 }
@@ -388,7 +396,7 @@ function acquireFileLock(file: string): (() => void) | null {
   return null;
 }
 
-/** Ensure ~/.youmd is 0700 and config.json is 0600 (fix on read if wrong). */
+/** Ensure ~/.you is 0700 and config.json is 0600 (fix on read if wrong). */
 function enforceGlobalConfigPermissions(): void {
   if (process.platform === "win32") return;
   const configPath = resolveReadableGlobalConfigPath();
@@ -492,7 +500,7 @@ export function writeLocalConfig(config: LocalConfig): void {
 
 /**
  * Bundle-dir-aware twin of writeLocalConfig (T7). Same lock + atomic-rename
- * write path; at the home bundle dir this file (~/.youmd/config.json) also
+ * write path; at the home bundle dir this file (~/.you/config.json) also
  * carries GlobalConfig fields — callers must read-modify-write via
  * readBundleConfig so those fields are preserved.
  */
@@ -640,38 +648,38 @@ function buildProjectContext(projectRoot: string, marker: string): ProjectContex
   };
 }
 
-// Project store path helpers (slug, ~/.youmd/projects/<name>/ dirs, private
+// Project store path helpers (slug, ~/.you/projects/<name>/ dirs, private
 // notes) live in lib/projectContext.ts — the single project-context engine.
 // The duplicate copies that used to live here were removed (PRODUCT-AUDIT #14).
 
 // ─── Skills Directories ──────────────────────────────────────────────
 
 /**
- * Global skills directory: ~/.youmd/skills/
+ * Global skills directory: ~/.you/skills/
  */
 export function getSkillsDir(): string {
   return path.join(GLOBAL_CONFIG_DIR, "skills");
 }
 
 /**
- * Global skill catalog path: ~/.youmd/skills/youmd-skills.yaml
+ * Global skill catalog path: ~/.you/skills/youmd-skills.yaml
  */
 export function getSkillCatalogPath(): string {
   return path.join(getSkillsDir(), "youmd-skills.yaml");
 }
 
 /**
- * Skill metrics path: ~/.youmd/skills/skill-metrics.json
+ * Skill metrics path: ~/.you/skills/skill-metrics.json
  */
 export function getSkillMetricsPath(): string {
   return path.join(getSkillsDir(), "skill-metrics.json");
 }
 
 /**
- * Per-project skills directory: .youmd/skills/ in cwd
+ * Per-project skills directory: .you/skills/ in cwd
  */
 export function getProjectSkillsDir(): string {
-  return path.resolve(process.cwd(), ".youmd", "skills");
+  return path.resolve(process.cwd(), LOCAL_BUNDLE_DIR, "skills");
 }
 
 /**

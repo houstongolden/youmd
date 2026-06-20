@@ -873,7 +873,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                 </div>
               ) : (
                 <p className="mt-3 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
-                  Run the full fresh-root proof command below after cloning/restoring envs on a new host. The CLI writes a secret-safe JSON artifact to ~/.youmd/machine-reports/latest.json.
+                  Run the full fresh-root proof command below after cloning/restoring envs on a new host. The CLI writes a secret-safe JSON artifact to ~/.you/machine-reports/latest.json, with legacy ~/.youmd fallback during migration.
                 </p>
               )}
             </div>

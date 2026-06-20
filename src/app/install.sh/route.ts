@@ -219,7 +219,7 @@ if [ -z "$INSTALLED_VERSION" ] || ! version_at_least "$INSTALLED_VERSION" "$CLI_
   echo "Installed You.md runtime is too old: \${INSTALLED_VERSION:-unknown}"
   echo "Required runtime is: $CLI_VERSION or newer"
   echo "The npm package may still be behind. Re-run with the source channel after this commit is on main:"
-  echo "  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash"
+  echo "  curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL=source YOU_SOURCE_REF=main bash"
   echo ""
   exit 1
 fi
@@ -295,8 +295,8 @@ echo "Installing native You.md skills..."
 youmd skill install all >/dev/null 2>&1 || true
 youmd skill sync >/dev/null 2>&1 || true
 
-if [ "\${YOUMD_INSTALL_INVENTORY:-1}" = "1" ]; then
-  INVENTORY_DIR="\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$YOUMD_HOME_DIR/agent-stack-inventory}"
+if [ "\${YOU_INSTALL_INVENTORY:-\${YOUMD_INSTALL_INVENTORY:-1}}" = "1" ]; then
+  INVENTORY_DIR="\${YOU_AGENT_STACK_INVENTORY_DIR:-\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$YOUMD_HOME_DIR/agent-stack-inventory}}"
   mkdir -p "$INVENTORY_DIR"
   echo "Creating secret-safe local agent stack inventory..."
   if youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync >/dev/null 2>&1; then
@@ -325,12 +325,13 @@ if [ "$MCP_CONFIGURED" = "0" ]; then
   echo "  (no Claude Code / Codex / Cursor detected — run \\\`youmd mcp --install <host> --auto\\\` after installing one)"
 fi
 
-if [ "\${YOUMD_INSTALL_MACHINE_SYNC:-0}" = "1" ] || [ -n "\${YOUMD_API_KEY:-}" ]; then
-  SYNC_ROOT="\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}"
-  SYNC_LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
+YOU_BOOTSTRAP_API_KEY="\${YOU_API_KEY:-\${YOUMD_API_KEY:-}}"
+if [ "\${YOU_INSTALL_MACHINE_SYNC:-\${YOUMD_INSTALL_MACHINE_SYNC:-0}}" = "1" ] || [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
+  SYNC_ROOT="\${YOU_CODE_ROOT:-\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}}"
+  SYNC_LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
   echo "Reconciling this machine with You.md skill mesh..."
-  if [ -n "\${YOUMD_API_KEY:-}" ]; then
-    youmd login --key "$YOUMD_API_KEY" >/dev/null 2>&1 || true
+  if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
+    youmd login --key "$YOU_BOOTSTRAP_API_KEY" >/dev/null 2>&1 || true
   fi
   if youmd machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"; then
     echo "  - machine sync proof complete"
@@ -339,7 +340,7 @@ if [ "\${YOUMD_INSTALL_MACHINE_SYNC:-0}" = "1" ] || [ -n "\${YOUMD_API_KEY:-}" ]
   fi
 fi
 
-if [ "\${YOUMD_INSTALL_DAEMON:-0}" = "1" ]; then
+if [ "\${YOU_INSTALL_DAEMON:-\${YOUMD_INSTALL_DAEMON:-0}}" = "1" ]; then
   if [ "$(uname -s 2>/dev/null || true)" = "Darwin" ]; then
     echo "Installing resident You.md sync daemon..."
     youmd stack daemon install || true
@@ -364,10 +365,10 @@ echo "Auto-update helper:"
 echo "  ~/.you/bin/youmd-auto-upgrade --quiet"
 echo ""
 echo "Install with resident sync enabled:"
-echo "  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_DAEMON=1 bash"
+echo "  curl -fsSL https://you.md/install.sh | YOU_INSTALL_DAEMON=1 bash"
 echo ""
 echo "Install and immediately sync this machine when you already have an API key:"
-echo "  curl -fsSL https://you.md/install.sh | YOUMD_API_KEY=... YOUMD_INSTALL_MACHINE_SYNC=1 bash"
+echo "  curl -fsSL https://you.md/install.sh | YOU_API_KEY=... YOU_INSTALL_MACHINE_SYNC=1 bash"
 echo ""
 `;
 }

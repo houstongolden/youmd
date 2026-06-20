@@ -55,13 +55,13 @@ function portableHomePath(value: string | undefined): string | undefined {
 
 export function buildFreshMachineBootstrapScript(): string {
   return `set -euo pipefail
-export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-ROOT="\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}"
-DAYS="\${YOUMD_ACTIVE_DAYS:-30}"
-EXPAND_DAYS="\${YOUMD_EXPAND_ACTIVE_DAYS:-90}"
-LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
-HYDRATE_TIMEOUT="\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"
-MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.11}"
+export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+ROOT="\${YOU_CODE_ROOT:-\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}}"
+DAYS="\${YOU_ACTIVE_DAYS:-\${YOUMD_ACTIVE_DAYS:-30}}"
+EXPAND_DAYS="\${YOU_EXPAND_ACTIVE_DAYS:-\${YOUMD_EXPAND_ACTIVE_DAYS:-90}}"
+LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
+HYDRATE_TIMEOUT="\${YOU_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}}"
+MIN_YOUMD_VERSION="\${YOU_MIN_VERSION:-\${YOUMD_MIN_VERSION:-0.8.11}}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -93,8 +93,8 @@ ensure_youmd_min_version() {
     return 0
   fi
   echo "[you.md] installed youmd is older than required \${MIN_YOUMD_VERSION}; forcing GitHub source install"
-  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash
-  export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL=source YOU_SOURCE_REF=main bash
+  export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
   installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
   echo "[you.md] installed version after forced source install: \${installed:-unknown}"
   if [ -z "$installed" ] || ! version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
@@ -122,7 +122,7 @@ run_with_timeout() {
   fi
 }
 run_agent_stack_inventory() {
-  INVENTORY_DIR="\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.youmd/agent-stack-inventory}"
+  INVENTORY_DIR="\${YOU_AGENT_STACK_INVENTORY_DIR:-\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.you/agent-stack-inventory}}"
   mkdir -p "$INVENTORY_DIR"
   echo "[you.md] running local/global agent stack inventory into $INVENTORY_DIR"
   if youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync; then
@@ -141,7 +141,7 @@ bootstrap_prereqs() {
   fi
   if [ -x /opt/homebrew/bin/brew ]; then eval "$(/opt/homebrew/bin/brew shellenv)" || true; fi
   if [ -x /usr/local/bin/brew ]; then eval "$(/usr/local/bin/brew shellenv)" || true; fi
-  export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
   if command_exists brew; then
     MAJOR="$(node_major)"
@@ -155,7 +155,7 @@ bootstrap_prereqs() {
     command_exists bun || brew install bun || brew install oven-sh/bun/bun || true
   fi
 
-  export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
   command_exists corepack && corepack enable || true
   if command_exists corepack && ! command_exists pnpm; then
     corepack prepare pnpm@latest --activate || true
@@ -196,19 +196,20 @@ ensure_github_auth() {
 bootstrap_prereqs
 
 echo "[you.md] installing runtime from GitHub main"
-curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash
-export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL=source YOU_SOURCE_REF=main bash
+export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 if ! command_exists youmd; then
   echo "[you.md] youmd was installed but is not on PATH. Try a new Terminal, then rerun this command." >&2
   exit 1
 fi
 ensure_youmd_min_version
 
-if [ -n "\${YOUMD_API_KEY:-}" ]; then
+YOU_BOOTSTRAP_API_KEY="\${YOU_API_KEY:-\${YOUMD_API_KEY:-}}"
+if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
   echo "[you.md] logging in with bootstrap key"
-  youmd login --key "$YOUMD_API_KEY"
+  youmd login --key "$YOU_BOOTSTRAP_API_KEY"
 else
-  echo "[you.md] no YOUMD_API_KEY set; starting interactive login"
+  echo "[you.md] no YOU_API_KEY set; starting interactive login"
   youmd login
 fi
 
@@ -278,7 +279,7 @@ youmd env backup --root "$ROOT" --preflight || true
 SECRET_VAULT_RESTORED=0
 ALLOW_LOCAL_ENV_VAULT_FALLBACK="\${YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK:-0}"
 if [ -z "\${YOUMD_ENV_VAULT:-}" ] && [ "\${YOUMD_SECRET_VAULT_PULL:-1}" = "1" ]; then
-  SECRET_VAULT_DIR="\${YOUMD_SECRET_VAULT_DIR:-$HOME/.youmd/secret-vault}"
+  SECRET_VAULT_DIR="\${YOU_SECRET_VAULT_DIR:-\${YOUMD_SECRET_VAULT_DIR:-$HOME/.you/secret-vault}}"
   echo "[you.md] registering this Mac as a trusted Secret Vault device"
   youmd env vault device-register || true
   echo "[you.md] checking You.md Secret Vault for the latest encrypted env vault and trusted-device envelope"
@@ -397,18 +398,18 @@ if [ "\${YOUMD_RUN_CHECKS:-}" = "1" ]; then
 else
   echo "[you.md] bounded package checks skipped; set YOUMD_RUN_CHECKS=1 to run lint/typecheck/test/build caps"
 fi
-if [ "\${YOUMD_INSTALL_DEPS:-}" = "1" ] || [ "\${YOUMD_PROBE_SERVERS:-}" = "1" ]; then
+if [ "\${YOU_INSTALL_DEPS:-\${YOUMD_INSTALL_DEPS:-}}" = "1" ] || [ "\${YOU_PROBE_SERVERS:-\${YOUMD_PROBE_SERVERS:-}}" = "1" ]; then
   echo "[you.md] running bounded clean-host install/server proof"
   VERIFY_ARGS=(--root "$ROOT" --max-projects "$LIMIT")
-  if [ "\${YOUMD_INSTALL_DEPS:-}" = "1" ]; then
-    VERIFY_ARGS+=(--install-deps --max-install-projects "\${YOUMD_MAX_INSTALL_PROJECTS:-4}" --install-timeout-ms "\${YOUMD_INSTALL_TIMEOUT_MS:-180000}")
+  if [ "\${YOU_INSTALL_DEPS:-\${YOUMD_INSTALL_DEPS:-}}" = "1" ]; then
+    VERIFY_ARGS+=(--install-deps --max-install-projects "\${YOU_MAX_INSTALL_PROJECTS:-\${YOUMD_MAX_INSTALL_PROJECTS:-4}}" --install-timeout-ms "\${YOU_INSTALL_TIMEOUT_MS:-\${YOUMD_INSTALL_TIMEOUT_MS:-180000}}")
   fi
-  if [ "\${YOUMD_PROBE_SERVERS:-}" = "1" ]; then
-    VERIFY_ARGS+=(--probe-servers --max-server-projects "\${YOUMD_MAX_SERVER_PROJECTS:-3}" --server-timeout-ms "\${YOUMD_SERVER_TIMEOUT_MS:-45000}" --server-start-port "\${YOUMD_SERVER_START_PORT:-4310}")
+  if [ "\${YOU_PROBE_SERVERS:-\${YOUMD_PROBE_SERVERS:-}}" = "1" ]; then
+    VERIFY_ARGS+=(--probe-servers --max-server-projects "\${YOU_MAX_SERVER_PROJECTS:-\${YOUMD_MAX_SERVER_PROJECTS:-3}}" --server-timeout-ms "\${YOU_SERVER_TIMEOUT_MS:-\${YOUMD_SERVER_TIMEOUT_MS:-45000}}" --server-start-port "\${YOU_SERVER_START_PORT:-\${YOUMD_SERVER_START_PORT:-4310}}")
   fi
   youmd machine verify "\${VERIFY_ARGS[@]}" --write-report --sync-report || true
 else
-  echo "[you.md] clean-host install/server proof skipped; set YOUMD_INSTALL_DEPS=1 and YOUMD_PROBE_SERVERS=1 to install deps and smoke-probe local dev servers"
+  echo "[you.md] clean-host install/server proof skipped; set YOU_INSTALL_DEPS=1 and YOU_PROBE_SERVERS=1 to install deps and smoke-probe local dev servers"
 fi
 echo "[you.md] confirming resident realtime/identity/skillstack/project-context daemons"
 youmd stack daemon install || true
@@ -428,16 +429,16 @@ fi`;
 
 export function buildFreshMachineBootstrapCommand(options: FreshMachineBootstrapOptions = {}): string {
   const assignments = [
-    envAssignment("YOUMD_API_KEY", options.apiKey),
-    envAssignment("YOUMD_CODE_ROOT", portableHomePath(options.root), { expandHome: true }),
-    envAssignment("YOUMD_ACTIVE_DAYS", options.days ?? DEFAULT_FRESH_MACHINE_DAYS),
-    envAssignment("YOUMD_PROJECT_LIMIT", options.limit ?? DEFAULT_FRESH_MACHINE_LIMIT),
-    envAssignment("YOUMD_MAX_CLONE_PROJECTS", options.maxCloneProjects),
-    envAssignment("YOUMD_ENV_VAULT", portableHomePath(options.envVaultPath), { expandHome: true }),
-    envAssignment("YOUMD_REQUIRE_ENV_VAULT", options.requireEnvVault ? "1" : undefined),
+    envAssignment("YOU_API_KEY", options.apiKey),
+    envAssignment("YOU_CODE_ROOT", portableHomePath(options.root), { expandHome: true }),
+    envAssignment("YOU_ACTIVE_DAYS", options.days ?? DEFAULT_FRESH_MACHINE_DAYS),
+    envAssignment("YOU_PROJECT_LIMIT", options.limit ?? DEFAULT_FRESH_MACHINE_LIMIT),
+    envAssignment("YOU_MAX_CLONE_PROJECTS", options.maxCloneProjects),
+    envAssignment("YOU_ENV_VAULT", portableHomePath(options.envVaultPath), { expandHome: true }),
+    envAssignment("YOU_REQUIRE_ENV_VAULT", options.requireEnvVault ? "1" : undefined),
   ].filter((value): value is string => Boolean(value));
 
-  const pathPrefix = `PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"`;
+  const pathPrefix = `PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"`;
   return `${[pathPrefix, ...assignments].join(" ")} bash -lc ${shellQuote(buildFreshMachineBootstrapScript())}`;
 }
 
@@ -476,7 +477,7 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     "- require GitHub CLI auth before private shared-skill/project repos clone; if browser auth fails inside Claude/Codex, it prints the exact Terminal command to run and stops cleanly",
     "- install/configure MCP for Claude Code and Codex",
     "- restore shared agent skills, stack config, Claude/Codex links, and agent host config",
-    "- generate a secret-safe local/global agent stack inventory under `~/.youmd/agent-stack-inventory` after shared skills are restored and again near final proof",
+    "- generate a secret-safe local/global agent stack inventory under `~/.you/agent-stack-inventory` after shared skills are restored and again near final proof",
     "- use the installed You.md CLI behind the scenes for status, skill sync, Secret Vault pull, portfolio graph hydration, machine verification, and You Agent context routing instead of making Houston manually drive those steps",
     "- publish setup milestones through `youmd agent send` so Houston's source Mac and realtime daemon can see the Mac mini come online without clipboard babysitting",
     "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",

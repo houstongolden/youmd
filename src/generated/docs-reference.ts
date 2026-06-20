@@ -41,9 +41,9 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "51cc48a5d29a37af09396c390ada93e4b624d08cd1d2b14045c34a33e749dabc",
+  "sourceHash": "12fd9310416ef8a115d78c7f2a985500f8bef9433af43f47cb1d2e2d930023a3",
   "cli": {
-    "version": "0.8.11"
+    "version": "0.8.12"
   },
   "counts": {
     "endpoints": 106,
@@ -1323,7 +1323,7 @@ export const docsReference = {
     },
     {
       "name": "update_section",
-      "description": "Update a section of the user's identity. Writes markdown content to the local .youmd/ directory. Use after the user explicitly asks to change their profile, preferences, voice, or directives. Always confirm changes with the user before calling. Does NOT auto-push — call push_bundle afterward if the user wants to publish.",
+      "description": "Update a section of the user's identity. Writes markdown content to the local .you/ directory, with legacy .youmd fallback. Use after the user explicitly asks to change their profile, preferences, voice, or directives. Always confirm changes with the user before calling. Does NOT auto-push — call push_bundle afterward if the user wants to publish.",
       "inputFields": [
         "section",
         "content"
@@ -1484,8 +1484,8 @@ export const docsReference = {
       "name": "init",
       "usage": "init",
       "group": "BUNDLE",
-      "summary": "scaffold a local .youmd/ bundle",
-      "description": "Initialize a local .youmd/ identity context (interactive)"
+      "summary": "scaffold a local .you/ bundle",
+      "description": "Initialize a local .you/ identity context (interactive)"
     },
     {
       "name": "build",
@@ -1506,21 +1506,21 @@ export const docsReference = {
       "usage": "push",
       "group": "BUNDLE",
       "summary": "upload local bundle and publish",
-      "description": "Upload ~/.youmd/ files to you.md and publish"
+      "description": "Upload ~/.you/ files to you.md and publish"
     },
     {
       "name": "pull",
       "usage": "pull",
       "group": "BUNDLE",
-      "summary": "download your profile into local .youmd/",
-      "description": "Download your profile from you.md to ~/.youmd/ files"
+      "summary": "download your profile into local .you/",
+      "description": "Download your profile from you.md to ~/.you/ files"
     },
     {
       "name": "sync",
       "usage": "sync",
       "group": "BUNDLE",
       "summary": "pull + push in one command",
-      "description": "Sync ~/.youmd/ files with you.md (pull + push)"
+      "description": "Sync ~/.you/ files with you.md (pull + push)"
     },
     {
       "name": "diff",

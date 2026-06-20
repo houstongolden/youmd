@@ -35,7 +35,7 @@ import {
 } from "../lib/skills";
 import { loadIdentityData, resolveVariable, renderSkillTemplate } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
-import { isAuthenticated } from "../lib/config";
+import { getSkillsDir, getWritableHomeBundleDir, isAuthenticated } from "../lib/config";
 import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, getAgentStackInventories, getAgentStackInventoryDrift, recordBrainActivity, syncAgentStackInventory, type AgentStackInventoryDrift, type AgentStackInventorySyncPayload, type SkillInsight, type SyncedAgentStackInventory } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
@@ -171,6 +171,7 @@ function resolveInventoryScript(): string | null {
   const candidates = [
     process.env.YOUMD_AGENT_STACK_INVENTORY_SCRIPT,
     path.join(os.homedir(), ".agent-shared", "claude-skills", "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
+    path.join(getSkillsDir(), "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
     path.join(os.homedir(), ".youmd", "skills", "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
     path.resolve(__dirname, "../../scripts/local-agent-stack-inventory.mjs"),
     path.resolve(__dirname, "../../../scripts/local-agent-stack-inventory.mjs"),
@@ -776,7 +777,7 @@ async function skillUseCmd(args: string[]): Promise<void> {
         ACCENT(`  ${filled}/${total} identity fields resolved.`) +
         DIM(` missing: ${missing.join(", ")}`)
       );
-      console.log(DIM("  fill these via ") + chalk.cyan("you") + DIM(" or edit .youmd/preferences/"));
+      console.log(DIM("  fill these via ") + chalk.cyan("you") + DIM(" or edit .you/preferences/"));
     } else {
       console.log(DIM(`  ${total}/${total} identity fields resolved.`));
     }
@@ -951,8 +952,8 @@ async function createSkillCmd(args: string[]): Promise<void> {
     "",
   ].join("\n");
 
-  // Write to ~/.youmd/skills/<name>/SKILL.md
-  const skillDir = path.join(os.homedir(), ".youmd", "skills", slug);
+  // Write to ~/.you/skills/<name>/SKILL.md
+  const skillDir = path.join(getSkillsDir(), slug);
   fs.mkdirSync(skillDir, { recursive: true });
   fs.writeFileSync(path.join(skillDir, "SKILL.md"), skillContent);
 
@@ -1006,9 +1007,7 @@ function pushSkillCmd(args: string[]): void {
     return;
   }
 
-  const skillPath = path.join(
-    os.homedir(), ".youmd", "skills", entry.name, "SKILL.md"
-  );
+  const skillPath = getSkillDir(entry.name);
   if (!fs.existsSync(skillPath)) {
     console.log(chalk.yellow(`  SKILL.md not found for "${name}". install first.`));
     return;
@@ -1341,7 +1340,7 @@ async function improveCmd(): Promise<void> {
     for (const f of missing) {
       console.log(`    ${chalk.yellow(f)}`);
     }
-    console.log(DIM("\n  fill via ") + chalk.cyan("you") + DIM(" or edit .youmd/preferences/"));
+    console.log(DIM("\n  fill via ") + chalk.cyan("you") + DIM(" or edit .you/preferences/"));
     console.log("");
   } else if (allFields.size > 0) {
     console.log("  " + chalk.green("\u2713") + DIM(" all identity fields populated."));
@@ -1530,7 +1529,7 @@ function inventoryDiffCmd(args: string[]): void {
 
 async function inventoryStatusCmd(args: string[]): Promise<void> {
   const { flags } = parseFlagArgs(args);
-  const outDir = path.resolve(flagString(flags, "out-dir") || path.join(os.homedir(), ".youmd", "agent-stack-inventory"));
+  const outDir = path.resolve(flagString(flags, "out-dir") || path.join(getWritableHomeBundleDir(), "agent-stack-inventory"));
   const limitRaw = flagString(flags, "limit");
   const limit = limitRaw && Number.isFinite(Number(limitRaw))
     ? Math.max(1, Math.min(50, Math.trunc(Number(limitRaw))))
@@ -1687,7 +1686,8 @@ async function inventoryCmd(args: string[]): Promise<void> {
     console.log(chalk.yellow("  agent-stack-inventory script not found on this machine."));
     console.log(DIM("  expected one of:"));
     console.log(DIM("    ~/.agent-shared/claude-skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs"));
-    console.log(DIM("    ~/.youmd/skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs"));
+    console.log(DIM("    ~/.you/skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs"));
+    console.log(DIM("    ~/.youmd/skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs (legacy)"));
     console.log("");
     console.log(DIM("  run ") + chalk.cyan("youmd skill install agent-stack-inventory") + DIM(" or sync your shared skills, then retry."));
     console.log("");
@@ -1756,7 +1756,7 @@ async function inventoryCmd(args: string[]): Promise<void> {
 
   if (shouldSync && parsed) {
     if (!isAuthenticated()) {
-      console.log(DIM("  sync skipped: run `youmd login` or set YOUMD_API_KEY to persist this machine inventory."));
+      console.log(DIM("  sync skipped: run `youmd login` or set YOU_API_KEY to persist this machine inventory."));
     } else {
       try {
         const res = await syncAgentStackInventory(
@@ -2053,16 +2053,11 @@ function exportSkillsCmd(args: string[]): void {
 
     // Export the raw SKILL.md
     const outPath = path.join(outputDir, `${entry.name}.md`);
-    const raw = fs.readFileSync(
-      path.join(os.homedir(), ".youmd", "skills", entry.name, "SKILL.md"),
-      "utf-8"
-    );
+    const raw = fs.readFileSync(getSkillDir(entry.name), "utf-8");
     fs.writeFileSync(outPath, raw);
 
     // Also export the rendered version
-    const renderedPath = path.join(
-      os.homedir(), ".youmd", "skills", entry.name, "RENDERED.md"
-    );
+    const renderedPath = path.join(getSkillsDir(), entry.name, "RENDERED.md");
     if (fs.existsSync(renderedPath)) {
       fs.writeFileSync(
         path.join(outputDir, `${entry.name}.rendered.md`),

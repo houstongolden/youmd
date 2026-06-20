@@ -27,9 +27,10 @@ describe("install.sh route", () => {
     expect(script).toContain("hash -r");
     expect(script).toContain("Creating secret-safe local agent stack inventory");
     expect(script).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync');
-    expect(script).toContain('YOUMD_INSTALL_INVENTORY:-1');
-    expect(script).toContain('YOUMD_INSTALL_MACHINE_SYNC:-0');
-    expect(script).toContain('youmd login --key "$YOUMD_API_KEY"');
+    expect(script).toContain('YOU_INSTALL_INVENTORY:-${YOUMD_INSTALL_INVENTORY:-1}');
+    expect(script).toContain('YOU_INSTALL_MACHINE_SYNC:-${YOUMD_INSTALL_MACHINE_SYNC:-0}');
+    expect(script).toContain('YOU_BOOTSTRAP_API_KEY="${YOU_API_KEY:-${YOUMD_API_KEY:-}}"');
+    expect(script).toContain('youmd login --key "$YOU_BOOTSTRAP_API_KEY"');
     expect(script).toContain('youmd machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"');
     expect(script).toContain("youmd machine sync-now --root ~/Desktop/CODE_YOU");
     expect(script).not.toContain("NPM_GLOBAL_FLAGS");

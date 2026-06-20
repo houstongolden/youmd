@@ -84,11 +84,11 @@ const HELP_GROUPS: Array<{
   {
     title: "BUNDLE",
     commands: [
-      { name: "init", summary: "scaffold a local .youmd/ bundle" },
+      { name: "init", summary: "scaffold a local .you/ bundle" },
       { name: "build", summary: "compile local bundle from profile/ + preferences/" },
       { name: "status", summary: "show local + remote state and next steps" },
       { name: "push", summary: "upload local bundle and publish" },
-      { name: "pull", summary: "download your profile into local .youmd/" },
+      { name: "pull", summary: "download your profile into local .you/" },
       { name: "sync", summary: "pull + push in one command" },
       { name: "diff", summary: "show changes vs published version" },
       { name: "export", summary: "export you.json and/or you.md" },
@@ -458,7 +458,7 @@ async function runYouGuidedSetup(): Promise<void> {
 
 program
   .command("init")
-  .description("Initialize a local .youmd/ identity context (interactive)")
+  .description("Initialize a local .you/ identity context (interactive)")
   .option("--skip-prompts", "Skip interactive prompts and create empty bundle")
   .option("--example <name>", "Scaffold from a sample bundle (houston, priya, jordan)")
   .action(initCommand);
@@ -546,30 +546,30 @@ program
 
 program
   .command("pull")
-  .description("Download your profile from you.md to ~/.youmd/ files")
+  .description("Download your profile from you.md to ~/.you/ files")
   .option("-f, --force", "Overwrite local edits that haven't been pushed")
-  .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
+  .option("--local", "Target the project-local .you/ instead of ~/.you/")
   .action(async (options) => {
     await pullCommand(options);
   });
 
 program
   .command("push")
-  .description("Upload ~/.youmd/ files to you.md and publish")
+  .description("Upload ~/.you/ files to you.md and publish")
   .option("--no-publish", "Upload without publishing")
   .option("-f, --force", "Push even if remote has richer data")
-  .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
+  .option("--local", "Target the project-local .you/ instead of ~/.you/")
   .action(async (options) => {
     await pushCommand(options);
   });
 
 program
   .command("sync")
-  .description("Sync ~/.youmd/ files with you.md (pull + push)")
+  .description("Sync ~/.you/ files with you.md (pull + push)")
   .option("-w, --watch", "Watch for local changes and auto-push")
   .option("--live", "Subscribe to You.md realtime sync updates and materialize local identity, skills, stacks, and project context")
   .option("-f, --force", "Sync even when local and remote have both changed")
-  .option("--local", "Target the project-local .youmd/ instead of ~/.youmd/")
+  .option("--local", "Target the project-local .you/ instead of ~/.you/")
   .option("--daemon", "Resident-safe sync: refresh local files/skills and skip unsafe lossy pushes")
   .action(syncCommand);
 
@@ -798,7 +798,7 @@ program
   .option("--server-timeout-ms <n>", "verify: timeout per dev server probe", "45000")
   .option("--max-server-projects <n>", "verify: maximum package projects to server-probe", "3")
   .option("--server-start-port <n>", "verify: first localhost probe port", "4310")
-  .option("--write-report", "verify: write secret-safe JSON proof to ~/.youmd/machine-reports/latest.json")
+  .option("--write-report", "verify: write secret-safe JSON proof to ~/.you/machine-reports/latest.json")
   .option("--sync-report", "verify: sync proof summary to the You.md machine dashboard")
   .option("--report-path <path>", "verify: custom path for the machine proof report")
   .option("--key <apiKey>", "prompt: embed a You.md API key for non-interactive login")

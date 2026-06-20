@@ -13,7 +13,7 @@ function label(name: string): string {
 
 export async function whoamiCommand(): Promise<void> {
   const config = readGlobalConfig();
-  // YOUMD_API_KEY env var wins over the config file (headless/CI auth)
+  // YOU_API_KEY env var wins over the config file (headless/CI auth)
   const envKey = getEnvApiKey();
   const token = getAuthToken();
 
@@ -22,7 +22,7 @@ export async function whoamiCommand(): Promise<void> {
   if (!token) {
     console.log("  " + chalk.yellow("not authenticated."));
     console.log("");
-    console.log("  run " + chalk.cyan("youmd login") + DIM(" or set ") + chalk.cyan("YOUMD_API_KEY") + DIM(" to connect your identity."));
+    console.log("  run " + chalk.cyan("youmd login") + DIM(" or set ") + chalk.cyan("YOU_API_KEY") + DIM(" to connect your identity."));
     console.log("");
     return;
   }
@@ -39,7 +39,7 @@ export async function whoamiCommand(): Promise<void> {
   }
   console.log(
     "  " + label("token") + DIM(token.slice(0, 8) + "..." + token.slice(-4)) +
-      (envKey ? DIM(" (from YOUMD_API_KEY)") : "")
+      (envKey ? DIM(" (from YOU_API_KEY)") : "")
   );
 
   console.log("");

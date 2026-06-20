@@ -17,31 +17,31 @@ describe("fresh machine bootstrap prompt", () => {
       requireEnvVault: true,
     });
 
-    expect(command).toContain("YOUMD_API_KEY='ym_test'\"'\"'quoted'");
-    expect(command).toContain('YOUMD_CODE_ROOT="$HOME/Desktop/CODE_2026"');
-    expect(command).toContain("YOUMD_ACTIVE_DAYS='120'");
-    expect(command).toContain("YOUMD_PROJECT_LIMIT='44'");
-    expect(command).toContain("YOUMD_MAX_CLONE_PROJECTS='3'");
-    expect(command).toContain('YOUMD_ENV_VAULT="$HOME/Desktop/env-local-backup.tar.gz.gpg"');
-    expect(command).toContain("YOUMD_REQUIRE_ENV_VAULT='1'");
+    expect(command).toContain("YOU_API_KEY='ym_test'\"'\"'quoted'");
+    expect(command).toContain('YOU_CODE_ROOT="$HOME/Desktop/CODE_2026"');
+    expect(command).toContain("YOU_ACTIVE_DAYS='120'");
+    expect(command).toContain("YOU_PROJECT_LIMIT='44'");
+    expect(command).toContain("YOU_MAX_CLONE_PROJECTS='3'");
+    expect(command).toContain('YOU_ENV_VAULT="$HOME/Desktop/env-local-backup.tar.gz.gpg"');
+    expect(command).toContain("YOU_REQUIRE_ENV_VAULT='1'");
     expect(command).toContain("bash -lc");
-    expect(command).toContain('PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin');
+    expect(command).toContain('PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin');
     expect(command).toContain("bootstrap_prereqs");
     expect(command).toContain("checking local prerequisites: Homebrew, Node 22/npm, git, gh, bun, pnpm");
     expect(command).toContain("brew install node@22");
     expect(command).toContain("brew install gh");
     expect(command).toContain("brew install bun");
-    expect(command).toContain("YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash");
-    expect(command).toContain('MIN_YOUMD_VERSION="${YOUMD_MIN_VERSION:-0.8.11}"');
+    expect(command).toContain("YOU_INSTALL_CHANNEL=source YOU_SOURCE_REF=main bash");
+    expect(command).toContain('MIN_YOUMD_VERSION="${YOU_MIN_VERSION:-${YOUMD_MIN_VERSION:-0.8.11}}"');
     expect(command).toContain("ensure_youmd_min_version");
     expect(command).toContain("youmd ${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore");
     expect(command).toContain("run_agent_stack_inventory()");
-    expect(command).toContain('INVENTORY_DIR="${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.youmd/agent-stack-inventory}"');
+    expect(command).toContain('INVENTORY_DIR="${YOU_AGENT_STACK_INVENTORY_DIR:-${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.you/agent-stack-inventory}}"');
     expect(command).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync');
     expect(command).toContain("generated agent stack inventory");
-    expect(command).toContain('HYDRATE_TIMEOUT="${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"');
+    expect(command).toContain('HYDRATE_TIMEOUT="${YOU_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}}"');
     expect(command).toContain('run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate');
-    expect(command).toContain('youmd login --key "$YOUMD_API_KEY"');
+    expect(command).toContain('youmd login --key "$YOU_BOOTSTRAP_API_KEY"');
     expect(command).toContain("youmd mcp --install claude --auto || true");
     expect(command).toContain("youmd mcp --install codex --auto || true");
     expect(command).toContain("run_agent_stack_inventory");
@@ -49,8 +49,8 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("gh auth login -h github.com -p https -s repo");
     expect(command).toContain("stopping after You.md identity/daemon setup because GitHub auth is required for private repos");
     expect(command).toContain('youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT"');
-    expect(command).toContain('DAYS="${YOUMD_ACTIVE_DAYS:-30}"');
-    expect(command).toContain('EXPAND_DAYS="${YOUMD_EXPAND_ACTIVE_DAYS:-90}"');
+    expect(command).toContain('DAYS="${YOU_ACTIVE_DAYS:-${YOUMD_ACTIVE_DAYS:-30}}"');
+    expect(command).toContain('EXPAND_DAYS="${YOU_EXPAND_ACTIVE_DAYS:-${YOUMD_EXPAND_ACTIVE_DAYS:-90}}"');
     expect(command).toContain("RECENT_ONLY_ARGS=()");
     expect(command).toContain('if youmd machine --help 2>/dev/null | grep -q -- "--recent-only"; then');
     expect(command).toContain("RECENT_ONLY_ARGS=(--recent-only)");
@@ -108,10 +108,10 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain('youmd machine sync-now --root "$ROOT" --max-projects "$LIMIT"');
     expect(command).toContain('YOUMD_RUN_CHECKS');
     expect(command).toContain('--run-checks --max-check-projects "${YOUMD_MAX_CHECK_PROJECTS:-8}"');
-    expect(command).toContain('YOUMD_INSTALL_DEPS');
-    expect(command).toContain('--install-deps --max-install-projects "${YOUMD_MAX_INSTALL_PROJECTS:-4}"');
-    expect(command).toContain('YOUMD_PROBE_SERVERS');
-    expect(command).toContain('--probe-servers --max-server-projects "${YOUMD_MAX_SERVER_PROJECTS:-3}"');
+    expect(command).toContain('YOU_INSTALL_DEPS');
+    expect(command).toContain('--install-deps --max-install-projects "${YOU_MAX_INSTALL_PROJECTS:-${YOUMD_MAX_INSTALL_PROJECTS:-4}}"');
+    expect(command).toContain('YOU_PROBE_SERVERS');
+    expect(command).toContain('--probe-servers --max-server-projects "${YOU_MAX_SERVER_PROJECTS:-${YOUMD_MAX_SERVER_PROJECTS:-3}}"');
     expect(command).toContain("--write-report");
     expect(command).toContain("--sync-report");
     expect(command).not.toContain(".env.local=");
@@ -133,7 +133,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("```bash");
     expect(prompt).toContain("install/configure MCP for Claude Code and Codex");
     expect(prompt).toContain("local/global agent stack inventory");
-    expect(prompt).toContain("~/.youmd/agent-stack-inventory");
+    expect(prompt).toContain("~/.you/agent-stack-inventory");
     expect(prompt).toContain("check/install the local prerequisites first");
     expect(prompt).toContain("installing runtime from GitHub main");
     expect(prompt).toContain("require GitHub CLI auth before private shared-skill/project repos clone");
@@ -189,12 +189,12 @@ describe("fresh machine bootstrap prompt", () => {
       envVaultPath: `${os.homedir()}/Desktop/env-local-backup.tar.gz.gpg`,
     });
 
-    expect(command).toContain('YOUMD_CODE_ROOT="$HOME/Desktop/CODE_YOU"');
-    expect(command).toContain('YOUMD_ENV_VAULT="$HOME/Desktop/env-local-backup.tar.gz.gpg"');
-    expect(command).not.toContain(`YOUMD_CODE_ROOT='${os.homedir()}`);
-    expect(command).not.toContain(`YOUMD_ENV_VAULT='${os.homedir()}`);
-    expect(command).not.toContain("YOUMD_CODE_ROOT='~/");
-    expect(command).not.toContain("YOUMD_ENV_VAULT='~/");
+    expect(command).toContain('YOU_CODE_ROOT="$HOME/Desktop/CODE_YOU"');
+    expect(command).toContain('YOU_ENV_VAULT="$HOME/Desktop/env-local-backup.tar.gz.gpg"');
+    expect(command).not.toContain(`YOU_CODE_ROOT='${os.homedir()}`);
+    expect(command).not.toContain(`YOU_ENV_VAULT='${os.homedir()}`);
+    expect(command).not.toContain("YOU_CODE_ROOT='~/");
+    expect(command).not.toContain("YOU_ENV_VAULT='~/");
     expect(prompt).toContain("create ~/Desktop/CODE_YOU");
     expect(prompt).not.toContain(`creates ${os.homedir()}/Desktop/CODE_YOU`);
   });

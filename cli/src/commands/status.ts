@@ -72,7 +72,7 @@ export async function statusCommand(): Promise<void> {
       : contentHash
         ? DIM(" #" + shortHash(contentHash))
         : "";
-    const locationSuffix = usingHomeBundle ? DIM(" (~/.youmd)") : "";
+    const locationSuffix = usingHomeBundle ? DIM(" (~/.you)") : "";
     console.log("  " + label("bundle") + versionStr + hashSuffix + locationSuffix);
   } else {
     console.log("  " + label("bundle") + chalk.yellow("not initialized"));

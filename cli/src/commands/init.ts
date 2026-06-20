@@ -44,7 +44,7 @@ function findExamplesDir(): string | null {
 }
 
 /**
- * T7 — an init'd project-local .youmd/ is deliberate: mark it so pull/push/
+ * T7 — an init'd project-local .you/ is deliberate: mark it so pull/push/
  * sync target it without --local, and make sure the repo gitignores it so
  * identity data is never silently committed. No-op for the home bundle.
  */
@@ -53,7 +53,7 @@ function markDeliberateLocalBundle(bundleDir: string): void {
   markLocalBundle(bundleDir);
   const gitignore = ensureYoumdGitignored(bundleDir);
   if (gitignore === "appended" || gitignore === "created") {
-    console.log(chalk.dim("  added .youmd/ to .gitignore — identity data stays out of git"));
+    console.log(chalk.dim("  added .you/ to .gitignore — identity data stays out of git"));
   }
 }
 
@@ -104,10 +104,10 @@ async function initFromExample(exampleName: string): Promise<void> {
   if (fs.existsSync(bundleDir)) {
     console.log("");
     console.log(
-      chalk.yellow("  .youmd/ already exists -- not overwriting")
+      chalk.yellow("  .you/ already exists -- not overwriting")
     );
     console.log(
-      chalk.dim("  remove .youmd/ first or run init in a fresh directory")
+      chalk.dim("  remove .you/ first or run init in a fresh directory")
     );
     console.log("");
     return;
@@ -170,7 +170,7 @@ export async function initCommand(options: {
   if (options.skipPrompts) {
     // Non-interactive: create empty bundle like the old behavior
     if (fs.existsSync(bundleDir)) {
-      console.log(chalk.yellow("warning: .youmd/ directory already exists"));
+      console.log(chalk.yellow("warning: .you/ directory already exists"));
       return;
     }
 

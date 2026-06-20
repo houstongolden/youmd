@@ -393,7 +393,7 @@ function printLoginSuccess(
   console.log("  " + chalk.green("nice work.") + " this machine is authenticated via you.md.");
   console.log("");
   console.log("  next:");
-  console.log("    " + chalk.cyan("youmd pull") + chalk.dim("   sync your live brain into ~/.youmd"));
+  console.log("    " + chalk.cyan("youmd pull") + chalk.dim("   sync your live brain into ~/.you"));
   console.log("    " + chalk.cyan("youmd sync") + chalk.dim("   refresh skills, stacks, prompts, and project context"));
   console.log("    " + chalk.cyan("you") + chalk.dim("           meet U and keep moving"));
   console.log("");
@@ -437,7 +437,7 @@ async function loginWithKey(key: string): Promise<void> {
   spinner.start();
 
   // Validate the candidate key BEFORE persisting anything — a bad key must
-  // never clobber a working session in ~/.youmd/config.json.
+  // never clobber a working session in ~/.you/config.json.
   let res;
   try {
     res = await getMeWithToken(key);

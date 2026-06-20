@@ -320,7 +320,7 @@ function SkillMeshView({
           </p>
           <div className="mt-3">
             <CommandRow
-              command="youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync"
+              command="youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync"
               description="generate HTML/JSON and persist safe counts to You.md"
             />
           </div>
@@ -496,7 +496,7 @@ function SkillMeshView({
           <section>
             <PaneSectionLabel>verify and compare</PaneSectionLabel>
             <div className="space-y-2">
-              <CommandRow command="youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync" description="refresh this machine's local/global skill mesh, catalog discovered references, and sync safe metadata" />
+              <CommandRow command="youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" description="refresh this machine's local/global skill mesh, catalog discovered references, and sync safe metadata" />
               <CommandRow command="youmd machine verify --write-report --sync-report" description="write machine readiness proof with the latest skill mesh counts attached" />
               <CommandRow command="youmd skill inventory diff macbook.json mac-mini.json" description="compare two trusted machine snapshots before calling sync parity clean" />
             </div>
@@ -1153,7 +1153,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           <div className="space-y-1.5">
             <p className="text-[hsl(var(--text-primary))] opacity-70">1. install</p>
             <p>
-              skills live in ~/.youmd/skills/ as SKILL.md files with {`{{var}}`} template variables.
+              skills live in ~/.you/skills/ as SKILL.md files with {`{{var}}`} template variables. Legacy ~/.youmd/ skills are still read during migration.
             </p>
           </div>
           <div className="space-y-1.5">

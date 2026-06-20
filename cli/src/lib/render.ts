@@ -55,7 +55,7 @@ export function padEndVisible(text: string, width: number): string {
 export function requireInteractiveTTY(): void {
   if (!process.stdin.isTTY) {
     console.error(
-      "error: interactive terminal required -- use `youmd login --key <key>` or YOUMD_API_KEY env var"
+      "error: interactive terminal required -- use `youmd login --key <key>` or YOU_API_KEY env var"
     );
     process.exit(1);
   }

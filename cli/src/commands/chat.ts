@@ -2065,7 +2065,7 @@ export async function chatCommand(): Promise<void> {
   if (!bundleDir) {
     console.log("");
     console.log(
-      chalk.yellow("  no .youmd/ directory found.")
+      chalk.yellow("  no .you/ directory found.")
     );
     console.log(
       "  run " +

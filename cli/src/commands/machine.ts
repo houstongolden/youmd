@@ -8,6 +8,7 @@ import { BrailleSpinner } from "../lib/render";
 import {
   getCanonicalGlobalConfigDir,
   getLegacyGlobalConfigDir,
+  getWritableHomeBundleDir,
   isAuthenticated,
   resolveActiveBundleDir,
 } from "../lib/config";
@@ -105,7 +106,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("setup") + chalk.dim("     bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons"));
   console.log("    " + chalk.cyan("sync-now") + chalk.dim("  reconcile identity, shared skills/stacks, inventory, MCP, daemons, and proof"));
   console.log("    " + chalk.cyan("full-sync") + chalk.dim(" reconcile skills plus clone active projects, pull Secret Vault, and proof"));
-  console.log("    " + chalk.cyan("migrate-home") + chalk.dim(" migrate ~/.youmd runtime state to canonical ~/.you with legacy fallback"));
+  console.log("    " + chalk.cyan("migrate-home") + chalk.dim(" migrate legacy ~/.youmd runtime state to canonical ~/.you"));
   console.log("    " + chalk.cyan("projects") + chalk.dim("  create/clone active You.md project repos into a Desktop code root"));
   console.log("    " + chalk.cyan("verify") + chalk.dim("    audit cloned project readiness without reading secret values"));
   console.log("    " + chalk.cyan("prompt") + chalk.dim("    print a one-command Claude Code/Codex fresh-computer setup prompt"));
@@ -134,7 +135,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--server-timeout-ms <n>") + chalk.dim(" (verify) timeout per server probe, default 45000"));
   console.log("    " + chalk.cyan("--max-server-projects <n>") + chalk.dim(" (verify) dev server probe cap, default 3"));
   console.log("    " + chalk.cyan("--server-start-port <n>") + chalk.dim(" (verify) first localhost probe port, default 4310"));
-  console.log("    " + chalk.cyan("--write-report") + chalk.dim(" (verify) write secret-safe JSON proof to ~/.youmd/machine-reports/latest.json"));
+  console.log("    " + chalk.cyan("--write-report") + chalk.dim(" (verify) write secret-safe JSON proof to ~/.you/machine-reports/latest.json"));
   console.log("    " + chalk.cyan("--sync-report") + chalk.dim("  (verify) sync proof summary to the You.md machine dashboard"));
   console.log("    " + chalk.cyan("--report-path <path>") + chalk.dim(" (verify) custom machine proof report path"));
   console.log("    " + chalk.cyan("--no-github") + chalk.dim("  (projects) skip authenticated GitHub recent-repo scan"));
@@ -222,7 +223,7 @@ function machineMigrateHomeCommand(opts: { dryRun?: boolean; yes?: boolean } = {
   console.log(chalk.dim("  canonical files: ") + chalk.cyan(String(beforeCanonical.files)) + chalk.dim(` / ${beforeCanonical.bytes} bytes`));
 
   if (!beforeLegacy.exists && !beforeCanonical.exists) {
-    console.log(chalk.yellow("  no ~/.youmd or ~/.you runtime home exists yet"));
+    console.log(chalk.yellow("  no ~/.you or legacy ~/.youmd runtime home exists yet"));
     console.log("");
     return;
   }
@@ -356,7 +357,7 @@ async function machineSyncNowCommand(opts: {
   }
 
   const rootDir = expandHome(opts.root || path.join(os.homedir(), "Desktop", "CODE_YOU"));
-  const inventoryDir = path.join(os.homedir(), ".youmd", "agent-stack-inventory");
+  const inventoryDir = path.join(getWritableHomeBundleDir(), "agent-stack-inventory");
   fs.mkdirSync(inventoryDir, { recursive: true, mode: 0o700 });
   fs.mkdirSync(rootDir, { recursive: true });
 
@@ -696,7 +697,7 @@ async function machineVerifyCommand(opts: {
       console.log(chalk.dim(`  skill mesh report: ${agentStackInventory.htmlPath}`));
     }
   } else {
-    console.log(chalk.dim("  skill mesh: no local inventory proof yet; run ") + chalk.cyan("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync"));
+    console.log(chalk.dim("  skill mesh: no local inventory proof yet; run ") + chalk.cyan("youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync"));
   }
   console.log("");
 

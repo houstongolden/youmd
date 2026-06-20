@@ -40,13 +40,16 @@ function safeNextPath(value: string | null): string {
 }
 
 async function readLocalConfig(): Promise<LocalYoumdConfig | null> {
-  try {
-    return JSON.parse(
-      await readFile(path.join(homedir(), ".youmd", "config.json"), "utf8")
-    ) as LocalYoumdConfig;
-  } catch {
-    return null;
+  for (const dir of [".you", ".youmd"]) {
+    try {
+      return JSON.parse(
+        await readFile(path.join(homedir(), dir, "config.json"), "utf8")
+      ) as LocalYoumdConfig;
+    } catch {
+      // try next local CLI home
+    }
   }
+  return null;
 }
 
 export async function GET(request: NextRequest) {

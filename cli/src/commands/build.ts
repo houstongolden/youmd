@@ -25,7 +25,7 @@ function randomBuildLabel(): string {
 export async function buildCommand(): Promise<void> {
   if (!localBundleExists()) {
     console.log("");
-    console.log(chalk.yellow("  no .youmd/ directory found."));
+    console.log(chalk.yellow("  no .you/ directory found."));
     console.log("");
     console.log("  run " + chalk.cyan("youmd init") + " to create one.");
     console.log("");
@@ -45,7 +45,7 @@ export async function buildCommand(): Promise<void> {
   if (profileFiles.length === 0) {
     console.log("");
     console.log(chalk.yellow("  warning: profile/ directory is empty or missing"));
-    console.log(DIM("  run " + chalk.cyan("youmd pull") + " to fetch your profile, or add .md files to .youmd/profile/"));
+    console.log(DIM("  run " + chalk.cyan("youmd pull") + " to fetch your profile, or add .md files to .you/profile/"));
     console.log("");
   }
 

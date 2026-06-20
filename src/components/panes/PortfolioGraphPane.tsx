@@ -531,7 +531,7 @@ function curlForSurface(surface: DisplaySurface) {
   if (normalized.includes("bamf")) return 'curl -H "Authorization: Bearer $BAMF_API_KEY" https://api.bamf.ai/v1/agent/capabilities';
   if (surface.kind === "mcp") return "curl -fsSL https://you.md/.well-known/mcp.json";
   if (surface.kind === "skillstack") return "curl -fsSL https://you.md/api/v1/skills";
-  if (surface.ownerProject === "youmd") return 'curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfolio/graph';
+  if (surface.ownerProject === "youmd") return 'curl -H "Authorization: Bearer $YOU_API_KEY" https://you.md/api/v1/me/portfolio/graph';
   return `curl ${docsForSurface(surface)[0]}`;
 }
 
@@ -620,7 +620,7 @@ function preferredDocUrl(urls: string[], kind: "api" | "mcp") {
 }
 
 function portfolioGraphCurlCommand(projectSlug: string) {
-  return `curl -H "Authorization: Bearer $YOUMD_API_KEY" "https://you.md/api/v1/me/portfolio/graph?includeTasks=1" | jq '.projects[] | select(.slug == "${projectSlug}")'`;
+  return `curl -H "Authorization: Bearer $YOU_API_KEY" "https://you.md/api/v1/me/portfolio/graph?includeTasks=1" | jq '.projects[] | select(.slug == "${projectSlug}")'`;
 }
 
 function docsCurlCommand(url: string) {

@@ -116,7 +116,7 @@ export async function pushCommand(options: { publish?: boolean; force?: boolean;
     markLocalBundle(bundleDir);
     const gitignore = ensureYoumdGitignored(bundleDir);
     if (gitignore === "appended" || gitignore === "created") {
-      console.log(chalk.dim("  added .youmd/ to .gitignore — identity data stays out of git"));
+      console.log(chalk.dim("  added .you/ to .gitignore — identity data stays out of git"));
     }
   }
 

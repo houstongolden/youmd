@@ -454,11 +454,11 @@ export async function getPublicProfile(
 // ─── Authenticated endpoints ─────────────────────────────────────────
 
 function getToken(): string {
-  // Env var (YOUMD_API_KEY) wins over the config file — headless/CI auth.
+  // Env var (YOU_API_KEY, with YOUMD_API_KEY alias) wins over the config file.
   const token = getAuthToken();
   if (!token) {
     throw new Error(
-      "Not authenticated. Run `youmd login` or set YOUMD_API_KEY."
+      "Not authenticated. Run `youmd login` or set YOU_API_KEY."
     );
   }
   return token;

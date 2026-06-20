@@ -751,7 +751,7 @@ export async function envVaultCommand(action: string | undefined, opts: EnvVault
 
   console.log("usage: youmd env vault <push|pull|list|device-register|device-list|share> [options]");
   console.log("  vault push          encrypt local .env.local files and upload ciphertext to You.md Secret Vault");
-  console.log("  vault pull          download the latest encrypted account vault to ~/.youmd/secret-vault");
+  console.log("  vault pull          download the latest encrypted account vault to ~/.you/secret-vault");
   console.log("  vault pull --restore --root <dir>");
   console.log("                      restore into cloned project dirs with safe fresh-machine defaults");
   console.log("  vault list          show encrypted vault snapshots without exposing values");

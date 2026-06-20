@@ -53,10 +53,14 @@ const roots = {
   piAgent: path.join(home, ".pi", "agent"),
   scienceStack: path.join(home, ".claude", "scistack"),
   gstack: path.join(home, ".claude", "skills", "gstack"),
-  youmdHome: path.join(home, ".youmd"),
-  youmdSkills: path.join(home, ".youmd", "skills"),
+  youHome: path.join(home, ".you"),
+  youSkills: path.join(home, ".you", "skills"),
+  legacyYoumdHome: path.join(home, ".youmd"),
+  legacyYoumdSkills: path.join(home, ".youmd", "skills"),
   workspace: workspaceRoot,
 };
+roots.youmdHome = roots.youHome;
+roots.youmdSkills = roots.youSkills;
 
 const skipDirs = new Set([
   ".git",
@@ -348,7 +352,7 @@ function classifyPath(p) {
   if (p.startsWith(roots.agentShared)) return "agent-shared";
   if (p.startsWith(roots.scienceStack)) return "scistack";
   if (p.startsWith(roots.gstack)) return "gstack";
-  if (p.startsWith(roots.youmdSkills)) return "youmd-catalog";
+  if (p.startsWith(roots.youSkills) || p.startsWith(roots.legacyYoumdSkills)) return "you-catalog";
   if (p.startsWith(path.join(home, ".codex", "plugins", "cache"))) return "codex-plugin-cache";
   if (p.startsWith(path.join(home, ".codex", "skills"))) return "codex-host";
   if (p.startsWith(path.join(home, ".claude", "skills"))) return "claude-host";
@@ -381,9 +385,9 @@ function classifySkill(file, real) {
     ownerClass = "gstack-managed-reference";
     provenance = "GStack local reference stack";
     syncPolicy = "catalog-as-external-reference";
-  } else if (real.startsWith(roots.youmdSkills)) {
+  } else if (real.startsWith(roots.youSkills) || real.startsWith(roots.legacyYoumdSkills)) {
     ownerClass = "youmd-catalog-cache";
-    provenance = "You.md local skill catalog";
+    provenance = real.startsWith(roots.youSkills) ? "You.md local skill catalog" : "You.md legacy local skill catalog";
     syncPolicy = "already-cataloged-or-cache";
   } else if (real.startsWith(roots.codexPluginSkills)) {
     ownerClass = "plugin-bundled";
@@ -500,8 +504,7 @@ function getCommand(cmd, args) {
   }
 }
 
-function readSkillCatalog() {
-  const catalogPath = path.join(roots.youmdSkills, "youmd-skills.yaml");
+function readSkillCatalogFile(catalogPath) {
   if (!exists(catalogPath)) return { path: catalogPath, skills: [] };
   try {
     const raw = fs.readFileSync(catalogPath, "utf8");
@@ -542,6 +545,23 @@ function readSkillCatalog() {
   } catch {
     return { path: catalogPath, skills: [] };
   }
+}
+
+function readSkillCatalog() {
+  const catalogPaths = [
+    path.join(roots.youSkills, "youmd-skills.yaml"),
+    path.join(roots.legacyYoumdSkills, "youmd-skills.yaml"),
+  ];
+  const byName = new Map();
+  const paths = [];
+  for (const catalogPath of catalogPaths) {
+    const catalog = readSkillCatalogFile(catalogPath);
+    if (exists(catalogPath)) paths.push(catalogPath);
+    for (const skill of catalog.skills) {
+      if (skill?.name && !byName.has(skill.name)) byName.set(skill.name, skill);
+    }
+  }
+  return { path: paths.join(" + ") || catalogPaths[0], skills: [...byName.values()] };
 }
 
 function unquoteYaml(value) {
@@ -655,14 +675,16 @@ const directExposureSkillRecords = withPhase("host-exposure", "scanning agent ho
   ...directSkillRecords(roots.codexSkills),
   ...directSkillRecords(roots.codexUpperSkills),
   ...directSkillRecords(roots.agentsSkills),
-  ...directSkillRecords(roots.youmdSkills),
+  ...directSkillRecords(roots.youSkills),
+  ...directSkillRecords(roots.legacyYoumdSkills),
 ]);
 const canonicalSkillFiles = withPhase("canonical-skills", "scanning canonical skill stacks", () => [
   ...skillFiles(roots.sharedSkills),
   ...skillFiles(roots.scienceStack),
   ...skillFiles(roots.gstack),
   ...skillFiles(roots.codexPluginSkills),
-  ...skillFiles(roots.youmdSkills),
+  ...skillFiles(roots.youSkills),
+  ...skillFiles(roots.legacyYoumdSkills),
 ]);
 const allSkillFiles = [
   ...directExposureSkillRecords,
@@ -681,7 +703,8 @@ const hostRoots = [
   ["Codex host", roots.codexSkills],
   ["Codex app host", roots.codexUpperSkills],
   [".agents host", roots.agentsSkills],
-  ["You.md catalog cache", roots.youmdSkills],
+  ["You.md catalog cache", roots.youSkills],
+  ["You.md legacy catalog cache", roots.legacyYoumdSkills],
   ["Shared canonical", roots.sharedSkills],
   ["SciStack canonical", roots.scienceStack],
   ["GStack root", roots.gstack],
@@ -715,16 +738,31 @@ const hostSummaries = withPhase("host-summaries", "summarizing agent exposure ro
   };
 }));
 
+function countYouHomes(relPath, predicate, options) {
+  return [roots.youHome, roots.legacyYoumdHome]
+    .map((root) => countFiles(path.join(root, relPath), predicate, options))
+    .reduce((sum, count) => sum + count, 0);
+}
+
+function readLatestYouHomeJson(relPath) {
+  const candidates = [path.join(roots.youHome, relPath), path.join(roots.legacyYoumdHome, relPath)]
+    .filter(exists)
+    .sort((a, b) => {
+      try { return fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs; } catch { return 0; }
+    });
+  return candidates[0] ? readJsonSafe(candidates[0]) : null;
+}
+
 const promptContext = withPhase("prompt-context", "counting prompts, memories, logs, and local context", () => ({
   youmdIdentityFiles: {
-    profile: countFiles(path.join(roots.youmdHome, "profile"), (p) => p.endsWith(".md")),
-    preferences: countFiles(path.join(roots.youmdHome, "preferences"), (p) => p.endsWith(".md")),
-    voice: countFiles(path.join(roots.youmdHome, "voice"), (p) => p.endsWith(".md")),
-    directives: countFiles(path.join(roots.youmdHome, "directives"), (p) => p.endsWith(".md")),
-    private: countFiles(path.join(roots.youmdHome, "private"), (p) => p.endsWith(".md")),
+    profile: countYouHomes("profile", (p) => p.endsWith(".md")),
+    preferences: countYouHomes("preferences", (p) => p.endsWith(".md")),
+    voice: countYouHomes("voice", (p) => p.endsWith(".md")),
+    directives: countYouHomes("directives", (p) => p.endsWith(".md")),
+    private: countYouHomes("private", (p) => p.endsWith(".md")),
   },
-  youmdLogs: countFiles(path.join(roots.youmdHome, "logs"), () => true, { maxDepth: 1 }),
-  machineReports: countFiles(path.join(roots.youmdHome, "machine-reports"), (p) => p.endsWith(".json"), { maxDepth: 1 }),
+  youmdLogs: countYouHomes("logs", () => true, { maxDepth: 1 }),
+  machineReports: countYouHomes("machine-reports", (p) => p.endsWith(".json"), { maxDepth: 1 }),
   claudeProjectMemories: walk(roots.claudeProjects, (p, st) => st.isFile() && /(^memory$|MEMORY\.md$)/.test(path.basename(p)), { maxDepth: 4 }).length,
   codexJsonlLower: countFiles(path.join(home, ".codex", "projects"), (p) => p.endsWith(".jsonl")),
   codexJsonlUpper: countFiles(path.join(home, ".Codex", "projects"), (p) => p.endsWith(".jsonl")),
@@ -737,7 +775,7 @@ const promptContext = withPhase("prompt-context", "counting prompts, memories, l
 const projectSignals = withPhase("project-signals", "scanning workspace project context markers", collectProjectSignals);
 const localPackage = readJsonSafe(path.join(repoRoot, "cli", "package.json")) || readJsonSafe(path.join(repoRoot, "package.json"));
 const rootPackage = readJsonSafe(path.join(repoRoot, "package.json"));
-const machineReport = readJsonSafe(path.join(roots.youmdHome, "machine-reports", "latest.json"));
+const machineReport = readLatestYouHomeJson(path.join("machine-reports", "latest.json"));
 const installedYoumdVersion = withPhase("machine-proof", "reading local machine proof metadata", () => getCommand("youmd", ["--version"]));
 
 const summary = {
@@ -808,7 +846,7 @@ const summary = {
   walkIssues,
   notes: [
     "Secret-safe inventory: file paths, filenames, counts, and symlink metadata only.",
-    "youmd skill list reads ~/.youmd/skills/youmd-skills.yaml merged with CLI defaultSkills(); it does not crawl every host/global skill root.",
+    "youmd skill list reads ~/.you/skills/youmd-skills.yaml with legacy ~/.youmd fallback, merged with CLI defaultSkills(); it does not crawl every host/global skill root.",
     "Top-level host entry counts and nested SKILL.md counts intentionally differ because stack roots such as gstack and scistack contain their own nested skills.",
     "DRY audit rows are review queues. The scanner never recommends deleting Houston-owned skills automatically.",
     "If walkIssues is non-empty, the inventory is intentionally partial for the listed roots to keep install-time scans bounded.",
@@ -836,7 +874,7 @@ const mermaid = `flowchart TB
     A["~/.agent-shared\\nAGENTS.md, preferences, STACK-MAP\\n${summary.hostSummaries.find((h) => h.label === "Shared canonical")?.skillFiles || 0} shared SKILL.md"]
     S["~/.claude/scistack\\nHubStack + AstroStack + opt-in extensions\\n${summary.hostSummaries.find((h) => h.label === "SciStack canonical")?.skillFiles || 0} SKILL.md"]
     G["~/.claude/skills/gstack\\nGStack reference stack\\n${summary.hostSummaries.find((h) => h.label === "GStack root")?.skillFiles || 0} SKILL.md"]
-    Y["~/.youmd\\nidentity, preferences, directives, private notes\\n${summary.totals.youmdCatalogSkills} catalog skills"]
+    Y["~/.you\\nidentity, preferences, directives, private notes\\n${summary.totals.youmdCatalogSkills} catalog skills"]
   end
   subgraph Hosts["Agent exposure hosts"]
     C["Claude Code\\n~/.claude/skills\\n${summary.hostSummaries.find((h) => h.label === "Claude host")?.directEntries || 0} top-level entries"]
@@ -1077,7 +1115,7 @@ const html = `<!doctype html>
     </section>
 
     <div class="callout">
-      <strong>Initial read:</strong> <code>youmd skill list</code> is not a full local skill inventory today. It reads <code>~/.youmd/skills/youmd-skills.yaml</code> plus the CLI's hard-coded default skills. The real machine has many more local/global skills exposed through Claude, Codex, GStack, SciStack, shared-agent symlinks, and plugin caches. Counts separate direct host exposure from canonical nested stack files so symlinks do not blur the map.
+      <strong>Initial read:</strong> <code>youmd skill list</code> is not a full local skill inventory today. It reads <code>~/.you/skills/youmd-skills.yaml</code> with legacy <code>~/.youmd</code> fallback plus the CLI's hard-coded default skills. The real machine has many more local/global skills exposed through Claude, Codex, GStack, SciStack, shared-agent symlinks, and plugin caches. Counts separate direct host exposure from canonical nested stack files so symlinks do not blur the map.
     </div>
 
     <h2>Topology</h2>

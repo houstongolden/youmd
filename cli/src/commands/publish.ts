@@ -25,7 +25,7 @@ export async function publishCommand(): Promise<void> {
   }
 
   if (!localBundleExists()) {
-    console.log(chalk.yellow("no .youmd/ directory found"));
+    console.log(chalk.yellow("no .you/ directory found"));
     console.log("");
     console.log("Run " + chalk.cyan("youmd init") + " to create one.");
     console.log("");
