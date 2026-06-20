@@ -24,7 +24,7 @@ describe("install.sh route", () => {
     expect(script).toContain('[ "$BIN_PATH" != "$YOUMD_BIN_DIR/$BIN_NAME" ]');
     expect(script).toContain("hash -r");
     expect(script).toContain("Creating secret-safe local agent stack inventory");
-    expect(script).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR" --sync');
+    expect(script).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync');
     expect(script).toContain('YOUMD_INSTALL_INVENTORY:-1');
     expect(script).toContain('YOUMD_INSTALL_MACHINE_SYNC:-0');
     expect(script).toContain('youmd login --key "$YOUMD_API_KEY"');

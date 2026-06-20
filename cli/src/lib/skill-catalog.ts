@@ -6,6 +6,8 @@
  */
 
 import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import * as yaml from "js-yaml";
 import { getSkillCatalogPath, ensureSkillsDir, readGlobalConfig } from "./config";
 
@@ -20,6 +22,11 @@ export interface SkillEntry {
   identity_fields: string[];
   requires: string[];
   installed: boolean;
+  catalog_origin?: string;
+  owner_classes?: string[];
+  provenances?: string[];
+  sync_policies?: string[];
+  sample_paths?: string[];
 }
 
 export interface SkillCatalog {
@@ -27,6 +34,10 @@ export interface SkillCatalog {
   owner: string;
   skills: SkillEntry[];
 }
+
+type InventorySnapshot = {
+  missingFromCatalog?: InventoryCatalogSkill[];
+};
 
 /**
  * Default bundled skills that ship with youmd.
@@ -158,6 +169,7 @@ export function readSkillCatalog(): SkillCatalog {
           },
           defaults
         );
+        hydrateCatalogFromLatestInventory(merged);
         writeSkillCatalog(merged);
         return merged;
       }
@@ -173,6 +185,7 @@ export function readSkillCatalog(): SkillCatalog {
     skills: defaults,
   };
 
+  hydrateCatalogFromLatestInventory(catalog);
   writeSkillCatalog(catalog);
   return catalog;
 }
@@ -217,6 +230,119 @@ export function addSkillEntry(
   }
   writeSkillCatalog(catalog);
   return catalog;
+}
+
+export type InventoryCatalogSkill = {
+  name?: string;
+  ownerClasses?: string[];
+  provenances?: string[];
+  syncPolicies?: string[];
+  samplePaths?: string[];
+};
+
+export type InventoryCatalogSyncResult = {
+  added: number;
+  skipped: number;
+  skills: string[];
+};
+
+function expandHomePath(p: string): string {
+  return p.startsWith("~/") ? `${os.homedir()}${p.slice(1)}` : p;
+}
+
+function inventoryScope(skill: InventoryCatalogSkill): SkillScope {
+  const owners = skill.ownerClasses || [];
+  const policies = skill.syncPolicies || [];
+  if (owners.some((owner) => owner.includes("project"))) return "project";
+  if (policies.includes("review-before-sync") || owners.includes("agent-host-local")) return "private";
+  return "shared";
+}
+
+function inventorySource(skill: InventoryCatalogSkill): string {
+  const sample = (skill.samplePaths || []).find((p) => p && p.endsWith("/SKILL.md"));
+  return sample ? `local:${expandHomePath(sample)}` : `inventory:${skill.name || "unknown"}`;
+}
+
+function inventoryDescription(skill: InventoryCatalogSkill): string {
+  const owners = (skill.ownerClasses || []).filter(Boolean).join(", ") || "unknown owner";
+  const policies = (skill.syncPolicies || []).filter(Boolean).join(", ") || "review-before-sync";
+  return `Discovered local/global skill reference (${owners}; ${policies})`;
+}
+
+function latestInventoryJsonPath(): string | null {
+  const dir = path.join(os.homedir(), ".youmd", "agent-stack-inventory");
+  if (!fs.existsSync(dir)) return null;
+  const files = fs.readdirSync(dir)
+    .filter((file) => /^local-agent-stack-inventory-.*\.json$/.test(file))
+    .map((file) => path.join(dir, file))
+    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs || path.basename(b).localeCompare(path.basename(a)));
+  return files[0] || null;
+}
+
+function readLatestInventorySnapshot(): InventorySnapshot | null {
+  const latest = latestInventoryJsonPath();
+  if (!latest) return null;
+  try {
+    return JSON.parse(fs.readFileSync(latest, "utf-8")) as InventorySnapshot;
+  } catch {
+    return null;
+  }
+}
+
+function hydrateCatalogFromLatestInventory(catalog: SkillCatalog): InventoryCatalogSyncResult {
+  const snapshot = readLatestInventorySnapshot();
+  if (!snapshot?.missingFromCatalog) return { added: 0, skipped: 0, skills: [] };
+  return addInventorySkillsToCatalog(catalog, snapshot.missingFromCatalog, { write: false });
+}
+
+/**
+ * Add missing inventory-discovered skills as catalog references only.
+ *
+ * This is intentionally additive: it never deletes, never marks a skill as
+ * installed, and never overwrites an existing non-inventory catalog entry.
+ */
+export function addInventorySkillsToCatalog(
+  catalog: SkillCatalog,
+  skills: InventoryCatalogSkill[],
+  options: { write?: boolean } = {}
+): InventoryCatalogSyncResult {
+  const added: string[] = [];
+  let skipped = 0;
+
+  for (const skill of skills) {
+    const name = skill.name?.trim();
+    if (!name) {
+      skipped += 1;
+      continue;
+    }
+    if (findSkill(catalog, name)) {
+      skipped += 1;
+      continue;
+    }
+    catalog.skills.push({
+      name,
+      description: inventoryDescription(skill),
+      version: "0.0.0-local",
+      source: inventorySource(skill),
+      scope: inventoryScope(skill),
+      identity_fields: [],
+      requires: [],
+      installed: false,
+      catalog_origin: "agent-stack-inventory",
+      owner_classes: skill.ownerClasses || [],
+      provenances: skill.provenances || [],
+      sync_policies: skill.syncPolicies || [],
+      sample_paths: skill.samplePaths || [],
+    });
+    added.push(name);
+  }
+
+  if (added.length > 0) {
+    catalog.skills.sort((a, b) => a.name.localeCompare(b.name));
+    if (options.write !== false) writeSkillCatalog(catalog);
+  }
+
+  return { added: added.length, skipped, skills: added };
 }
 
 /**

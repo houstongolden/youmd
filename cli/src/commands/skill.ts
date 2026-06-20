@@ -16,6 +16,7 @@ import {
   readSkillCatalog,
   findSkill,
   addSkillEntry,
+  addInventorySkillsToCatalog,
   searchSkills,
   SkillScope,
 } from "../lib/skill-catalog";
@@ -67,7 +68,7 @@ type InventorySnapshot = {
   ownershipRollup?: Record<string, unknown>;
   syncPolicyRollup?: Record<string, unknown>;
   provenanceRollup?: Record<string, unknown>;
-  missingFromCatalog?: Array<{ name?: string } | string>;
+  missingFromCatalog?: Array<{ name?: string; ownerClasses?: string[]; provenances?: string[]; syncPolicies?: string[]; samplePaths?: string[] } | string>;
   uniqueSkills?: Array<{ name?: string; ownerClasses?: string[]; syncPolicies?: string[] }>;
   dryAudit?: {
     duplicateNameDifferentRealpaths?: Array<{ name?: string } | string>;
@@ -371,6 +372,13 @@ function inventorySampleNames(rows: Array<{ name?: string } | string> | undefine
     .map((name) => name.trim())
     .filter(Boolean)
     .slice(0, 24);
+}
+
+function inventoryCatalogRows(snapshot: InventorySnapshot): Array<{ name?: string; ownerClasses?: string[]; provenances?: string[]; syncPolicies?: string[]; samplePaths?: string[] }> {
+  return (snapshot.missingFromCatalog || []).flatMap((row) => {
+    if (typeof row === "string") return [{ name: row }];
+    return [row];
+  });
 }
 
 function buildAgentStackInventorySyncPayload(
@@ -1691,6 +1699,7 @@ async function inventoryCmd(args: string[]): Promise<void> {
   const date = flagString(flags, "date");
   const shouldSync = flags.sync === true;
   const shouldSyncRepo = flags["no-repo-sync"] !== true;
+  const shouldRegisterCatalog = flags["register-catalog"] === true;
   const startedAt = Date.now();
   const scriptArgs = [script, "--out-dir", outDir, "--progress"];
   if (workspace) scriptArgs.push("--workspace", path.resolve(workspace));
@@ -1718,6 +1727,16 @@ async function inventoryCmd(args: string[]): Promise<void> {
     renderInventoryTotals(parsed.totals);
     renderInventoryPhaseTimings(parsed);
     console.log("");
+  }
+
+  if (shouldRegisterCatalog && parsed) {
+    const catalog = readSkillCatalog();
+    const result = addInventorySkillsToCatalog(catalog, inventoryCatalogRows(parsed));
+    const label = result.added > 0 ? chalk.green(`${result.added} added`) : DIM("no new entries");
+    console.log(`  ${DIM("catalog")} ${label}${result.skipped ? DIM(` · ${result.skipped} already known/skipped`) : ""}`);
+    if (result.skills.length > 0) {
+      console.log(`  ${DIM("catalog samples")} ${result.skills.slice(0, 8).map((name) => chalk.cyan(name)).join(DIM(", "))}`);
+    }
   }
 
   let htmlPath = latest ? latest.replace(/\.json$/, ".html") : undefined;

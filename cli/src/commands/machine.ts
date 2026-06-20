@@ -308,6 +308,7 @@ async function machineSyncNowCommand(opts: {
     "inventory",
     "--out-dir",
     inventoryDir,
+    "--register-catalog",
     "--sync",
   ], required);
 

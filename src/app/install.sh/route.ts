@@ -296,10 +296,10 @@ if [ "\${YOUMD_INSTALL_INVENTORY:-1}" = "1" ]; then
   INVENTORY_DIR="\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$YOUMD_HOME_DIR/agent-stack-inventory}"
   mkdir -p "$INVENTORY_DIR"
   echo "Creating secret-safe local agent stack inventory..."
-  if youmd skill inventory --out-dir "$INVENTORY_DIR" --sync >/dev/null 2>&1; then
+  if youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync >/dev/null 2>&1; then
     echo "  - inventory: $INVENTORY_DIR"
   else
-    echo "  - inventory skipped; run \`youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync\` after login/sync"
+    echo "  - inventory skipped; run \`youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync\` after login/sync"
   fi
 fi
 

@@ -37,7 +37,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("youmd ${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore");
     expect(command).toContain("run_agent_stack_inventory()");
     expect(command).toContain('INVENTORY_DIR="${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.youmd/agent-stack-inventory}"');
-    expect(command).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR" --sync');
+    expect(command).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync');
     expect(command).toContain("generated agent stack inventory");
     expect(command).toContain('HYDRATE_TIMEOUT="${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"');
     expect(command).toContain('run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate');
