@@ -47,7 +47,8 @@ PRD Version: 2.3
 - [ ] Next pass: publish `youmd@0.8.11` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison
-- [ ] Next pass: add optional MCP resources for agent stack topology/report files
+- [x] Add hosted MCP resources for agent stack topology/report files, including generated safe HTML and repo-backed markdown/JSON snapshots
+- [x] Add `npm run sync:agent-stack:smoke` to prove agent-stack REST summaries, hosted MCP tool/resources, generated HTML report, and repo snapshots
 - [ ] Build the full web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views beyond the first Skills-pane view
 - [x] Add resident realtime reconciliation for safe Skill Mesh inventory summaries through `youmd sync --live --daemon`
 - [x] Broaden resident reconciliation beyond inventory summaries into safe repair actions for stale/divergent local Skill Mesh drift

@@ -561,6 +561,7 @@ npm run agent-docs:handoff:json
 npm run agent-docs:lint
 npm run llms:smoke -- --base-url https://www.you.md
 npm run sync:graph:smoke
+npm run sync:agent-stack:smoke
 npx tsc --noEmit
 you whoami
 you status

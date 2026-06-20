@@ -2611,6 +2611,7 @@ you mcp --json`}</CodeBlock>
                 { cmd: "npm run agent-docs:lint", desc: "Run targeted ESLint for generated docs artifacts, docs automation scripts, and the docs page source" },
                 { cmd: "npm run llms:smoke -- --base-url https://www.you.md", desc: "Smoke-test live agent docs against the generated docs reference, MCP discovery, robots, sitemap, and docs page" },
                 { cmd: "npm run sync:graph:smoke", desc: "Smoke-test the authenticated synced-brain graph REST endpoint and hosted MCP tool with redacted output" },
+                { cmd: "npm run sync:agent-stack:smoke", desc: "Smoke-test authenticated agent-stack REST summaries plus hosted MCP tool/resources, including generated HTML and repo snapshots" },
                 { cmd: "npm run agent-docs:ci", desc: "Run generated docs checks, required/forbidden handoff marker checks, syntax checks, and targeted lint" },
                 { cmd: "GET /api/v1/docs/reference", desc: "Generated manifest for shipped routes, MCP tools, CLI version, counts, and source hash" },
                 { cmd: "GET /api/v1/docs/openapi.json", desc: "OpenAPI-style inventory for API reference generators and agent tool builders" },
@@ -2633,6 +2634,7 @@ npm run agent-docs:handoff:json
 npm run agent-docs:lint
 npm run llms:smoke -- --base-url https://www.you.md
 npm run sync:graph:smoke
+npm run sync:agent-stack:smoke
 npm run agent-docs:ci`}</CodeBlock>
 
             {/* ── API ──────────────────────────────────────── */}

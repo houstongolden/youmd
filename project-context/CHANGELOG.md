@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): add hosted Skill Mesh HTML resource
+- Added hosted MCP resource `agent-stack://inventory/report.html`, generated from persisted safe agent-stack inventories, drift, and repo mirror metadata.
+- The report keeps the HTML/audit intelligence available to agents without requiring local filesystem access and without exposing raw skill bodies, prompt logs, env values, tokens, or vault contents.
+- Added `npm run sync:agent-stack:smoke` to redacted-smoke the agent-stack REST summaries, hosted MCP tool, hosted MCP resources, generated HTML report, and GitHub-backed repo snapshot files.
+- Wired the new smoke into README/AGENTS/CLAUDE, `/docs`, generated `llms-full`, and the agent-docs handoff/syntax/lint contract.
+
 ### feat(sync): make the brain graph a calmer live surface
 - Made the shared synced brain graph selectable so the right rail explains one chosen machine/agent/skill/project/vault node instead of forcing every detail into always-visible cards.
 - Added active-link pulse markers tied only to real active links from the graph DTO/model, preserving the no-fake-liveness contract while making real sync activity visually legible.

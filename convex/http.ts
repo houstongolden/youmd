@@ -6394,6 +6394,12 @@ function hostedAgentStackResources(): Array<{
       description: "Authenticated Skill Mesh summary: synced machine inventories, drift baseline, and safe repo snapshot paths.",
       mimeType: "application/json",
     },
+    {
+      uri: "agent-stack://inventory/report.html",
+      name: "agent-stack/inventory/report.html",
+      description: "Generated secret-safe HTML Skill Mesh report from persisted inventory, drift, and repo snapshot metadata.",
+      mimeType: "text/html",
+    },
     ...AGENT_STACK_REPO_RESOURCE_FILES.map(({ uri, name, description, mimeType }) => ({
       uri,
       name,
@@ -6401,6 +6407,134 @@ function hostedAgentStackResources(): Array<{
       mimeType,
     })),
   ];
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function numberLike(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function recordLike(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function topNumericRollup(value: unknown, limit = 6): Array<{ label: string; value: number }> {
+  return Object.entries(recordLike(value))
+    .flatMap(([label, raw]) => {
+      const count = numberLike(raw);
+      return count > 0 ? [{ label, value: count }] : [];
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function buildHostedAgentStackReportHtml({
+  inventories,
+  drift,
+  mirror,
+}: {
+  inventories: Array<Record<string, unknown>>;
+  drift: Record<string, unknown>;
+  mirror: { repoFullName?: string | null; files?: Array<{ path: string; content?: string }> } | null;
+}) {
+  const latest = inventories[0] ?? {};
+  const summary = recordLike(drift.summary);
+  const repoPaths = AGENT_STACK_REPO_RESOURCE_FILES.map((file) => file.path);
+  const presentPaths = new Set((mirror?.files ?? []).map((file) => file.path));
+  const rows = inventories.slice(0, 8);
+  const ownership = topNumericRollup(latest.ownershipRollup);
+  const syncPolicy = topNumericRollup(latest.syncPolicyRollup);
+  const provenance = topNumericRollup(latest.provenanceRollup);
+  const missingPaths = repoPaths.filter((path) => !presentPaths.has(path));
+  const generatedAt = new Date().toISOString();
+
+  const rollupHtml = (title: string, entries: Array<{ label: string; value: number }>) => `
+    <section>
+      <h2>${escapeHtml(title)}</h2>
+      ${entries.length ? `<ul>${entries.map((entry) => `<li><span>${escapeHtml(entry.label)}</span><strong>${entry.value.toLocaleString()}</strong></li>`).join("")}</ul>` : "<p>No rollup rows yet.</p>"}
+    </section>
+  `;
+
+  const machineRows = rows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.hostName)}</td>
+      <td>${escapeHtml(row.rootDir)}</td>
+      <td>${numberLike(row.uniqueSkillNames).toLocaleString()}</td>
+      <td>${numberLike(row.uniqueRealSkillFiles).toLocaleString()}</td>
+      <td>${numberLike(row.missingFromYoumdCatalog).toLocaleString()}</td>
+      <td>${numberLike(row.duplicateNameDifferentRealpaths).toLocaleString()}</td>
+      <td>${escapeHtml(row.secretValuesExposed === true ? "review" : "safe")}</td>
+    </tr>
+  `).join("");
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>You.md Skill Mesh Report</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0d0d0d; --panel:#151312; --line:#37312d; --text:#f2eee9; --muted:#a69b93; --accent:#c46a3a; --ok:#6fbf73; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:14px/1.55 Inter, ui-sans-serif, system-ui, sans-serif; }
+    main { max-width:1120px; margin:0 auto; padding:28px; }
+    h1,h2,th,td,strong,code { font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+    h1 { margin:0; font-size:32px; font-weight:500; letter-spacing:0; }
+    h2 { margin:28px 0 10px; color:var(--accent); font-size:14px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; }
+    p { color:var(--muted); max-width:860px; }
+    .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin:22px 0; }
+    .metric, section { border-left:1px solid var(--line); background:color-mix(in srgb, var(--panel), transparent 8%); padding:12px 14px; }
+    .metric span, li span { display:block; color:var(--muted); font-family:"JetBrains Mono", ui-monospace, monospace; font-size:10px; text-transform:uppercase; letter-spacing:.12em; }
+    .metric strong { display:block; margin-top:7px; font-size:24px; font-weight:500; }
+    .ok { color:var(--ok); } .accent { color:var(--accent); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
+    ul { list-style:none; padding:0; margin:0; display:grid; gap:8px; }
+    li { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid color-mix(in srgb, var(--line), transparent 45%); padding-top:8px; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; background:var(--panel); }
+    th,td { border-bottom:1px solid var(--line); padding:8px; text-align:left; vertical-align:top; font-size:11px; }
+    th { color:var(--muted); text-transform:uppercase; letter-spacing:.1em; font-size:9px; }
+    code { color:#f6d0bd; overflow-wrap:anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>You.md Skill Mesh Report</h1>
+    <p>Generated ${escapeHtml(generatedAt)} from persisted You.md inventory, drift, and repo mirror metadata. This report includes safe counts, paths, statuses, and source rollups only; raw skill bodies, prompt logs, env values, tokens, and vault contents are not included.</p>
+    <div class="metrics">
+      <div class="metric"><span>trusted machines</span><strong>${numberLike(summary.machineCount || inventories.length).toLocaleString()}</strong></div>
+      <div class="metric"><span>unique skill names</span><strong>${numberLike(latest.uniqueSkillNames).toLocaleString()}</strong></div>
+      <div class="metric"><span>real SKILL.md files</span><strong>${numberLike(latest.uniqueRealSkillFiles).toLocaleString()}</strong></div>
+      <div class="metric"><span>catalog gaps</span><strong class="accent">${numberLike(latest.missingFromYoumdCatalog).toLocaleString()}</strong></div>
+      <div class="metric"><span>DRY review queue</span><strong class="accent">${numberLike(latest.duplicateNameDifferentRealpaths).toLocaleString()}</strong></div>
+      <div class="metric"><span>secret exposure</span><strong class="${inventories.some((row) => row.secretValuesExposed === true) ? "accent" : "ok"}">${inventories.some((row) => row.secretValuesExposed === true) ? "review" : "none"}</strong></div>
+    </div>
+    <div class="grid">
+      ${rollupHtml("Ownership", ownership)}
+      ${rollupHtml("Sync Policy", syncPolicy)}
+      ${rollupHtml("Provenance", provenance)}
+    </div>
+    <h2>Trusted Machine Snapshots</h2>
+    <table>
+      <thead><tr><th>host</th><th>root</th><th>skills</th><th>files</th><th>catalog gaps</th><th>DRY</th><th>secrets</th></tr></thead>
+      <tbody>${machineRows || '<tr><td colspan="7">No synced inventories yet.</td></tr>'}</tbody>
+    </table>
+    <h2>Repo Snapshot</h2>
+    <p>Repo: <code>${escapeHtml(mirror?.repoFullName ?? "not linked")}</code></p>
+    <p>Expected files: ${repoPaths.map((path) => `<code>${escapeHtml(path)}</code>`).join(" ")}</p>
+    <p>Missing files: ${missingPaths.length ? missingPaths.map((path) => `<code>${escapeHtml(path)}</code>`).join(" ") : '<span class="ok">none</span>'}</p>
+  </main>
+</body>
+</html>`;
 }
 
 async function authenticateHostedAgentStackResource(
@@ -6426,9 +6560,9 @@ async function readHostedAgentStackResource(
     return mcpError(id, auth.status === 403 ? -32003 : -32001, "authentication required for agent-stack resources");
   }
 
-  if (uri === "agent-stack://inventory/summary") {
+  if (uri === "agent-stack://inventory/summary" || uri === "agent-stack://inventory/report.html") {
     const limit = 12;
-    const [inventories, drift, mirror] = await Promise.all([
+    const [inventoryRows, drift, mirror] = await Promise.all([
       ctx.runQuery(api.portfolio.listAgentStackInventories, {
         clerkId: auth.userId,
         _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
@@ -6443,8 +6577,22 @@ async function readHostedAgentStackResource(
         clerkId: auth.userId,
       }),
     ]);
+    const inventories = inventoryRows as Array<Record<string, unknown>>;
     const repoPaths = AGENT_STACK_REPO_RESOURCE_FILES.map((file) => file.path);
     const presentPaths = new Set((mirror?.files ?? []).map((file: { path: string }) => file.path));
+    if (uri === "agent-stack://inventory/report.html") {
+      return mcpOk(id, {
+        contents: [{
+          uri,
+          mimeType: "text/html",
+          text: buildHostedAgentStackReportHtml({
+            inventories,
+            drift: drift as Record<string, unknown>,
+            mirror,
+          }),
+        }],
+      });
+    }
     return mcpOk(id, {
       contents: [{
         uri,
@@ -6452,7 +6600,7 @@ async function readHostedAgentStackResource(
         text: JSON.stringify({
           schemaVersion: "you-md/agent-stack-resource-summary/v1",
           generatedAt: Date.now(),
-          inventories,
+          inventories: inventoryRows,
           drift,
           repoSnapshot: {
             repo: mirror?.repoFullName ?? null,
@@ -6468,7 +6616,7 @@ async function readHostedAgentStackResource(
 
   const repoResource = AGENT_STACK_REPO_RESOURCE_FILES.find((file) => file.uri === uri);
   if (!repoResource) {
-    return mcpError(id, -32602, "unrecognised agent-stack URI — use agent-stack://inventory/summary or agent-stack://repo/{README.md|inventory.md|inventory.json}");
+    return mcpError(id, -32602, "unrecognised agent-stack URI — use agent-stack://inventory/summary, agent-stack://inventory/report.html, or agent-stack://repo/{README.md|inventory.md|inventory.json}");
   }
   const mirror = await ctx.runQuery(internal.github.internalGetMirrorByClerkId, {
     clerkId: auth.userId,
@@ -6668,6 +6816,12 @@ http.route({
                 name: "agent stack inventory summary",
                 description: "Authenticated Skill Mesh inventory/drift summary for the current user.",
                 mimeType: "application/json",
+              },
+              {
+                uriTemplate: "agent-stack://inventory/report.html",
+                name: "agent stack HTML report",
+                description: "Authenticated generated Skill Mesh HTML report from safe inventory, drift, and repo mirror metadata.",
+                mimeType: "text/html",
               },
               {
                 uriTemplate: "agent-stack://repo/{path}",
