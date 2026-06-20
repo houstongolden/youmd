@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(install): hand off curl install into machine sync proof
+- The public `install.sh` route now runs `youmd machine sync-now` automatically when `YOUMD_INSTALL_MACHINE_SYNC=1` or `YOUMD_API_KEY` is present.
+- Auth-bearing installs now attempt `youmd login --key "$YOUMD_API_KEY"` first, then reconcile identity, shared stacks, skills, MCP config, inventory, machine proof, and daemons through the same first-class command used for Mac Mini repair.
+- The unauthenticated installer "Next" block now points at `youmd machine sync-now --root ~/Desktop/CODE_YOU` instead of a long manual pull/sync/daemon checklist.
+- Verified with the focused install route regression test, focused ESLint, and `git diff --check`. A full production build compiled successfully, then the TypeScript phase hung and was interrupted; no source failure was reported.
+
 ### feat(machine): add one-command machine sync proof
 - Added `youmd machine sync-now` to reconcile a trusted Mac in one command: identity pull/sync, shared stack sync, catalog skill install, skill render, Claude/Codex MCP install, agent-stack inventory sync, machine proof sync, Skill Mesh status, and resident daemon install.
 - Added `youmd machine full-sync` for the larger new-Mac path: the same reconciliation plus graph-backed active project clone, Secret Vault device registration/pull attempt, portfolio hydrate, inventory, and proof.

@@ -299,6 +299,20 @@ if [ "$MCP_CONFIGURED" = "0" ]; then
   echo "  (no Claude Code / Codex / Cursor detected — run \\\`youmd mcp --install <host> --auto\\\` after installing one)"
 fi
 
+if [ "\${YOUMD_INSTALL_MACHINE_SYNC:-0}" = "1" ] || [ -n "\${YOUMD_API_KEY:-}" ]; then
+  SYNC_ROOT="\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}"
+  SYNC_LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
+  echo "Reconciling this machine with You.md skill mesh..."
+  if [ -n "\${YOUMD_API_KEY:-}" ]; then
+    youmd login --key "$YOUMD_API_KEY" >/dev/null 2>&1 || true
+  fi
+  if youmd machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"; then
+    echo "  - machine sync proof complete"
+  else
+    echo "  - machine sync needs follow-up; run: youmd machine sync-now --root \\"$SYNC_ROOT\\""
+  fi
+fi
+
 if [ "\${YOUMD_INSTALL_DAEMON:-0}" = "1" ]; then
   if [ "$(uname -s 2>/dev/null || true)" = "Darwin" ]; then
     echo "Installing resident You.md sync daemon..."
@@ -316,9 +330,8 @@ fi
 echo ""
 echo "Next:"
 echo "  youmd login          # press Enter to authenticate this machine in the browser"
-echo "  youmd pull           # sync your live brain into ~/.youmd"
-echo "  youmd sync           # refresh skills, stacks, prompts, and project context"
-echo "  youmd stack daemon install  # keep identity, skills, stacks, and project context synced in the background"
+echo "  youmd machine sync-now --root ~/Desktop/CODE_YOU"
+echo "                       # sync your brain, skills, stacks, MCP, inventory, proof, and daemons"
 echo "  you                  # meet U; it will guide onboarding, stacks, and next moves"
 echo ""
 echo "Auto-update helper:"
@@ -326,6 +339,9 @@ echo "  ~/.youmd/bin/youmd-auto-upgrade --quiet"
 echo ""
 echo "Install with resident sync enabled:"
 echo "  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_DAEMON=1 bash"
+echo ""
+echo "Install and immediately sync this machine when you already have an API key:"
+echo "  curl -fsSL https://you.md/install.sh | YOUMD_API_KEY=... YOUMD_INSTALL_MACHINE_SYNC=1 bash"
 echo ""
 `;
 }
