@@ -6,6 +6,7 @@
 - Added owner-gated Convex `getSyncedBrainGraph`, joining persisted agent-stack inventories, machine proof reports, canonical `brainActivities`, and optional portfolio/task signals into one graph DTO for apps, API clients, and agents.
 - Exposed the graph through authenticated `GET /api/v1/me/synced-brain/graph` and hosted MCP `get_synced_brain_graph`, with generated docs/openapi/llms surfaces updated to 107 endpoints and 12 hosted MCP tools.
 - Rewired Machine readiness to prefer the canonical DTO and simplified the first mesh surface around the real graph plus three proof facts instead of host chips plus six duplicated metric tiles.
+- Rewired Home and Skill Mesh to prefer the same DTO with their previous local/inventory graph builders retained as offline/dev fallbacks.
 - Kept liveness evidence persisted-only: recent activity timestamps, machine/inventory proof freshness, project activity, and safe secret-exposure booleans only; no fake neuron firing or raw secret values.
 - Verified with Convex codegen, focused portfolio tests, root TypeScript, production Next build, and generated docs.
 

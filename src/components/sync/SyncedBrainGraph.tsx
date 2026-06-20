@@ -33,6 +33,30 @@ export type SyncedBrainGraphActivity = {
   title: string;
 };
 
+export type SyncedBrainGraphDto = {
+  schemaVersion: string;
+  generatedAt: number;
+  nodes: SyncedBrainGraphNode[];
+  links: SyncedBrainGraphLink[];
+  signals: SyncedBrainGraphSignal[];
+  latestActivity?: SyncedBrainGraphActivity[];
+  evidence?: {
+    inventoryCount?: number;
+    machineProofCount?: number;
+    matchedInventoryProofCount?: number;
+    brainActivityCount?: number;
+    recentBrainActivityCount?: number;
+    projectCount?: number;
+    focusedProjectCount?: number;
+    openTaskCount?: number;
+    latestInventoryAt?: number | null;
+    latestMachineProofAt?: number | null;
+    latestBrainActivityAt?: number | null;
+    latestProjectActivityAt?: number | null;
+    secretValuesExposed?: boolean;
+  };
+};
+
 export function SyncedBrainGraph({
   nodes,
   links,

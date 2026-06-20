@@ -7,7 +7,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { LocalMachineReadiness } from "@/lib/local-machine-readiness.server";
 import { PaneCallout, PaneDivider, PaneEmptyState, PaneHeader, PaneSectionLabel } from "./shared";
-import { SyncedBrainGraph } from "@/components/sync/SyncedBrainGraph";
+import { SyncedBrainGraph, type SyncedBrainGraphDto } from "@/components/sync/SyncedBrainGraph";
 import {
   buildMachineBrainGraphModel,
   type MachineBrainGraphEvent,
@@ -487,6 +487,7 @@ function HomeOperatingMesh({
   readiness,
   syncedProofs,
   brainActivities,
+  graphDto,
   projects,
   openTasks,
   activities,
@@ -496,6 +497,7 @@ function HomeOperatingMesh({
   readiness: LocalMachineReadiness | null;
   syncedProofs?: MachineBrainGraphProof[];
   brainActivities?: MachineBrainGraphEvent[];
+  graphDto?: SyncedBrainGraphDto;
   projects: PortfolioProject[];
   openTasks: PortfolioTask[];
   activities: PortfolioActivity[];
@@ -510,7 +512,7 @@ function HomeOperatingMesh({
     const focus = project.focusStatus ?? "";
     return project.status === "active" || focus === "top-priority" || focus === "focusing";
   }).length;
-  const brainGraph = buildMachineBrainGraphModel({
+  const brainGraph = graphDto ?? buildMachineBrainGraphModel({
     report: readiness,
     syncedProofs,
     brainActivities,
@@ -670,6 +672,10 @@ export function HomePane({
   const dsiView = useQuery(api.dsi.getDefaultHomeView, clerkId ? { clerkId } : "skip");
   const syncedProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 6 } : "skip");
   const brainActivities = useQuery(api.brainActivity.listRecent, clerkId ? { clerkId, limit: 18 } : "skip");
+  const syncedBrainGraph = useQuery(
+    api.portfolio.getSyncedBrainGraph,
+    clerkId ? { clerkId, limit: 12, includePortfolioSignals: true } : "skip",
+  ) as SyncedBrainGraphDto | undefined;
   const ensureDefaultHomeView = useMutation(api.dsi.ensureDefaultHomeView);
   const [machineReadiness, setMachineReadiness] = useState<LocalMachineReadiness | null>(null);
 
@@ -757,6 +763,7 @@ export function HomePane({
           readiness={machineReadiness}
           syncedProofs={syncedProofs}
           brainActivities={brainActivities}
+          graphDto={syncedBrainGraph}
           projects={projects}
           openTasks={openTasks}
           activities={recentActivity}

@@ -12,6 +12,7 @@ import type { Doc } from "../../../convex/_generated/dataModel";
 import {
   SyncedBrainGraph,
   type SyncedBrainGraphActivity,
+  type SyncedBrainGraphDto,
   type SyncedBrainGraphLink,
   type SyncedBrainGraphNode,
   type SyncedBrainGraphSignal,
@@ -695,11 +696,13 @@ function SkillMeshView({
   inventories,
   drift,
   machineProofs,
+  graphDto,
   isLoading,
 }: {
   inventories: AgentStackInventory[] | undefined;
   drift: AgentStackDrift | undefined;
   machineProofs: MachineProofReport[] | undefined;
+  graphDto?: SyncedBrainGraphDto;
   isLoading: boolean;
 }) {
   const latest = inventories?.[0];
@@ -725,6 +728,7 @@ function SkillMeshView({
   const topology = latest
     ? buildSkillMeshTopology({ latest, sourceGroups, proofSummary, machineCount, secretLeak })
     : null;
+  const graph = graphDto ?? topology;
   const [detailMode, setDetailMode] = useState<SkillMeshDetailMode>("sources");
   const proofClean = latest ? proofSummary.matched === machineCount && proofSummary.stale === 0 && proofSummary.unsafe === 0 : false;
   const reviewCount = sourceGroups.find((group) => group.label === "Needs review")?.value ?? 0;
@@ -756,7 +760,7 @@ function SkillMeshView({
 
       {latest && (
         <>
-          {topology && (
+          {graph && (
             <section className="border-l border-[hsl(var(--success))]/60 bg-[hsl(var(--bg))]/35 px-4 py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -769,14 +773,14 @@ function SkillMeshView({
                   </p>
                 </div>
                 <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-48">
-                  {formatInventoryTime(latest.generatedAt)} / safe metadata
+                  {formatInventoryTime(graphDto?.generatedAt ?? latest.generatedAt)} / safe metadata
                 </div>
               </div>
               <SyncedBrainGraph
-                nodes={topology.nodes}
-                links={topology.links}
-                signals={topology.signals}
-                latestActivity={topology.latestActivity}
+                nodes={graph.nodes}
+                links={graph.links}
+                signals={graph.signals}
+                latestActivity={graph.latestActivity}
               />
             </section>
           )}
@@ -1245,6 +1249,10 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const agentStackInventories = useQuery(api.portfolio.listAgentStackInventories, clerkId ? { clerkId, limit: 12 } : "skip");
   const agentStackDrift = useQuery(api.portfolio.getAgentStackInventoryDrift, clerkId ? { clerkId, limit: 12 } : "skip");
   const machineProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 12 } : "skip");
+  const syncedBrainGraph = useQuery(
+    api.portfolio.getSyncedBrainGraph,
+    clerkId ? { clerkId, limit: 12, includePortfolioSignals: true } : "skip",
+  ) as SyncedBrainGraphDto | undefined;
 
   const isLoading = installs === undefined || registrySkills === undefined;
   const meshLoading = agentStackInventories === undefined || agentStackDrift === undefined || machineProofs === undefined;
@@ -1414,6 +1422,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           inventories={agentStackInventories}
           drift={agentStackDrift as AgentStackDrift | undefined}
           machineProofs={machineProofs}
+          graphDto={syncedBrainGraph}
           isLoading={meshLoading}
         />
       ) : (

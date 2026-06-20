@@ -15,10 +15,7 @@ import { PixelCharacter, type PixelCharacterStatus } from "@/components/ui/Pixel
 import { buildMachineBrainGraphModel } from "@/components/sync/machineBrainGraphModel";
 import {
   SyncedBrainGraph,
-  type SyncedBrainGraphActivity,
-  type SyncedBrainGraphLink,
-  type SyncedBrainGraphNode,
-  type SyncedBrainGraphSignal,
+  type SyncedBrainGraphDto,
 } from "@/components/sync/SyncedBrainGraph";
 import {
   FRESH_MACHINE_BOOTSTRAP_DAYS,
@@ -74,22 +71,6 @@ type SyncedBrainActivity = {
   occurredAt: number;
   sourceHost?: string | null;
   sourceAgent?: string | null;
-};
-
-type SyncedBrainGraphDto = {
-  schemaVersion: string;
-  generatedAt: number;
-  nodes: SyncedBrainGraphNode[];
-  links: SyncedBrainGraphLink[];
-  signals: SyncedBrainGraphSignal[];
-  latestActivity?: SyncedBrainGraphActivity[];
-  evidence?: {
-    machineProofCount?: number;
-    matchedInventoryProofCount?: number;
-    focusedProjectCount?: number;
-    openTaskCount?: number;
-    secretValuesExposed?: boolean;
-  };
 };
 
 function statusClass(status: LocalReadinessStatus | LocalProjectReadiness["status"]) {
