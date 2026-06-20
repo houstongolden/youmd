@@ -4,8 +4,9 @@
 
 ### refactor(sync): share the synced brain graph surface
 - Extracted the Machine tab's real synced brain graph into `src/components/sync/SyncedBrainGraph.tsx` so Home, Skills, Machine, and future Tauri surfaces can reuse one visual primitive instead of growing separate graph panels.
-- Kept Machine as the data adapter for local readiness, synced proofs, Convex `brainActivities`, agent bus, skills, projects, daemons, and Secret Vault metadata.
-- Verified with `npm run build` and `git diff --check`.
+- Added a shared `machineBrainGraphModel` adapter for local readiness, synced proofs, Convex `brainActivities`, agent bus, skills, projects, daemons, Secret Vault metadata, and optional portfolio context.
+- Home now uses the same graph model and replaces its older mini mesh stat strip with the real graph surface, keeping Machine as the deeper proof/runbook page.
+- Verified with `npm run build` and `git diff --check`; local browser auth loaded the shell skeleton and machine-readiness calls, but the screenshot automation timed out before hydrated graph text was captured.
 
 ### feat(shell): filter the live brain log
 - The shell Live Log now has compact filters for `all`, `agents`, `ops`, and `skills`.

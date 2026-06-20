@@ -7,6 +7,12 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { LocalMachineReadiness } from "@/lib/local-machine-readiness.server";
 import { PaneCallout, PaneDivider, PaneEmptyState, PaneHeader, PaneSectionLabel } from "./shared";
+import { SyncedBrainGraph } from "@/components/sync/SyncedBrainGraph";
+import {
+  buildMachineBrainGraphModel,
+  type MachineBrainGraphEvent,
+  type MachineBrainGraphProof,
+} from "@/components/sync/machineBrainGraphModel";
 
 type TaskPaneKey = "portfolio" | "tasks" | "machine" | "agents" | "apis" | "skills";
 
@@ -479,6 +485,8 @@ function HomeDsiViewProof({
 
 function HomeOperatingMesh({
   readiness,
+  syncedProofs,
+  brainActivities,
   projects,
   openTasks,
   activities,
@@ -486,6 +494,8 @@ function HomeOperatingMesh({
   onOpenAgents,
 }: {
   readiness: LocalMachineReadiness | null;
+  syncedProofs?: MachineBrainGraphProof[];
+  brainActivities?: MachineBrainGraphEvent[];
   projects: PortfolioProject[];
   openTasks: PortfolioTask[];
   activities: PortfolioActivity[];
@@ -494,21 +504,24 @@ function HomeOperatingMesh({
 }) {
   const summary = readiness?.summary;
   const agentBus = readiness?.agentBus;
-  const envVault = readiness?.envVault;
   const machineLabel = readiness?.hostName ?? "this Mac";
   const liveState = agentBus?.state === "active" ? "live" : readiness ? "checking" : "loading";
   const focusedCount = projects.filter((project) => {
     const focus = project.focusStatus ?? "";
     return project.status === "active" || focus === "top-priority" || focus === "focusing";
   }).length;
-  const meshStats = [
-    { label: "machines", value: readiness ? "1 local" : "loading" },
-    { label: "daemons", value: summary ? `${summary.daemonsLoaded}/${summary.daemonsTotal}` : "--" },
-    { label: "skills", value: readiness ? readiness.skillSync.canonicalCount : "--" },
-    { label: "agent bus", value: agentBus ? `${agentBus.recentCount} msgs` : "--" },
-    { label: "focus projects", value: focusedCount },
-    { label: "open tasks", value: openTasks.length },
-  ];
+  const brainGraph = buildMachineBrainGraphModel({
+    report: readiness,
+    syncedProofs,
+    brainActivities,
+    portfolio: {
+      focusedProjectCount: focusedCount,
+      openTaskCount: openTasks.length,
+      latestProjectSignal: activities[0]
+        ? { projectSlug: activities[0].projectSlug, occurredAt: activities[0].occurredAt }
+        : null,
+    },
+  });
 
   return (
     <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
@@ -528,6 +541,9 @@ function HomeOperatingMesh({
           <p className="mt-2 max-w-4xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
             This is the living proof surface: project changes, skill syncs, trusted-device vault state, and agent messages should all flow through one brain activity stream.
           </p>
+          <div className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-40">
+            {summary ? `${summary.daemonsLoaded}/${summary.daemonsTotal} daemons / ${summary.projectReady}/${summary.projectScanned} projects ready` : "local proof loading"}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2 xl:justify-end">
           <button type="button" onClick={onOpenAgents} className="h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]" style={{ borderRadius: "var(--radius)" }}>
@@ -538,22 +554,7 @@ function HomeOperatingMesh({
           </button>
         </div>
       </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
-        {meshStats.map((stat) => (
-          <div key={stat.label} className="border-l border-[hsl(var(--border))]/55 bg-[hsl(var(--bg-raised))]/22 px-3 py-2">
-            <div className="font-mono text-[14px] leading-none text-[hsl(var(--text-primary))]">{stat.value}</div>
-            <div className="mt-2 font-mono text-[8px] uppercase tracking-[0.15em] text-[hsl(var(--text-secondary))] opacity-42">{stat.label}</div>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 grid gap-2 xl:grid-cols-[1fr_1fr]">
-        <div className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
-          vault: {envVault?.accountSnapshotStatus ?? "unknown"}{envVault?.latestAccountSnapshot?.projectCount ? ` / ${envVault.latestAccountSnapshot.projectCount} projects` : ""}
-        </div>
-        <div className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50 xl:text-right">
-          latest shipping signal: {activities[0] ? `${activities[0].projectSlug} / ${relativeTime(activities[0].occurredAt)}` : "waiting for brain activity"}
-        </div>
-      </div>
+      <SyncedBrainGraph nodes={brainGraph.nodes} links={brainGraph.links} signals={brainGraph.signals} latestActivity={brainGraph.latestActivity} />
     </section>
   );
 }
@@ -667,6 +668,8 @@ export function HomePane({
 }) {
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const dsiView = useQuery(api.dsi.getDefaultHomeView, clerkId ? { clerkId } : "skip");
+  const syncedProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 6 } : "skip");
+  const brainActivities = useQuery(api.brainActivity.listRecent, clerkId ? { clerkId, limit: 18 } : "skip");
   const ensureDefaultHomeView = useMutation(api.dsi.ensureDefaultHomeView);
   const [machineReadiness, setMachineReadiness] = useState<LocalMachineReadiness | null>(null);
 
@@ -752,6 +755,8 @@ export function HomePane({
 
         <HomeOperatingMesh
           readiness={machineReadiness}
+          syncedProofs={syncedProofs}
+          brainActivities={brainActivities}
           projects={projects}
           openTasks={openTasks}
           activities={recentActivity}
