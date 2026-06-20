@@ -811,6 +811,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
   const config = readYouHomeJson("config.json");
   const hasApiKey =
     (typeof config?.token === "string" && config.token.length > 0) ||
+    (typeof process.env.YOU_API_KEY === "string" && process.env.YOU_API_KEY.length > 0) ||
     (typeof process.env.YOUMD_API_KEY === "string" && process.env.YOUMD_API_KEY.length > 0);
   const sharedSkillRoot = path.join(home, ".agent-shared", "claude-skills");
   const claudeSkillsPresent = isDirectory("~/.claude/skills");

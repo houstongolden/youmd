@@ -56,7 +56,8 @@ describe("PRECEDENCE table (P20)", () => {
       expect(line).toContain(" > ");
       expect(line).toContain(" — ");
     }
-    expect(lines[0]).toContain("YOUMD_API_KEY");
+    expect(lines[0]).toContain("YOU_API_KEY");
+    expect(lines[0]).toContain("legacy YOUMD_*");
   });
 });
 
@@ -71,7 +72,7 @@ describe("shadowing detection (P20)", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("warns when YOUMD_API_KEY env overrides a logged-in session", () => {
+  it("warns when YOU_API_KEY env overrides a logged-in session", () => {
     const warnings = detectShadowing({
       cwd: tmpDir,
       env: { apiKey: "sk-env" },
@@ -79,7 +80,8 @@ describe("shadowing detection (P20)", () => {
     });
     const configWarnings = warnings.filter((warning) => warning.domain === "config");
     expect(configWarnings).toHaveLength(1);
-    expect(configWarnings[0].message).toContain("YOUMD_API_KEY");
+    expect(configWarnings[0].message).toContain("YOU_API_KEY");
+    expect(configWarnings[0].message).toContain("YOUMD_API_KEY remains a legacy alias");
     expect(configWarnings[0].message).toContain("session token");
   });
 
@@ -170,7 +172,7 @@ describe("status active roots (P20)", () => {
     );
 
     const roots = getActiveRoots(repo);
-    expect(roots.configPath).toContain(".youmd");
+    expect(roots.configPath).toContain(".you");
     expect(roots.repoContextDir).toBe(path.join(repo, "project-context"));
     expect(roots.globalOverlayDir).toBe(managed);
     expect(roots.stackManifest).toBe(path.join(repo, "stacks", "demo", "youstack.json"));
@@ -179,8 +181,8 @@ describe("status active roots (P20)", () => {
 
   it("renders active roots lines for youmd status", () => {
     const roots: ActiveRoots = {
-      configPath: path.join(os.homedir(), ".youmd", "config.json"),
-      envOverrides: ["YOUMD_API_KEY"],
+      configPath: path.join(os.homedir(), ".you", "config.json"),
+      envOverrides: ["YOU_API_KEY"],
       localBundleDir: null,
       repoContextDir: "/repo/project-context",
       globalOverlayDir: path.join(os.homedir(), ".youmd", "projects", "myproj"),
@@ -191,8 +193,8 @@ describe("status active roots (P20)", () => {
     const lines = buildActiveRootsLines(roots);
     const byLabel = Object.fromEntries(lines.map((line) => [line.label, line.value]));
 
-    expect(byLabel.config).toContain("~/.youmd/config.json");
-    expect(byLabel.config).toContain("env: YOUMD_API_KEY");
+    expect(byLabel.config).toContain("~/.you/config.json");
+    expect(byLabel.config).toContain("env: YOU_API_KEY");
     expect(byLabel.project).toContain("/repo/project-context (repo)");
     expect(byLabel.project).toContain("~/.youmd/projects/myproj (overlay)");
     expect(byLabel.stack).toContain("stacks/demo/youstack.json (canonical)");

@@ -457,7 +457,7 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
     "youmd-${username}": {
       "url": "https://you.md/api/v1/mcp",
       "headers": {
-        "Authorization": "Bearer $YOUMD_API_KEY_OR_GRANT"
+        "Authorization": "Bearer $YOU_API_KEY_OR_GRANT"
       }
     }
   }
@@ -478,7 +478,7 @@ youmd logs --agent "Codex" --limit 5`,
       label: "REST smoke check",
       detail: "Use an owner API key or scoped yg_* app grant.",
       body: `curl -fsSL https://you.md/api/v1/me \\
-  -H "Authorization: Bearer $YOUMD_API_KEY_OR_GRANT"`,
+  -H "Authorization: Bearer $YOU_API_KEY_OR_GRANT"`,
     },
     {
       key: "agent-prompt",
@@ -885,7 +885,7 @@ over guessing from a profile page.`,
                         {issuedToken.token}
                       </code>
                       <code className="mt-2 block bg-[hsl(var(--bg))]/60 px-2 py-2 font-mono text-[9.5px] leading-5 text-[hsl(var(--text-primary))] opacity-75">
-                        YOUMD_API_KEY_OR_GRANT=&quot;{issuedToken.token}&quot; npx --yes youmd@latest mcp --install claude --auto
+                        YOU_API_KEY_OR_GRANT=&quot;{issuedToken.token}&quot; npx --yes youmd@latest mcp --install claude --auto
                       </code>
                     </div>
                     <button type="button" onClick={() => setIssuedToken(null)} className="ml-auto text-[hsl(var(--text-secondary))] opacity-55 hover:opacity-90">

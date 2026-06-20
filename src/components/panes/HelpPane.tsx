@@ -227,15 +227,19 @@ export function HelpPane({ username }: HelpPaneProps) {
         </p>
         <div className="space-y-1 mb-2">
           <CopyableCommand command="curl -fsSL https://you.md/install.sh | bash" />
-          <CopyableCommand command="youmd login" dimmed />
-          <CopyableCommand command="youmd logout" dimmed />
-          <CopyableCommand command="youmd push" dimmed />
-          <CopyableCommand command="youmd pull" dimmed />
-          <CopyableCommand command="youmd machine prompt --root ~/Desktop/CODE_YOU --days 30" dimmed />
-          <CopyableCommand command="youmd skill install all" dimmed />
-          <CopyableCommand command="youmd skill use youstack-maintainer" dimmed />
-          <CopyableCommand command="youmd skill init-project" dimmed />
+          <CopyableCommand command="you login" dimmed />
+          <CopyableCommand command="you logout" dimmed />
+          <CopyableCommand command="you push" dimmed />
+          <CopyableCommand command="you pull" dimmed />
+          <CopyableCommand command="you machine prompt --root ~/Desktop/CODE_YOU --days 30" dimmed />
+          <CopyableCommand command="you skill install all" dimmed />
+          <CopyableCommand command="you skill use youstack-maintainer" dimmed />
+          <CopyableCommand command="you skill init-project" dimmed />
         </div>
+
+        <p className="font-mono text-[9px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-35">
+          `youmd` remains available as the legacy command alias.
+        </p>
 
         <div className="mt-6 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-30">
           tip: type <span className="text-[hsl(var(--accent))] opacity-60">/help</span> in the

@@ -224,7 +224,7 @@ async function printUpdateHint(): Promise<void> {
 
   console.log("  " + chalk.yellow(`update available: ${CURRENT_VERSION} → ${latest}`));
   console.log("  " + chalk.dim("refresh U with: ") + chalk.cyan("curl -fsSL https://you.md/install.sh | bash"));
-  console.log("  " + chalk.dim("or: ") + chalk.cyan(`npm install -g youmd@${latest}`));
+  console.log("  " + chalk.dim("or: ") + chalk.cyan(`npm install -g youmd@${latest}`) + chalk.dim(" (installs both `you` and legacy `youmd`)"));
   console.log("");
 }
 
@@ -272,16 +272,16 @@ async function renderNoArgWelcome(): Promise<void> {
   if (!authed) {
     console.log("  " + ACCENT("u is ready.") + " let's get you set up without the ceremony.");
     console.log("");
-    console.log("    " + DIM("1.") + " " + chalk.cyan("youmd login") + DIM("          browser, email code, or --key"));
-    console.log("    " + DIM("2.") + " " + chalk.cyan("youmd init") + DIM("           build your identity through conversation"));
-    console.log("    " + DIM("3.") + " " + chalk.cyan("youmd push") + DIM("           publish to you.md/<username>"));
+    console.log("    " + DIM("1.") + " " + chalk.cyan("you login") + DIM("            browser, email code, or --key"));
+    console.log("    " + DIM("2.") + " " + chalk.cyan("you init") + DIM("             build your identity through conversation"));
+    console.log("    " + DIM("3.") + " " + chalk.cyan("you push") + DIM("             publish to you.md/<username>"));
     console.log("");
-    console.log("  " + DIM("tip: ") + chalk.cyan("you") + DIM(" is the fast path once your identity bundle exists."));
+    console.log("  " + DIM("tip: ") + chalk.cyan("youmd") + DIM(" remains the compatibility alias."));
   } else if (!hasBundle) {
     console.log("  " + ACCENT(`good to see you${user ? `, ${user}` : ""}.`) + " i don't see a local bundle here yet.");
     console.log("");
-    console.log("    " + chalk.cyan("youmd init") + DIM("           start the conversational setup"));
-    console.log("    " + chalk.cyan("youmd pull") + DIM("           pull your live identity down to this machine"));
+    console.log("    " + chalk.cyan("you init") + DIM("             start the conversational setup"));
+    console.log("    " + chalk.cyan("you pull") + DIM("             pull your live identity down to this machine"));
     console.log("    " + chalk.cyan("you") + DIM("                  open U once the bundle exists"));
     console.log("");
   } else {
@@ -300,21 +300,21 @@ async function renderNoArgWelcome(): Promise<void> {
     console.log("  " + chalk.bold("next best moves"));
     console.log("");
     console.log("    " + chalk.cyan("you") + DIM("                  open U and let it help proactively"));
-    console.log("    " + chalk.cyan("youmd status") + DIM("         check sync state, publish state, and gaps"));
+    console.log("    " + chalk.cyan("you status") + DIM("           check sync state, publish state, and gaps"));
     if (missingRepoBootstrap) {
-      console.log("    " + chalk.cyan("youmd skill init-project") + DIM(" wire this repo for your agents"));
+      console.log("    " + chalk.cyan("you skill init-project") + DIM("   wire this repo for your agents"));
     } else if (topOpportunity) {
       console.log("    " + chalk.cyan("open the next project opening"));
       console.log("      " + chalk.cyan(topOpportunity.suggestedCommand));
       console.log("      " + DIM("then let U tighten it up"));
     } else {
-      console.log("    " + chalk.cyan("youmd sync") + DIM("           pull + push the latest identity state"));
+      console.log("    " + chalk.cyan("you sync") + DIM("             pull + push the latest identity state"));
     }
-    console.log("    " + chalk.cyan("youmd link create") + DIM("    hand your context to another agent"));
+    console.log("    " + chalk.cyan("you link create") + DIM("      hand your context to another agent"));
     console.log("");
     if (missingRepoBootstrap) {
       console.log("  " + ACCENT("i spotted an opening.") + " this repo doesn't look fully wired for your agents yet.");
-      console.log("  " + DIM("run ") + chalk.cyan("youmd skill init-project") + DIM(" and i'll scaffold the shared operating context."));
+      console.log("  " + DIM("run ") + chalk.cyan("you skill init-project") + DIM(" and i'll scaffold the shared operating context."));
       console.log("");
     }
   }
@@ -379,7 +379,7 @@ async function runYouGuidedSetup(): Promise<void> {
       await syncCommand({ watch: false, force: false });
       if (process.exitCode) {
         console.log("");
-        console.log("  " + DIM("sync needs attention before chat. run ") + chalk.cyan("youmd status") + DIM(" for details."));
+        console.log("  " + DIM("sync needs attention before chat. run ") + chalk.cyan("you status") + DIM(" for details."));
         return;
       }
       process.exitCode = previousExitCode;

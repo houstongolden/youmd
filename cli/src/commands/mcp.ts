@@ -50,7 +50,7 @@ export async function mcpCommand(options: { json?: boolean; install?: string; au
 
   // Default: start the MCP server
   if (!hasActiveBundle()) {
-    console.error("youmd mcp: no local .youmd/ bundle -- remote-only mode (run youmd init for full features)");
+    console.error("youmd mcp: no local .you/ bundle -- remote-only mode (run youmd init for full features; legacy .youmd is still read during migration)");
   }
 
   const { startMcpServer } = await import("../mcp/server");
@@ -464,7 +464,7 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
       console.log(DIM(`  authenticated as @${username}`));
       console.log(DIM("  memories, remote push, and skill sync available"));
     } else {
-      console.log(chalk.yellow("  not authenticated -- run youmd login for full features"));
+      console.log(chalk.yellow("  not authenticated -- run you login for full features"));
     }
     console.log("");
   } else if (normalizedTarget === "codex") {
@@ -485,7 +485,7 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
       console.log(DIM(`  authenticated as @${username}`));
       console.log(DIM("  your identity context will be available to codex agents."));
     } else {
-      console.log(chalk.yellow("  not authenticated -- run youmd login for full features"));
+      console.log(chalk.yellow("  not authenticated -- run you login for full features"));
     }
     console.log("");
   } else if (normalizedTarget === "cursor") {
@@ -516,7 +516,7 @@ async function installMcp(target: string, auto?: boolean): Promise<void> {
       console.log(DIM(`  authenticated as @${username}`));
       console.log(DIM("  your identity context will be available to cursor agents."));
     } else {
-      console.log(chalk.yellow("  not authenticated -- run youmd login for full features"));
+      console.log(chalk.yellow("  not authenticated -- run you login for full features"));
     }
     console.log("");
   } else {

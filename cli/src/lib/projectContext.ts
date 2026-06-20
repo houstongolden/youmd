@@ -3,12 +3,13 @@
  *
  * A project's context is resolved as the repo `project-context/` directory
  * (when the cwd is inside a repo that has one) OVERLAID on the global
- * `~/.youmd/projects/<slug>/` directory (global notes for the same project):
+ * `~/.you/projects/<slug>/` directory (global notes for the same project),
+ * with legacy `~/.youmd/projects/<slug>/` read fallback:
  *
  *   - readers see the overlay UNION of both sides
  *   - the repo copy wins on file conflicts
  *   - writers route project files to the repo copy when inside the repo,
- *     otherwise to the global `~/.youmd/projects/<slug>/` store
+ *     otherwise to the global `~/.you/projects/<slug>/` store
  *
  * This module is the only place that knows both locations. Consumers
  * (chat project reads, `youmd project` commands, the MCP server) route
@@ -59,12 +60,12 @@ export function getGlobalProjectsRoot(): string {
   return path.join(getHomeBundleDir(), "projects");
 }
 
-/** Global per-project dir: ~/.youmd/projects/<slug> */
+/** Global per-project dir: ~/.you/projects/<slug> */
 export function getProjectGlobalDir(projectName: string): string {
   return path.join(getGlobalProjectsRoot(), projectSlug(projectName));
 }
 
-/** Private context dir for a project: ~/.youmd/projects/<slug>/private */
+/** Private context dir for a project: ~/.you/projects/<slug>/private */
 export function getProjectPrivateDir(projectName: string): string {
   return path.join(getProjectGlobalDir(projectName), "private");
 }
@@ -174,7 +175,7 @@ export interface ResolvedProjectContext {
   repoRoot: string | null;
   /** <repoRoot>/project-context when it exists on disk. */
   repoContextDir: string | null;
-  /** Managed/global project dir (walk-up .youmd/projects or ~/.youmd/projects/<slug>). */
+  /** Managed/global project dir (walk-up .you/projects or ~/.you/projects/<slug>, with legacy fallback). */
   globalDir: string | null;
   /** <globalDir>/context when it exists on disk. */
   globalContextDir: string | null;
@@ -231,7 +232,7 @@ export function resolveProjectContext(
       ? repoContextDirCandidate
       : null;
 
-  // Global side: walk-up .youmd/projects store first, then ~/.youmd/projects.
+  // Global side: walk-up .you/projects store first, then ~/.you/projects.
   let globalDir: string | null = null;
   if (projectName) {
     const slugCandidates = [projectSlug(projectName)];
@@ -412,7 +413,7 @@ export function projectContextReadPaths(
   for (const relName of relNames) {
     const overlayFile = path.join(globalContextDir, relName.toLowerCase());
     paths.push({
-      label: `~/.youmd/projects/${projectSlug(projectName)}/context/${relName.toLowerCase()}`,
+      label: `~/.you/projects/${projectSlug(projectName)}/context/${relName.toLowerCase()}`,
       path: overlayFile,
     });
   }
@@ -504,9 +505,9 @@ export const PRECEDENCE: ReadonlyArray<PrecedenceRule> = [
   {
     domain: "config",
     order: [
-      "env vars (YOUMD_API_KEY, YOUMD_API_URL)",
-      "local project config (./.youmd/config.json)",
-      "global config (~/.youmd/config.json)",
+      "env vars (YOU_API_KEY, YOU_API_URL; legacy YOUMD_* aliases)",
+      "local project config (./.you/config.json; legacy ./.youmd fallback)",
+      "global config (~/.you/config.json; legacy ~/.youmd fallback)",
     ],
     note: "env always wins; the local bundle config only applies inside an initialized project directory",
   },
@@ -514,7 +515,7 @@ export const PRECEDENCE: ReadonlyArray<PrecedenceRule> = [
     domain: "project context",
     order: [
       "repo project-context/ directory",
-      "global overlay (~/.youmd/projects/<name>/)",
+      "global overlay (~/.you/projects/<name>/; legacy ~/.youmd fallback)",
     ],
     note: "repo wins on file conflicts; readers see the overlay union of both sides",
   },
@@ -557,7 +558,7 @@ function shortenHome(p: string): string {
 
 /**
  * Detect actually-active shadowing that is likely to surprise:
- *   - YOUMD_API_KEY/YOUMD_API_URL env overriding a logged-in session/config
+ *   - YOU_API_KEY/YOU_API_URL env overriding a logged-in session/config
  *   - repo project-context files shadowing global overlay copies
  *   - a canonical stack manifest shadowing legacy manifest locations
  * Returns at most one warning per domain occurrence — callers print each
@@ -572,18 +573,18 @@ export function detectShadowing(input: ShadowDetectionInput = {}): ShadowWarning
   if (env.apiKey && config.token) {
     warnings.push({
       domain: "config",
-      shadowed: "logged-in session token (~/.youmd/config.json)",
-      shadowedBy: "YOUMD_API_KEY env var",
+      shadowed: "logged-in session token (~/.you/config.json)",
+      shadowedBy: "YOU_API_KEY env var",
       message:
-        "YOUMD_API_KEY env var overrides your logged-in session token (~/.youmd/config.json)",
+        "YOU_API_KEY env var overrides your logged-in session token (~/.you/config.json); YOUMD_API_KEY remains a legacy alias",
     });
   }
   if (env.apiUrl && config.apiUrl) {
     warnings.push({
       domain: "config",
-      shadowed: "apiUrl from ~/.youmd/config.json",
-      shadowedBy: "YOUMD_API_URL env var",
-      message: "YOUMD_API_URL env var overrides apiUrl from ~/.youmd/config.json",
+      shadowed: "apiUrl from ~/.you/config.json",
+      shadowedBy: "YOU_API_URL env var",
+      message: "YOU_API_URL env var overrides apiUrl from ~/.you/config.json; YOUMD_API_URL remains a legacy alias",
     });
   }
 
@@ -625,9 +626,9 @@ export function detectShadowing(input: ShadowDetectionInput = {}): ShadowWarning
 export interface ActiveRoots {
   /** Global config file path. */
   configPath: string;
-  /** Env overrides currently active (e.g. YOUMD_API_KEY). */
+  /** Env overrides currently active (e.g. YOU_API_KEY). */
   envOverrides: string[];
-  /** Local ./.youmd bundle dir when it looks initialized. */
+  /** Local ./.you bundle dir when it looks initialized. */
   localBundleDir: string | null;
   /** Repo project-context/ dir in effect for the cwd (null when absent). */
   repoContextDir: string | null;
@@ -640,10 +641,11 @@ export interface ActiveRoots {
 
 export function getActiveRoots(cwd: string = process.cwd()): ActiveRoots {
   const envOverrides: string[] = [];
-  if (getEnvApiKey()) envOverrides.push("YOUMD_API_KEY");
-  if (getEnvApiUrl()) envOverrides.push("YOUMD_API_URL");
+  if (getEnvApiKey()) envOverrides.push(process.env.YOU_API_KEY?.trim() ? "YOU_API_KEY" : "YOUMD_API_KEY");
+  if (getEnvApiUrl()) envOverrides.push(process.env.YOU_API_URL?.trim() ? "YOU_API_URL" : "YOUMD_API_URL");
 
-  const localBundle = path.resolve(cwd, ".youmd");
+  const localBundle = path.resolve(cwd, ".you");
+  const legacyLocalBundle = path.resolve(cwd, ".youmd");
   const resolved = resolveProjectContext({ cwd });
 
   let stackManifest: string | null = null;
@@ -656,7 +658,11 @@ export function getActiveRoots(cwd: string = process.cwd()): ActiveRoots {
   return {
     configPath: getGlobalConfigPath(),
     envOverrides,
-    localBundleDir: bundleLooksInitialized(localBundle) ? localBundle : null,
+    localBundleDir: bundleLooksInitialized(localBundle)
+      ? localBundle
+      : bundleLooksInitialized(legacyLocalBundle)
+        ? legacyLocalBundle
+        : null,
     repoContextDir: resolved.repoContextDir,
     globalOverlayDir:
       resolved.globalDir && fs.existsSync(resolved.globalDir) ? resolved.globalDir : null,

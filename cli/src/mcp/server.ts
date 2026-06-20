@@ -283,7 +283,7 @@ export async function fetchMemoriesEnvelope(category?: string, limit?: number): 
         status: "auth_required",
         ready: false,
         reason: "Memory search needs an authenticated You.md session or API key.",
-        fallback: "Use public identity, project-context files, or run `youmd login` before retrying protected memory search.",
+        fallback: "Use public identity, project-context files, or run `you login` before retrying protected memory search.",
       },
       memories: [],
       count: 0,
@@ -348,7 +348,7 @@ export async function fetchPrivateContextEnvelope(): Promise<PrivateContextRetri
         status: "auth_required",
         ready: false,
         reason: "Private context needs an authenticated You.md session or API key.",
-        fallback: "Use local stack files, project-context files, public identity, or run `youmd login` before retrying protected private-context access.",
+        fallback: "Use local stack files, project-context files, public identity, or run `you login` before retrying protected private-context access.",
       },
       privateContext: null,
       summary: {
@@ -1615,7 +1615,7 @@ export async function startMcpServer(): Promise<void> {
         },
         {
           name: "compile_and_push",
-          description: "Combo tool that compiles the local .youmd bundle, writes it to disk, uploads it, and publishes it in one call. Replaces having to call compile_bundle + push_bundle + publish separately. Requires authentication. Returns the new version number and bundle content hash.",
+          description: "Combo tool that compiles the local .you bundle, writes it to disk, uploads it, and publishes it in one call. Legacy .youmd bundles are still read during migration. Replaces having to call compile_bundle + push_bundle + publish separately. Requires authentication. Returns the new version number and bundle content hash.",
           inputSchema: {
             type: "object" as const,
             properties: {},
@@ -1769,7 +1769,7 @@ export async function startMcpServer(): Promise<void> {
 
       case "push_bundle": {
         if (!isAuthenticated()) {
-          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
+          return { content: [{ type: "text" as const, text: "not authenticated — run you login first" }], isError: true };
         }
         try {
           const { compileBundle } = await import("../lib/compiler");
@@ -1802,14 +1802,14 @@ export async function startMcpServer(): Promise<void> {
 
       case "compile_and_push": {
         if (!isAuthenticated()) {
-          return { content: [{ type: "text" as const, text: "not authenticated — run youmd login first" }], isError: true };
+          return { content: [{ type: "text" as const, text: "not authenticated — run you login first" }], isError: true };
         }
         try {
           const { compileBundle, writeBundle } = await import("../lib/compiler");
           const { uploadBundle, publishLatest } = await import("../lib/api");
           const bundleDir = getBundleDir();
 
-          // 1. Compile from the local .youmd directory
+          // 1. Compile from the local .you directory, with legacy .youmd fallback.
           const result = compileBundle(bundleDir);
 
           // 2. Write the compiled bundle to disk (you.json, you.md, manifest.json)

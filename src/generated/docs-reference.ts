@@ -41,7 +41,7 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "12fd9310416ef8a115d78c7f2a985500f8bef9433af43f47cb1d2e2d930023a3",
+  "sourceHash": "1a7b9b229e2b75a4ac4a372dd0ad1c504f164efb6b008f77934dcaa35704685c",
   "cli": {
     "version": "0.8.12"
   },
@@ -1293,7 +1293,7 @@ export const docsReference = {
     },
     {
       "name": "compile_and_push",
-      "description": "Combo tool that compiles the local .youmd bundle, writes it to disk, uploads it, and publishes it in one call. Replaces having to call compile_bundle + push_bundle + publish separately. Requires authentication. Returns the new version number and bundle content hash.",
+      "description": "Combo tool that compiles the local .you bundle, writes it to disk, uploads it, and publishes it in one call. Legacy .youmd bundles are still read during migration. Replaces having to call compile_bundle + push_bundle + publish separately. Requires authentication. Returns the new version number and bundle content hash.",
       "inputFields": [],
       "required": []
     },
