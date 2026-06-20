@@ -68,6 +68,7 @@ PRD Version: 2.3
 - [x] Fix Skill Mesh machine proof matching so inventory rows join against same-machine readiness proofs instead of false `0/N proof` states
 - [x] Reduce Skill Mesh information overload by making the real graph plus three decision signals the primary surface and moving source/proof/audit tables behind focused detail modes
 - [x] Tighten Skill Mesh minimal-surface modes into overview, source map, machines, and audit details; keep machine parity in overview, add a compact Convex evidence/freshness strip, move detailed drift/proof rows into machines, and fold local HTML report access into next-action controls
+- [x] Reveal copyable per-machine repair chains in Skill Mesh Machines mode from Convex drift metadata, including proof refresh when proof is stale or missing
 - [x] Add a Convex-backed synced brain graph DTO/query that joins inventories, machine proofs, brain activities, and portfolio signals so live node states come from one canonical persisted source
 - [ ] Next pass: prove the repair runbook on the Mac mini after `youmd@0.8.12` is published and compare synced inventory/proof rows
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure

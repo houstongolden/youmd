@@ -83,6 +83,7 @@ type AgentStackDrift = {
       missingFromYoumdCatalog: number;
       duplicateNameDifferentRealpaths: number;
     };
+    repairCommands?: string[];
   }>;
   secretValuesExposed: false;
 };
@@ -1430,23 +1431,44 @@ function MachineSnapshotRow({
   drift?: AgentStackDrift["machines"][number];
   proof?: MachineProofReport;
 }) {
-  const driftOk = drift?.status === "baseline" || drift?.status === "ok";
+  const driftOk = drift?.status === "baseline" || drift?.status === "ok" || drift?.status === "ahead";
   const proofStale = isMachineProofStale(proof);
+  const repairCommands = Array.from(new Set([
+    ...(driftOk ? [] : drift?.repairCommands ?? []),
+    ...(proofStale ? ["you machine verify --write-report --sync-report"] : []),
+  ].filter(Boolean))).slice(0, 4);
+  const primaryIssue = drift?.issues?.[0] ?? (proofStale ? "machine proof is stale or missing" : "");
   return (
-    <div className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto_auto_auto]">
-      <div className="min-w-0">
-        <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
-        <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">{inventory.rootDir}</div>
+    <div className="border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px]">
+      <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto_auto_auto]">
+        <div className="min-w-0">
+          <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
+          <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">{primaryIssue || inventory.rootDir}</div>
+        </div>
+        <span className="text-[hsl(var(--accent))]">{inventory.uniqueSkillNames.toLocaleString()} skills</span>
+        <span className="text-[hsl(var(--text-secondary))] opacity-58">{inventory.missingFromYoumdCatalog.toLocaleString()} gaps</span>
+        <span className={driftOk ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+          {drift?.status ?? "unknown"}
+        </span>
+        <span className={proof && !proofStale && proof.status === "ready" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+          proof {proof?.status ?? "missing"}
+        </span>
+        <span className="text-[hsl(var(--text-secondary))] opacity-42">{formatInventoryTime(inventory.generatedAt)}</span>
       </div>
-      <span className="text-[hsl(var(--accent))]">{inventory.uniqueSkillNames.toLocaleString()} skills</span>
-      <span className="text-[hsl(var(--text-secondary))] opacity-58">{inventory.missingFromYoumdCatalog.toLocaleString()} gaps</span>
-      <span className={driftOk ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
-        {drift?.status ?? "unknown"}
-      </span>
-      <span className={proof && !proofStale && proof.status === "ready" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
-        proof {proof?.status ?? "missing"}
-      </span>
-      <span className="text-[hsl(var(--text-secondary))] opacity-42">{formatInventoryTime(inventory.generatedAt)}</span>
+      {repairCommands.length > 0 && (
+        <div className="mt-2 grid gap-1.5 border-l border-[hsl(var(--accent))]/45 pl-3">
+          <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-42">
+            repair chain
+          </div>
+          {repairCommands.map((command) => (
+            <CommandRow
+              key={`${inventory._id}-${command}`}
+              command={command}
+              description="copy and run on this machine to reconcile skill mesh drift"
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

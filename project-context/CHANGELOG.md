@@ -76,6 +76,7 @@
 - Skill Mesh now has a cleaner mode stack: `overview`, `source map`, `machines`, and `audit details`.
 - The live brain graph header now exposes a compact evidence strip with Convex inventory, machine proof, recent activity, project counts, and latest freshness when the canonical synced graph DTO is present.
 - Kept machine parity visible in overview using trusted-machine/inventory summary rows while moving dense machine drift and proof detail rows into the `machines` mode.
+- The `machines` mode now reveals bounded per-machine repair chains from the Convex drift row, plus a proof refresh command when the proof is stale or missing.
 - Folded local HTML report access into the existing next-action area in the verify/compare controls instead of introducing another always-visible surface.
 - Verified with root TypeScript and production Next build.
 
