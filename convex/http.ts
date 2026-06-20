@@ -612,7 +612,7 @@ function connectedAppScopeCandidates(scope: ApiScope, resource: string): string[
 }
 
 function connectedAppResourceForMcpTool(toolName: string): string {
-  if (toolName === "get_my_stacks" || toolName === "get_repo_file" || toolName === "get_agent_stack_inventory") return "stacks";
+  if (toolName === "get_my_stacks" || toolName === "get_repo_file" || toolName === "get_agent_stack_inventory" || toolName === "get_synced_brain_graph") return "stacks";
   if (toolName === "search_memories" || toolName === "report_skill_outcome") return "memories";
   return "identity";
 }
@@ -6513,7 +6513,7 @@ http.route({
           type: "bearer",
           required: false,
           description:
-            "Public identity tools work unauthenticated. Tools that read the authenticated user's own data (whoami, get_agent_brief, get_my_identity, get_my_stacks, get_repo_file, get_agent_stack_inventory, search_memories) require a you.md API key with the read:private scope, passed as `Authorization: Bearer <key>`. Write tools (report_skill_outcome) require the write:memories scope.",
+            "Public identity tools work unauthenticated. Tools that read the authenticated user's own data (whoami, get_agent_brief, get_my_identity, get_my_stacks, get_repo_file, get_agent_stack_inventory, get_synced_brain_graph, search_memories) require a you.md API key with the read:private scope, passed as `Authorization: Bearer <key>`. Write tools (report_skill_outcome) require the write:memories scope.",
           instructions_url: "https://you.md/docs#api-keys",
         },
       }, null, 2),

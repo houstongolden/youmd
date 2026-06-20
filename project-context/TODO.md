@@ -40,8 +40,8 @@ PRD Version: 2.3
 - [x] Add canonical Convex synced brain graph DTO/query, authenticated API route, hosted MCP tool, generated docs, and Machine pane wiring
 - [x] Apply a minimal-surface pass to Machine's sync mesh first viewport so it shows the live graph plus three useful proof facts instead of duplicated metric clutter
 - [x] Wire Home and Skills/Skill Mesh to the canonical synced brain graph DTO while preserving local/inventory fallback graph builders
+- [x] Live-smoke production Convex `GET /api/v1/me/synced-brain/graph` and hosted MCP `get_synced_brain_graph` with redacted/safe output checks
 - [ ] Next pass: remove remaining non-canonical fallback liveness paths after production API/MCP graph smoke proves parity
-- [ ] Next pass: live-smoke `/api/v1/me/synced-brain/graph` and hosted MCP `get_synced_brain_graph` against production after deploy
 - [ ] Next pass: publish `youmd@0.8.11` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison
