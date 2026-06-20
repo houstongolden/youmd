@@ -9,6 +9,7 @@
 - Rewired Home and Skill Mesh to prefer the same DTO with their previous local/inventory graph builders retained as offline/dev fallbacks.
 - Kept liveness evidence persisted-only: recent activity timestamps, machine/inventory proof freshness, project activity, and safe secret-exposure booleans only; no fake neuron firing or raw secret values.
 - Production-smoked the Convex API route and hosted MCP tool: both returned `you-md/synced-brain-graph/v1` with 7 nodes, 8 links, 6 signals, 4 latest activity rows, persisted evidence counts, `secretValuesExposed: false`, and no detected API-key/env/private-key text.
+- Added `npm run sync:graph:smoke`, a repeatable redacted production smoke for the synced-brain graph REST endpoint and hosted MCP tool, and wired it into the repo/docs handoff contract.
 - Verified with Convex codegen, focused portfolio tests, root TypeScript, production Next build, and generated docs.
 
 ### feat(skills): simplify Skill Mesh detail surface
