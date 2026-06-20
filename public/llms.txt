@@ -1,6 +1,6 @@
 # You.md
 
-> Generated agent index. Source hash: a2a42120d1ffac79f779360f118841fc5945f5965d531f7253487247a8eabd2c. CLI version: 0.8.10. Reference intelligence: 2026-06-19T15:31:38.182Z.
+> Generated agent index. Source hash: e2ad55ce0a7dd655b3a341f1da7ef969638a0cbab1bd38db91c412cea8ed77b2. CLI version: 0.8.11. Reference intelligence: 2026-06-19T15:31:38.182Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 

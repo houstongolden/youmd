@@ -28,7 +28,7 @@ Cross-machine sync toolkit for Houston Golden's agent skill/stack setup.
 
 ### Complementary sync planes
 
-- **Realtime identity/project plane:** `youmd sync --live --daemon` subscribes to Convex websocket updates, mints only a short-lived sync session token, materializes identity files and installed You.md skills locally, and triggers bounded shared stack/project-context syncs. It never prints or returns raw `.env.local` values.
+- **Realtime identity/project/Skill Mesh plane:** `youmd sync --live --daemon` subscribes to Convex websocket updates, mints only a short-lived sync session token, materializes identity files and installed You.md skills locally, and triggers bounded shared stack/project-context plus safe agent-stack inventory syncs. It never prints or returns raw `.env.local` values.
 - **Identity repair plane:** `youmd sync --daemon` (Convex ↔ local profile, memories, preferences). Automated via `com.youmd.identity-sync` daemon as a timer-based fallback. Daemon mode refreshes local files/skills and skips unsafe lossy pushes instead of forcing over richer server data.
 - **Project-context plane:** `youmd stack context-sync` safely commits and syncs only `AGENTS.md`, `CLAUDE.md`, `project-context/`, and `.claude/` in curated Houston-owned repos. It refuses to merge remote app-code changes.
 - **Env-vault plane:** `cli/scripts/env-vault/restore.sh` for secrets (manual, invoked on new machine); also available as `youmd env restore <vault>`.
@@ -42,7 +42,7 @@ cli/scripts/skillstack-sync/
 ├── sync.sh                         Core syncer (bash 3.2 compatible)
 ├── install-daemons.sh              Installs all resident LaunchAgents
 ├── bootstrap-new-mac.sh            New machine setup script
-├── com.youmd.realtime-sync.plist   LaunchAgent: runs `youmd sync --live --daemon` as a resident websocket syncer
+├── com.youmd.realtime-sync.plist   LaunchAgent: runs `youmd sync --live --daemon` as a resident websocket + Skill Mesh syncer
 ├── com.youmd.skillstack-sync.plist LaunchAgent: runs `youmd stack sync` every 5 min
 ├── com.youmd.identity-sync.plist   LaunchAgent: runs `youmd sync --daemon` every 5 min
 ├── com.youmd.context-sync.plist    LaunchAgent: runs `youmd stack context-sync` every 15 min
@@ -106,10 +106,18 @@ bash cli/scripts/skillstack-sync/install-daemons.sh
 ```
 
 Installs four LaunchAgents:
-- `com.youmd.realtime-sync` → runs `youmd sync --live --daemon`
+- `com.youmd.realtime-sync` → runs `youmd sync --live --daemon`, including a bounded `youmd skill inventory --sync` pass every 30 minutes by default
 - `com.youmd.skillstack-sync` → runs `youmd stack sync`
 - `com.youmd.identity-sync` → runs `youmd sync --daemon`
 - `com.youmd.context-sync` → runs `youmd stack context-sync`
+
+Skill Mesh inventory knobs:
+
+```bash
+YOUMD_LIVE_SYNC_INVENTORY=0                    # disable resident inventory sync
+YOUMD_LIVE_SYNC_INVENTORY_INTERVAL_SECONDS=900 # tune cadence; default 1800
+YOUMD_AGENT_STACK_INVENTORY_DIR=~/.youmd/agent-stack-inventory
+```
 
 Check status:
 ```bash

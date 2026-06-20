@@ -19,6 +19,7 @@ PRD Version: 2.3
 - [x] Add `youmd skill inventory` CLI wrapper around the shared scanner
 - [x] Add `youmd skill inventory diff` for comparing this Mac against the Mac mini or another trusted machine
 - [x] Bump CLI package to `0.8.10` for publishing the inventory commands
+- [x] Bump CLI package to `0.8.11` for resident Skill Mesh inventory sync
 - [x] Bundle the agent stack inventory scanner inside the CLI package so fresh installs can run inventory before shared skills are restored
 - [x] Add a curl install hook that writes a best-effort secret-safe inventory to `~/.youmd/agent-stack-inventory`
 - [x] Add fresh-machine bootstrap inventory proof after shared skills/MCP restore and again near final readiness proof
@@ -32,11 +33,12 @@ PRD Version: 2.3
 - [x] Harden install-time inventory scanning with bounded traversal, repeated-scan caching, and visible `walkIssues`
 - [x] Teach `youmd machine verify` to load the latest local agent-stack inventory proof and include skill mesh counts/report paths in the secret-safe machine proof JSON
 - [x] Add first app-facing Skill Mesh view under Skills for synced machine inventory counts, ownership/provenance rollups, catalog gaps, DRY queues, mirror clusters, and verification commands
-- [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
+- [ ] Next pass: publish `youmd@0.8.11` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [ ] Next pass: add richer API/MCP drift query models and optional MCP resources for agent stack topology
 - [ ] Build the full web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views beyond the first Skills-pane view
-- [ ] Add resident realtime reconciliation for skills/stacks/context metadata across trusted machines and agents
+- [x] Add resident realtime reconciliation for safe Skill Mesh inventory summaries through `youmd sync --live --daemon`
+- [ ] Next pass: broaden resident reconciliation beyond inventory summaries into repairable drift actions across trusted machines and agents
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
 

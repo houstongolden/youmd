@@ -23,9 +23,11 @@ import { decompileToFilesystem } from "../lib/decompile";
 import { mergeSections, decisionLabel } from "../lib/merge";
 import { BrailleSpinner } from "../lib/render";
 import {
+  DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS,
   describeRealtimeAgentBus,
   describeRealtimeSecretVault,
   realtimeSyncHeadSignature,
+  resolveAgentStackInventoryDir,
   shouldRunBoundedSync,
   summarizeRealtimeSyncHead,
   type RealtimeSyncHead,
@@ -327,16 +329,22 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   const localMinMs = envNumber("YOUMD_LIVE_SYNC_LOCAL_INTERVAL_SECONDS", 5) * 1000;
   const stackMinMs = envNumber("YOUMD_LIVE_SYNC_STACK_INTERVAL_SECONDS", 60) * 1000;
   const contextMinMs = envNumber("YOUMD_LIVE_SYNC_CONTEXT_INTERVAL_SECONDS", 120) * 1000;
+  const inventoryMinMs = envNumber(
+    "YOUMD_LIVE_SYNC_INVENTORY_INTERVAL_SECONDS",
+    DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS,
+  ) * 1000;
   const commandTimeoutMs = envNumber("YOUMD_LIVE_SYNC_COMMAND_TIMEOUT_MS", 180) * 1000;
   const ttlSeconds = envNumber("YOUMD_LIVE_SYNC_SESSION_TTL_SECONDS", 3600);
   const stackSyncEnabled = process.env.YOUMD_LIVE_SYNC_STACK !== "0";
   const contextSyncEnabled = process.env.YOUMD_LIVE_SYNC_CONTEXT !== "0";
+  const inventorySyncEnabled = process.env.YOUMD_LIVE_SYNC_INVENTORY !== "0";
 
   let stopped = false;
   let lastSignature = "";
   let lastLocalRunAt = 0;
   let lastStackRunAt = 0;
   let lastContextRunAt = 0;
+  let lastInventoryRunAt = 0;
   let lastAgentMessageAt = 0;
   let materializing = false;
   let pendingReason: string | null = null;
@@ -435,6 +443,15 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
         if (contextSyncEnabled && shouldRunBoundedSync(lastContextRunAt, now, contextMinMs)) {
           lastContextRunAt = now;
           runYoumdSubcommand("project-context git sync", ["stack", "context-sync"], commandTimeoutMs);
+        }
+
+        if (inventorySyncEnabled && shouldRunBoundedSync(lastInventoryRunAt, now, inventoryMinMs)) {
+          lastInventoryRunAt = now;
+          runYoumdSubcommand(
+            "agent stack inventory sync",
+            ["skill", "inventory", "--out-dir", resolveAgentStackInventoryDir(), "--sync"],
+            commandTimeoutMs,
+          );
         }
       } while (pendingReason && !stopped);
     } finally {

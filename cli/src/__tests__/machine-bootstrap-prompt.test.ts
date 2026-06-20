@@ -32,7 +32,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("brew install gh");
     expect(command).toContain("brew install bun");
     expect(command).toContain("YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash");
-    expect(command).toContain('MIN_YOUMD_VERSION="${YOUMD_MIN_VERSION:-0.8.10}"');
+    expect(command).toContain('MIN_YOUMD_VERSION="${YOUMD_MIN_VERSION:-0.8.11}"');
     expect(command).toContain("ensure_youmd_min_version");
     expect(command).toContain("youmd ${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore");
     expect(command).toContain("run_agent_stack_inventory()");

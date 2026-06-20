@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS,
   buildRealtimeSyncStatusFile,
   describeRealtimeSecretVault,
   realtimeSyncHeadSignature,
+  resolveAgentStackInventoryDir,
   shouldRunBoundedSync,
   summarizeRealtimeSyncHead,
 } from "../lib/realtime-sync";
@@ -126,5 +128,27 @@ describe("realtime sync helpers", () => {
     expect(shouldRunBoundedSync(0, 1000, 5000)).toBe(true);
     expect(shouldRunBoundedSync(1000, 4000, 5000)).toBe(false);
     expect(shouldRunBoundedSync(1000, 7000, 5000)).toBe(true);
+  });
+
+  it("uses a bounded default cadence for resident agent stack inventory", () => {
+    expect(DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS).toBe(1800);
+  });
+
+  it("resolves the resident agent stack inventory directory safely", () => {
+    expect(resolveAgentStackInventoryDir({}, "/Users/houston")).toBe(
+      "/Users/houston/.youmd/agent-stack-inventory",
+    );
+    expect(
+      resolveAgentStackInventoryDir(
+        { YOUMD_AGENT_STACK_INVENTORY_DIR: "~/custom-agent-stack" },
+        "/Users/houston",
+      ),
+    ).toBe("/Users/houston/custom-agent-stack");
+    expect(
+      resolveAgentStackInventoryDir(
+        { YOUMD_AGENT_STACK_INVENTORY_DIR: "/tmp/mesh" },
+        "/Users/houston",
+      ),
+    ).toBe("/tmp/mesh");
   });
 });

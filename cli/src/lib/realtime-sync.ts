@@ -88,6 +88,7 @@ export type RealtimeSyncHead = {
 
 export const REALTIME_SYNC_STATUS_PATH = path.join(os.homedir(), ".youmd", "realtime-sync-status.json");
 export const REALTIME_AGENT_INBOX_PATH = path.join(os.homedir(), ".youmd", "agent-bus", "inbox.json");
+export const DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS = 1800;
 
 export type RealtimeAgentMessage = {
   id?: string;
@@ -440,4 +441,17 @@ export function shouldRunBoundedSync(
   minIntervalMs: number,
 ): boolean {
   return lastRunAt === 0 || now - lastRunAt >= minIntervalMs;
+}
+
+export function resolveAgentStackInventoryDir(
+  env: Partial<Pick<NodeJS.ProcessEnv, "YOUMD_AGENT_STACK_INVENTORY_DIR">> = process.env,
+  homeDir = os.homedir(),
+): string {
+  const configured = env.YOUMD_AGENT_STACK_INVENTORY_DIR?.trim();
+  if (configured) {
+    if (configured === "~") return homeDir;
+    if (configured.startsWith("~/")) return path.join(homeDir, configured.slice(2));
+    return configured;
+  }
+  return path.join(homeDir, ".youmd", "agent-stack-inventory");
 }

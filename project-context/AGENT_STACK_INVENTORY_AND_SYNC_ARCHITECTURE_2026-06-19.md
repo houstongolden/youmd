@@ -128,16 +128,18 @@ Success means:
 ## Near-Term Build Plan
 
 1. Add `youmd skill inventory` as a CLI command that wraps the shared script.
-   **Done locally; pending npm publish on `youmd@0.8.10`.**
+   **Done locally; pending npm publish on `youmd@0.8.11`.**
 2. Add `youmd skill inventory diff --left A.json --right B.json`.
-   **Done locally; pending npm publish on `youmd@0.8.10`.**
+   **Done locally; pending npm publish on `youmd@0.8.11`.**
 3. Bundle the scanner into the CLI package and run local inventory during curl
    install and fresh-machine bootstrap.
    **Done locally; pending npm publish/deploy.**
-4. Add Convex `agentStackInventories` summaries keyed by user + machine + root.
-5. Add web/Tauri `Skill Mesh` view with ownership, DRY, catalog gap, and machine
+4. Run the safe inventory sync from the resident realtime daemon.
+   **First slice done locally in `youmd@0.8.11`; second-Mac proof pending.**
+5. Add Convex `agentStackInventories` summaries keyed by user + machine + root.
+6. Add web/Tauri `Skill Mesh` view with ownership, DRY, catalog gap, and machine
    drift tabs.
-6. Add You Agent actions:
+7. Add You Agent actions:
    - register canonical shared skill in You.md catalog
    - mark external reference
    - create alias/routing note

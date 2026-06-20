@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): refresh Skill Mesh from resident daemon
+- Added a bounded resident inventory lane to `youmd sync --live --daemon`.
+- The live daemon now runs `youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync` every 30 minutes by default, so trusted machines keep safe Skill Mesh metadata synced into Convex/GitHub after initial curl setup.
+- Added `YOUMD_LIVE_SYNC_INVENTORY=0`, `YOUMD_LIVE_SYNC_INVENTORY_INTERVAL_SECONDS`, and `YOUMD_AGENT_STACK_INVENTORY_DIR` controls for machine-specific tuning.
+- Bumped the CLI package to `0.8.11` and raised the fresh-machine minimum version to `0.8.11`.
+
 ### feat(skills): add app-facing Skill Mesh view
 - Added a `skill catalog` / `skill mesh` mode switch to the Skills pane.
 - The Skill Mesh view reads the existing owner-gated Convex `agentStackInventories` data and renders machine inventory counts, latest machine/root, ownership/sync/provenance rollups, catalog-gap samples, DRY review queues, healthy mirror samples, synced machine rows, and copyable verify/compare commands.
@@ -47,7 +53,7 @@
 ### feat(machine): run agent stack inventory during install and bootstrap
 - Bundled `scripts/local-agent-stack-inventory.mjs` into the CLI package so fresh npm/source installs can run `youmd skill inventory` before shared skills are restored.
 - Updated the curl installer to run a best-effort secret-safe inventory into `~/.youmd/agent-stack-inventory` after native skill install/sync.
-- Updated fresh-machine bootstrap to require `youmd@0.8.10+`, run inventory after shared skills/MCP restore, run it again near final proof, and include the inventory path in the generated agent prompt.
+- Updated fresh-machine bootstrap to require `youmd@0.8.10+`, run inventory after shared skills/MCP restore, run it again near final proof, and include the inventory path in the generated agent prompt. The minimum is superseded by `0.8.11` after adding resident Skill Mesh inventory sync.
 - Verified with CLI build, focused CLI tests, bundled inventory smoke using `YOUMD_AGENT_STACK_INVENTORY_SCRIPT=cli/scripts/local-agent-stack-inventory.mjs`, `git diff --check`, and `npm pack --dry-run` showing the bundled script in the tarball.
 
 ### docs(sync): define productized skill mesh success gate
