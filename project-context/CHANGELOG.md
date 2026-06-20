@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(machine): proof legacy home migration to `~/.you`
+- Hardened `you machine migrate-home --yes` so it copies missing legacy `~/.youmd` runtime files into canonical `~/.you`, preserves conflicting canonical files, keeps legacy fallback intact, and writes a secret-safe hash proof under `~/.you/migration-reports/`.
+- Switched Secret Vault device-key storage, onboarding config reads, and portfolio audit fingerprint salt paths onto the central canonical home helpers instead of raw `~/.youmd` paths.
+- `machine sync-now` now prints and prefers `you ...` subcommands internally, with `youmd` and the current Node entrypoint retained as execution fallbacks.
+- Verified with focused migration/config/catalog tests, CLI TypeScript build, compiled temp-home migration smoke, and `git diff --check`.
+
 ### feat(mcp): expose Skill Mesh reports as resources
 - Hosted JSON-RPC MCP now exposes authenticated `agent-stack://inventory/summary` plus safe mirrored repo report files under `agent-stack://repo/...`.
 - Local stdio MCP now exposes `youmd://agent-stack/inventory`, `youmd://agent-stack/report.json`, and `youmd://agent-stack/report.html` from the latest local inventory proof.

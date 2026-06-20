@@ -3,6 +3,7 @@ import * as path from "path";
 import * as os from "os";
 import * as readline from "readline";
 import * as child_process from "child_process";
+import * as crypto from "crypto";
 import chalk from "chalk";
 import { BrailleSpinner } from "../lib/render";
 import {
@@ -102,7 +103,7 @@ async function persistMachineProofReport(
 
 function printHelp(): void {
   console.log("");
-  console.log("  " + chalk.bold("youmd machine") + chalk.dim(" -- cross-machine setup and agent config sync"));
+  console.log("  " + chalk.bold("you machine") + chalk.dim(" -- cross-machine setup and agent config sync"));
   console.log("");
   console.log("  " + chalk.hex("#C46A3A")("Commands"));
   console.log("    " + chalk.cyan("setup") + chalk.dim("     bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons"));
@@ -172,26 +173,76 @@ function directoryStats(root: string): { exists: boolean; files: number; dirs: n
   return stats;
 }
 
-function copyDirMerge(src: string, dest: string): void {
-  if (!fs.existsSync(src)) return;
+type MigrationFileAction = "copied" | "preserved" | "skipped-conflict";
+
+interface MigrationFileRecord {
+  relativePath: string;
+  bytes: number;
+  sha256: string;
+  action: MigrationFileAction;
+}
+
+interface MigrationCopyResult {
+  files: MigrationFileRecord[];
+  dirsCreated: number;
+  symlinksCopied: number;
+  conflicts: Array<{ relativePath: string; legacySha256: string; canonicalSha256: string }>;
+}
+
+function fileSha256(filePath: string): string {
+  const hash = crypto.createHash("sha256");
+  hash.update(fs.readFileSync(filePath));
+  return hash.digest("hex");
+}
+
+function copyDirMerge(src: string, dest: string): MigrationCopyResult {
+  const result: MigrationCopyResult = { files: [], dirsCreated: 0, symlinksCopied: 0, conflicts: [] };
+  if (!fs.existsSync(src)) return result;
   fs.mkdirSync(dest, { recursive: true, mode: 0o700 });
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const from = path.join(src, entry.name);
-    const to = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyDirMerge(from, to);
-      continue;
+
+  const visit = (fromDir: string, toDir: string, relativeDir = "") => {
+    if (!fs.existsSync(toDir)) {
+      fs.mkdirSync(toDir, { recursive: true, mode: 0o700 });
+      result.dirsCreated += 1;
     }
-    if (entry.isSymbolicLink()) {
-      const target = fs.readlinkSync(from);
-      if (!fs.existsSync(to)) fs.symlinkSync(target, to);
-      continue;
+    for (const entry of fs.readdirSync(fromDir, { withFileTypes: true })) {
+      const from = path.join(fromDir, entry.name);
+      const to = path.join(toDir, entry.name);
+      const relativePath = path.join(relativeDir, entry.name);
+      if (entry.isDirectory()) {
+        visit(from, to, relativePath);
+        continue;
+      }
+      if (entry.isSymbolicLink()) {
+        const target = fs.readlinkSync(from);
+        if (!fs.existsSync(to)) {
+          fs.symlinkSync(target, to);
+          result.symlinksCopied += 1;
+        }
+        continue;
+      }
+      if (entry.isFile()) {
+        const legacySha256 = fileSha256(from);
+        const bytes = fs.statSync(from).size;
+        if (!fs.existsSync(to)) {
+          fs.copyFileSync(from, to);
+          const copiedSha256 = fileSha256(to);
+          result.files.push({ relativePath, bytes, sha256: copiedSha256, action: "copied" });
+          continue;
+        }
+        const canonicalSha256 = fileSha256(to);
+        if (canonicalSha256 === legacySha256) {
+          result.files.push({ relativePath, bytes, sha256: canonicalSha256, action: "preserved" });
+        } else {
+          result.files.push({ relativePath, bytes, sha256: canonicalSha256, action: "skipped-conflict" });
+          result.conflicts.push({ relativePath, legacySha256, canonicalSha256 });
+        }
+      }
     }
-    if (entry.isFile()) {
-      if (!fs.existsSync(to)) fs.copyFileSync(from, to);
-      continue;
-    }
-  }
+  };
+
+  visit(src, dest);
+  return result;
 }
 
 function updateYouShims(homeDir: string): void {
@@ -232,20 +283,51 @@ function machineMigrateHomeCommand(opts: { dryRun?: boolean; yes?: boolean } = {
 
   if (!apply) {
     console.log("");
-    console.log(chalk.dim("  no files changed. rerun with ") + chalk.cyan("youmd machine migrate-home --yes"));
+    console.log(chalk.dim("  no files changed. rerun with ") + chalk.cyan("you machine migrate-home --yes"));
     console.log(chalk.dim("  after migration, export: ") + chalk.cyan('PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$PATH"'));
     console.log("");
     return;
   }
 
-  copyDirMerge(legacy, canonical);
+  const migration = copyDirMerge(legacy, canonical);
   updateYouShims(canonical);
   try { fs.chmodSync(canonical, 0o700); } catch { /* ignore */ }
   const afterCanonical = directoryStats(canonical);
+  const copied = migration.files.filter((file) => file.action === "copied").length;
+  const preserved = migration.files.filter((file) => file.action === "preserved").length;
+  const conflicted = migration.files.filter((file) => file.action === "skipped-conflict").length;
+  const reportDir = path.join(canonical, "migration-reports");
+  fs.mkdirSync(reportDir, { recursive: true, mode: 0o700 });
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const reportPath = path.join(reportDir, `you-home-migration-${stamp}.json`);
+  const report = {
+    schemaVersion: "you-md/home-migration/v1",
+    generatedAt: new Date().toISOString(),
+    canonical,
+    legacy,
+    mode: "apply",
+    before: { canonical: beforeCanonical, legacy: beforeLegacy },
+    after: { canonical: afterCanonical },
+    copied,
+    preserved,
+    conflicted,
+    dirsCreated: migration.dirsCreated,
+    symlinksCopied: migration.symlinksCopied,
+    conflicts: migration.conflicts,
+    files: migration.files,
+    legacyPreserved: true,
+    secretValuesExposed: false,
+  };
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n", { mode: 0o600 });
 
   console.log("");
   console.log(chalk.green("  migrated runtime state to canonical ~/.you"));
   console.log(chalk.dim("  canonical files: ") + chalk.cyan(String(afterCanonical.files)) + chalk.dim(` / ${afterCanonical.bytes} bytes`));
+  console.log(chalk.dim("  proof:           ") + chalk.cyan(`${copied} copied / ${preserved} already matched / ${conflicted} conflicts`));
+  console.log(chalk.dim("  proof report:    ") + chalk.cyan(reportPath));
+  if (conflicted > 0) {
+    console.log(chalk.yellow("  conflicts were preserved in canonical ~/.you; inspect the proof report before removing legacy ~/.youmd"));
+  }
   console.log(chalk.dim("  legacy ~/.youmd was preserved for fallback compatibility"));
   console.log(chalk.dim("  next shell PATH: ") + chalk.cyan('export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:$PATH"'));
   console.log("");
@@ -306,7 +388,7 @@ function cloneProject(candidate: MachineProjectCandidate, targetDir: string): "c
 }
 
 function runYoumdMachineStep(label: string, args: string[], opts: { required?: boolean; timeoutMs?: number } = {}): boolean {
-  const command = `youmd ${args.map((arg) => /\s/.test(arg) ? JSON.stringify(arg) : arg).join(" ")}`;
+  const command = `you ${args.map((arg) => /\s/.test(arg) ? JSON.stringify(arg) : arg).join(" ")}`;
   console.log(chalk.dim(`  -- ${label}: `) + chalk.cyan(command));
   const timeout = opts.timeoutMs ?? 10 * 60 * 1000;
   const run = (cmd: string, cmdArgs: string[]) =>
@@ -316,7 +398,10 @@ function runYoumdMachineStep(label: string, args: string[], opts: { required?: b
       timeout,
     });
 
-  let result = run("youmd", args);
+  let result = run("you", args);
+  if (result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT") {
+    result = run("youmd", args);
+  }
   if (result.error && (result.error as NodeJS.ErrnoException).code === "ENOENT" && process.argv[1]) {
     result = run(process.execPath, [process.argv[1], ...args]);
   }
@@ -352,7 +437,7 @@ async function machineSyncNowCommand(opts: {
 } = {}): Promise<void> {
   if (!isAuthenticated()) {
     console.log("");
-    console.log(chalk.hex("#C46A3A")("  not authenticated. run: ") + chalk.cyan("youmd login"));
+    console.log(chalk.hex("#C46A3A")("  not authenticated. run: ") + chalk.cyan("you login"));
     console.log("");
     process.exitCode = 1;
     return;
@@ -450,7 +535,7 @@ async function machineSyncNowCommand(opts: {
 
   console.log("");
   console.log(chalk.green("  machine sync pass complete."));
-  console.log(chalk.dim("  keep it live with: ") + chalk.cyan("youmd sync --live --daemon"));
+  console.log(chalk.dim("  keep it live with: ") + chalk.cyan("you sync --live --daemon"));
   console.log("");
 }
 
@@ -509,7 +594,7 @@ async function machineProjectsCommand(opts: {
   const youJson = readActiveYouJson();
   if (!youJson) {
     console.log(chalk.hex("#C46A3A")("  no local You.md bundle found."));
-    console.log(chalk.dim("  run ") + chalk.cyan("youmd login && youmd pull") + chalk.dim(" first, then retry: ") + chalk.cyan("youmd machine projects"));
+    console.log(chalk.dim("  run ") + chalk.cyan("you login && you pull") + chalk.dim(" first, then retry: ") + chalk.cyan("you machine projects"));
     return;
   }
 
@@ -700,12 +785,12 @@ async function machineVerifyCommand(opts: {
       console.log(chalk.dim(`  skill mesh report: ${agentStackInventory.htmlPath}`));
     }
   } else {
-    console.log(chalk.dim("  skill mesh: no local inventory proof yet; run ") + chalk.cyan("youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync"));
+    console.log(chalk.dim("  skill mesh: no local inventory proof yet; run ") + chalk.cyan("you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync"));
   }
   console.log("");
 
   if (report.projects.length === 0) {
-    console.log(chalk.dim("  no cloned projects found yet. run ") + chalk.cyan("youmd machine projects") + chalk.dim(" first."));
+    console.log(chalk.dim("  no cloned projects found yet. run ") + chalk.cyan("you machine projects") + chalk.dim(" first."));
     if (opts.writeReport || opts.syncReport) {
       const proof = buildMachineVerificationProof({ readiness: report, agentStackInventory });
       await persistMachineProofReport(proof, {
@@ -798,7 +883,7 @@ async function machineVerifyCommand(opts: {
         reportPath: opts.reportPath,
       });
     }
-    console.log(chalk.dim("  run ") + chalk.cyan("youmd machine verify --install-deps --run-checks --probe-servers") + chalk.dim(" to install deps, execute bounded checks, and smoke-probe dev servers."));
+    console.log(chalk.dim("  run ") + chalk.cyan("you machine verify --install-deps --run-checks --probe-servers") + chalk.dim(" to install deps, execute bounded checks, and smoke-probe dev servers."));
     console.log("");
     return;
   }

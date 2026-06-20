@@ -5,6 +5,7 @@ import * as child_process from "child_process";
 import * as os from "os";
 import chalk from "chalk";
 import { BrailleSpinner } from "../lib/render";
+import { getWritableHomeBundleDir } from "../lib/config";
 import {
   apiErrorMessage,
   downloadLatestSecretEnvVaultSnapshot,
@@ -76,7 +77,7 @@ function defaultVaultOutDir(): string {
 }
 
 function defaultCloudVaultDir(): string {
-  return path.join(os.homedir(), ".youmd", "secret-vault");
+  return path.join(getWritableHomeBundleDir(), "secret-vault");
 }
 
 function deviceKeyDir(): string {

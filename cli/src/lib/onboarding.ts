@@ -523,13 +523,9 @@ function getOpenRouterKey(): string | null {
   if (process.env.OPENROUTER_API_KEY) {
     return process.env.OPENROUTER_API_KEY;
   }
-  const configPath = path.join(os.homedir(), ".youmd", "config.json");
   try {
-    if (fs.existsSync(configPath)) {
-      const raw = fs.readFileSync(configPath, "utf-8");
-      const config = JSON.parse(raw);
-      if (config.openrouterKey) return config.openrouterKey;
-    }
+    const config = readGlobalConfig();
+    if (config.openrouterKey) return config.openrouterKey;
   } catch {
     // ignore
   }

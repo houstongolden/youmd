@@ -2,6 +2,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { getWritableHomeBundleDir } from "./config";
 
 type ProviderCategory = "llm" | "auth" | "sms" | "email" | "hosting" | "database" | "browser" | "marketing" | "other";
 
@@ -133,7 +134,7 @@ function parseEnvFile(filePath: string, options: { fingerprints: boolean; salt: 
 }
 
 function readOrCreateSalt(): string {
-  const dir = path.join(os.homedir(), ".youmd");
+  const dir = getWritableHomeBundleDir();
   const saltPath = path.join(dir, ".secret-fingerprint-salt");
   try {
     fs.mkdirSync(dir, { recursive: true });
