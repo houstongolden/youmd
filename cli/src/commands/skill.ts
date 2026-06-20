@@ -10,7 +10,7 @@ import * as path from "path";
 import * as os from "os";
 import * as readline from "readline";
 import * as yaml from "js-yaml";
-import { execFileSync } from "child_process";
+import { execFileSync, spawn } from "child_process";
 import chalk from "chalk";
 import {
   readSkillCatalog,
@@ -73,6 +73,7 @@ type InventorySnapshot = {
     duplicateNameDifferentRealpaths?: Array<{ name?: string } | string>;
     sameRealpathMirrors?: Array<{ name?: string } | string>;
   };
+  phaseTimings?: Array<{ phase?: string; label?: string; durationMs?: number; failed?: boolean }>;
 };
 
 // ─── Personality spinner labels ──────────────────────────────────────
@@ -228,6 +229,72 @@ function renderInventoryTotals(totals: InventoryTotals): void {
     if (typeof value !== "number") continue;
     console.log(`  ${DIM(label.padEnd(maxLabel + 2))}${chalk.cyan(value.toLocaleString())}`);
   }
+}
+
+function renderInventoryPhaseTimings(snapshot: InventorySnapshot): void {
+  const timings = (snapshot.phaseTimings || [])
+    .filter((phase) => typeof phase.durationMs === "number")
+    .sort((a, b) => (b.durationMs || 0) - (a.durationMs || 0))
+    .slice(0, 4);
+  if (timings.length === 0) return;
+  console.log(`  ${DIM("slowest phases")}`);
+  for (const phase of timings) {
+    const seconds = Math.max(0, Math.round((phase.durationMs || 0) / 1000));
+    const label = phase.label || phase.phase || "unknown phase";
+    const status = phase.failed ? ACCENT(" failed") : "";
+    console.log(`    ${DIM(label.padEnd(50))}${chalk.cyan(`${seconds}s`)}${status}`);
+  }
+}
+
+function runInventoryScript(scriptArgs: string[], spinner: BrailleSpinner): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, scriptArgs, {
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const stdout: Buffer[] = [];
+    const stderr: Buffer[] = [];
+    let progressBuffer = "";
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout.push(chunk);
+    });
+
+    child.stderr.on("data", (chunk: Buffer) => {
+      const text = chunk.toString("utf-8");
+      stderr.push(chunk);
+      progressBuffer += text;
+      const lines = progressBuffer.split(/\r?\n/);
+      progressBuffer = lines.pop() || "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("youmd-inventory-progress ")) continue;
+        try {
+          const event = JSON.parse(trimmed.slice("youmd-inventory-progress ".length)) as {
+            event?: string;
+            label?: string;
+            durationMs?: number;
+          };
+          if (event.label && event.event === "start") {
+            spinner.update(event.label);
+          } else if (event.label && event.event === "failed") {
+            spinner.update(`${event.label} failed`);
+          }
+        } catch {
+          // Non-JSON stderr is collected for failure output below.
+        }
+      }
+    });
+
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve(Buffer.concat(stdout).toString("utf-8"));
+        return;
+      }
+      const detail = Buffer.concat(stderr).toString("utf-8").trim();
+      reject(new Error(detail || `inventory exited with code ${code}`));
+    });
+  });
 }
 
 function compactDate(value?: string | number): string {
@@ -1599,7 +1666,7 @@ async function inventoryCmd(args: string[]): Promise<void> {
   const shouldSync = flags.sync === true;
   const shouldSyncRepo = flags["no-repo-sync"] !== true;
   const startedAt = Date.now();
-  const scriptArgs = [script, "--out-dir", outDir];
+  const scriptArgs = [script, "--out-dir", outDir, "--progress"];
   if (workspace) scriptArgs.push("--workspace", path.resolve(workspace));
   if (date) scriptArgs.push("--date", date);
 
@@ -1608,11 +1675,7 @@ async function inventoryCmd(args: string[]): Promise<void> {
   spinner.start();
   let output = "";
   try {
-    output = execFileSync(process.execPath, scriptArgs, {
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 64 * 1024 * 1024,
-    });
+    output = await runInventoryScript(scriptArgs, spinner);
   } catch (err) {
     spinner.fail("inventory failed");
     const message = err instanceof Error ? err.message : String(err);
@@ -1627,6 +1690,7 @@ async function inventoryCmd(args: string[]): Promise<void> {
   console.log("");
   if (parsed?.totals) {
     renderInventoryTotals(parsed.totals);
+    renderInventoryPhaseTimings(parsed);
     console.log("");
   }
 

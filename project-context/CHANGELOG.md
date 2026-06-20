@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(skills): stream inventory progress and phase timings
+- `youmd skill inventory` now runs the scanner as a streaming child process instead of blocking on `execFileSync`, so long Mac inventory runs can update the live CLI spinner through secret-safe phases.
+- The scanner emits optional `--progress` events on stderr while keeping stdout reserved for the final JSON result.
+- Inventory JSON/HTML now includes `phaseTimings` for catalog, host exposure roots, canonical stacks, ownership index, DRY audit, host summaries, prompt/context counts, project markers, and machine proof metadata.
+- The terminal summary now prints the slowest phases so daemon/install/Mac-to-Mac proof runs are diagnosable without exposing skill bodies, prompt logs, `.env.local` values, or tokens.
+
 ### feat(skills): show synced inventory status
 - Added `youmd skill inventory status` with aliases `remote` and `machines`.
 - The command reads the latest local `~/.youmd/agent-stack-inventory` proof, lists synced Convex machine inventory summaries, shows count drift against local skill totals, and prints the exact refresh/verify/diff commands for Mac-to-Mac proof.

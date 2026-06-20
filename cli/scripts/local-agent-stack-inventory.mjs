@@ -15,6 +15,7 @@ function parseArgs(argv) {
     if (arg === "--out-dir") opts.outDir = argv[++i];
     else if (arg === "--workspace") opts.workspace = argv[++i];
     else if (arg === "--date") opts.date = argv[++i];
+    else if (arg === "--progress") opts.progress = true;
     else if (arg === "--help" || arg === "-h") opts.help = true;
   }
   return opts;
@@ -22,7 +23,7 @@ function parseArgs(argv) {
 
 const cli = parseArgs(process.argv.slice(2));
 if (cli.help) {
-  console.log(`Usage: node scripts/local-agent-stack-inventory.mjs [--out-dir DIR] [--workspace DIR] [--date YYYY-MM-DD]
+  console.log(`Usage: node scripts/local-agent-stack-inventory.mjs [--out-dir DIR] [--workspace DIR] [--date YYYY-MM-DD] [--progress]
 
 Secret-safe inventory of Houston's local/global agent skills, prompts,
 preferences, project context, host mirrors, and sync/catalog gaps.
@@ -106,6 +107,41 @@ const defaultWalkMaxEntries = Number.parseInt(process.env.YOUMD_AGENT_STACK_INVE
 const defaultWalkMaxMs = Number.parseInt(process.env.YOUMD_AGENT_STACK_INVENTORY_WALK_MAX_MS || "10000", 10);
 const directEntriesCache = new Map();
 const skillFilesCache = new Map();
+const progressEnabled = Boolean(cli.progress || process.env.YOUMD_AGENT_STACK_INVENTORY_PROGRESS === "1");
+const progressPrefix = "youmd-inventory-progress ";
+const phaseTimings = [];
+
+function emitProgress(event) {
+  if (!progressEnabled) return;
+  try {
+    process.stderr.write(progressPrefix + JSON.stringify(event) + "\n");
+  } catch {
+    // Progress is best-effort; inventory output must still complete.
+  }
+}
+
+function withPhase(name, label, fn) {
+  const start = Date.now();
+  emitProgress({ event: "start", phase: name, label });
+  try {
+    const result = fn();
+    const durationMs = Date.now() - start;
+    phaseTimings.push({ phase: name, label, durationMs });
+    emitProgress({ event: "done", phase: name, label, durationMs });
+    return result;
+  } catch (err) {
+    const durationMs = Date.now() - start;
+    phaseTimings.push({ phase: name, label, durationMs, failed: true });
+    emitProgress({
+      event: "failed",
+      phase: name,
+      label,
+      durationMs,
+      message: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
 
 function exists(p) {
   try {
@@ -613,32 +649,32 @@ function gitInfo(root) {
   };
 }
 
-const catalog = readSkillCatalog();
-const directExposureSkillRecords = [
+const catalog = withPhase("catalog", "reading You.md skill catalog", readSkillCatalog);
+const directExposureSkillRecords = withPhase("host-exposure", "scanning agent host exposure roots", () => [
   ...directSkillRecords(roots.claudeSkills),
   ...directSkillRecords(roots.codexSkills),
   ...directSkillRecords(roots.codexUpperSkills),
   ...directSkillRecords(roots.agentsSkills),
   ...directSkillRecords(roots.youmdSkills),
-];
-const canonicalSkillFiles = [
+]);
+const canonicalSkillFiles = withPhase("canonical-skills", "scanning canonical skill stacks", () => [
   ...skillFiles(roots.sharedSkills),
   ...skillFiles(roots.scienceStack),
   ...skillFiles(roots.gstack),
   ...skillFiles(roots.codexPluginSkills),
   ...skillFiles(roots.youmdSkills),
-];
+]);
 const allSkillFiles = [
   ...directExposureSkillRecords,
   ...canonicalSkillFiles,
 ];
-const uniqueSkills = uniqueByName(allSkillFiles);
+const uniqueSkills = withPhase("skill-index", "building ownership and skill index", () => uniqueByName(allSkillFiles));
 const uniqueRealSkillFiles = new Set(allSkillFiles.map((item) => item.realpath || item.pathDisplay)).size;
 const catalogNames = new Set(catalog.skills.map((s) => s.name));
 const filesystemNames = new Set(uniqueSkills.map((s) => s.name));
 const missingFromCatalog = uniqueSkills.filter((s) => !catalogNames.has(s.name));
 const catalogNotFoundInFs = catalog.skills.filter((s) => !filesystemNames.has(s.name));
-const dryAudit = buildDryAudit(allSkillFiles, catalogNames);
+const dryAudit = withPhase("dry-audit", "checking mirrors and duplicate skill names", () => buildDryAudit(allSkillFiles, catalogNames));
 
 const hostRoots = [
   ["Claude host", roots.claudeSkills],
@@ -652,7 +688,7 @@ const hostRoots = [
   ["Codex plugin cache", roots.codexPluginSkills],
 ];
 
-const hostSummaries = hostRoots.map(([label, root]) => {
+const hostSummaries = withPhase("host-summaries", "summarizing agent exposure roots", () => hostRoots.map(([label, root]) => {
   const direct = directEntries(root);
   const skills = skillFiles(root);
   return {
@@ -677,9 +713,9 @@ const hostSummaries = hostRoots.map(([label, root]) => {
       hasSkill: entry.hasSkill,
     })),
   };
-});
+}));
 
-const promptContext = {
+const promptContext = withPhase("prompt-context", "counting prompts, memories, logs, and local context", () => ({
   youmdIdentityFiles: {
     profile: countFiles(path.join(roots.youmdHome, "profile"), (p) => p.endsWith(".md")),
     preferences: countFiles(path.join(roots.youmdHome, "preferences"), (p) => p.endsWith(".md")),
@@ -696,13 +732,13 @@ const promptContext = {
   cursorPlans: countFiles(path.join(home, ".cursor", "plans"), (p) => p.endsWith(".md"), { maxDepth: 1 }),
   cursorBrowserLogs: countFiles(path.join(home, ".cursor", "browser-logs"), (p) => p.endsWith(".log"), { maxDepth: 1 }),
   cursorAgentTranscripts: countFiles(path.join(home, ".cursor", "projects"), (p) => p.includes("agent-transcripts")),
-};
+}));
 
-const projectSignals = collectProjectSignals();
+const projectSignals = withPhase("project-signals", "scanning workspace project context markers", collectProjectSignals);
 const localPackage = readJsonSafe(path.join(repoRoot, "cli", "package.json")) || readJsonSafe(path.join(repoRoot, "package.json"));
 const rootPackage = readJsonSafe(path.join(repoRoot, "package.json"));
 const machineReport = readJsonSafe(path.join(roots.youmdHome, "machine-reports", "latest.json"));
-const installedYoumdVersion = getCommand("youmd", ["--version"]);
+const installedYoumdVersion = withPhase("machine-proof", "reading local machine proof metadata", () => getCommand("youmd", ["--version"]));
 
 const summary = {
   generatedAt: now.toISOString(),
@@ -768,6 +804,7 @@ const summary = {
     totals: machineReport.totals || null,
     secretValuesExposed: machineReport.secretValuesExposed === true,
   } : null,
+  phaseTimings,
   walkIssues,
   notes: [
     "Secret-safe inventory: file paths, filenames, counts, and symlink metadata only.",
@@ -895,6 +932,13 @@ const linkRows = summary.symlinkStatus.map((s) => [
   esc(s.ok ? "ok" : "check"),
   `<code>${esc(s.actual || "-")}</code>`,
   `<code>${esc(s.target)}</code>`,
+]);
+
+const phaseRows = summary.phaseTimings.map((s) => [
+  `<code>${esc(s.phase)}</code>`,
+  esc(s.label),
+  esc(Math.round((s.durationMs || 0) / 1000)),
+  esc(s.failed ? "failed" : "ok"),
 ]);
 
 const promptRows = Object.entries(summary.promptContext).map(([key, value]) => [
@@ -1084,6 +1128,7 @@ const html = `<!doctype html>
 
     <h2>Traversal Guardrails</h2>
     <p>Install-time scans are bounded so one huge local tree cannot hang machine setup.</p>
+    ${table(["Phase", "Label", "Seconds", "Status"], phaseRows)}
     <pre><code>${esc(JSON.stringify(summary.walkIssues, null, 2))}</code></pre>
 
     <h2>Notes</h2>
