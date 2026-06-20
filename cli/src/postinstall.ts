@@ -27,6 +27,7 @@ console.log("  " + chalk.dim("────────────────�
 console.log("  " + ACCENT("u is installed.") + " " + chalk.dim("identity for the agent internet is now on this machine."));
 console.log("");
 console.log("    " + chalk.cyan("you") + chalk.dim("                 meet U"));
-console.log("    " + chalk.cyan("youmd login") + chalk.dim("         explicit auth path"));
-console.log("    " + chalk.cyan("youmd init") + chalk.dim("          explicit local setup"));
+console.log("    " + chalk.cyan("you login") + chalk.dim("           explicit auth path"));
+console.log("    " + chalk.cyan("you init") + chalk.dim("            explicit local setup"));
+console.log("    " + chalk.dim("legacy alias: ") + chalk.cyan("youmd"));
 console.log("");

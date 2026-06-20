@@ -216,7 +216,7 @@ const DAEMONS: LocalDaemonConfig[] = [
     label: "com.you.realtime-sync",
     legacyLabel: "com.youmd.realtime-sync",
     name: "realtime brain",
-    command: "youmd sync --live --daemon",
+    command: "you sync --live --daemon",
     intervalSeconds: 0,
     stdoutLog: "~/.you/logs/realtime-sync.out.log",
     stderrLog: "~/.you/logs/realtime-sync.err.log",
@@ -225,7 +225,7 @@ const DAEMONS: LocalDaemonConfig[] = [
     label: "com.you.skillstack-sync",
     legacyLabel: "com.youmd.skillstack-sync",
     name: "skills/stacks",
-    command: "youmd stack sync",
+    command: "you stack sync",
     intervalSeconds: 300,
     stdoutLog: "~/.you/logs/skillstack-sync.out.log",
     stderrLog: "~/.you/logs/skillstack-sync.err.log",
@@ -235,7 +235,7 @@ const DAEMONS: LocalDaemonConfig[] = [
     label: "com.you.identity-sync",
     legacyLabel: "com.youmd.identity-sync",
     name: "identity/API",
-    command: "youmd sync --daemon",
+    command: "you sync --daemon",
     intervalSeconds: 300,
     stdoutLog: "~/.you/logs/identity-sync.out.log",
     stderrLog: "~/.you/logs/identity-sync.err.log",
@@ -244,7 +244,7 @@ const DAEMONS: LocalDaemonConfig[] = [
     label: "com.you.context-sync",
     legacyLabel: "com.youmd.context-sync",
     name: "project context",
-    command: "youmd stack context-sync",
+    command: "you stack context-sync",
     intervalSeconds: 900,
     stdoutLog: "~/.you/logs/context-sync.out.log",
     stderrLog: "~/.you/logs/context-sync.err.log",
@@ -650,7 +650,7 @@ function localSkillSyncStatus(home: string): LocalMachineReadiness["skillSync"] 
     youmdCatalogCount: catalogNames.length,
     recentSharedSkills: canonicalNames.slice(0, 6),
     highlightedSkill: highlighted,
-    syncCommand: "youmd pull && youmd sync && youmd skill sync && git -C ~/.agent-shared pull --ff-only && ~/.agent-shared/bin/sync-agent-shared.sh",
+    syncCommand: "you pull && you sync && you skill sync && git -C ~/.agent-shared pull --ff-only && ~/.agent-shared/bin/sync-agent-shared.sh",
     verifyCommand: `rg -n "${highlightedName}" ~/.you/skills ~/.youmd/skills ~/.agent-shared/STACK-MAP.md && ls -la ~/.agent-shared/claude-skills/${highlightedName} ~/.claude/skills/${highlightedName} ~/.codex/skills/${highlightedName}`,
     secretValuesExposed: false,
   };
@@ -794,7 +794,7 @@ function realtimeAgentBusStatus(): LocalMachineReadiness["agentBus"] {
     recentCount: numberField(agentBus?.recentCount) || messages.length,
     latestMessageAt: latest ? new Date(latest).toISOString() : undefined,
     inboxPath: stringField(agentBus?.inboxPath) ?? "~/.you/agent-bus/inbox.json",
-    sendCommand: stringField(agentBus?.sendCommand) ?? 'youmd agent send "hello from this Mac"',
+    sendCommand: stringField(agentBus?.sendCommand) ?? 'you agent send "hello from this Mac"',
     messages,
     secretValuesExposed: false,
   };
@@ -806,8 +806,9 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
   const freshMachineRoot = path.join(home, "Desktop", "CODE_YOU");
   const daemons = daemonHealth();
   const projects = projectReadiness(rootDir);
-  const youmdCli = shell("command -v youmd");
-  const youmdVersion = youmdCli.ok ? shell("youmd --version", 3500).stdout : "";
+  const youmdCli = shell("command -v you");
+  const legacyYoumdCli = youmdCli.ok ? youmdCli : shell("command -v youmd");
+  const youmdVersion = legacyYoumdCli.ok ? shell(`${youmdCli.ok ? "you" : "youmd"} --version`, 3500).stdout : "";
   const config = readYouHomeJson("config.json");
   const hasApiKey =
     (typeof config?.token === "string" && config.token.length > 0) ||
@@ -819,8 +820,8 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
   const youmdSkillsPresent = isYouHomeDirectory("skills");
   const syncScriptPresent = exists("~/.agent-shared/bin/sync-agent-shared.sh");
   const agentStack = {
-    status: statusFrom([youmdCli.ok, Boolean(config), hasApiKey, isDirectory(sharedSkillRoot), syncScriptPresent]) as LocalReadinessStatus,
-    youmdCliPath: youmdCli.stdout || undefined,
+    status: statusFrom([legacyYoumdCli.ok, Boolean(config), hasApiKey, isDirectory(sharedSkillRoot), syncScriptPresent]) as LocalReadinessStatus,
+    youmdCliPath: legacyYoumdCli.stdout || undefined,
     youmdVersion: youmdVersion || undefined,
     hasYoumdConfig: Boolean(config),
     hasApiKey,
@@ -832,7 +833,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     syncScriptPresent,
   };
   const mcp = {
-    status: statusFrom([exists("~/.claude.json") || exists("~/.claude/settings.json"), exists("~/.codex/config.toml"), youmdCli.ok]) as LocalReadinessStatus,
+    status: statusFrom([exists("~/.claude.json") || exists("~/.claude/settings.json"), exists("~/.codex/config.toml"), legacyYoumdCli.ok]) as LocalReadinessStatus,
     claudeConfigPresent: exists("~/.claude.json") || exists("~/.claude/settings.json"),
     codexConfigPresent: exists("~/.codex/config.toml"),
     cursorConfigPresent: exists("~/.cursor/mcp.json") || exists("~/.cursor/config.json"),
@@ -859,7 +860,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
       "dashboard reports file presence and key-name readiness only",
       "raw .env.local values stay local and are not returned by this API",
       "account Secret Vault status comes from the local realtime daemon sync head",
-      "fresh hosts restore values through youmd env restore <vault> --root <dir>",
+      "fresh hosts restore values through you env restore <vault> --root <dir>",
     ],
   };
   const warnings = [
@@ -904,12 +905,12 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     projects,
     latestProof: latestMachineProof(),
     commands: {
-      verifyCurrent: `youmd machine verify --root "${rootDir}"`,
-      verifyFresh: `youmd machine verify --root "${freshMachineRoot}" --write-report`,
-      verifyFreshFull: `youmd machine verify --root "${freshMachineRoot}" --install-deps --run-checks --probe-servers --write-report`,
-      daemonStatus: "youmd stack daemon status",
+      verifyCurrent: `you machine verify --root "${rootDir}"`,
+      verifyFresh: `you machine verify --root "${freshMachineRoot}" --write-report`,
+      verifyFreshFull: `you machine verify --root "${freshMachineRoot}" --install-deps --run-checks --probe-servers --write-report`,
+      daemonStatus: "you stack daemon status",
       envBackup: "~/.agent-shared/bin/env-secure-backup.sh --root ~/Desktop/CODE_2025",
-      envRestore: `youmd env restore <vault> --root "${freshMachineRoot}"`,
+      envRestore: `you env restore <vault> --root "${freshMachineRoot}"`,
     },
   };
 }

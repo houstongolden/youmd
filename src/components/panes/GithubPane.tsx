@@ -470,8 +470,8 @@ export function GithubPane({ clerkId, username, userId }: GithubPaneProps) {
       body: `npx --yes youmd@latest mcp --install claude --auto
 npx --yes youmd@latest mcp --install codex --auto
 npx --yes youmd@latest mcp --install cursor --auto
-youmd logs --agent "Claude Code" --limit 5
-youmd logs --agent "Codex" --limit 5`,
+you logs --agent "Claude Code" --limit 5
+you logs --agent "Codex" --limit 5`,
     },
     {
       key: "rest-smoke",
@@ -531,7 +531,7 @@ over guessing from a profile page.`,
           iconDomain: spec.iconDomain,
           localVerification:
             spec.slug === "local-agent-runtime"
-              ? "Install with youmd mcp --install <claude|codex|cursor> --auto, then confirm first tool use from the grant's lastUsedAt/activity log."
+              ? "Install with you mcp --install <claude|codex|cursor> --auto, then confirm first tool use from the grant's lastUsedAt/activity log."
               : undefined,
           createdFrom: "dashboard-connectors-pane",
         },

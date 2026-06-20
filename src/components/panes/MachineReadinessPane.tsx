@@ -27,9 +27,9 @@ type MachineReadinessPaneProps = {
   clerkId?: string;
 };
 
-const freshComputerPromptCommand = "youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault";
+const freshComputerPromptCommand = "you machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault";
 const freshComputerShellCommand = "/new computer";
-const sourceEnvVaultBackupCommand = "youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault";
+const sourceEnvVaultBackupCommand = "you env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault";
 const machineSetupCollapsedStorageKey = "youmd:machine-setup-collapsed";
 
 type SyncedMachineProof = {
@@ -682,7 +682,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
         )}
         {syncedProofs && syncedProofs.length === 0 && (
           <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
-            no synced machine proofs yet. Run `youmd machine verify --write-report --sync-report` from an authenticated CLI.
+            no synced machine proofs yet. Run `you machine verify --write-report --sync-report` from an authenticated CLI.
           </div>
         )}
         {syncedProofs?.map((proof) => (
@@ -920,7 +920,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                     </div>
                     <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
                       {daemon.legacyLoaded && daemon.legacyLabel
-                        ? `legacy ${daemon.legacyLabel} is still loaded; run youmd stack daemon install to replace it`
+                        ? `legacy ${daemon.legacyLabel} is still loaded; run you stack daemon install to replace it`
                         : daemon.warning ?? daemon.lastLogLine ?? "no daemon log yet"}
                     </p>
                   </div>
@@ -934,16 +934,16 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
               <div>
                 <PaneSectionLabel>local agent stack</PaneSectionLabel>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <BooleanCell label="youmd config" value={report.agentStack.hasYoumdConfig} />
+                  <BooleanCell label="you config" value={report.agentStack.hasYoumdConfig} />
                   <BooleanCell label="api key present" value={report.agentStack.hasApiKey} />
                   <BooleanCell label="shared sync script" value={report.agentStack.syncScriptPresent} />
                   <BooleanCell label="codex skills mirror" value={report.agentStack.codexSkillsPresent} />
                   <BooleanCell label="claude skills mirror" value={report.agentStack.claudeSkillsPresent} />
-                  <BooleanCell label="youmd skill cache" value={report.agentStack.youmdSkillsPresent} />
+                  <BooleanCell label="you skill cache" value={report.agentStack.youmdSkillsPresent} />
                   <BooleanCell label="clarity skill proof" value={report.skillSync.status === "ready"} />
                 </div>
                 <p className="mt-3 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
-                  {report.agentStack.youmdCliPath ?? "youmd cli not found"} / {report.agentStack.sharedSkillCount} shared skills indexed / {report.skillSync.highlightedSkill.name} {report.skillSync.status}
+                  {report.agentStack.youmdCliPath ?? "you cli not found"} / {report.agentStack.sharedSkillCount} shared skills indexed / {report.skillSync.highlightedSkill.name} {report.skillSync.status}
                 </p>
               </div>
               <div>

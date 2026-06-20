@@ -2005,3 +2005,13 @@ Last Updated: 2026-06-20
 2. Keep bootstrap material and secrets out of the browser. **DONE:** the bridge never returns the local token or raw env values, sets an HTTP-only session cookie, and is blocked for non-local hosts.
 3. Harden shell auth hydration against transient Convex fetch failures. **DONE:** `/api/auth/session` and the client session fetch path retry short-lived fetch resets before treating the session as missing.
 4. Prove Home DSI in the real product shell. **DONE LOCAL:** authenticated in-app Browser visual proof shows `LIVE SKILL MESH`, `DSI HOME VIEW`, `Home is now a saved live View`, `6/6 live widgets`, and `secrets redacted` on `/shell?tab=home`.
+
+### 141. Canonical `you` / `~/.you` migration copy and machine setup clarity
+**Status:** DONE LOCAL / NPM PUBLISH + MAC MINI PROOF PENDING
+**Verified:** CLI TypeScript build, production Next build, docs generation/check, `git diff --check`, and targeted command-copy grep.
+**Source:** 2026-06-20 — Houston: "continue on the .you migration now and give me a command to run on my mac mini too to fix and rename everything"
+**Actionable Scope:**
+1. Lead visible command-copy surfaces with canonical `you ...`. **DONE:** CLI postinstall/update/help text, Machine readiness commands, Connect/API snippets, docs quickstart/reference tables, and generated agent docs now teach `you` first.
+2. Lead setup env/home naming with `YOU_*` and `~/.you`. **DONE:** Machine readiness and docs preserve `~/.youmd` / `YOUMD_*` only as explicit migration fallback or legacy alias.
+3. Preserve compatibility. **DONE:** `youmd@latest` remains the npm package, `youmd://` remains the local MCP URI scheme, legacy launchd labels are still reported/cleaned up, and `youmd` remains a command alias.
+4. Prove on the Mac mini. **PENDING:** requires publishing the current CLI version and rerunning the normal curl setup plus `you machine migrate-home --yes` / `you machine sync-now` proof on the Mac mini.

@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### fix(app/docs): lead setup surfaces with canonical `you`
+- Dashboard Machine, Connect/API snippets, CLI postinstall/help text, generated docs, and local readiness commands now lead with `you ...`, `YOU_*`, and `~/.you` copy where users copy commands.
+- Compatibility surfaces remain intact: `youmd@latest` stays the npm package, `youmd://` stays the local MCP URI protocol, `YOUMD_*` remains a legacy env alias, and `~/.youmd` is still read as fallback during migration.
+- Verified with CLI TypeScript build, production Next build, docs generation/check, and `git diff --check`.
+
 ### fix(cli): lead env and stack repair copy with `you`
 - Secret Vault follow-up instructions, usage text, and Keychain fallback now lead with `you ...` and `YOU_ENV_VAULT_KEYCHAIN_SERVICE`, while retaining legacy `YOUMD_*` aliases.
 - Resident daemon definitions now install launchd jobs that execute canonical `you ...` commands, while preserving `com.youmd.*` legacy labels for cleanup/status.

@@ -41,7 +41,7 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "1a7b9b229e2b75a4ac4a372dd0ad1c504f164efb6b008f77934dcaa35704685c",
+  "sourceHash": "17d5926cf3fa4aa1add2b8d6f891a1c50d2595aee3036ede967c7e9474be221e",
   "cli": {
     "version": "0.8.12"
   },
@@ -1527,7 +1527,7 @@ export const docsReference = {
       "usage": "diff [v1] [v2]",
       "group": "BUNDLE",
       "summary": "show changes vs published version",
-      "description": "Compare bundle versions: `youmd diff` (local vs remote) or `youmd diff <v1> <v2>`"
+      "description": "Compare bundle versions: `you diff` (local vs remote) or `you diff <v1> <v2>`"
     },
     {
       "name": "export",

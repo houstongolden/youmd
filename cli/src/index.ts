@@ -224,7 +224,7 @@ async function printUpdateHint(): Promise<void> {
 
   console.log("  " + chalk.yellow(`update available: ${CURRENT_VERSION} → ${latest}`));
   console.log("  " + chalk.dim("refresh U with: ") + chalk.cyan("curl -fsSL https://you.md/install.sh | bash"));
-  console.log("  " + chalk.dim("or: ") + chalk.cyan(`npm install -g youmd@${latest}`) + chalk.dim(" (installs both `you` and legacy `youmd`)"));
+  console.log("  " + chalk.dim("or install the npm package: ") + chalk.cyan(`npm install -g youmd@${latest}`) + chalk.dim(" (then run `you`)"));
   console.log("");
 }
 
@@ -509,7 +509,7 @@ program
 
 program
   .command("diff [v1] [v2]")
-  .description("Compare bundle versions: `youmd diff` (local vs remote) or `youmd diff <v1> <v2>`")
+  .description("Compare bundle versions: `you diff` (local vs remote) or `you diff <v1> <v2>`")
   .action((v1, v2) => diffCommand(v1, v2));
 
 program
@@ -645,7 +645,7 @@ program
   .option("--dry-run", "Preview stack link writes without changing files")
   .option("--verify", "Verify emitted SKILL.md files pass agent discovery; exit non-zero on failure")
   .option("--json", "Print JSON output")
-  .option("--init", "Initialize a golden.json eval scaffold for youmd stack eval")
+  .option("--init", "Initialize a golden.json eval scaffold for `you stack eval`")
   .option("--apply", "Apply the fetched update to the local manifest (stack update only)")
   .option("--force", "Overwrite existing stacks/<slug>/ directory (stack install only)")
   .option("--dir <path>", "Base directory to install into (stack install only; defaults to cwd)")
@@ -731,7 +731,7 @@ program
       envBackupCommand({ root: options.root, out: options.out, preflight: options.preflight });
     } else if (subcommand === "restore") {
       if (!a[0]) {
-        console.log("usage: youmd env restore <vault> [--root <dir>] [--list] [--force] [--map-existing] [--existing-only] [--skip-agent-auth]");
+        console.log("usage: you env restore <vault> [--root <dir>] [--list] [--force] [--map-existing] [--existing-only] [--skip-agent-auth]");
         return;
       }
       envRestoreCommand(a[0], {
@@ -760,7 +760,7 @@ program
       });
       process.exit(status);
     } else {
-      console.log("usage: youmd env <backup|restore|vault> [options]");
+      console.log("usage: you env <backup|restore|vault> [options]");
       console.log("  backup              encrypt all .env.local files into a portable vault");
       console.log("  backup --preflight  verify env-vault readiness without writing a vault");
       console.log("  restore <vault>     decrypt and restore .env.local files from a vault");
@@ -803,7 +803,7 @@ program
   .option("--report-path <path>", "verify: custom path for the machine proof report")
   .option("--key <apiKey>", "prompt: embed a You.md API key for non-interactive login")
   .option("--env-vault <path>", "prompt: encrypted .env.local vault path to restore")
-  .option("--require-env-vault", "prompt: fail the fresh-machine command unless YOUMD_ENV_VAULT is restored")
+  .option("--require-env-vault", "prompt: fail the fresh-machine command unless YOU_ENV_VAULT is restored")
   .option("--no-github", "projects: skip authenticated GitHub recent-repo scan")
   .option("--yes", "projects: include older projects without prompting")
   .option("--no-clone", "projects: create directories only")

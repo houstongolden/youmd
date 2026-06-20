@@ -290,9 +290,9 @@ function QuickStart() {
   const steps: { key: string; cmd: string; desc: string }[] = [
     { key: "install", cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "install the You.md runtime globally" },
     { key: "you", cmd: "you", desc: "build and sync your brain" },
-    { key: "stacks", cmd: "youmd skill use youstack-maintainer", desc: "organize or improve named stacks" },
-    { key: "doctor", cmd: "youmd stack doctor --path stacks/<name>", desc: "check a stack before agents use it" },
-    { key: "mcp", cmd: "youmd mcp --install codex --auto", desc: "wire protected brain access into Codex" },
+    { key: "stacks", cmd: "you skill use youstack-maintainer", desc: "organize or improve named stacks" },
+    { key: "doctor", cmd: "you stack doctor --path stacks/<name>", desc: "check a stack before agents use it" },
+    { key: "mcp", cmd: "you mcp --install codex --auto", desc: "wire protected brain access into Codex" },
   ];
 
   return (
@@ -731,7 +731,7 @@ function HostedMcpToolReference() {
 
 // CLI command tables generated from the commander registrations in
 // cli/src/index.ts (via scripts/generate-docs-reference.mjs), grouped the
-// same way as `youmd --help`. Hand-maintained command tables drift; this
+// same way as `you --help`. Hand-maintained command tables drift; this
 // one fails docs:check when a command is added without regenerating.
 function CliCommandReference() {
   const commands = docsReference.cliCommands as readonly DocsCliCommand[];
@@ -743,7 +743,7 @@ function CliCommandReference() {
       groups.push(group);
     }
     group.rows.push({
-      cmd: `youmd ${command.usage}`,
+      cmd: `you ${command.usage}`,
       desc: command.description,
     });
   }
@@ -1059,11 +1059,11 @@ export default function DocsContent() {
                 BAMFStack-style stack.
               </Step>
               <Step n={4}>
-                Run <InlineCode>youmd stack doctor --path stacks/&lt;name&gt;</InlineCode>{" "}
+                Run <InlineCode>you stack doctor --path stacks/&lt;name&gt;</InlineCode>{" "}
                 before an agent improves, shares, or publishes that stack.
               </Step>
               <Step n={5}>
-                Use <InlineCode>youmd mcp --install codex --auto</InlineCode>{" "}
+                Use <InlineCode>you mcp --install codex --auto</InlineCode>{" "}
                 when the agent needs protected brain retrieval, tokens, sync,
                 or connected tools.
               </Step>
@@ -1253,7 +1253,7 @@ Link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="applicati
                 { cmd: "https://you.md/{username}", desc: "Human-readable public profile with JSON-LD, OG cards, and profile sections" },
                 { cmd: "GET /api/v1/profiles?username=", desc: "Public agent-readable JSON or markdown with ETag and schema link headers" },
                 { cmd: "GET /ctx/{username}/{token}", desc: "Scoped context link, optionally including private context" },
-                { cmd: "youmd mcp", desc: "Local stdio MCP server for Claude Code, Codex, Cursor, and similar tools" },
+                { cmd: "you mcp", desc: "Local stdio MCP server for Claude Code, Codex, Cursor, and similar tools" },
                 { cmd: "POST /api/v1/mcp", desc: "Same-origin JSON-RPC endpoint for web-capable MCP clients" },
                 { cmd: "GET /api/v1/docs/reference", desc: "Machine-readable docs manifest generated from routes and MCP tools" },
                 { cmd: "GET /api/v1/docs/openapi.json", desc: "Generated OpenAPI-style inventory for API reference tooling" },
@@ -1274,8 +1274,8 @@ Link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="applicati
                 { cmd: "GET /api/v1/docs/openapi.json", desc: "OpenAPI-style route inventory for API reference generators and docs agents" },
                 { cmd: "GET /api/v1/stacks/capabilities", desc: "Default YouStacks capability map used by products and local agents" },
                 { cmd: "POST /api/v1/stacks/route", desc: "Deterministic route scoring for stack capability selection before action" },
-                { cmd: "youmd stack doctor --path stacks/<name>", desc: "Local static readiness check before sharing, improving, or publishing a stack" },
-                { cmd: "youmd stack smoke --path stacks/<name>", desc: "Local runtime smoke test for manifest, docs, adapter, capability, and route health" },
+                { cmd: "you stack doctor --path stacks/<name>", desc: "Local static readiness check before sharing, improving, or publishing a stack" },
+                { cmd: "you stack smoke --path stacks/<name>", desc: "Local runtime smoke test for manifest, docs, adapter, capability, and route health" },
               ]}
             />
 
@@ -1339,7 +1339,7 @@ Link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="applicati
             </P>
 
             <Callout type="tip">
-              The <InlineCode>youmd</InlineCode> CLI works in any terminal,
+              The <InlineCode>you</InlineCode> CLI works in any terminal,
               including Claude Code&apos;s shell. Use <InlineCode>you</InlineCode>{" "}
               in a regular terminal for the live U conversation. Non-interactive
               commands work inside your coding agent.
@@ -1354,10 +1354,10 @@ Link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="applicati
                 pull, or identity setup
               </Step>
               <Step n={2}>
-                Run <InlineCode>youmd login</InlineCode> to authenticate
+                Run <InlineCode>you login</InlineCode> to authenticate
               </Step>
               <Step n={3}>
-                Run <InlineCode>youmd push</InlineCode> to publish your profile
+                Run <InlineCode>you push</InlineCode> to publish your profile
               </Step>
               <Step n={4}>
                 Now switch to Claude Code — all non-interactive commands work
@@ -1372,24 +1372,24 @@ Link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="applicati
             </P>
             <CommandTable
               commands={[
-                { cmd: "youmd status", desc: "Check your bundle status and version" },
-                { cmd: "youmd whoami", desc: "See who you're logged in as" },
-                { cmd: "youmd pull", desc: "Download your profile from cloud" },
-                { cmd: "youmd push", desc: "Upload local changes and publish" },
-                { cmd: "youmd sync", desc: "Pull + push in one command" },
-                { cmd: "youmd private", desc: "View your private context" },
-                { cmd: "youmd private notes append \"text\"", desc: "Add to private notes" },
-                { cmd: "youmd private projects add name desc", desc: "Add a private project" },
-                { cmd: "youmd memories list", desc: "See saved memories" },
-                { cmd: "youmd memories add fact \"content\"", desc: "Add a memory manually" },
-                { cmd: "youmd link create", desc: "Create a shareable context link" },
-                { cmd: "youmd keys list", desc: "List your API keys" },
-                { cmd: "youmd build", desc: "Compile local bundle" },
-                { cmd: "youmd publish", desc: "Publish to you.md" },
+                { cmd: "you status", desc: "Check your bundle status and version" },
+                { cmd: "you whoami", desc: "See who you're logged in as" },
+                { cmd: "you pull", desc: "Download your profile from cloud" },
+                { cmd: "you push", desc: "Upload local changes and publish" },
+                { cmd: "you sync", desc: "Pull + push in one command" },
+                { cmd: "you private", desc: "View your private context" },
+                { cmd: "you private notes append \"text\"", desc: "Add to private notes" },
+                { cmd: "you private projects add name desc", desc: "Add a private project" },
+                { cmd: "you memories list", desc: "See saved memories" },
+                { cmd: "you memories add fact \"content\"", desc: "Add a memory manually" },
+                { cmd: "you link create", desc: "Create a shareable context link" },
+                { cmd: "you keys list", desc: "List your API keys" },
+                { cmd: "you build", desc: "Compile local bundle" },
+                { cmd: "you publish", desc: "Publish to you.md" },
               ]}
             />
             <Callout type="info">
-              <InlineCode>you</InlineCode> and <InlineCode>youmd init</InlineCode>{" "}
+              <InlineCode>you</InlineCode> and <InlineCode>you init</InlineCode>{" "}
               are interactive and need a regular terminal. Run those first, then
               switch to Claude Code for everything else.
             </Callout>
@@ -1404,27 +1404,27 @@ Link: <https://you.md/schema/you-md/v1.json>; rel="describedby"; type="applicati
                 Tell Claude Code: &quot;add my preference for terminal-native UI to
                 my you.md private context&quot; — it can run{" "}
                 <InlineCode>
-                  youmd private notes append &quot;prefers terminal-native UI&quot;
+                  you private notes append &quot;prefers terminal-native UI&quot;
                 </InlineCode>
               </Step>
               <Step n={2}>
                 After a coding session, tell your agent: &quot;extract any
                 preferences or facts about me from this conversation and save
                 them to my you.md&quot; — it can run{" "}
-                <InlineCode>youmd memories add</InlineCode> commands
+                <InlineCode>you memories add</InlineCode> commands
               </Step>
               <Step n={3}>
                 Edit your <InlineCode>.you/</InlineCode> files directly (they&apos;re
                 just markdown) and run{" "}
-                <InlineCode>youmd push</InlineCode> to sync
+                <InlineCode>you push</InlineCode> to sync
               </Step>
               <Step n={4}>
-                Use <InlineCode>youmd sync --watch</InlineCode> in a regular
+                Use <InlineCode>you sync --watch</InlineCode> in a regular
                 terminal to auto-push on every file save
               </Step>
               <Step n={5}>
                 Share your context with any new agent:{" "}
-                <InlineCode>youmd link create</InlineCode> generates a URL you
+                <InlineCode>you link create</InlineCode> generates a URL you
                 can paste into any AI conversation
               </Step>
             </StepList>
@@ -1492,21 +1492,21 @@ preferences: terminal-native, monochrome
             <StepList>
               <Step n={1}>Create your profile on either web or CLI</Step>
               <Step n={2}>
-                <InlineCode>youmd login</InlineCode> -- press Enter to open
+                <InlineCode>you login</InlineCode> -- press Enter to open
                 browser sign-in, or type the same email you use on the web and
                 paste the verification code in-terminal
               </Step>
               <Step n={3}>
-                <InlineCode>youmd pull</InlineCode> downloads your web profile to
+                <InlineCode>you pull</InlineCode> downloads your web profile to
                 local files
               </Step>
               <Step n={4}>Edit files in any editor (Cursor, Obsidian, VS Code)</Step>
               <Step n={5}>
-                <InlineCode>youmd push</InlineCode> compiles and publishes back
+                <InlineCode>you push</InlineCode> compiles and publishes back
                 to you.md
               </Step>
               <Step n={6}>
-                <InlineCode>youmd sync --watch</InlineCode> auto-syncs on every
+                <InlineCode>you sync --watch</InlineCode> auto-syncs on every
                 file save
               </Step>
             </StepList>
@@ -1557,7 +1557,7 @@ preferences: terminal-native, monochrome
                     <td className="px-4 py-3 font-mono text-[13px] text-[hsl(var(--accent))] whitespace-nowrap align-top">Identity</td>
                     <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">Profile, preferences, project-context, memory, directives</td>
                     <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">
-                      <InlineCode>youmd sync</InlineCode> (Convex-backed).
+                      <InlineCode>you sync</InlineCode> (Convex-backed).
                       Supports <InlineCode>--watch</InlineCode> for continuous
                       auto-push on file saves.
                     </td>
@@ -1567,16 +1567,16 @@ preferences: terminal-native, monochrome
                     <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">All <InlineCode>.env.local</InlineCode> files across your projects</td>
                     <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">
                       Encrypted vault.{" "}
-                      <InlineCode>youmd env backup</InlineCode> walks a root
+                      <InlineCode>you env backup</InlineCode> walks a root
                       directory, encrypts every <InlineCode>.env.local</InlineCode>{" "}
                       into one openssl-encrypted portable file plus a
                       values-free manifest.{" "}
-                      <InlineCode>youmd env backup --preflight</InlineCode>{" "}
+                      <InlineCode>you env backup --preflight</InlineCode>{" "}
                       checks readiness without writing a vault. Secrets never
                       auto-sync over the network — you carry the vault (AirDrop, USB, secure
                       cloud file) and restore on the new machine with{" "}
-                      <InlineCode>youmd env restore &lt;vault&gt; --list</InlineCode>{" "}
-                      first, then <InlineCode>youmd env restore &lt;vault&gt;</InlineCode>,
+                      <InlineCode>you env restore &lt;vault&gt; --list</InlineCode>{" "}
+                      first, then <InlineCode>you env restore &lt;vault&gt;</InlineCode>,
                       which decrypts and writes each file back after the
                       secret-safe list step passes.
                     </td>
@@ -1586,8 +1586,8 @@ preferences: terminal-native, monochrome
                     <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">Authored agent skills and the shared agent layer (<InlineCode>~/.agent-shared</InlineCode>)</td>
                     <td className="px-4 py-3 text-[13px] text-[hsl(var(--text-secondary))] align-top">
                       Private git repo, synced by{" "}
-                      <InlineCode>youmd stack sync</InlineCode>. A background
-                      daemon (<InlineCode>youmd stack daemon install</InlineCode>)
+                      <InlineCode>you stack sync</InlineCode>. A background
+                      daemon (<InlineCode>you stack daemon install</InlineCode>)
                       runs via launchd every ~5 minutes — it auto-commits local
                       changes and pulls remote changes so editing a skill on
                       one machine updates the others.
@@ -1614,16 +1614,16 @@ preferences: terminal-native, monochrome
               <InlineCode>/new computer</InlineCode>. It mints a short-lived
               bootstrap key and returns one copyable command for Claude Code or
               Codex on the fresh machine. Terminal-only users can generate the
-              same runbook with <InlineCode>youmd machine prompt</InlineCode>.
+              same runbook with <InlineCode>you machine prompt</InlineCode>.
             </P>
             <CodeBlock title="new machine setup">{`# Web shell
 /new computer
 
 # CLI-only
-youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80
+you machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80
 
 # Bounded proof run before cloning the full set
-youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 --max-clone-projects 2`}</CodeBlock>
+you machine prompt --root /tmp/you-clean-host-CODE_YOU --days 30 --limit 80 --max-clone-projects 2`}</CodeBlock>
             <P>
               The generated command installs You.md, authenticates, pulls and
               syncs your identity bundle, restores shared skills/stacks/agent
@@ -1636,14 +1636,14 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
               machine proof report.
               For clean-host proof runs, add{" "}
               <InlineCode>--max-clone-projects</InlineCode> or set{" "}
-              <InlineCode>YOUMD_MAX_CLONE_PROJECTS</InlineCode>; omit it on the
+              <InlineCode>YOU_MAX_CLONE_PROJECTS</InlineCode>; legacy <InlineCode>YOUMD_MAX_CLONE_PROJECTS</InlineCode> still works. Omit it on the
               real new machine to clone the full selected graph-backed set.
             </P>
             <CommandTable
               commands={[
-                { cmd: "youmd stack daemon install", desc: "Register resident identity, skillstack, and project-context sync daemons" },
-                { cmd: "youmd stack daemon status", desc: "Check loaded state, intervals, recent activity, and current warnings" },
-                { cmd: "youmd stack daemon uninstall", desc: "Remove the daemon from launchd without deleting synced files" },
+                { cmd: "you stack daemon install", desc: "Register resident identity, skillstack, and project-context sync daemons" },
+                { cmd: "you stack daemon status", desc: "Check loaded state, intervals, recent activity, and current warnings" },
+                { cmd: "you stack daemon uninstall", desc: "Remove the daemon from launchd without deleting synced files" },
               ]}
             />
             <Callout type="tip">
@@ -1662,12 +1662,12 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
               Install with{" "}
               <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>{" "}
               as the recommended path. The curl installer delivers the full
-              package in one step: the <InlineCode>youmd</InlineCode> CLI,
+              package in one step: the <InlineCode>you</InlineCode> CLI,
               all bundled native skills, and automatic MCP configuration for
               any detected agent host (Claude Code, Codex, Cursor). Use{" "}
               <InlineCode>npm i -g youmd@latest</InlineCode> only if you
               prefer to manage the binary yourself; you will need to run{" "}
-              <InlineCode>youmd mcp --install &lt;host&gt; --auto</InlineCode>{" "}
+              <InlineCode>you mcp --install &lt;host&gt; --auto</InlineCode>{" "}
               separately. The CLI covers the full identity lifecycle --
               identity, auth, sync, sharing, memory, projects, and skills.
             </P>
@@ -1676,17 +1676,17 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
               The {docsReference.counts.cliCommands} commands below are
               generated from the commander registrations in{" "}
               <InlineCode>cli/src/index.ts</InlineCode> and grouped the same
-              way as <InlineCode>youmd --help</InlineCode>. Namespaces like{" "}
+              way as <InlineCode>you --help</InlineCode>. Namespaces like{" "}
               <InlineCode>skill</InlineCode>, <InlineCode>stack</InlineCode>,{" "}
               <InlineCode>memories</InlineCode>, <InlineCode>private</InlineCode>,{" "}
               <InlineCode>project</InlineCode>, <InlineCode>link</InlineCode>,
               and <InlineCode>keys</InlineCode> take subcommands — run{" "}
-              <InlineCode>youmd &lt;command&gt; --help</InlineCode> for
+              <InlineCode>you &lt;command&gt; --help</InlineCode> for
               per-command options, and see the{" "}
               <a href="#skills-cli" className="text-[hsl(var(--accent))] hover:underline">
                 skill subcommand reference
               </a>{" "}
-              for the full <InlineCode>youmd skill ...</InlineCode> surface.
+              for the full <InlineCode>you skill ...</InlineCode> surface.
             </P>
 
             <CliCommandReference />
@@ -1739,7 +1739,7 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
 
             <H3 id="skills-cli">CLI Commands</H3>
             <P>
-              The <InlineCode>youmd skill</InlineCode> namespace has 18 core
+              The <InlineCode>you skill</InlineCode> namespace has 18 core
               subcommands covering the full skill lifecycle:
             </P>
             <CommandTable
@@ -1785,7 +1785,7 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
 
             <H3 id="skills-init-project">init-project</H3>
             <P>
-              The <InlineCode>youmd skill init-project</InlineCode> command is
+              The <InlineCode>you skill init-project</InlineCode> command is
               the fastest way to make a repo brain-aware. It sets up four
               things:
             </P>
@@ -1808,7 +1808,7 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
                 generated additive layer and tool-specific discovery surfaces
               </Step>
             </StepList>
-            <CodeBlock title="terminal">{`$ youmd skill init-project
+            <CodeBlock title="terminal">{`$ you skill init-project
   install claude-md-generator ready
   install project-context-init ready
   .you/ created AGENT.md, STACK-MAP.md, project-context/README.md
@@ -1822,13 +1822,13 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
               Installed skills are stored in your local{" "}
               <InlineCode>.you/skills/</InlineCode> directory and tracked in
               your bundle manifest. When you run{" "}
-              <InlineCode>youmd push</InlineCode>, your skill installs are
+              <InlineCode>you push</InlineCode>, your skill installs are
               synced to the cloud. When you run{" "}
-              <InlineCode>youmd pull</InlineCode> on another machine, your
+              <InlineCode>you pull</InlineCode> on another machine, your
               skills come with it.
             </P>
             <P>
-              Use <InlineCode>youmd skill sync</InlineCode> to explicitly
+              Use <InlineCode>you skill sync</InlineCode> to explicitly
               reconcile local and remote skill state without a full push/pull
               cycle.
             </P>
@@ -1853,7 +1853,7 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
             <Callout type="tip">
               The user-facing install should be one command:{" "}
               <InlineCode>curl -fsSL https://you.md/install.sh | bash</InlineCode>.
-              The <InlineCode>youmd</InlineCode> binary is the runtime helper
+              The <InlineCode>you</InlineCode> binary is the runtime helper
               underneath, not the main product mental model.
             </Callout>
 
@@ -1989,31 +1989,31 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
               loop auditable.
             </P>
             <P>
-              Use <InlineCode>youmd stack proposals</InlineCode> to see
+              Use <InlineCode>you stack proposals</InlineCode> to see
               proposals the server has generated about your stacks — skill
               quality improvements, doc drift, stale adapter files, or
               capability gaps. Review each proposal before anything changes:
             </P>
             <CommandTable
               commands={[
-                { cmd: "youmd stack proposals", desc: "List pending maintainer proposals for your stacks" },
-                { cmd: "youmd stack proposals approve <id>", desc: "Accept a proposal and apply the suggested change locally" },
-                { cmd: "youmd stack proposals reject <id>", desc: "Dismiss a proposal without applying it" },
+                { cmd: "you stack proposals", desc: "List pending maintainer proposals for your stacks" },
+                { cmd: "you stack proposals approve <id>", desc: "Accept a proposal and apply the suggested change locally" },
+                { cmd: "you stack proposals reject <id>", desc: "Dismiss a proposal without applying it" },
               ]}
             />
             <P>
-              Use <InlineCode>youmd stack consent</InlineCode> to control
+              Use <InlineCode>you stack consent</InlineCode> to control
               which background analyses are allowed to run on your data. Scopes
               are narrow and opt-in; none run automatically without your
               explicit grant:
             </P>
             <CommandTable
               commands={[
-                { cmd: "youmd stack consent", desc: "Show current consent grants and available scopes" },
-                { cmd: "youmd stack consent grant journal_mine", desc: "Allow the server to mine your session journal for improvement signals" },
-                { cmd: "youmd stack consent grant consolidate", desc: "Allow background memory consolidation and deduplication" },
-                { cmd: "youmd stack consent grant fleet_aggregate", desc: "Allow anonymized, k-anon-gated contribution to fleet-level aggregate reports" },
-                { cmd: "youmd stack consent revoke <scope>", desc: "Revoke a previously granted consent scope" },
+                { cmd: "you stack consent", desc: "Show current consent grants and available scopes" },
+                { cmd: "you stack consent grant journal_mine", desc: "Allow the server to mine your session journal for improvement signals" },
+                { cmd: "you stack consent grant consolidate", desc: "Allow background memory consolidation and deduplication" },
+                { cmd: "you stack consent grant fleet_aggregate", desc: "Allow anonymized, k-anon-gated contribution to fleet-level aggregate reports" },
+                { cmd: "you stack consent revoke <scope>", desc: "Revoke a previously granted consent scope" },
               ]}
             />
             <Callout type="info">
@@ -2148,20 +2148,20 @@ youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 
               commands={[
                 { cmd: "curl -fsSL https://you.md/install.sh | bash", desc: "Install the You.md runtime, bundled skills, auto-upgrade helper, and stack starter files" },
                 { cmd: "curl -fsSL https://you.md/install.sh | YOU_INSTALL_DAEMON=1 bash", desc: "Install the runtime and opt into resident sync on macOS" },
-                { cmd: "youmd stack inspect --path DIR", desc: "Show name, slug, domain, manifest metadata, files, scopes, adapters, and validation warnings" },
-                { cmd: "youmd stack doctor --path DIR", desc: "Run read-only diagnostics for manifest bloat, route drift, stale adapters, update hygiene, and public-readiness gaps" },
-                { cmd: "youmd stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },
-                { cmd: "youmd stack capabilities --path DIR", desc: "List local and protected capabilities declared by the stack" },
-                { cmd: "youmd stack route --path DIR \"start this repo\"", desc: "Choose the best local capability for a natural-language request" },
-                { cmd: "youmd stack link --path DIR --hosts codex --target .", desc: "Generate host adapter files from the stack manifest" },
-                { cmd: "youmd skill use youstack-maintainer", desc: "Ask the bundled maintainer skill to organize, improve, update, or prep a stack for sharing" },
+                { cmd: "you stack inspect --path DIR", desc: "Show name, slug, domain, manifest metadata, files, scopes, adapters, and validation warnings" },
+                { cmd: "you stack doctor --path DIR", desc: "Run read-only diagnostics for manifest bloat, route drift, stale adapters, update hygiene, and public-readiness gaps" },
+                { cmd: "you stack smoke --path DIR", desc: "Run read-only schema, file, checksum, adapter, and capability checks" },
+                { cmd: "you stack capabilities --path DIR", desc: "List local and protected capabilities declared by the stack" },
+                { cmd: "you stack route --path DIR \"start this repo\"", desc: "Choose the best local capability for a natural-language request" },
+                { cmd: "you stack link --path DIR --hosts codex --target .", desc: "Generate host adapter files from the stack manifest" },
+                { cmd: "you skill use youstack-maintainer", desc: "Ask the bundled maintainer skill to organize, improve, update, or prep a stack for sharing" },
               ]}
             />
             <CodeBlock title="terminal">{`curl -fsSL https://you.md/install.sh | bash
-youmd stack doctor --path cli/examples/youstack-personal
-youmd stack smoke --path cli/examples/youstack-personal
-youmd stack route --path cli/examples/youstack-personal "search my memories before starting"
-youmd stack link --path cli/examples/youstack-personal --hosts codex --target . --dry-run`}</CodeBlock>
+you stack doctor --path cli/examples/youstack-personal
+you stack smoke --path cli/examples/youstack-personal
+you stack route --path cli/examples/youstack-personal "search my memories before starting"
+you stack link --path cli/examples/youstack-personal --hosts codex --target . --dry-run`}</CodeBlock>
 
             <H3 id="youstacks-management">Shell And Profile Management</H3>
             <P>
@@ -2196,18 +2196,18 @@ youmd stack link --path cli/examples/youstack-personal --hosts codex --target . 
                 prompts, sub-agents, workflows, docs, examples, and smoke tests.
               </Step>
               <Step n={3}>
-                Run <InlineCode>youmd stack inspect --path DIR</InlineCode> to
+                Run <InlineCode>you stack inspect --path DIR</InlineCode> to
                 read metadata, declared scopes, adapters, capabilities, and
                 warnings before trusting the package.
               </Step>
               <Step n={4}>
-                Run <InlineCode>youmd stack smoke --path DIR</InlineCode>. This
+                Run <InlineCode>you stack smoke --path DIR</InlineCode>. This
                 is read-only: it validates schema, required files, checksums,
                 adapters, and capability declarations without touching the brain.
               </Step>
               <Step n={5}>
                 Generate host-native files with{" "}
-                <InlineCode>youmd stack link --path DIR --hosts codex,claude,cursor --target .</InlineCode>.
+                <InlineCode>you stack link --path DIR --hosts codex,claude,cursor --target .</InlineCode>.
                 Use <InlineCode>--dry-run</InlineCode> first when installing into
                 an existing repo.
               </Step>
@@ -2255,10 +2255,10 @@ fi`}</CodeBlock>
                 },
               ]}
             />
-            <CodeBlock title="public example">{`youmd stack inspect --path cli/examples/youstack-bamfstack-public
-youmd stack doctor --path cli/examples/youstack-bamfstack-public
-youmd stack smoke --path cli/examples/youstack-bamfstack-public
-youmd stack route --path cli/examples/youstack-bamfstack-public "draft a creator post from research"`}</CodeBlock>
+            <CodeBlock title="public example">{`you stack inspect --path cli/examples/youstack-bamfstack-public
+you stack doctor --path cli/examples/youstack-bamfstack-public
+you stack smoke --path cli/examples/youstack-bamfstack-public
+you stack route --path cli/examples/youstack-bamfstack-public "draft a creator post from research"`}</CodeBlock>
 
             <H3 id="youstacks-manifest">Manifest</H3>
             <P>
@@ -2317,13 +2317,13 @@ youmd stack route --path cli/examples/youstack-bamfstack-public "draft a creator
     "mode": "propose",
     "cadence": "after meaningful agent sessions",
     "signals": ["usage", "failures", "user corrections", "repo diffs"],
-    "evals": ["youmd stack smoke", "golden prompt regression checks"],
+    "evals": ["you stack smoke", "golden prompt regression checks"],
     "appliesTo": ["skills", "subagents", "workflows", "examples", "docs"],
     "approvalRequiredFor": ["brain.write", "private_context.read", "connected_tool.write", "remote_repo.write"]
   },
   "update": {
     "channel": "manual",
-    "check": "youmd stack smoke",
+    "check": "you stack smoke",
     "source": "user-owned GitHub repo or local stack folder",
     "autoApply": false
   }
@@ -2338,34 +2338,34 @@ youmd stack route --path cli/examples/youstack-bamfstack-public "draft a creator
               the You.md brain boundary only when needed.
             </P>
             <CodeBlock title="named domain stacks">{`# coding stack
-youmd stack inspect --path stacks/coding-copilot
+you stack inspect --path stacks/coding-copilot
 
 # scientific research stack
-youmd stack route --path stacks/scientific-research "triage these papers and design the next experiment"
+you stack route --path stacks/scientific-research "triage these papers and design the next experiment"
 
 # content stack
-youmd stack route --path stacks/content-studio "turn this idea into a LinkedIn post in my style"`}</CodeBlock>
+you stack route --path stacks/content-studio "turn this idea into a LinkedIn post in my style"`}</CodeBlock>
 <CodeBlock title="BAMFStack lighthouse">{`# open public stack example
-youmd stack inspect --path cli/examples/youstack-bamfstack-public
-youmd stack doctor --path cli/examples/youstack-bamfstack-public
-youmd stack smoke --path cli/examples/youstack-bamfstack-public
+you stack inspect --path cli/examples/youstack-bamfstack-public
+you stack doctor --path cli/examples/youstack-bamfstack-public
+you stack smoke --path cli/examples/youstack-bamfstack-public
 
 # public install surface stays curl-first
 curl -fsSL https://you.md/install.sh | bash
 
 # host agents use the maintainer skill for safe updates
-youmd skill use youstack-maintainer`}</CodeBlock>
+you skill use youstack-maintainer`}</CodeBlock>
             <CodeBlock title="personal stack">{`# inspect what a stack asks for
-youmd stack inspect --path stacks/my-founder-stack
+you stack inspect --path stacks/my-founder-stack
 
 # verify it without writing adapter files
-youmd stack smoke --path stacks/my-founder-stack
+you stack smoke --path stacks/my-founder-stack
 
 # ask the deterministic router which capability should handle a request
-youmd stack route --path stacks/my-founder-stack "review this like me before we ship"
+you stack route --path stacks/my-founder-stack "review this like me before we ship"
 
 # link the same stack into Codex, Claude Code, and Cursor
-youmd stack link --path stacks/my-founder-stack --hosts codex,claude,cursor --target .`}</CodeBlock>
+you stack link --path stacks/my-founder-stack --hosts codex,claude,cursor --target .`}</CodeBlock>
             <P>
               A public stack can expose the reusable agent kit while protected
               capabilities still require authentication.
@@ -2512,12 +2512,12 @@ Address every part of multi-part messages.`}</CodeBlock>
               <Step n={3}>
                 Pull the full context only when needed with{" "}
                 <InlineCode>get_identity</InlineCode>, a context link, or{" "}
-                <InlineCode>youmd pull</InlineCode>
+                <InlineCode>you pull</InlineCode>
               </Step>
               <Step n={4}>
                 Check project context before substantial work with{" "}
                 <InlineCode>get_project_context</InlineCode> or{" "}
-                <InlineCode>youmd project show</InlineCode>
+                <InlineCode>you project show</InlineCode>
               </Step>
               <Step n={5}>
                 Mutate only the smallest durable layer: memory, project memory,
@@ -2525,7 +2525,7 @@ Address every part of multi-part messages.`}</CodeBlock>
               </Step>
               <Step n={6}>
                 Compile and publish with <InlineCode>compile_and_push</InlineCode>{" "}
-                or <InlineCode>youmd push</InlineCode> when the user wants the
+                or <InlineCode>you push</InlineCode> when the user wants the
                 change live
               </Step>
               <Step n={7}>
@@ -2539,7 +2539,7 @@ Address every part of multi-part messages.`}</CodeBlock>
               items={[
                 {
                   title: "New coding repo",
-                  body: "Run youmd skill init-project, add a managed AGENTS/CLAUDE bootstrap, create project-context files, then save decisions as project memory.",
+                  body: "Run you skill init-project, add a managed AGENTS/CLAUDE bootstrap, create project-context files, then save decisions as project memory.",
                 },
                 {
                   title: "New agent handoff",
@@ -2571,13 +2571,13 @@ Then continue with the actual task.`}</CodeBlock>
 curl -fsSL https://you.md/install.sh | bash
 
 # Wire MCP into an agent host
-youmd mcp --install claude --auto
-youmd mcp --install codex --auto
-youmd mcp --install cursor --auto
+you mcp --install claude --auto
+you mcp --install codex --auto
+you mcp --install cursor --auto
 
 # Smoke-test brain access
-youmd whoami
-youmd mcp --json`}</CodeBlock>
+you whoami
+you mcp --json`}</CodeBlock>
 
             <H3 id="agent-docs">Agent Docs</H3>
             <P>
@@ -2666,7 +2666,7 @@ npm run agent-docs:ci`}</CodeBlock>
             <P>
               Include your API key as a Bearer token. Generate keys from the
               shell (<InlineCode>/settings</InlineCode>) or via CLI (
-              <InlineCode>youmd keys create</InlineCode>).
+              <InlineCode>you keys create</InlineCode>).
             </P>
             <CodeBlock title="HTTP">{`Authorization: Bearer ym_your_api_key_here
 Content-Type: application/json`}</CodeBlock>
@@ -2739,7 +2739,7 @@ Content-Type: application/json
             </P>
             <CodeBlock title="bash">{`npx --yes youmd@latest mcp --install claude --auto
 npx --yes youmd@latest mcp --install cursor --auto
-youmd mcp --json             # Print the exact MCP config JSON`}</CodeBlock>
+you mcp --json               # Print the exact MCP config JSON`}</CodeBlock>
             <P>
               <strong className="text-[hsl(var(--text-primary))]">
                 Local stdio MCP tools
@@ -2815,7 +2815,7 @@ Accept: application/vnd.you-md.v1+json`}</CodeBlock>
             </P>
             <CommandTable
               commands={[
-                { cmd: "401", desc: "Missing, expired, invalid, or revoked API key. Re-run youmd login or rotate a key." },
+                { cmd: "401", desc: "Missing, expired, invalid, or revoked API key. Re-run you login or rotate a key." },
                 { cmd: "404", desc: "Profile, context token, bundle version, or local section not found." },
                 { cmd: "409 ancestor_mismatch", desc: "Remote bundle changed since your local parent hash. Pull, inspect diff, then push again." },
                 { cmd: "413", desc: "Chat or compaction payload is too large for the protected LLM route." },
@@ -2824,10 +2824,10 @@ Accept: application/vnd.you-md.v1+json`}</CodeBlock>
               ]}
             />
             <CodeBlock title="terminal">{`# Most useful smoke checks
-youmd whoami
-youmd status
-youmd diff
-youmd mcp --json
+you whoami
+you status
+you diff
+you mcp --json
 npm run docs:check`}</CodeBlock>
 
             {/* ── Privacy ──────────────────────────────────── */}
@@ -2857,9 +2857,9 @@ npm run docs:check`}</CodeBlock>
             <P>
               Context links can be generated from the shell with{" "}
               <InlineCode>/share</InlineCode> or from the CLI with{" "}
-              <InlineCode>youmd link create</InlineCode>. API keys can be
+              <InlineCode>you link create</InlineCode>. API keys can be
               created, revealed, rotated, and revoked from settings or{" "}
-              <InlineCode>youmd keys</InlineCode>.
+              <InlineCode>you keys</InlineCode>.
             </P>
             <Callout type="tip">
               You control what goes into each layer. Nothing is shared without
