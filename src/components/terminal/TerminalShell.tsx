@@ -9,6 +9,8 @@ import { CommandPalette } from "./CommandPalette";
 import { LiveBrainLog, type LiveLogEntry } from "./LiveBrainLog";
 export type { LiveLogEntry } from "./LiveBrainLog";
 
+type LiveLogFilter = "all" | "agents" | "ops" | "skills";
+
 interface TerminalShellProps {
   displayMessages: DisplayMessage[];
   input: string;
@@ -28,6 +30,40 @@ interface TerminalShellProps {
 }
 
 const MAX_HISTORY = 50;
+const LIVE_LOG_FILTERS: Array<{ key: LiveLogFilter; label: string }> = [
+  { key: "all", label: "all" },
+  { key: "agents", label: "agents" },
+  { key: "ops", label: "ops" },
+  { key: "skills", label: "skills" },
+];
+
+function liveLogFilterMatches(entry: LiveLogEntry, filter: LiveLogFilter) {
+  if (filter === "all") return true;
+  const source = entry.source.toLowerCase();
+  const channel = (entry.channel ?? "").toLowerCase();
+  const kind = (entry.kind ?? "").toLowerCase();
+  const title = entry.title.toLowerCase();
+  const haystack = `${source} ${channel} ${kind} ${title}`;
+
+  if (filter === "agents") {
+    return source === "agent" || source === "agents" || source === "bus" || haystack.includes("agent");
+  }
+  if (filter === "ops") {
+    return (
+      ["machine", "daemon", "vault", "proof", "local", "github", "stats"].includes(source) ||
+      haystack.includes("daemon") ||
+      haystack.includes("vault")
+    );
+  }
+  return (
+    source === "skills" ||
+    source === "portfolio" ||
+    source === "task" ||
+    source === "brain" ||
+    haystack.includes("skill") ||
+    haystack.includes("project")
+  );
+}
 
 export function TerminalShell({
   displayMessages,
@@ -48,6 +84,7 @@ export function TerminalShell({
   const [pastedImageUrl, setPastedImageUrl] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mode, setMode] = useState<"chat" | "log">("chat");
+  const [liveLogFilter, setLiveLogFilter] = useState<LiveLogFilter>("all");
 
   // --- Cmd+K / Ctrl+K command palette ---
   useEffect(() => {
@@ -175,6 +212,14 @@ export function TerminalShell({
   }, [displayMessages]);
   const latestAssistantId = latestAssistant?.id ?? null;
   const latestAssistantContent = latestAssistant?.content ?? "";
+  const filteredLiveLogEntries = useMemo(
+    () => liveLogEntries.filter((entry) => liveLogFilterMatches(entry, liveLogFilter)),
+    [liveLogEntries, liveLogFilter]
+  );
+  const filteredLiveLogStatus =
+    liveLogFilter === "all"
+      ? liveLogStatus
+      : `${filteredLiveLogEntries.length}/${liveLogEntries.length} ${liveLogFilter}`;
 
   // --- a11y: announce completed agent messages (not per streamed token) ---
   // There is no explicit streaming flag on DisplayMessage, so completion is
@@ -256,8 +301,28 @@ export function TerminalShell({
             {nextMode === "chat" ? "chat" : "live log"}
           </button>
         ))}
+        {mode === "log" && (
+          <div className="ml-1 flex min-w-0 items-center gap-1 overflow-x-auto">
+            {LIVE_LOG_FILTERS.map((filter) => (
+              <button
+                key={filter.key}
+                type="button"
+                onClick={() => setLiveLogFilter(filter.key)}
+                className={[
+                  "h-6 shrink-0 px-2 font-mono text-[8.5px] uppercase tracking-[0.13em] transition-[background,color,opacity]",
+                  liveLogFilter === filter.key
+                    ? "bg-[hsl(var(--accent))]/12 text-[hsl(var(--accent))]"
+                    : "text-[hsl(var(--text-secondary))] opacity-40 hover:bg-[hsl(var(--shell-chrome-hover))] hover:opacity-75",
+                ].join(" ")}
+                style={{ borderRadius: "var(--radius)" }}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        )}
         <span className="ml-auto hidden truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-35 sm:block">
-          {mode === "log" ? liveLogStatus : "you agent"}
+          {mode === "log" ? filteredLiveLogStatus : "you agent"}
         </span>
       </div>
 
@@ -295,7 +360,10 @@ export function TerminalShell({
             </div>
           </div>
         ) : (
-          <LiveBrainLog entries={liveLogEntries} />
+          <LiveBrainLog
+            entries={filteredLiveLogEntries}
+            emptyText={liveLogFilter === "all" ? undefined : `no ${liveLogFilter} events in this window`}
+          />
         )}
       </div>
 

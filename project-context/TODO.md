@@ -82,6 +82,7 @@ PRD Version: 2.3
 - [x] Add owner-gated Convex `brainActivities` as the durable canonical activity stream
 - [x] Mirror new realtime agent-bus messages into `brainActivities` with redacted text/metadata and `secretValuesExposed: false`
 - [x] Make the shell Live Log read `brainActivities` first, with local readiness and current UI state as safe supplementary rows
+- [x] Add compact Live Log filters for all/agents/ops/skills so the central stream can stay one surface without becoming a firehose
 - [x] Extract `LiveBrainLog` as a shared product primitive and reuse it in `/desktop-demo` System Status
 - [x] Collapse visible shell IA toward `Home`, `Brain`, `Projects`, and `Settings`, with APIs/Machine/Vault/Activity/Stats/Portrait hidden under Settings
 - [x] Route repo update runs/steps, global portfolio task changes, task triage/detail edits, brain-dump captures, and extracted brain-dump tasks directly into `brainActivities`

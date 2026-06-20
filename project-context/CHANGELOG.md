@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(shell): filter the live brain log
+- The shell Live Log now has compact filters for `all`, `agents`, `ops`, and `skills`.
+- Filters use existing safe entry metadata (`source`, `channel`, `kind`, and title text) from Convex `brainActivities` and local readiness supplements; no new synthetic events are generated.
+- The log status line shows filtered counts so the central activity stream can stay one surface without turning into a mixed firehose.
+
 ### feat(home): reduce duplicated activity surfaces
 - Home no longer renders duplicate task queues, project pulse rows, activity pulse rows, brain-dump rows, or a second skill-mesh proof block.
 - Added a compact focus router that summarizes the next human task, agent task, focused project, and latest project signal, then routes into Tasks or Portfolio for detail.
