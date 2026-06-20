@@ -1998,6 +1998,7 @@ Last Updated: 2026-06-20
 3. Make navigation more intuitive and less redundant. **DONE:** shell nav now groups around Home, Projects, APIs, Skillstacks, Connect, Identity, Stats, and Account, with Home/Tasks first.
 4. Keep text and click navigation aligned for agent-first use. **DONE:** slash commands now route `/home`, `/dashboard`, `/today`, `/tasks`, and `/taskboard`.
 5. Continue the deeper minimal-surface cleanup. **OPEN:** move more long project/stack/API detail sections into dedicated drill-in pages with breadcrumbs and compact list/detail modes.
+**Progress (2026-06-20):** Continued the minimal-surface product pass by extracting the real synced brain graph renderer into `src/components/sync/SyncedBrainGraph.tsx`. Machine now adapts local readiness, synced proofs, Convex `brainActivities`, agent bus, skills, projects, daemons, and Secret Vault metadata into typed graph nodes/links/signals, while the visual component can be reused by Home, Skills, and future Tauri surfaces without adding competing graph panels or fake activity.
 
 ### 140. Make Home DSI proof visually testable in the authenticated local browser
 **Status:** VERIFIED LOCAL

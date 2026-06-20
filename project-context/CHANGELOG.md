@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### refactor(sync): share the synced brain graph surface
+- Extracted the Machine tab's real synced brain graph into `src/components/sync/SyncedBrainGraph.tsx` so Home, Skills, Machine, and future Tauri surfaces can reuse one visual primitive instead of growing separate graph panels.
+- Kept Machine as the data adapter for local readiness, synced proofs, Convex `brainActivities`, agent bus, skills, projects, daemons, and Secret Vault metadata.
+- Verified with `npm run build` and `git diff --check`.
+
 ### feat(shell): filter the live brain log
 - The shell Live Log now has compact filters for `all`, `agents`, `ops`, and `skills`.
 - Filters use existing safe entry metadata (`source`, `channel`, `kind`, and title text) from Convex `brainActivities` and local readiness supplements; no new synthetic events are generated.

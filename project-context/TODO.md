@@ -47,6 +47,7 @@ PRD Version: 2.3
 - [x] Lead dashboard, docs, postinstall, and local readiness command-copy surfaces with canonical `you` / `YOU_*` / `~/.you` while retaining legacy `youmd` compatibility aliases
 - [x] Add a Machine readiness proof/repair runbook and agent-bus repair receipt view so stale Mac setup can be diagnosed from the app
 - [x] Add a real synced brain graph to Machine readiness using local readiness, machine proofs, brain activity, agent bus, skill mesh, projects, daemons, and Secret Vault signals
+- [x] Extract the synced brain graph renderer into a reusable component so Machine, Home, Skills, and future Tauri surfaces can share one real-data visual primitive
 - [ ] Next pass: prove the repair runbook on the Mac mini after `youmd@0.8.12` is published and compare synced inventory/proof rows
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly

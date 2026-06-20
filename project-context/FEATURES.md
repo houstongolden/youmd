@@ -44,6 +44,8 @@ Last Updated: 2026-06-20
 
 - 2026-06-20 real synced brain graph: Machine readiness now turns the local/global inventory proof into a graph-first live surface. The graph connects trusted Macs, agents, skills, projects, Secret Vault, and the durable You.md brain stream using real local readiness, synced machine proofs, Convex `brainActivities`, daemon status, agent-bus messages, skill mirror counts, project readiness counts, and vault snapshot metadata. Nodes only pulse when backed by recent timestamps or active/ready proof state, keeping the "neurons firing" effect tied to actual sync activity rather than fake animation.
 
+- 2026-06-20 reusable synced brain graph primitive: The real graph renderer now lives in `src/components/sync/SyncedBrainGraph.tsx` with typed nodes, links, signals, and latest-activity rows. Machine supplies the current data adapter, while the reusable primitive can be promoted into Home, Skills, and Tauri without duplicating graph layout or creating competing activity surfaces.
+
 - 2026-06-20 Home minimal-surface router: Home now stops duplicating the full Tasks, Portfolio activity, brain-dump, and skill-mesh detail surfaces. It keeps the machine sync mesh and DSI proof, then adds a compact focus router for the next Houston-owned task, agent-owned task, focused project, and latest project signal with drill-ins to Tasks and Portfolio.
 
 - 2026-06-20 Live Log filters: The shell `live log` mode now filters the durable brain stream by `all`, `agents`, `ops`, and `skills`. The filters use existing `source`/`channel`/`kind` metadata from safe Convex `brainActivities` and local readiness rows, keeping the central log as one surface while making agent coordination, machine/vault ops, and skills/projects easier to inspect.

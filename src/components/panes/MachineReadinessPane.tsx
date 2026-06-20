@@ -13,6 +13,13 @@ import { CopyableCommand } from "./CopyableCommand";
 import { PaneCallout, PaneDivider, PaneHeader, PaneSectionLabel } from "./shared";
 import { PixelCharacter, type PixelCharacterStatus } from "@/components/ui/PixelCharacter";
 import {
+  SyncedBrainGraph,
+  type SyncedBrainGraphActivity,
+  type SyncedBrainGraphLink,
+  type SyncedBrainGraphNode,
+  type SyncedBrainGraphSignal,
+} from "@/components/sync/SyncedBrainGraph";
+import {
   FRESH_MACHINE_BOOTSTRAP_DAYS,
   FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS,
   FRESH_MACHINE_BOOTSTRAP_LIMIT,
@@ -68,25 +75,6 @@ type SyncedBrainActivity = {
   sourceAgent?: string | null;
 };
 
-type BrainGraphNode = {
-  id: string;
-  label: string;
-  value: string;
-  detail: string;
-  x: number;
-  y: number;
-  kind: "machine" | "agent" | "shell";
-  status: PixelCharacterStatus;
-  live: boolean;
-  tone: "success" | "accent" | "muted" | "danger";
-};
-
-type BrainGraphLink = {
-  from: string;
-  to: string;
-  active: boolean;
-};
-
 function statusClass(status: LocalReadinessStatus | LocalProjectReadiness["status"]) {
   if (status === "ready") return "text-[hsl(var(--success))]";
   if (status === "warn" || status === "needs-env" || status === "partial") return "text-[hsl(var(--accent))]";
@@ -129,7 +117,7 @@ function isRecent(value?: string | number | null, minutes = 10) {
   return Date.now() - time < minutes * 60 * 1000;
 }
 
-function graphTone(status?: string): BrainGraphNode["tone"] {
+function graphTone(status?: string): SyncedBrainGraphNode["tone"] {
   if (status === "ready" || status === "active" || status === "live" || status === "ok") return "success";
   if (status === "blocked" || status === "failed" || status === "missing" || status === "error") return "danger";
   if (status === "warn" || status === "needs-env" || status === "partial" || status === "scope-missing") return "accent";
@@ -328,7 +316,7 @@ function MeshMetric({
   );
 }
 
-function SyncedBrainGraph({
+function MachineSyncedBrainGraph({
   report,
   syncedProofs,
   brainActivities,
@@ -349,8 +337,7 @@ function SyncedBrainGraph({
   const vaultLive = report?.envVault.accountSnapshotStatus === "ready" || isRecent(report?.envVault.accountSnapshotUpdatedAt, 60 * 24);
   const realtimeLive = Boolean(report?.daemons.some((daemon) => daemon.label.endsWith(".realtime-sync") && daemon.loaded));
   const status = report?.summary.status ?? syncedProofs?.[0]?.status ?? "unknown";
-  const nodeById = new Map<string, BrainGraphNode>();
-  const nodes: BrainGraphNode[] = [
+  const nodes: SyncedBrainGraphNode[] = [
     {
       id: "brain",
       label: "you.md brain",
@@ -438,9 +425,8 @@ function SyncedBrainGraph({
       tone: recentActivities.length > 0 ? "success" : "muted",
     },
   ];
-  for (const node of nodes) nodeById.set(node.id, node);
 
-  const links: BrainGraphLink[] = [
+  const links: SyncedBrainGraphLink[] = [
     { from: "machines", to: "brain", active: realtimeLive || proofCount > 0 },
     { from: "agents", to: "brain", active: agentBusLive },
     { from: "skills", to: "brain", active: skillLive || report?.skillSync?.status === "ready" },
@@ -450,7 +436,7 @@ function SyncedBrainGraph({
     { from: "skills", to: "projects", active: Boolean(report?.skillSync && report.summary.projectScanned > 0) },
     { from: "agents", to: "activity", active: agentBusLive || recentActivities.some((activity) => activity.source.includes("agent")) },
   ];
-  const signalRows: Array<{ label: string; value: string; live: boolean }> = [
+  const signalRows: SyncedBrainGraphSignal[] = [
     { label: "realtime", value: realtimeLive ? "loaded" : "not loaded", live: realtimeLive },
     { label: "agent bus", value: report?.agentBus ? `${report.agentBus.recentCount} messages` : "not observed", live: agentBusLive },
     { label: "activity stream", value: brainActivities ? `${recentActivities.length}/${brainActivities.length} recent` : "loading", live: recentActivities.length > 0 },
@@ -458,101 +444,14 @@ function SyncedBrainGraph({
     { label: "project graph", value: report ? `${report.summary.projectReady}/${report.summary.projectScanned} ready` : "waiting", live: projectLive },
     { label: "secret vault", value: report?.envVault.accountSnapshotStatus ?? "unknown", live: vaultLive },
   ];
+  const latestActivity: SyncedBrainGraphActivity[] = recentActivities.slice(-4).map((activity) => ({
+    id: activity.activityId,
+    source: activity.source,
+    title: activity.title,
+  }));
 
   return (
-    <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)]">
-      <div className="relative min-h-[360px] overflow-hidden border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35">
-        <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
-          {links.map((link) => {
-            const from = nodeById.get(link.from);
-            const to = nodeById.get(link.to);
-            if (!from || !to) return null;
-            return (
-              <line
-                key={`${link.from}-${link.to}`}
-                x1={`${from.x}%`}
-                y1={`${from.y}%`}
-                x2={`${to.x}%`}
-                y2={`${to.y}%`}
-                stroke={link.active ? "hsl(var(--success) / 0.46)" : "hsl(var(--border) / 0.48)"}
-                strokeWidth={link.active ? 1.4 : 1}
-                strokeDasharray={link.active ? "0" : "4 6"}
-              />
-            );
-          })}
-        </svg>
-        {nodes.map((node) => {
-          const toneClass =
-            node.tone === "success"
-              ? "border-[hsl(var(--success))]/55 text-[hsl(var(--success))]"
-              : node.tone === "danger"
-                ? "border-red-400/60 text-red-300"
-                : node.tone === "accent"
-                  ? "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))]"
-                  : "border-[hsl(var(--border))]/70 text-[hsl(var(--text-secondary))]";
-          return (
-            <div
-              key={node.id}
-              className={[
-                "absolute z-10 w-[148px] -translate-x-1/2 -translate-y-1/2 border bg-[hsl(var(--bg-raised))]/92 px-3 py-2",
-                toneClass,
-                node.live ? "shadow-[0_0_24px_hsl(var(--success)/0.10)]" : "",
-              ].join(" ")}
-              style={{ left: `${node.x}%`, top: `${node.y}%` }}
-            >
-              <div className="flex items-center gap-2">
-                <PixelCharacter
-                  kind={node.kind}
-                  seed={`${node.id}:${node.label}:${node.value}`}
-                  status={node.status}
-                  size="xs"
-                  className={node.live ? "animate-pulse" : "opacity-75"}
-                />
-                <div className="min-w-0">
-                  <div className="truncate font-mono text-[9px] uppercase tracking-[0.14em]">
-                    {node.label}
-                  </div>
-                  <div className="mt-1 truncate font-mono text-[13px] leading-none text-[hsl(var(--text-primary))]">
-                    {node.value}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-2 line-clamp-2 font-mono text-[9px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
-                {node.detail}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/28 px-4 py-3">
-        <PaneSectionLabel>live signals</PaneSectionLabel>
-        <div className="space-y-2">
-          {signalRows.map((row) => (
-            <div key={row.label} className="flex items-center gap-3 border-t border-[hsl(var(--border))]/35 pt-2 font-mono text-[10px]">
-              <span className={row.live ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-35"}>
-                {row.live ? "live" : "idle"}
-              </span>
-              <span className="min-w-0 flex-1 truncate text-[hsl(var(--text-secondary))] opacity-58">{row.label}</span>
-              <span className="max-w-[150px] truncate text-[hsl(var(--text-primary))] opacity-80">{row.value}</span>
-            </div>
-          ))}
-        </div>
-        {recentActivities.length > 0 && (
-          <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
-            <PaneSectionLabel>latest firing</PaneSectionLabel>
-            <div className="space-y-1.5">
-              {recentActivities.slice(-4).map((activity) => (
-                <div key={activity.activityId} className="font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
-                  <span className="text-[hsl(var(--text-primary))] opacity-85">{activity.source}</span>
-                  <span className="opacity-35"> / </span>
-                  {activity.title}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    <SyncedBrainGraph nodes={nodes} links={links} signals={signalRows} latestActivity={latestActivity} />
   );
 }
 
@@ -625,7 +524,7 @@ function MachineSyncMeshPanel({
         </button>
       </div>
 
-      <SyncedBrainGraph report={report} syncedProofs={syncedProofs} brainActivities={brainActivities} />
+      <MachineSyncedBrainGraph report={report} syncedProofs={syncedProofs} brainActivities={brainActivities} />
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         <MeshMetric
