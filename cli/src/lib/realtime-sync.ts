@@ -204,10 +204,10 @@ export function describeRealtimeSecretVault(head: RealtimeSyncHead | null | unde
       : vault
         ? "missing"
         : "unknown";
-  const deviceRegisterCommand = "youmd env vault device-register";
-  const shareCommand = "youmd env vault share";
-  const pullCommand = "youmd env vault pull --out ~/.youmd/secret-vault";
-  const restoreCommand = "youmd env vault pull --restore --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth";
+  const deviceRegisterCommand = "you env vault device-register";
+  const shareCommand = "you env vault share";
+  const pullCommand = "you env vault pull --out ~/.you/secret-vault";
+  const restoreCommand = "you env vault pull --restore --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth";
 
   if (state === "ready") {
     const projects = vault?.projectCount ?? 0;
@@ -493,10 +493,10 @@ export function shouldRunBoundedSync(
 }
 
 export function resolveAgentStackInventoryDir(
-  env: Partial<Pick<NodeJS.ProcessEnv, "YOUMD_AGENT_STACK_INVENTORY_DIR">> = process.env,
+  env: Partial<Pick<NodeJS.ProcessEnv, "YOU_AGENT_STACK_INVENTORY_DIR" | "YOUMD_AGENT_STACK_INVENTORY_DIR">> = process.env,
   homeDir = os.homedir(),
 ): string {
-  const configured = env.YOUMD_AGENT_STACK_INVENTORY_DIR?.trim();
+  const configured = env.YOU_AGENT_STACK_INVENTORY_DIR?.trim() || env.YOUMD_AGENT_STACK_INVENTORY_DIR?.trim();
   if (configured) {
     if (configured === "~") return homeDir;
     if (configured.startsWith("~/")) return path.join(homeDir, configured.slice(2));

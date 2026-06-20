@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { getHomeBundleDir, getLegacyHomeBundleDir } from "./config";
 
 // ─── Types ────────────────────────────────────────────────────────────
 
@@ -319,18 +320,18 @@ export function addProjectMemory(projectDir: string, memory: { category: string;
 // ─── Project detection ────────────────────────────────────────────────
 
 /**
- * Finds the .youmd/projects directory, searching upward from cwd.
- * Returns the path to the projects dir, or null if not found.
+ * Finds the .you/projects directory, searching upward from cwd.
+ * Legacy .youmd/projects remains readable during migration.
  */
 export function findProjectsRoot(startDir?: string): string | null {
   let dir = startDir || process.cwd();
   const root = path.parse(dir).root;
 
   while (dir !== root) {
-    const candidate = path.join(dir, ".youmd", "projects");
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
+    const canonical = path.join(dir, ".you", "projects");
+    if (fs.existsSync(canonical)) return canonical;
+    const legacy = path.join(dir, ".youmd", "projects");
+    if (fs.existsSync(legacy)) return legacy;
     dir = path.dirname(dir);
   }
 
@@ -338,7 +339,7 @@ export function findProjectsRoot(startDir?: string): string | null {
 }
 
 /**
- * Lists all project names under .youmd/projects/.
+ * Lists all project names under .you/projects/ or legacy .youmd/projects/.
  */
 export function listProjects(projectsRoot: string): string[] {
   if (!fs.existsSync(projectsRoot)) return [];
@@ -635,10 +636,14 @@ function getWorkspaceProjectInsights(startDir?: string, limit = 5): RecentProjec
 }
 
 export function getRecentProjectInsights(startDir?: string, limit = 3): RecentProjectInsight[] {
+  const canonicalProjectsRoot = path.join(getHomeBundleDir(), "projects");
+  const legacyProjectsRoot = path.join(getLegacyHomeBundleDir(), "projects");
   const projectsRoot =
     findProjectsRoot(startDir) ||
-    (fs.existsSync(path.join(os.homedir(), ".youmd", "projects"))
-      ? path.join(os.homedir(), ".youmd", "projects")
+    (fs.existsSync(canonicalProjectsRoot)
+      ? canonicalProjectsRoot
+      : fs.existsSync(legacyProjectsRoot)
+        ? legacyProjectsRoot
       : null);
   const managedInsights = projectsRoot
     ? listProjects(projectsRoot).map((slug) => {
@@ -654,7 +659,7 @@ export function getRecentProjectInsights(startDir?: string, limit = 3): RecentPr
           updatedAt,
           signals,
           summary: signals.length > 0 ? `${projectName} ${signals[0]}.` : `${projectName} looks pretty well-shaped already.`,
-          suggestedCommand: `youmd project show ${quoteShellArg(projectName)}`,
+          suggestedCommand: `you project show ${quoteShellArg(projectName)}`,
         };
       })
     : [];

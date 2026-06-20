@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### fix(runtime): prefer canonical `~/.you` in live path helpers
+- Skill catalog inventory hydration now reads the canonical `~/.you/agent-stack-inventory` through central helpers before falling back to legacy `~/.youmd`.
+- Realtime Secret Vault repair/status commands now lead with `you` and `~/.you/secret-vault`, and resident inventory dir resolution prefers `YOU_AGENT_STACK_INVENTORY_DIR` with `YOUMD_*` kept as a legacy alias.
+- Project insight discovery now prefers `.you/projects` and `~/.you/projects` before legacy `.youmd/projects`, and suggested commands lead with `you project show`.
+
 ### feat(app): align fresh-computer prompt with `you` setup
 - Updated the dashboard/web fresh-computer bootstrap prompt to require `0.8.12+`, prove `~/.you` migration, generate local/global agent stack inventory, and finish with `you machine sync-now`.
 - Web setup copy now leads with canonical `YOU_*` env names, `you` commands, and `~/.you` inventory paths while preserving legacy `YOUMD_*` fallbacks inside the shell.

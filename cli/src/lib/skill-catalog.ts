@@ -9,7 +9,13 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as yaml from "js-yaml";
-import { getSkillCatalogPath, ensureSkillsDir, readGlobalConfig } from "./config";
+import {
+  getLegacyHomeBundleDir,
+  getSkillCatalogPath,
+  getWritableHomeBundleDir,
+  ensureSkillsDir,
+  readGlobalConfig,
+} from "./config";
 
 export type SkillScope = "shared" | "project" | "private";
 
@@ -271,8 +277,8 @@ function inventoryDescription(skill: InventoryCatalogSkill): string {
 
 function latestInventoryJsonPath(): string | null {
   const dirs = [
-    path.join(os.homedir(), ".you", "agent-stack-inventory"),
-    path.join(os.homedir(), ".youmd", "agent-stack-inventory"),
+    path.join(getWritableHomeBundleDir(), "agent-stack-inventory"),
+    path.join(getLegacyHomeBundleDir(), "agent-stack-inventory"),
   ];
   const files = dirs.flatMap((dir) => {
     if (!fs.existsSync(dir)) return [];

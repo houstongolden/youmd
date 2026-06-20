@@ -104,8 +104,9 @@ describe("realtime sync helpers", () => {
     expect(ready.summary).toContain("17 projects / 120 vars");
     expect(ready.summary).toContain("2/2 device envelopes");
     expect(JSON.stringify(ready)).not.toContain(".env.local=");
-    expect(ready.deviceRegisterCommand).toContain("device-register");
-    expect(ready.shareCommand).toContain("vault share");
+    expect(ready.deviceRegisterCommand).toBe("you env vault device-register");
+    expect(ready.shareCommand).toBe("you env vault share");
+    expect(ready.pullCommand).toBe("you env vault pull --out ~/.you/secret-vault");
     expect(ready.restoreCommand).toContain("--skip-agent-auth");
   });
 
@@ -197,6 +198,12 @@ describe("realtime sync helpers", () => {
     expect(resolveAgentStackInventoryDir({}, "/Users/houston")).toBe(
       "/Users/houston/.you/agent-stack-inventory",
     );
+    expect(
+      resolveAgentStackInventoryDir(
+        { YOU_AGENT_STACK_INVENTORY_DIR: "~/canonical-agent-stack", YOUMD_AGENT_STACK_INVENTORY_DIR: "~/legacy-agent-stack" },
+        "/Users/houston",
+      ),
+    ).toBe("/Users/houston/canonical-agent-stack");
     expect(
       resolveAgentStackInventoryDir(
         { YOUMD_AGENT_STACK_INVENTORY_DIR: "~/custom-agent-stack" },
