@@ -16,6 +16,7 @@ import {
 import {
   buildMachineVerificationProof,
   buildMachineInstallReport,
+  loadLatestAgentStackInventoryProof,
   buildMachineReadinessReport,
   buildMachineRunChecksReport,
   buildMachineServerProbeReport,
@@ -420,6 +421,7 @@ async function machineVerifyCommand(opts: {
   const rootDir = expandHome(opts.root || defaultRoot);
   const maxProjects = Number(opts.maxProjects || 80);
   const report = buildMachineReadinessReport(rootDir, Number.isFinite(maxProjects) && maxProjects > 0 ? maxProjects : 80);
+  const agentStackInventory = loadLatestAgentStackInventoryProof();
 
   console.log("");
   console.log("  " + chalk.bold("machine readiness audit"));
@@ -427,12 +429,22 @@ async function machineVerifyCommand(opts: {
   console.log(chalk.dim(`  scanned: ${report.scanned} project director${report.scanned === 1 ? "y" : "ies"}`));
   console.log(chalk.dim(`  git: ${report.totals.gitRepos} / packages: ${report.totals.packageProjects} / env.local: ${report.totals.envLocal} / env examples: ${report.totals.envExample}`));
   console.log(chalk.dim(`  agent docs: ${report.totals.agentDocs} / project-context: ${report.totals.projectContext} / ready: ${report.totals.ready} / needs env: ${report.totals.needsEnv} / partial: ${report.totals.partial}`));
+  if (agentStackInventory) {
+    console.log(chalk.dim(
+      `  skill mesh: ${agentStackInventory.counts.uniqueSkillNames} unique skills / ${agentStackInventory.counts.uniqueRealSkillFiles} real SKILL.md files / ${agentStackInventory.counts.missingFromYoumdCatalog} catalog gaps / ${agentStackInventory.counts.duplicateNameDifferentRealpaths} DRY review cases`
+    ));
+    if (agentStackInventory.htmlPath) {
+      console.log(chalk.dim(`  skill mesh report: ${agentStackInventory.htmlPath}`));
+    }
+  } else {
+    console.log(chalk.dim("  skill mesh: no local inventory proof yet; run ") + chalk.cyan("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync"));
+  }
   console.log("");
 
   if (report.projects.length === 0) {
     console.log(chalk.dim("  no cloned projects found yet. run ") + chalk.cyan("youmd machine projects") + chalk.dim(" first."));
     if (opts.writeReport || opts.syncReport) {
-      const proof = buildMachineVerificationProof({ readiness: report });
+      const proof = buildMachineVerificationProof({ readiness: report, agentStackInventory });
       await persistMachineProofReport(proof, {
         writeReport: opts.writeReport,
         syncReport: opts.syncReport,
@@ -516,7 +528,7 @@ async function machineVerifyCommand(opts: {
 
   if (!opts.runChecks && !opts.probeServers) {
     if (opts.writeReport || opts.syncReport) {
-      const proof = buildMachineVerificationProof({ readiness: report, installs: installReport });
+      const proof = buildMachineVerificationProof({ readiness: report, installs: installReport, agentStackInventory });
       await persistMachineProofReport(proof, {
         writeReport: opts.writeReport,
         syncReport: opts.syncReport,
@@ -622,6 +634,7 @@ async function machineVerifyCommand(opts: {
       installs: installReport,
       checks: runReport,
       servers: probeReport,
+      agentStackInventory,
     });
     await persistMachineProofReport(proof, {
       writeReport: opts.writeReport,

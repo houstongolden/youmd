@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-20 — Machine proof skill mesh
+
+### feat(machine): include agent stack inventory in machine proof
+- `youmd machine verify` now loads the latest local agent-stack inventory JSON from `~/.youmd/agent-stack-inventory` and prints the core skill mesh counts in the readiness header.
+- Machine proof JSON now includes a secret-safe `agentStackInventory` block with report paths, host/root metadata, unique skill counts, catalog gaps, DRY review counts, mirror clusters, and `secretValuesExposed: false`.
+- Missing inventory proof now produces a direct repair warning: `youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync`.
+- Focused verifier tests cover present/missing inventory proof, and a bounded CLI smoke proved the generated proof includes skill mesh counts without exposing secrets.
+
 ## 2026-06-19 — Local agent stack inventory
 
 ### fix(sync): mirror agent-stack repo snapshots into hosted MCP

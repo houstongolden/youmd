@@ -117,6 +117,30 @@ export interface MachineServerProbeReport {
   };
 }
 
+export interface MachineAgentStackInventoryProof {
+  status: "present";
+  jsonPath: string;
+  htmlPath?: string;
+  generatedAt?: string;
+  hostName?: string;
+  rootDir?: string;
+  inventorySchemaVersion?: string;
+  counts: {
+    uniqueSkillNames: number;
+    uniqueRealSkillFiles: number;
+    directExposureSkillRecords: number;
+    canonicalSkillFiles: number;
+    youmdCatalogSkills: number;
+    missingFromYoumdCatalog: number;
+    duplicateNameDifferentRealpaths: number;
+    sameRealpathMirrors: number;
+    projectSignals: number;
+  };
+  security: {
+    secretValuesExposed: false;
+  };
+}
+
 export interface MachineVerificationProof {
   schemaVersion: 1;
   generatedAt: string;
@@ -128,6 +152,7 @@ export interface MachineVerificationProof {
   installs?: MachineInstallReport;
   checks?: MachineRunChecksReport;
   servers?: MachineServerProbeReport;
+  agentStackInventory?: MachineAgentStackInventoryProof;
   summary: {
     status: "ready" | "warn" | "failed";
     scanned: number;
@@ -165,6 +190,16 @@ function readJson(filePath: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function safeNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.trunc(value))
+    : 0;
+}
+
+function safeString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 function detectRemoteUrl(projectDir: string): string | undefined {
@@ -301,6 +336,77 @@ function classifyMachineFailure(output: string, fallback?: string): string | und
 
 function sanitizeForProof<T>(value: T): T {
   return JSON.parse(redactSensitive(JSON.stringify(value))) as T;
+}
+
+function inventoryHostName(snapshot: Record<string, unknown>): string | undefined {
+  const host = snapshot.host;
+  if (typeof host === "string") return safeString(host);
+  if (host && typeof host === "object" && !Array.isArray(host)) {
+    return safeString((host as Record<string, unknown>).hostname);
+  }
+  return undefined;
+}
+
+function latestInventoryJsonPath(outDir: string): string | null {
+  if (!fs.existsSync(outDir)) return null;
+  const files = fs.readdirSync(outDir)
+    .filter((file) => /^local-agent-stack-inventory-.*\.json$/.test(file))
+    .map((file) => path.join(outDir, file))
+    .filter((file) => {
+      try {
+        return fs.statSync(file).isFile();
+      } catch {
+        return false;
+      }
+    })
+    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+  return files[0] || null;
+}
+
+export function defaultAgentStackInventoryDir(): string {
+  return path.join(os.homedir(), ".youmd", "agent-stack-inventory");
+}
+
+export function loadLatestAgentStackInventoryProof(
+  outDir = defaultAgentStackInventoryDir()
+): MachineAgentStackInventoryProof | null {
+  const jsonPath = latestInventoryJsonPath(outDir);
+  if (!jsonPath) return null;
+
+  const snapshot = readJson(jsonPath);
+  if (!snapshot) return null;
+
+  const totals = snapshot.totals && typeof snapshot.totals === "object" && !Array.isArray(snapshot.totals)
+    ? snapshot.totals as Record<string, unknown>
+    : {};
+  const roots = snapshot.roots && typeof snapshot.roots === "object" && !Array.isArray(snapshot.roots)
+    ? snapshot.roots as Record<string, unknown>
+    : {};
+  const htmlPath = jsonPath.replace(/\.json$/, ".html");
+
+  return {
+    status: "present",
+    jsonPath,
+    htmlPath: fs.existsSync(htmlPath) ? htmlPath : undefined,
+    generatedAt: safeString(snapshot.generatedAt),
+    hostName: inventoryHostName(snapshot),
+    rootDir: safeString(snapshot.repoRoot) || safeString(roots.workspace),
+    inventorySchemaVersion: safeString(snapshot.inventorySchemaVersion),
+    counts: {
+      uniqueSkillNames: safeNumber(totals.uniqueSkillNames),
+      uniqueRealSkillFiles: safeNumber(totals.uniqueRealSkillFiles),
+      directExposureSkillRecords: safeNumber(totals.directExposureSkillRecords),
+      canonicalSkillFiles: safeNumber(totals.canonicalSkillFiles),
+      youmdCatalogSkills: safeNumber(totals.youmdCatalogSkills),
+      missingFromYoumdCatalog: safeNumber(totals.missingFromYoumdCatalog),
+      duplicateNameDifferentRealpaths: safeNumber(totals.duplicateNameDifferentRealpaths),
+      sameRealpathMirrors: safeNumber(totals.sameRealpathMirrors),
+      projectSignals: safeNumber(totals.projectSignals),
+    },
+    security: {
+      secretValuesExposed: false,
+    },
+  };
 }
 
 function appendBounded(buffer: string, chunk: Buffer | string, maxLength = 12_000): string {
@@ -800,6 +906,7 @@ export function buildMachineVerificationProof(options: {
   installs?: MachineInstallReport;
   checks?: MachineRunChecksReport;
   servers?: MachineServerProbeReport;
+  agentStackInventory?: MachineAgentStackInventoryProof | null;
   generatedAt?: string;
 }): MachineVerificationProof {
   const generatedAt = options.generatedAt ?? new Date().toISOString();
@@ -813,6 +920,7 @@ export function buildMachineVerificationProof(options: {
     options.installs && options.installs.results.length === 0 ? "no package projects were available for dependency install" : "",
     options.checks && options.checks.results.length === 0 ? "no package projects had requested check scripts" : "",
     options.servers && options.servers.results.length === 0 ? "no package projects had dev servers to probe" : "",
+    options.agentStackInventory === null ? "agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync" : "",
     ...(options.servers?.results ?? [])
       .filter((result) => result.status === "failed" || result.status === "timeout")
       .map((result) => result.reason ? `${result.dirName}: ${result.reason}` : "")
@@ -830,6 +938,7 @@ export function buildMachineVerificationProof(options: {
     installs: options.installs ? sanitizeForProof(options.installs) : undefined,
     checks: options.checks ? sanitizeForProof(options.checks) : undefined,
     servers: options.servers ? sanitizeForProof(options.servers) : undefined,
+    agentStackInventory: options.agentStackInventory ? sanitizeForProof(options.agentStackInventory) : undefined,
     summary: {
       status: failures > 0 ? "failed" : warnings.length > 0 ? "warn" : "ready",
       scanned: options.readiness.scanned,

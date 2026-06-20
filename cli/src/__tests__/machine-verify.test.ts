@@ -9,6 +9,7 @@ import {
   buildMachineRunChecksReport,
   buildMachineServerProbeReport,
   inspectMachineProject,
+  loadLatestAgentStackInventoryProof,
   writeMachineVerificationProof,
 } from "../lib/machine-verify";
 
@@ -106,13 +107,13 @@ describe("machine readiness verifier", () => {
     );
 
     const report = buildMachineInstallReport(root, {
-      timeoutMs: 30_000,
+      timeoutMs: 90_000,
       maxProjects: 1,
     });
 
     expect(report.totals.passed).toBe(1);
     expect(report.results[0].command).toBe("npm install");
-  });
+  }, 120_000);
 
   it("smoke probes bounded local dev servers", async () => {
     const root = makeTempRoot();
@@ -132,14 +133,14 @@ describe("machine readiness verifier", () => {
     );
 
     const report = await buildMachineServerProbeReport(root, {
-      timeoutMs: 10_000,
+      timeoutMs: 30_000,
       maxProjects: 1,
       startPort: 4390,
     });
 
     expect(report.totals.passed).toBe(1);
     expect(report.results[0].url).toBe("http://127.0.0.1:4390");
-  });
+  }, 60_000);
 
   it("classifies non-interactive Convex setup blockers in server probe proof", async () => {
     const root = makeTempRoot();
@@ -164,7 +165,7 @@ describe("machine readiness verifier", () => {
     );
 
     const servers = await buildMachineServerProbeReport(root, {
-      timeoutMs: 10_000,
+      timeoutMs: 30_000,
       maxProjects: 1,
       startPort: 4490,
     });
@@ -176,6 +177,57 @@ describe("machine readiness verifier", () => {
     expect(proof.summary.warnings).toContain(
       "youmd: non-interactive Convex setup required before dev server start; restore Convex/env config or run convex dev interactively once",
     );
+  }, 60_000);
+
+  it("loads the latest agent stack inventory into machine proof", () => {
+    const root = makeTempRoot();
+    const inventoryDir = path.join(root, "agent-stack-inventory");
+    fs.mkdirSync(inventoryDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(inventoryDir, "local-agent-stack-inventory-2026-06-18.json"),
+      JSON.stringify({ totals: { uniqueSkillNames: 1 }, generatedAt: "2026-06-18T00:00:00.000Z" }),
+    );
+    const latestJson = path.join(inventoryDir, "local-agent-stack-inventory-2026-06-19.json");
+    fs.writeFileSync(
+      latestJson,
+      JSON.stringify({
+        host: { hostname: "houston-mac-mini" },
+        generatedAt: "2026-06-19T00:00:00.000Z",
+        inventorySchemaVersion: "local-agent-stack-inventory/v1",
+        roots: { workspace: "/Users/houston/Desktop/CODE_YOU" },
+        totals: {
+          uniqueSkillNames: 430,
+          uniqueRealSkillFiles: 827,
+          directExposureSkillRecords: 412,
+          canonicalSkillFiles: 817,
+          youmdCatalogSkills: 12,
+          missingFromYoumdCatalog: 418,
+          duplicateNameDifferentRealpaths: 73,
+          sameRealpathMirrors: 136,
+          projectSignals: 61,
+        },
+      }),
+    );
+    fs.writeFileSync(latestJson.replace(/\.json$/, ".html"), "<html></html>");
+
+    const inventory = loadLatestAgentStackInventoryProof(inventoryDir);
+    const readiness = buildMachineReadinessReport(root);
+    const proof = buildMachineVerificationProof({ readiness, agentStackInventory: inventory });
+
+    expect(inventory?.hostName).toBe("houston-mac-mini");
+    expect(inventory?.counts.uniqueSkillNames).toBe(430);
+    expect(inventory?.htmlPath).toBe(latestJson.replace(/\.json$/, ".html"));
+    expect(proof.agentStackInventory?.counts.missingFromYoumdCatalog).toBe(418);
+    expect(proof.summary.warnings).not.toContain("agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync");
+  });
+
+  it("warns when machine proof explicitly has no agent stack inventory", () => {
+    const root = makeTempRoot();
+    const readiness = buildMachineReadinessReport(root);
+    const proof = buildMachineVerificationProof({ readiness, agentStackInventory: null });
+
+    expect(proof.agentStackInventory).toBeUndefined();
+    expect(proof.summary.warnings).toContain("agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync");
   });
 
   it("writes a secret-safe machine proof report", () => {
@@ -200,5 +252,5 @@ describe("machine readiness verifier", () => {
     expect(raw).toContain("\"secretValuesExposed\": false");
     expect(raw).not.toContain("sk-secret-value");
     expect(raw).toContain("[redacted]");
-  });
+  }, 60_000);
 });

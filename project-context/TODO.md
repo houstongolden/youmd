@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-19
+Last Updated: 2026-06-20
 PRD Version: 2.3
 
 ---
@@ -30,6 +30,7 @@ PRD Version: 2.3
 - [x] Production-prove `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` landed in the GitHub identity repo
 - [x] Add `agent-stack/` to the server-side repo mirror so hosted MCP can read the repo-backed snapshot files
 - [x] Harden install-time inventory scanning with bounded traversal, repeated-scan caching, and visible `walkIssues`
+- [x] Teach `youmd machine verify` to load the latest local agent-stack inventory proof and include skill mesh counts/report paths in the secret-safe machine proof JSON
 - [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [ ] Next pass: add richer API/MCP drift query models and optional MCP resources for agent stack topology

@@ -1,6 +1,6 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-06-19
+Last Updated: 2026-06-20
 
 ## 2026-06-17 Session Notes
 
@@ -21,6 +21,8 @@ Last Updated: 2026-06-19
 - 2026-06-19 agent stack inventory MCP: Local stdio MCP and hosted JSON-RPC MCP now expose `get_agent_stack_inventory` for authenticated agents. The tool returns the latest safe Convex inventory summaries, source/provenance and sync rollups, catalog gaps, DRY review counts, mirror diagnostics, and GitHub repo snapshot status without secret values. Hosted MCP is `read:private`, routed as a stack-scoped connected-app read, documented in generated agent docs as the 11th hosted MCP tool, deployed to production, and live-smoked through `https://www.you.md/api/v1/mcp` with `429` unique skill names, `826` unique real skill files, `417` catalog gaps, `73` DRY review cases, `133` mirror clusters, and `secretValuesExposed: false`.
 
 - 2026-06-19 hosted MCP repo snapshot read-through: The server-side repo mirror now allowlists `agent-stack/`, so hosted MCP can include the actual repo-backed snapshot files. Live production proof refreshed the repo mirror to `56` files and authenticated `get_agent_stack_inventory` returned `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` with `missingPaths: []` and `secretValuesExposed: false`. The bundled inventory scanner is also bounded for install-time use: repeated root scans are cached, common heavy dirs are skipped, project-signal discovery uses a fast bounded pass, and any partial traversal appears as `walkIssues` in JSON/HTML.
+
+- 2026-06-20 machine proof skill mesh link: `youmd machine verify` now auto-loads the latest `~/.youmd/agent-stack-inventory/local-agent-stack-inventory-*.json` report and writes a secret-safe `agentStackInventory` block into machine proof JSON. The CLI header prints unique skill names, real `SKILL.md` files, catalog gaps, DRY review cases, and the HTML report path so a Mac mini readiness run proves both project/env readiness and skill mesh shape. If no inventory exists, the proof warns with the exact `youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync` repair command. Focused CLI tests and bounded CLI smoke prove `secretValuesExposed: false`.
 
 - 2026-06-19 Home DSI mesh + Tasks board: Tasks is now board-first instead of a single long list. The Tasks pane has board/list modes, project/personal filtering, search, owner/status/scope filters, and compact Kanban columns for doing, ready, proposed, later, done, and killed work while preserving quick routing actions for `me`, `agent`, `doing`, `done`, and `personal`. Home now foregrounds a `machine you sync mesh` block with safe local readiness data: daemon counts, shared skill count, agent-bus message count, focused projects, open tasks, Secret Vault account snapshot status, and latest shipping signal. This is a first UI slice toward Home as a configurable DSI View surface rather than a static dashboard.
 
