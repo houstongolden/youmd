@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### fix(cli): lead env and stack repair copy with `you`
+- Secret Vault follow-up instructions, usage text, and Keychain fallback now lead with `you ...` and `YOU_ENV_VAULT_KEYCHAIN_SERVICE`, while retaining legacy `YOUMD_*` aliases.
+- Resident daemon definitions now install launchd jobs that execute canonical `you ...` commands, while preserving `com.youmd.*` legacy labels for cleanup/status.
+- YouStack generated startup/doctor/smoke guidance now emits `you stack ...` and `~/.you/bin/youmd-auto-upgrade` copy.
+
 ### fix(runtime): prefer canonical `~/.you` in live path helpers
 - Skill catalog inventory hydration now reads the canonical `~/.you/agent-stack-inventory` through central helpers before falling back to legacy `~/.youmd`.
 - Realtime Secret Vault repair/status commands now lead with `you` and `~/.you/secret-vault`, and resident inventory dir resolution prefers `YOU_AGENT_STACK_INVENTORY_DIR` with `YOUMD_*` kept as a legacy alias.

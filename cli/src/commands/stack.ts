@@ -153,7 +153,7 @@ async function recordStackSyncActivity(options: {
 
 function printHelp(): void {
   console.log("");
-  console.log("  " + chalk.bold("youmd stack") + DIM(" -- local YouStack manifest tools"));
+  console.log("  " + chalk.bold("you stack") + DIM(" -- local YouStack manifest tools"));
   console.log("");
   console.log("  " + ACCENT("Commands"));
   console.log("    " + chalk.cyan("inspect") + DIM("              Show the local stack manifest summary"));
@@ -218,8 +218,8 @@ export async function stackCommand(
     const slash = ref.indexOf("/");
     if (!ref || slash <= 0 || slash === ref.length - 1) {
       console.log("");
-      console.log(chalk.yellow("  usage: youmd stack install <user>/<slug>"));
-      console.log("  " + DIM("example: youmd stack install houston/coding-stack"));
+      console.log(chalk.yellow("  usage: you stack install <user>/<slug>"));
+      console.log("  " + DIM("example: you stack install houston/coding-stack"));
       console.log("");
       process.exitCode = 1;
       return;
@@ -263,7 +263,7 @@ export async function stackCommand(
         }
       }
       console.log("");
-      console.log("  " + chalk.green("installed.") + " " + DIM(`run \`youmd stack doctor --path ${result.targetDir}\` to validate.`));
+      console.log("  " + chalk.green("installed.") + " " + DIM(`run \`you stack doctor --path ${result.targetDir}\` to validate.`));
       console.log("");
     } catch (err) {
       spinner.fail("install failed");
@@ -298,7 +298,7 @@ export async function stackCommand(
       const id = args[1];
       if (!id) {
         console.log("");
-        console.log(chalk.yellow(`  usage: youmd stack proposals ${sub} <id>`));
+        console.log(chalk.yellow(`  usage: you stack proposals ${sub} <id>`));
         console.log("");
         process.exitCode = 1;
         return;
@@ -379,7 +379,7 @@ export async function stackCommand(
         );
       }
       console.log("");
-      console.log("  " + DIM("use `youmd stack proposals approve <id>` or `youmd stack proposals reject <id>`"));
+      console.log("  " + DIM("use `you stack proposals approve <id>` or `you stack proposals reject <id>`"));
       console.log("");
     } catch (err) {
       spinner.fail("proposals fetch failed");
@@ -400,7 +400,7 @@ export async function stackCommand(
       const scope = args[1];
       if (!scope) {
         console.log("");
-        console.log(chalk.yellow(`  usage: youmd stack consent ${sub} <scope>`));
+        console.log(chalk.yellow(`  usage: you stack consent ${sub} <scope>`));
         console.log("  " + DIM("scopes: consolidate, fleet_aggregate, journal_mine"));
         console.log("");
         process.exitCode = 1;
@@ -475,7 +475,7 @@ export async function stackCommand(
         void grantedStr; void explicitStr;
       }
       console.log("");
-      console.log("  " + DIM("use `youmd stack consent revoke <scope>` or `youmd stack consent grant <scope>`"));
+      console.log("  " + DIM("use `you stack consent revoke <scope>` or `you stack consent grant <scope>`"));
       console.log("");
     } catch (err) {
       spinner.fail("consent fetch failed");
@@ -554,7 +554,7 @@ export async function stackCommand(
 
     if (!action || !["install", "uninstall", "status"].includes(action)) {
       console.log("");
-      console.log(chalk.yellow("  usage: youmd stack daemon <action>"));
+      console.log(chalk.yellow("  usage: you stack daemon <action>"));
       console.log("  " + chalk.dim("actions: install | uninstall | status"));
       console.log("");
       process.exitCode = 1;
@@ -613,7 +613,7 @@ export async function stackCommand(
           console.log("             " + DIM(`last activity: ${daemon.lastActivityAt}`));
         }
         if (daemon.legacyLoaded && daemon.legacyLabel) {
-          console.log("             " + chalk.yellow(`legacy loaded: ${daemon.legacyLabel}; run youmd stack daemon install to replace it`));
+          console.log("             " + chalk.yellow(`legacy loaded: ${daemon.legacyLabel}; run you stack daemon install to replace it`));
         }
         if (daemon.warning) {
           console.log("             " + chalk.yellow(`last warning: ${daemon.warning}`));
@@ -633,7 +633,7 @@ export async function stackCommand(
     loaded = loadYouStackManifest(options.path);
   } catch (error) {
     console.log("");
-    console.log(chalk.red("  youmd stack: ") + (error instanceof Error ? error.message : String(error)));
+    console.log(chalk.red("  you stack: ") + (error instanceof Error ? error.message : String(error)));
     console.log("");
     process.exitCode = 1;
     return;
@@ -757,7 +757,7 @@ export async function stackCommand(
     const request = args.join(" ").trim();
     if (!request) {
       console.log("");
-      console.log(chalk.yellow("  usage: youmd stack route \"start this repo with my preferences\""));
+      console.log(chalk.yellow("  usage: you stack route \"start this repo with my preferences\""));
       console.log("");
       process.exitCode = 1;
       return;
@@ -937,7 +937,7 @@ export async function stackCommand(
     } else {
       console.log(
         "  " + chalk.red("Guard failed.") + " " +
-        DIM("Fix the violations above and rerun `youmd stack guard`.")
+        DIM("Fix the violations above and rerun `you stack guard`.")
       );
       process.exitCode = 1;
     }
@@ -959,7 +959,7 @@ export async function stackCommand(
       console.log("");
       console.log("  " + ACCENT("youstack eval --init"));
       console.log("  " + chalk.green("WROTE") + " " + filePath);
-      console.log("  " + DIM(`${golden.entries.length} example entries. Edit to add real assertions, then run \`youmd stack eval\`.`));
+      console.log("  " + DIM(`${golden.entries.length} example entries. Edit to add real assertions, then run \`you stack eval\`.`));
       console.log("");
       return;
     }
@@ -1136,10 +1136,10 @@ export async function stackCommand(
         console.log("  " + chalk.green("WROTE") + " " + wrote);
       }
       console.log("");
-      console.log("  " + chalk.green("applied.") + " " + DIM("re-run `youmd stack doctor` to validate the new manifest."));
+      console.log("  " + chalk.green("applied.") + " " + DIM("re-run `you stack doctor` to validate the new manifest."));
       console.log("");
     } else if (info.updateAvailable) {
-      console.log("  " + DIM("run `youmd stack update --apply` to write the new manifest."));
+      console.log("  " + DIM("run `you stack update --apply` to write the new manifest."));
       console.log("");
     }
     return;

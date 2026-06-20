@@ -122,7 +122,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--limit <n>") + chalk.dim("    (prompt) portfolio graph project cap, default 80"));
   console.log("    " + chalk.cyan("--key <key>") + chalk.dim("   (prompt) embed a You.md API key for non-interactive login"));
   console.log("    " + chalk.cyan("--env-vault <path>") + chalk.dim(" (prompt) encrypted .env.local vault path to restore"));
-  console.log("    " + chalk.cyan("--require-env-vault") + chalk.dim(" (prompt) fail setup proof unless YOUMD_ENV_VAULT is restored"));
+  console.log("    " + chalk.cyan("--require-env-vault") + chalk.dim(" (prompt) fail setup proof unless YOU_ENV_VAULT is restored"));
   console.log("    " + chalk.cyan("--max-clone-projects <n>") + chalk.dim(" (projects/prompt) cap clones for clean-host proof runs"));
   console.log("    " + chalk.cyan("--recent-only") + chalk.dim(" (projects) skip projects outside the activity window without prompting"));
   console.log("    " + chalk.cyan("--include-inactive") + chalk.dim(" (projects) audit override; include inactive/non-focused portfolio projects"));

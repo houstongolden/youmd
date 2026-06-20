@@ -287,7 +287,7 @@ describe("youstack manifest", () => {
     expect(doctor.errors.join("\n")).toContain("missing required field: name");
     expect(doctor.errors.join("\n")).toContain("missing required field: version");
     expect(doctor.warnings.join("\n")).toContain(
-      "manifest is invalid (2 errors); fix the missing or invalid fields reported above, then rerun youmd stack doctor"
+      "manifest is invalid (2 errors); fix the missing or invalid fields reported above, then rerun you stack doctor"
     );
   });
 

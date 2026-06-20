@@ -846,7 +846,7 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
   }
   if (!loaded.validation.ok) {
     warnings.push(
-      `manifest is invalid (${loaded.validation.errors.length} error${loaded.validation.errors.length === 1 ? "" : "s"}); fix the missing or invalid fields reported above, then rerun youmd stack doctor`
+      `manifest is invalid (${loaded.validation.errors.length} error${loaded.validation.errors.length === 1 ? "" : "s"}); fix the missing or invalid fields reported above, then rerun you stack doctor`
     );
   }
 
@@ -904,8 +904,8 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
   if (!files.some((file) => file.type === "test")) {
     recommendations.push("Add a read-only smoke test file so agents can verify the stack before using it.");
   }
-  if (!manifest.improvement?.evals?.some((item) => item.includes("youmd stack smoke"))) {
-    recommendations.push("Include `youmd stack smoke` in improvement.evals so self-improvement stays gated.");
+  if (!manifest.improvement?.evals?.some((item) => item.includes("you stack smoke") || item.includes("youmd stack smoke"))) {
+    recommendations.push("Include `you stack smoke` in improvement.evals so self-improvement stays gated.");
   }
   if (!manifest.update?.check) {
     recommendations.push("Declare update.check so host agents know exactly how to refresh the stack.");
@@ -913,7 +913,7 @@ export function runYouStackDoctor(loaded: LoadedYouStack): YouStackDoctorResult 
     manifest.update.autoApply === true &&
     !manifest.update.check.includes("youmd-auto-upgrade")
   ) {
-    recommendations.push("Auto-applying stacks should run `~/.youmd/bin/youmd-auto-upgrade --quiet` before stack updates.");
+    recommendations.push("Auto-applying stacks should run `~/.you/bin/youmd-auto-upgrade --quiet` before stack updates.");
   }
 
   for (const capability of capabilities) {
@@ -1175,8 +1175,8 @@ function generateYouStackAdapterBody(manifest: YouStackManifest): string {
   lines.push("");
   lines.push("## Startup");
   lines.push("");
-  lines.push("1. Run `~/.youmd/bin/youmd-auto-upgrade --quiet || true` when the helper exists.");
-  lines.push("2. Run `youmd stack smoke` from the stack or project root before relying on this stack.");
+  lines.push("1. Run `~/.you/bin/youmd-auto-upgrade --quiet || true` when the helper exists.");
+  lines.push("2. Run `you stack smoke` from the stack or project root before relying on this stack.");
   lines.push("3. Read local project instructions and project-context files before acting.");
   lines.push("4. Use local/static stack files first.");
   lines.push("5. Use shared You.md API/MCP only for protected brain retrieval, sync, tokens, connected tools, or server-side actions.");
@@ -1221,18 +1221,18 @@ function generateYouStackAdapterBody(manifest: YouStackManifest): string {
     if (manifest.update.source) lines.push(`- Update source: ${manifest.update.source}`);
     lines.push(`- Auto-apply local updates: ${manifest.update.autoApply === true ? "yes" : "no"}`);
   }
-  lines.push("- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run `youmd stack smoke`.");
+  lines.push("- When improving this stack, update stack files, docs, evals/tests, and adapter outputs together, then run `you stack smoke`.");
   lines.push("- Use the bundled `youstack-maintainer` skill for stack organization, visibility review, public-readiness checks, and safe self-updates.");
   lines.push("- Never auto-write protected brain data, private context, connected tools, or remote repos unless the manifest policy and user approval both allow it.");
   lines.push("");
   lines.push("## Local Commands");
   lines.push("");
   lines.push("```bash");
-  lines.push("youmd stack inspect");
-  lines.push("youmd stack doctor");
-  lines.push("youmd stack smoke");
-  lines.push("youmd stack capabilities");
-  lines.push("youmd stack route \"<request>\"");
+  lines.push("you stack inspect");
+  lines.push("you stack doctor");
+  lines.push("you stack smoke");
+  lines.push("you stack capabilities");
+  lines.push("you stack route \"<request>\"");
   lines.push("```");
   lines.push("");
 

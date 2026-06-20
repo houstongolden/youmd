@@ -211,7 +211,7 @@ function keychainAccount(): string {
 
 function readPassphraseFromKeychain(): string | null {
   if (process.platform !== "darwin") return null;
-  const service = process.env.YOUMD_ENV_VAULT_KEYCHAIN_SERVICE || "youmd-env-vault";
+  const service = process.env.YOU_ENV_VAULT_KEYCHAIN_SERVICE || process.env.YOUMD_ENV_VAULT_KEYCHAIN_SERVICE || "you-env-vault";
   const result = child_process.spawnSync(
     "security",
     ["find-generic-password", "-a", keychainAccount(), "-s", service, "-w"],
@@ -502,7 +502,7 @@ export async function envVaultCommand(action: string | undefined, opts: EnvVault
     const snapshot = snapshotsResponse.data.snapshots[0];
     if (!snapshot) {
       console.error(chalk.hex("#C46A3A")("  no encrypted env vault snapshot exists yet"));
-      console.error(chalk.dim("  run `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` on the source Mac first"));
+      console.error(chalk.dim("  run `you env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` on the source Mac first"));
       return 1;
     }
 
@@ -514,14 +514,14 @@ export async function envVaultCommand(action: string | undefined, opts: EnvVault
     const devices = devicesResponse.data.devices.filter((device) => device.trusted && !device.revokedAt);
     if (devices.length === 0) {
       console.error(chalk.hex("#C46A3A")("  no trusted Secret Vault devices are registered yet"));
-      console.error(chalk.dim("  run `youmd env vault device-register` on the new Mac, then rerun `youmd env vault share` here"));
+      console.error(chalk.dim("  run `you env vault device-register` on the new Mac, then rerun `you env vault share` here"));
       return 1;
     }
 
     const passphrase = acquireVaultPassphrase({ allowPrompt: true });
     if (!passphrase) {
       console.error(chalk.hex("#C46A3A")("  could not load the env-vault passphrase on this trusted source Mac"));
-      console.error(chalk.dim("  set ENV_VAULT_PASS for this command, store macOS Keychain service `youmd-env-vault`, or rerun in an interactive Terminal"));
+      console.error(chalk.dim("  set ENV_VAULT_PASS for this command, store macOS Keychain service `you-env-vault`, or rerun in an interactive Terminal"));
       return 1;
     }
 
@@ -571,7 +571,7 @@ export async function envVaultCommand(action: string | undefined, opts: EnvVault
       console.log(`  snapshot: ${snapshot.fileName}`);
       console.log(`  devices:  ${shared}`);
       console.log(chalk.dim("  wrapped passphrases only; raw .env.local values were never uploaded or printed"));
-      console.log(chalk.dim("  new Mac restore command: youmd env vault pull --restore --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth"));
+      console.log(chalk.dim("  new Mac restore command: you env vault pull --restore --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth"));
     }
     return 0;
   }
@@ -686,7 +686,7 @@ export async function envVaultCommand(action: string | undefined, opts: EnvVault
           }
         } catch {
           console.error(chalk.hex("#C46A3A")("  Secret Vault envelope exists but this Mac could not decrypt it"));
-          console.error(chalk.dim("  remove/re-register this device key or rerun `youmd env vault share` on the source Mac"));
+          console.error(chalk.dim("  remove/re-register this device key or rerun `you env vault share` on the source Mac"));
           return 1;
         }
       } else {
@@ -695,7 +695,7 @@ export async function envVaultCommand(action: string | undefined, opts: EnvVault
           if (!opts.printPath) {
             console.error(chalk.hex("#C46A3A")(`  ${secretVaultErrorMessage(envelopeResponse.status, envelopeResponse.data, "no trusted-device vault envelope exists for this Mac yet")}`));
             console.error(chalk.dim(`  this Mac is registered as ${registration.key.deviceId}`));
-            console.error(chalk.dim("  on the source Mac, run: youmd env vault share"));
+            console.error(chalk.dim("  on the source Mac, run: you env vault share"));
             console.error(chalk.dim("  then rerun this restore command; raw .env.local values still never touch the browser or chat"));
           }
           return 1;
@@ -750,7 +750,7 @@ export async function envVaultCommand(action: string | undefined, opts: EnvVault
     return 0;
   }
 
-  console.log("usage: youmd env vault <push|pull|list|device-register|device-list|share> [options]");
+  console.log("usage: you env vault <push|pull|list|device-register|device-list|share> [options]");
   console.log("  vault push          encrypt local .env.local files and upload ciphertext to You.md Secret Vault");
   console.log("  vault pull          download the latest encrypted account vault to ~/.you/secret-vault");
   console.log("  vault pull --restore --root <dir>");
