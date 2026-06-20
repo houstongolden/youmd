@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### fix(skills): match inventory rows to machine proofs
+- Fixed Skill Mesh proof coverage matching so agent-stack inventory rows can join with machine readiness proofs even when inventory keys use the `-agent-stack` suffix or `~`/absolute home-root path variants.
+- The proof summary now indexes machine proofs by normalized exact key, de-suffixed key, host/root pair, and newest same-host proof fallback, preventing false `0/N proof` states for synced machines.
+- Verified with `npm run build`, `git diff --check`, and authenticated `/shell?tab=skills&view=mesh` browser smoke showing `machine proof 4/4` with no console errors or failed responses.
+
 ### feat(skills): foreground live topology
 - Replaced the tall always-visible Skills explainer with a compact mode-aware header, keeping install/use actions visible without forcing users through education copy on every visit.
 - Added a real-data Skill Mesh topology graph derived from synced inventory, source groups, proof coverage, catalog gaps, DRY review counts, and secret-exposure status.

@@ -423,15 +423,58 @@ function buildSkillMeshTopology({
   return { nodes, links, signals, latestActivity };
 }
 
-function machineProofKey(row: Pick<AgentStackInventory | MachineProofReport, "machineKey" | "hostName" | "rootDir">) {
-  return row.machineKey || `${row.hostName}::${row.rootDir}`;
+function normalizeMachineKeyPart(value: string | undefined) {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^~(?=\/|$)/, "")
+    .replace(/^\/users\/[^/]+(?=\/|$)/, "")
+    .replace(/\/+$/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function machineHostRootKey(row: Pick<AgentStackInventory | MachineProofReport, "hostName" | "rootDir">) {
+  return `${normalizeMachineKeyPart(row.hostName)}::${normalizeMachineKeyPart(row.rootDir)}`;
+}
+
+function machineProofKeys(row: Pick<AgentStackInventory | MachineProofReport, "machineKey" | "hostName" | "rootDir">) {
+  const direct = normalizeMachineKeyPart(row.machineKey);
+  const hostRoot = machineHostRootKey(row);
+  const keys = new Set<string>([hostRoot]);
+  if (direct) {
+    keys.add(direct);
+    keys.add(direct.replace(/-agent-stack$/, ""));
+  }
+  return Array.from(keys).filter(Boolean);
+}
+
+function machineHostKey(row: Pick<AgentStackInventory | MachineProofReport, "hostName">) {
+  return normalizeMachineKeyPart(row.hostName);
+}
+
+function buildMachineProofIndexes(machineProofs: MachineProofReport[] | undefined) {
+  const byKey = new Map<string, MachineProofReport>();
+  const byHost = new Map<string, MachineProofReport>();
+  for (const proof of machineProofs ?? []) {
+    for (const key of machineProofKeys(proof)) {
+      if (!byKey.has(key)) byKey.set(key, proof);
+    }
+    const hostKey = machineHostKey(proof);
+    if (hostKey && !byHost.has(hostKey)) byHost.set(hostKey, proof);
+  }
+  return { byKey, byHost };
 }
 
 function machineProofForInventory(
   inventory: AgentStackInventory,
-  proofByKey: Map<string, MachineProofReport>
+  proofIndexes: ReturnType<typeof buildMachineProofIndexes>
 ) {
-  return proofByKey.get(machineProofKey(inventory));
+  for (const key of machineProofKeys(inventory)) {
+    const proof = proofIndexes.byKey.get(key);
+    if (proof) return proof;
+  }
+  return proofIndexes.byHost.get(machineHostKey(inventory));
 }
 
 function isMachineProofStale(proof: MachineProofReport | undefined) {
@@ -631,10 +674,10 @@ function SkillMeshView({
   const machineCount = inventories?.length ?? 0;
   const secretLeak = inventories?.some((inventory) => inventory.secretValuesExposed) ?? false;
   const driftByMachineKey = new Map((drift?.machines ?? []).map((machine) => [machine.machineKey, machine]));
-  const proofByMachineKey = new Map((machineProofs ?? []).map((proof) => [machineProofKey(proof), proof]));
+  const proofIndexes = buildMachineProofIndexes(machineProofs);
   const proofSummary = (inventories ?? []).reduce(
     (acc, inventory) => {
-      const proof = machineProofForInventory(inventory, proofByMachineKey);
+      const proof = machineProofForInventory(inventory, proofIndexes);
       if (proof) acc.matched += 1;
       else acc.missing += 1;
       if (isMachineProofStale(proof)) acc.stale += 1;
@@ -823,7 +866,7 @@ function SkillMeshView({
 
             <div className="mt-4 space-y-2">
               {(inventories ?? []).slice(0, 6).map((inventory) => {
-                const proof = machineProofForInventory(inventory, proofByMachineKey);
+                const proof = machineProofForInventory(inventory, proofIndexes);
                 const stale = isMachineProofStale(proof);
                 return (
                   <div key={inventory._id} className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto]">
@@ -868,7 +911,7 @@ function SkillMeshView({
                   key={inventory._id}
                   inventory={inventory}
                   drift={driftByMachineKey.get(inventory.machineKey)}
-                  proof={machineProofForInventory(inventory, proofByMachineKey)}
+                  proof={machineProofForInventory(inventory, proofIndexes)}
                 />
               ))}
             </div>
