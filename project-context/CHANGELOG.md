@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(skills): simplify Skill Mesh detail surface
+- Reframed the Skill Mesh first viewport around the real synced brain graph plus three decision signals: owned source of truth, proof coverage, and attention queue.
+- Collapsed deeper source, machine-proof, and audit rollups behind a compact detail switch so the page preserves full inventory intelligence without making users read every table at once.
+- Reduced the duplicated latest-machine/stat wall and kept verification commands available as the primary repair action.
+- Verified with root TypeScript, lint/radius check for the touched file, and existing warnings only.
+
 ### fix(skills): match inventory rows to machine proofs
 - Fixed Skill Mesh proof coverage matching so agent-stack inventory rows can join with machine readiness proofs even when inventory keys use the `-agent-stack` suffix or `~`/absolute home-root path variants.
 - The proof summary now indexes machine proofs by normalized exact key, de-suffixed key, host/root pair, and newest same-host proof fallback, preventing false `0/N proof` states for synced machines.

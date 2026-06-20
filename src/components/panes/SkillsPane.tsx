@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 import { useUser } from "@/lib/you-auth";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { PaneCallout, PaneSectionLabel, PaneDivider } from "./shared";
+import { PaneSectionLabel, PaneDivider } from "./shared";
 import { skillPropagation } from "@/data/portfolioGraph";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import {
@@ -70,6 +70,7 @@ type AgentStackDrift = {
 };
 
 type SkillPaneMode = "catalog" | "mesh";
+type SkillMeshDetailMode = "sources" | "proof" | "audit";
 
 const BUNDLED_SKILLS: SkillEntry[] = [
   {
@@ -500,6 +501,37 @@ function MeshMetric({ label, value, tone = "neutral" }: { label: string; value: 
   );
 }
 
+function MeshDigestItem({
+  label,
+  value,
+  detail,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number | string;
+  detail: string;
+  tone?: "neutral" | "accent" | "warn" | "ok";
+}) {
+  const color = tone === "accent"
+    ? "text-[hsl(var(--accent))]"
+    : tone === "warn"
+      ? "text-yellow-500"
+      : tone === "ok"
+        ? "text-[hsl(var(--success))]"
+        : "text-[hsl(var(--text-primary))]";
+  return (
+    <div className="border-t border-[hsl(var(--border))]/45 pt-2">
+      <div className={`font-mono text-[18px] leading-none ${color}`}>{value}</div>
+      <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+        {label}
+      </div>
+      <p className="mt-2 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+        {detail}
+      </p>
+    </div>
+  );
+}
+
 function RollupColumn({ title, rows }: { title: string; rows: Array<{ label: string; value: number }> }) {
   return (
     <div>
@@ -693,19 +725,14 @@ function SkillMeshView({
   const topology = latest
     ? buildSkillMeshTopology({ latest, sourceGroups, proofSummary, machineCount, secretLeak })
     : null;
+  const [detailMode, setDetailMode] = useState<SkillMeshDetailMode>("sources");
+  const proofClean = latest ? proofSummary.matched === machineCount && proofSummary.stale === 0 && proofSummary.unsafe === 0 : false;
+  const reviewCount = sourceGroups.find((group) => group.label === "Needs review")?.value ?? 0;
+  const attentionCount = latest ? reviewCount + latest.missingFromYoumdCatalog + latest.duplicateNameDifferentRealpaths : 0;
+  const hasDriftIssues = (drift?.summary.driftCount ?? 0) > 0 || (drift?.summary.staleCount ?? 0) > 0 || (drift?.summary.unsafeCount ?? 0) > 0;
 
   return (
     <div className="space-y-6">
-      <PaneCallout label="skill mesh">
-        <p className="font-mono text-[11px] leading-relaxed text-[hsl(var(--text-primary))] opacity-78">
-          Local/global skill inventory from trusted machines. This is the productized version of the HTML/Mermaid audit:
-          ownership, source/provenance, DRY review queues, mirror clusters, catalog gaps, and second-machine proof.
-        </p>
-        <p className="border-t border-[hsl(var(--accent))]/25 pt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
-          Safe metadata only. Raw skill bodies, prompt logs, `.env.local` values, auth tokens, and secret material are excluded.
-        </p>
-      </PaneCallout>
-
       {isLoading && (
         <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
           loading synced agent stack inventories...
@@ -730,16 +757,19 @@ function SkillMeshView({
       {latest && (
         <>
           {topology && (
-            <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+            <section className="border-l border-[hsl(var(--success))]/60 bg-[hsl(var(--bg))]/35 px-4 py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <PaneSectionLabel>live topology</PaneSectionLabel>
-                  <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
-                    Real synced brain graph for skills
+                  <PaneSectionLabel>live skill brain</PaneSectionLabel>
+                  <h3 className="font-mono text-[17px] leading-tight text-[hsl(var(--text-primary))]">
+                    Synced skills, stacks, machines, and source ownership.
                   </h3>
                   <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
-                    Nodes and firing states are derived from synced inventory, source groups, proof coverage, catalog gaps, and DRY review counts.
+                    Real inventory and proof metadata only. The graph lights up from synced machine reports, source groups, catalog gaps, and DRY review counts.
                   </p>
+                </div>
+                <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-48">
+                  {formatInventoryTime(latest.generatedAt)} / safe metadata
                 </div>
               </div>
               <SyncedBrainGraph
@@ -751,46 +781,74 @@ function SkillMeshView({
             </section>
           )}
 
-          <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <PaneSectionLabel>latest machine</PaneSectionLabel>
-                <h2 className="font-mono text-[15px] leading-tight text-[hsl(var(--text-primary))]">
-                  {latest.hostName}
-                </h2>
-                <p className="mt-2 max-w-3xl truncate font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-52">
-                  {latest.rootDir}
-                </p>
-              </div>
-              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-48">
-                {formatInventoryTime(latest.generatedAt)} / {machineCount} machine{machineCount === 1 ? "" : "s"}
-              </div>
+          <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/30 px-4 py-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              <MeshDigestItem
+                label="owned source of truth"
+                value={sourceGroups.find((group) => group.label === "Houston managed")?.value.toLocaleString() ?? "0"}
+                detail="Your managed shared/science skills stay authoritative over mirrors and public references."
+                tone="ok"
+              />
+              <MeshDigestItem
+                label="proof coverage"
+                value={`${proofSummary.matched}/${machineCount}`}
+                detail={proofClean ? "Trusted machine inventories have fresh readiness proof." : "Run the proof command on stale or missing machines."}
+                tone={proofClean ? "ok" : "accent"}
+              />
+              <MeshDigestItem
+                label="attention queue"
+                value={attentionCount.toLocaleString()}
+                detail="Catalog gaps, ambiguous ownership, and duplicate-name DRY review cases."
+                tone={attentionCount > 0 ? "warn" : "ok"}
+              />
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               <MeshMetric label="unique skills" value={formatCount(latest.uniqueSkillNames)} tone="accent" />
               <MeshMetric label="real SKILL.md files" value={formatCount(latest.uniqueRealSkillFiles)} />
-              <MeshMetric label="catalog gaps" value={formatCount(latest.missingFromYoumdCatalog)} tone={latest.missingFromYoumdCatalog > 0 ? "warn" : "ok"} />
-              <MeshMetric label="DRY review cases" value={formatCount(latest.duplicateNameDifferentRealpaths)} tone={latest.duplicateNameDifferentRealpaths > 0 ? "warn" : "ok"} />
-              <MeshMetric label="host exposures" value={formatCount(latest.directExposureSkillRecords)} />
-              <MeshMetric label="canonical files" value={formatCount(latest.canonicalSkillFiles)} />
-              <MeshMetric label="mirror clusters" value={formatCount(latest.sameRealpathMirrors)} tone="ok" />
-              <MeshMetric label="project signals" value={formatCount(latest.projectSignals)} />
+              <MeshMetric label="trusted machines" value={machineCount} tone={machineCount > 1 ? "ok" : "accent"} />
+              <MeshMetric label="secret exposure" value={secretLeak ? "review" : "none"} tone={secretLeak ? "warn" : "ok"} />
             </div>
 
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-[hsl(var(--border))]/45 pt-3 font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-58">
+              <span>{latest.hostName}</span>
+              <span className="max-w-[42rem] truncate">{latest.rootDir}</span>
               <span>schema: {latest.inventorySchemaVersion ?? "unknown"}</span>
-              <span>source: {latest.source}</span>
               <span>agent: {latest.agentName ?? "unknown"}</span>
-              <span className={secretLeak ? "text-yellow-500" : "text-[hsl(var(--success))]"}>
-                secrets: {secretLeak ? "review required" : "not exposed"}
+            </div>
+          </section>
+
+          <section className="border-y border-[hsl(var(--border))]/55 py-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {([
+                ["sources", "source map"],
+                ["proof", "machine proof"],
+                ["audit", "audit details"],
+              ] as const).map(([nextMode, label]) => (
+                <button
+                  key={nextMode}
+                  type="button"
+                  onClick={() => setDetailMode(nextMode)}
+                  className={[
+                    "px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] transition-[background,color,opacity]",
+                    detailMode === nextMode
+                      ? "bg-[hsl(var(--shell-active))] text-[hsl(var(--text-primary))]"
+                      : "text-[hsl(var(--text-secondary))] opacity-50 hover:bg-[hsl(var(--shell-chrome-hover))] hover:opacity-85",
+                  ].join(" ")}
+                  style={{ borderRadius: "var(--radius)" }}
+                >
+                  {label}
+                </button>
+              ))}
+              <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-35">
+                {hasDriftIssues ? "drift needs review" : "no blocking drift"}
               </span>
             </div>
           </section>
 
-          <SourceGroupPanel groups={sourceGroups} />
+          {detailMode === "sources" && <SourceGroupPanel groups={sourceGroups} />}
 
-          {drift?.baseline && (
+          {detailMode === "proof" && drift?.baseline && (
             <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -837,6 +895,7 @@ function SkillMeshView({
             </section>
           )}
 
+          {detailMode === "proof" && (
           <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -890,19 +949,25 @@ function SkillMeshView({
               })}
             </div>
           </section>
+          )}
 
-          <section className="grid gap-4 xl:grid-cols-3">
-            <RollupColumn title="ownership" rows={ownershipRows} />
-            <RollupColumn title="sync policy" rows={syncRows} />
-            <RollupColumn title="provenance" rows={provenanceRows} />
-          </section>
+          {detailMode === "audit" && (
+            <>
+              <section className="grid gap-4 xl:grid-cols-3">
+                <RollupColumn title="ownership" rows={ownershipRows} />
+                <RollupColumn title="sync policy" rows={syncRows} />
+                <RollupColumn title="provenance" rows={provenanceRows} />
+              </section>
 
-          <section className="grid gap-4 xl:grid-cols-3">
-            <SampleList title="catalog gaps" values={latest.missingCatalogSamples ?? []} />
-            <SampleList title="DRY review queue" values={latest.duplicateNameSamples ?? []} />
-            <SampleList title="healthy mirrors" values={latest.mirrorSamples ?? []} />
-          </section>
+              <section className="grid gap-4 xl:grid-cols-3">
+                <SampleList title="catalog gaps" values={latest.missingCatalogSamples ?? []} />
+                <SampleList title="DRY review queue" values={latest.duplicateNameSamples ?? []} />
+                <SampleList title="healthy mirrors" values={latest.mirrorSamples ?? []} />
+              </section>
+            </>
+          )}
 
+          {detailMode === "proof" && (
           <section>
             <PaneSectionLabel>trusted machine snapshots</PaneSectionLabel>
             <div className="space-y-2">
@@ -916,6 +981,7 @@ function SkillMeshView({
               ))}
             </div>
           </section>
+          )}
 
           <section>
             <PaneSectionLabel>verify and compare</PaneSectionLabel>
@@ -1495,8 +1561,8 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
             </div>
           ) : (
             <p className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-40 leading-relaxed">
-              {availableSkills.length} more skills available — click &quot;view
-              all skills&quot; above to expand.
+              {availableSkills.length} more skills available — click &quot;show
+              available&quot; above to expand.
             </p>
           )}
         </div>
