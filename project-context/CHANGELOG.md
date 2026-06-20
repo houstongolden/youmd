@@ -13,6 +13,7 @@
 - Fixed the CI-only install-script test dependency on root Next.js packages by mocking `next/server` and dynamically importing the route.
 - Made latest agent-stack inventory proof selection deterministic when fixture JSON files share the same mtime.
 - Raised CLI Vitest test/hook timeout to 60 seconds so slow publish runners do not fail valid setup-heavy tests.
+- The second trusted publish run passed tests and build, then npm rejected the publish with `E404 / no permission`; the workflow now installs current npm and publishes with provenance/public access so any remaining failure points directly at npm package Trusted Publishing/package permissions.
 
 ### feat(skills): add app-facing Skill Mesh view
 - Added a `skill catalog` / `skill mesh` mode switch to the Skills pane.

@@ -25,6 +25,11 @@ jobs:
         working-directory: cli
         run: npm ci --ignore-scripts
 
+      - name: Use latest npm with OIDC support
+        run: |
+          npm install -g npm@latest
+          npm --version
+
       - name: Test CLI
         working-directory: cli
         run: npm test
@@ -35,4 +40,4 @@ jobs:
 
       - name: Publish CLI
         working-directory: cli
-        run: npm publish
+        run: npm publish --provenance --access public
