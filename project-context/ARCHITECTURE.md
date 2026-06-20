@@ -681,7 +681,7 @@ Adapters contain stack routing instructions but no identity content (drift, see 
 GitHub connection state lives in the `githubConnections` table; the mirrored snapshot lives in `repoMirror` (one row per user). Both are written by `convex/github.ts` / `convex/githubRepo.ts`.
 
 - **Seeded repo contents** (`convex/githubRepo.ts`): `README.md`, `you.md`, `you.json`, and `stacks/.gitkeep` ("YouStacks live here. One folder per named stack.").
-- **Mirror filter** (`isMirrorablePath`): `you.md`, `you.json`, `README.md`, anything under `stacks/`, and top-level `*.md`. `private/*` is never mirrored server-side (belongs in the encrypted vault). Caps: 100 files, 128 KB/file, 700 KB total.
+- **Mirror filter** (`isMirrorablePath`): `you.md`, `you.json`, `README.md`, anything under `stacks/`, `agent-stack/`, `identity/`, `projects/`, `context/`, and top-level `*.md`. `private/*` is never mirrored server-side (belongs in the encrypted vault). Caps: 100 files, 128 KB/file, 700 KB total.
 - **deriveStacks** (`convex/github.ts`) — THE server-side stack parser: a stack is any top-level folder under `stacks/` (path matches `^stacks/<slug>/<rest>`); it counts files per slug and sets `hasManifest` when `<rest>` is `manifest.json|yaml|yml` or `youstack.json|yaml|yml` at the stack root. Output: `{slug, fileCount, hasManifest}[]`.
 - **Read surfaces:** `getRepoMirror` (owner; paths + sizes + derived stacks), `getPublicRepoStacks` (public, only when `repoVisibility === "public"` — never leaks private-repo stack names), and the hosted MCP tool `get_my_stacks` (`convex/http.ts`, requires `read:private`).
 - **Pull path:** `internalSaveBundleFromRepo` treats repo `you.md`/`you.json` as source of truth, versions a new bundle (`source: "github-repo"`), and syncs the public profile.
@@ -696,7 +696,7 @@ GitHub connection state lives in the `githubConnections` table; the mirrored sna
 | `<dir>/youstack.json`, `<dir>/.you/youstack.json`, `<dir>/youstacks/<slug>/youstack.json` | CLI manifest discovery candidates (upward walk) | Stack author | CLI `youmd stack` |
 | `.claude/skills/youstacks/<slug>/SKILL.md` (+ codex/cursor equivalents) | Generated host adapters | CLI `youmd stack link` | Host agents |
 | GitHub repo `stacks/<slug>/...` | Server canonical stack layout; manifest = `stacks/<slug>/(youstack\|manifest).(json\|yaml\|yml)` | Server seed (`stacks/.gitkeep`) + user commits | Server mirror sync → `deriveStacks` → dashboard/API/MCP |
-| Convex `repoMirror` table | Snapshot of mirrorable repo files (100 files / 128 KB / 700 KB caps; no `private/*`) | `convex/githubRepo.ts` sync | `getRepoMirror`, `getPublicRepoStacks`, MCP `get_my_stacks` |
+| Convex `repoMirror` table | Snapshot of mirrorable repo files (100 files / 128 KB / 700 KB caps; no `private/*`) | `convex/githubRepo.ts` sync | `getRepoMirror`, `getPublicRepoStacks`, MCP `get_my_stacks`, MCP `get_agent_stack_inventory` repo snapshot |
 
 ### Known Drift (do not paper over)
 

@@ -61,16 +61,51 @@ const skipDirs = new Set([
   ".git",
   "node_modules",
   ".next",
+  ".cache",
+  ".gradle",
+  ".idea",
+  ".mypy_cache",
+  ".parcel-cache",
+  ".pnpm-store",
+  ".pytest_cache",
+  ".ruff_cache",
+  ".serverless",
+  ".venv",
+  ".vscode",
+  ".yarn",
+  "__pycache__",
+  "coverage",
   "dist",
   "build",
+  "env",
+  "logs",
+  "Pods",
   ".turbo",
   "target",
+  "tmp",
+  "venv",
   "DerivedData",
   "Library",
   "Cache",
   "Caches",
   "CachedData",
 ]);
+
+const projectSignalSkipDirs = new Set([
+  ...skipDirs,
+  ".agents",
+  ".claude",
+  ".codex",
+  ".Codex",
+  ".cursor",
+  ".pi",
+]);
+
+const walkIssues = [];
+const defaultWalkMaxEntries = Number.parseInt(process.env.YOUMD_AGENT_STACK_INVENTORY_WALK_MAX_ENTRIES || "200000", 10);
+const defaultWalkMaxMs = Number.parseInt(process.env.YOUMD_AGENT_STACK_INVENTORY_WALK_MAX_MS || "10000", 10);
+const directEntriesCache = new Map();
+const skillFilesCache = new Map();
 
 function exists(p) {
   try {
@@ -124,11 +159,40 @@ function relHome(p) {
 function walk(root, predicate, options = {}) {
   const maxDepth = options.maxDepth ?? Infinity;
   const followSymlinks = options.followSymlinks ?? false;
+  const maxEntries = options.maxEntries ?? defaultWalkMaxEntries;
+  const maxMs = options.maxMs ?? defaultWalkMaxMs;
+  const deadline = Date.now() + maxMs;
   const seenDirs = new Set();
   const results = [];
   if (!exists(root)) return results;
+  let visited = 0;
+  let stoppedReason = null;
+
+  function stop(reason) {
+    if (stoppedReason) return;
+    stoppedReason = reason;
+    walkIssues.push({
+      root: relHome(root),
+      reason,
+      visited,
+      maxDepth: Number.isFinite(maxDepth) ? maxDepth : null,
+      maxEntries,
+      maxMs,
+      partialResults: results.length,
+    });
+  }
 
   function visit(p, depth) {
+    if (stoppedReason) return;
+    visited += 1;
+    if (visited > maxEntries) {
+      stop("entry-limit");
+      return;
+    }
+    if (Date.now() > deadline) {
+      stop("time-limit");
+      return;
+    }
     const st = statSafe(p);
     if (!st) return;
     if (predicate(p, st)) results.push(p);
@@ -144,10 +208,12 @@ function walk(root, predicate, options = {}) {
       }
     }
     if (!dirSt.isDirectory()) return;
-    const realDir = realpathSafe(p);
-    if (realDir) {
-      if (seenDirs.has(realDir)) return;
-      seenDirs.add(realDir);
+    if (followSymlinks) {
+      const realDir = realpathSafe(p);
+      if (realDir) {
+        if (seenDirs.has(realDir)) return;
+        seenDirs.add(realDir);
+      }
     }
 
     let entries = [];
@@ -171,9 +237,10 @@ function countFiles(root, matcher, options = {}) {
 }
 
 function directEntries(root) {
+  if (directEntriesCache.has(root)) return directEntriesCache.get(root);
   if (!exists(root)) return [];
   try {
-    return fs.readdirSync(root).map((name) => {
+    const entries = fs.readdirSync(root).map((name) => {
       const full = path.join(root, name);
       const st = statSafe(full);
       const isSymlink = Boolean(st?.isSymbolicLink());
@@ -190,13 +257,16 @@ function directEntries(root) {
         hasSkill,
       };
     });
+    directEntriesCache.set(root, entries);
+    return entries;
   } catch {
     return [];
   }
 }
 
 function skillFiles(root) {
-  return walk(root, (p, st) => st.isFile() && path.basename(p) === "SKILL.md").map((file) => {
+  if (skillFilesCache.has(root)) return skillFilesCache.get(root);
+  const skills = walk(root, (p, st) => st.isFile() && path.basename(p) === "SKILL.md").map((file) => {
     const dir = path.dirname(file);
     const name = path.basename(dir);
     const real = realpathSafe(file) || file;
@@ -212,6 +282,8 @@ function skillFiles(root) {
       syncPolicy: classification.syncPolicy,
     };
   });
+  skillFilesCache.set(root, skills);
+  return skills;
 }
 
 function directSkillRecords(root) {
@@ -445,12 +517,60 @@ function unquoteYaml(value) {
 }
 
 function collectProjectSignals() {
-  const signals = walk(roots.workspace, (p, st) => {
-    const base = path.basename(p);
-    if (st.isDirectory() && base === "project-context") return true;
-    if (st.isFile() && ["AGENTS.md", "CLAUDE.md", "youstack.json", ".youmd-project"].includes(base)) return true;
-    return false;
-  }, { maxDepth: 5 });
+  const signals = [];
+  const maxDepth = 5;
+  const maxEntries = defaultWalkMaxEntries;
+  const maxMs = 30000;
+  const deadline = Date.now() + maxMs;
+  const queue = [{ dir: roots.workspace, depth: 0 }];
+  let visited = 0;
+  let stoppedReason = null;
+
+  while (queue.length > 0 && !stoppedReason) {
+    const { dir, depth } = queue.shift();
+    visited += 1;
+    if (visited > maxEntries) {
+      stoppedReason = "entry-limit";
+      break;
+    }
+    if (Date.now() > deadline) {
+      stoppedReason = "time-limit";
+      break;
+    }
+
+    let entries = [];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "project-context") signals.push(full);
+        if (depth < maxDepth && !projectSignalSkipDirs.has(entry.name)) {
+          queue.push({ dir: full, depth: depth + 1 });
+        }
+        continue;
+      }
+      if (entry.isFile() && ["AGENTS.md", "CLAUDE.md", "youstack.json", ".youmd-project"].includes(entry.name)) {
+        signals.push(full);
+      }
+    }
+  }
+
+  if (stoppedReason) {
+    walkIssues.push({
+      root: relHome(roots.workspace),
+      reason: `project-signals-${stoppedReason}`,
+      visited,
+      maxDepth,
+      maxEntries,
+      maxMs,
+      partialResults: signals.length,
+    });
+  }
 
   const buckets = { agents: 0, claude: 0, projectContext: 0, youstack: 0, youmdProject: 0 };
   for (const p of signals) {
@@ -648,11 +768,13 @@ const summary = {
     totals: machineReport.totals || null,
     secretValuesExposed: machineReport.secretValuesExposed === true,
   } : null,
+  walkIssues,
   notes: [
     "Secret-safe inventory: file paths, filenames, counts, and symlink metadata only.",
     "youmd skill list reads ~/.youmd/skills/youmd-skills.yaml merged with CLI defaultSkills(); it does not crawl every host/global skill root.",
     "Top-level host entry counts and nested SKILL.md counts intentionally differ because stack roots such as gstack and scistack contain their own nested skills.",
     "DRY audit rows are review queues. The scanner never recommends deleting Houston-owned skills automatically.",
+    "If walkIssues is non-empty, the inventory is intentionally partial for the listed roots to keep install-time scans bounded.",
   ],
 };
 
@@ -959,6 +1081,10 @@ const html = `<!doctype html>
 
     <h2>Machine Proof</h2>
     <pre><code>${esc(JSON.stringify(summary.machineReport, null, 2))}</code></pre>
+
+    <h2>Traversal Guardrails</h2>
+    <p>Install-time scans are bounded so one huge local tree cannot hang machine setup.</p>
+    <pre><code>${esc(JSON.stringify(summary.walkIssues, null, 2))}</code></pre>
 
     <h2>Notes</h2>
     <ul>

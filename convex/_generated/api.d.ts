@@ -52,6 +52,7 @@ import type * as lib_pagination from "../lib/pagination.js";
 import type * as lib_portfolioRepoSnapshot from "../lib/portfolioRepoSnapshot.js";
 import type * as lib_profileDirectory from "../lib/profileDirectory.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
+import type * as lib_repoMirrorPolicy from "../lib/repoMirrorPolicy.js";
 import type * as lib_scopes from "../lib/scopes.js";
 import type * as lib_secretCrypto from "../lib/secretCrypto.js";
 import type * as lib_secureToken from "../lib/secureToken.js";
@@ -144,6 +145,7 @@ declare const fullApi: ApiFromModules<{
   "lib/portfolioRepoSnapshot": typeof lib_portfolioRepoSnapshot;
   "lib/profileDirectory": typeof lib_profileDirectory;
   "lib/rateLimit": typeof lib_rateLimit;
+  "lib/repoMirrorPolicy": typeof lib_repoMirrorPolicy;
   "lib/scopes": typeof lib_scopes;
   "lib/secretCrypto": typeof lib_secretCrypto;
   "lib/secureToken": typeof lib_secureToken;

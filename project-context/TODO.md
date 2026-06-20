@@ -28,6 +28,8 @@ PRD Version: 2.3
 - [x] Add `agent-stack/` GitHub repo snapshot generation for machine/skill/stack inventory markdown and JSON
 - [x] Make inventory API sync attempt the existing identity repo push/mirror path so snapshots reach `username-you-md`
 - [x] Production-prove `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` landed in the GitHub identity repo
+- [x] Add `agent-stack/` to the server-side repo mirror so hosted MCP can read the repo-backed snapshot files
+- [x] Harden install-time inventory scanning with bounded traversal, repeated-scan caching, and visible `walkIssues`
 - [ ] Next pass: publish `youmd@0.8.10` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [ ] Next pass: add richer API/MCP drift query models and optional MCP resources for agent stack topology

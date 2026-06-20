@@ -12,6 +12,12 @@ import { buildPortfolioRepoSnapshotFiles } from "./lib/portfolioRepoSnapshot";
 import type { PortfolioRepoSnapshotGraph } from "./lib/portfolioRepoSnapshot";
 import { buildAgentStackRepoSnapshotFiles } from "./lib/agentStackRepoSnapshot";
 import type { AgentStackRepoInventory } from "./lib/agentStackRepoSnapshot";
+import {
+  MIRROR_MAX_FILE_BYTES,
+  MIRROR_MAX_FILES,
+  MIRROR_MAX_TOTAL_BYTES,
+  isMirrorablePath,
+} from "./lib/repoMirrorPolicy";
 
 /**
  * GitHub repo actions (Phase 2): create or connect the user's own You.md repo
@@ -121,25 +127,6 @@ async function getRepoFile(
     content: body.content ? decodeBase64Utf8(body.content) : "",
     sha: body.sha,
   };
-}
-
-// Mirror caps — keep the snapshot inside Convex document limits.
-const MIRROR_MAX_FILES = 100;
-const MIRROR_MAX_FILE_BYTES = 128 * 1024;
-const MIRROR_MAX_TOTAL_BYTES = 700 * 1024;
-
-/** Whether a repo path should be mirrored server-side. */
-function isMirrorablePath(path: string): boolean {
-  // Never mirror private/* server-side. Private files belong in the
-  // zero-knowledge vault (client-side encrypted), not the plaintext mirror.
-  if (path.startsWith("private/")) return false;
-  if (path === "you.md" || path === "you.json" || path === "README.md") return true;
-  if (path.startsWith("stacks/")) return true;
-  if (path.startsWith("identity/")) return true;   // per-section markdown
-  if (path.startsWith("projects/")) return true;   // per-project context files
-  if (path.startsWith("context/")) return true;    // runtime context drop zone
-  if (/^[^/]+\.md$/.test(path)) return true; // top-level markdown
-  return false;
 }
 
 /** Fetch a blob's decoded UTF-8 content by sha. */

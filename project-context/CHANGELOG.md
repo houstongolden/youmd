@@ -2,6 +2,12 @@
 
 ## 2026-06-19 — Local agent stack inventory
 
+### fix(sync): mirror agent-stack repo snapshots into hosted MCP
+- Added `agent-stack/` to the server-side repo mirror allowlist and moved mirror caps/path policy into a focused tested helper.
+- Hosted MCP `get_agent_stack_inventory` can now return the mirrored `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json` file contents instead of reporting them missing after GitHub sync.
+- Hardened the local agent-stack scanner used by `youmd skill inventory` and curl install with common heavy-directory skips, per-walk time/entry guardrails, cached repeated skill-root scans, a fast project-signal scanner, and visible `walkIssues` metadata in JSON/HTML reports.
+- Verified with Convex codegen, root TypeScript, script syntax checks, focused repo mirror/MCP tests, CLI build, `docs:check`, `git diff --check`, Convex production deploy, production inventory API repo-sync showing mirror `fileCount: 56`, and live hosted MCP returning all three `agent-stack/` repo snapshot files with `missingPaths: []` and `secretValuesExposed: false`.
+
 ### feat(mcp): expose agent stack inventory to agents
 - Added local stdio MCP `get_agent_stack_inventory` so authenticated local agents can read the latest safe You.md inventory summaries, catalog gaps, DRY review queues, mirror clusters, source/provenance rollups, and repo snapshot hints.
 - Added hosted JSON-RPC MCP `get_agent_stack_inventory` with `read:private` scope, stack-scoped connected-app routing, optional repo snapshot file inclusion, and explicit `expectedPaths` / `missingPaths` diagnostics for `agent-stack/README.md`, `agent-stack/inventory.md`, and `agent-stack/inventory.json`.
