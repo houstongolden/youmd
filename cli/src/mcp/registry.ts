@@ -114,6 +114,60 @@ function boundedNumber(value: unknown, fallback: number, min: number, max: numbe
   return Math.min(Math.max(Math.trunc(parsed), min), max);
 }
 
+function machineKeyFor(row: Record<string, unknown>): string {
+  const key = String(row.machineKey || "").trim();
+  if (key) return key;
+  return `${String(row.hostName || "").trim()}::${String(row.rootDir || "").trim()}`;
+}
+
+function buildAgentStackMachineProofJoin(
+  inventoriesPayload: Record<string, unknown>,
+  proofsPayload: Record<string, unknown>,
+  staleAfterMs = 6 * 60 * 60 * 1000
+): Record<string, unknown> {
+  const inventories = Array.isArray(inventoriesPayload.inventories) ? inventoriesPayload.inventories as Record<string, unknown>[] : [];
+  const proofs = Array.isArray(proofsPayload.machines) ? proofsPayload.machines as Record<string, unknown>[] : [];
+  const proofByKey = new Map<string, Record<string, unknown>>();
+  for (const proof of proofs) {
+    const key = machineKeyFor(proof);
+    if (key) proofByKey.set(key, proof);
+  }
+
+  const now = Date.now();
+  const rows = inventories.map((inventory) => {
+    const proof = proofByKey.get(machineKeyFor(inventory));
+    const proofUpdatedAt = Number(proof?.updatedAt || proof?.generatedAt || 0);
+    const staleByMs = proofUpdatedAt ? Math.max(0, now - proofUpdatedAt) : null;
+    return {
+      machineKey: machineKeyFor(inventory),
+      hostName: inventory.hostName,
+      rootDir: inventory.rootDir,
+      inventoryUpdatedAt: inventory.updatedAt,
+      proofMatched: Boolean(proof),
+      proofStatus: proof?.status || null,
+      proofUpdatedAt: proofUpdatedAt || null,
+      proofStale: staleByMs === null ? true : staleByMs > staleAfterMs,
+      proofStaleByMs: staleByMs,
+      proofWarnings: Array.isArray(proof?.warnings) ? proof.warnings.slice(0, 6) : [],
+      secretValuesExposed: proof?.secretValuesExposed === true || inventory.secretValuesExposed === true,
+    };
+  });
+
+  return {
+    schemaVersion: "you-md/agent-stack-machine-proof/v1",
+    staleAfterMs,
+    summary: {
+      inventoryCount: rows.length,
+      proofCount: proofs.length,
+      matchedCount: rows.filter((row) => row.proofMatched).length,
+      missingProofCount: rows.filter((row) => !row.proofMatched).length,
+      staleProofCount: rows.filter((row) => row.proofStale).length,
+      unsafeCount: rows.filter((row) => row.secretValuesExposed).length,
+    },
+    machines: rows,
+  };
+}
+
 function getInstalledSkillNames(): string[] {
   const skillsDir = path.join(getGlobalConfigDir(), "skills");
   if (!fs.existsSync(skillsDir)) return [];
@@ -1277,6 +1331,10 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
           type: "boolean",
           description: "Include server-computed machine drift against the freshest inventory baseline (default true).",
         },
+        include_machine_proofs: {
+          type: "boolean",
+          description: "Include latest machine proof attestation for each inventory row (default true).",
+        },
       },
     },
     handler: async (args, ctx) => {
@@ -1292,12 +1350,16 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       const drift = args.include_drift === false
         ? null
         : await ctx.apiRequest(`/api/v1/me/agent-stack/drift?limit=${limit}`) as Record<string, unknown>;
+      const machineProofs = args.include_machine_proofs === false
+        ? null
+        : await ctx.apiRequest(`/api/v1/me/machines/proofs?limit=${limit}`) as Record<string, unknown>;
       const includeRepoSnapshot = args.include_repo_snapshot !== false;
       const payload: Record<string, unknown> = {
         schemaVersion: "you-md/agent-stack-mcp/v1",
         source: "youmd-api",
         ...result,
         drift,
+        machineProofs: machineProofs ? buildAgentStackMachineProofJoin(result, machineProofs) : null,
         secretValuesExposed: false,
       };
       if (includeRepoSnapshot) {
@@ -1310,7 +1372,12 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
           note: "Use hosted MCP get_repo_file or the GitHub mirror to inspect snapshot file contents.",
         };
       }
-      ctx.logActivity("read", "agent-stack/inventory", { limit, includeRepoSnapshot, includeDrift: args.include_drift !== false });
+      ctx.logActivity("read", "agent-stack/inventory", {
+        limit,
+        includeRepoSnapshot,
+        includeDrift: args.include_drift !== false,
+        includeMachineProofs: args.include_machine_proofs !== false,
+      });
       return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
     },
   },

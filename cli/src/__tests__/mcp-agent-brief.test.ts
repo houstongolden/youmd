@@ -168,4 +168,97 @@ describe("MCP agent brief", () => {
     expect(parsed.portfolioGraph.matchedProject.slug).toBe("real-project");
     expect(parsed.portfolioGraph.ownedSurfaces[0].slug).toBe("real-api");
   });
+
+  it("joins agent stack inventory with machine proof freshness in get_agent_stack_inventory", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-20T12:00:00Z"));
+
+    const { CLI_MCP_TOOLS } = await import("../mcp/registry");
+    const tool = CLI_MCP_TOOLS.find((candidate) => candidate.name === "get_agent_stack_inventory");
+    expect(tool).toBeTruthy();
+
+    const apiRequest = vi.fn(async (url: string) => {
+      if (url.startsWith("/api/v1/me/agent-stack/inventories")) {
+        return {
+          inventories: [
+            {
+              machineKey: "mini::/Users/houstongolden/Desktop/CODE_YOU",
+              hostName: "Houstons-Mini",
+              rootDir: "/Users/houstongolden/Desktop/CODE_YOU",
+              updatedAt: Date.parse("2026-06-20T11:55:00Z"),
+              secretValuesExposed: false,
+            },
+            {
+              machineKey: "mbp::/Users/houstongolden/Desktop/CODE_2025",
+              hostName: "Houstons-MBP",
+              rootDir: "/Users/houstongolden/Desktop/CODE_2025",
+              updatedAt: Date.parse("2026-06-20T11:50:00Z"),
+              secretValuesExposed: false,
+            },
+          ],
+        };
+      }
+      if (url.startsWith("/api/v1/me/agent-stack/drift")) {
+        return { summary: { machineCount: 2, driftCount: 0, staleCount: 0 } };
+      }
+      if (url.startsWith("/api/v1/me/machines/proofs")) {
+        return {
+          machines: [
+            {
+              machineKey: "mini::/Users/houstongolden/Desktop/CODE_YOU",
+              hostName: "Houstons-Mini",
+              rootDir: "/Users/houstongolden/Desktop/CODE_YOU",
+              status: "ready",
+              warnings: [],
+              secretValuesExposed: false,
+              updatedAt: Date.parse("2026-06-20T11:58:00Z"),
+            },
+          ],
+        };
+      }
+      throw new Error(`unexpected API request: ${url}`);
+    });
+
+    const result = await tool!.handler(
+      { limit: 2 },
+      {
+        authenticated: true,
+        logActivity: vi.fn(),
+        fetchMemoriesEnvelope: vi.fn(),
+        fetchPrivateContextEnvelope: vi.fn(),
+        apiRequest,
+        memoryCategories: [],
+        resolveAgentName: () => "test-agent",
+        getInstalledSkills: () => [],
+        activeBundleExists: () => true,
+        fetchActivityLog: vi.fn(),
+        getYouJson: () => ({}),
+      },
+    );
+    const parsed = JSON.parse(String(result.content[0].text));
+
+    expect(parsed.machineProofs.summary).toMatchObject({
+      inventoryCount: 2,
+      proofCount: 1,
+      matchedCount: 1,
+      missingProofCount: 1,
+      staleProofCount: 1,
+      unsafeCount: 0,
+    });
+    expect(parsed.machineProofs.machines[0]).toMatchObject({
+      machineKey: "mini::/Users/houstongolden/Desktop/CODE_YOU",
+      proofMatched: true,
+      proofStatus: "ready",
+      proofStale: false,
+    });
+    expect(parsed.machineProofs.machines[1]).toMatchObject({
+      machineKey: "mbp::/Users/houstongolden/Desktop/CODE_2025",
+      proofMatched: false,
+      proofStatus: null,
+      proofStale: true,
+    });
+    expect(apiRequest).toHaveBeenCalledWith("/api/v1/me/machines/proofs?limit=2");
+
+    vi.useRealTimers();
+  });
 });
