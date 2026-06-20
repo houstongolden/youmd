@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { PixelCharacter, type PixelCharacterStatus } from "@/components/ui/PixelCharacter";
 
 export type SyncedBrainGraphNode = {
@@ -70,12 +71,16 @@ export function SyncedBrainGraph({
   latestActivity?: SyncedBrainGraphActivity[];
   className?: string;
 }) {
-  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
+  const liveNode = nodes.find((node) => node.live) ?? nodes[0];
+  const [selectedNodeId, setSelectedNodeId] = useState(liveNode?.id ?? "");
+  const selectedNode = nodeById.get(selectedNodeId) ?? liveNode;
+  const activeLinks = links.filter((link) => link.active && nodeById.has(link.from) && nodeById.has(link.to));
 
   return (
-    <div className={["mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)]", className].filter(Boolean).join(" ")}>
-      <div className="relative min-h-[360px] overflow-hidden border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35">
-        <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
+    <div className={["mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.72fr)]", className].filter(Boolean).join(" ")}>
+      <div className="relative min-h-[390px] overflow-hidden border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35">
+        <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {links.map((link) => {
             const from = nodeById.get(link.from);
             const to = nodeById.get(link.to);
@@ -93,13 +98,43 @@ export function SyncedBrainGraph({
               />
             );
           })}
+          {activeLinks.map((link, index) => {
+            const from = nodeById.get(link.from);
+            const to = nodeById.get(link.to);
+            if (!from || !to) return null;
+            const pathId = `brain-pulse-${link.from}-${link.to}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+            return (
+              <g key={`${pathId}-pulse`}>
+                <path
+                  id={pathId}
+                  d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`}
+                  pathLength={100}
+                  vectorEffect="non-scaling-stroke"
+                  fill="none"
+                  stroke="transparent"
+                />
+                <circle r="1.15" fill="hsl(var(--success))" opacity="0.86">
+                  <animateMotion
+                    dur={`${3.2 + index * 0.28}s`}
+                    repeatCount="indefinite"
+                    begin={`${index * 0.18}s`}
+                  >
+                    <mpath href={`#${pathId}`} />
+                  </animateMotion>
+                </circle>
+              </g>
+            );
+          })}
         </svg>
         {nodes.map((node) => (
-          <div
+          <button
             key={node.id}
+            type="button"
+            onClick={() => setSelectedNodeId(node.id)}
             className={[
-              "absolute z-10 w-[148px] -translate-x-1/2 -translate-y-1/2 border bg-[hsl(var(--bg-raised))]/92 px-3 py-2",
+              "absolute z-10 w-[148px] -translate-x-1/2 -translate-y-1/2 cursor-pointer border bg-[hsl(var(--bg-raised))]/92 px-3 py-2 text-left transition-[border-color,background,opacity,transform] hover:bg-[hsl(var(--bg-raised))]",
               graphNodeToneClass(node.tone),
+              selectedNode?.id === node.id ? "ring-1 ring-[hsl(var(--text-primary))]/20" : "opacity-82 hover:opacity-100",
               node.live ? "shadow-[0_0_24px_hsl(var(--success)/0.10)]" : "",
             ].join(" ")}
             style={{ left: `${node.x}%`, top: `${node.y}%` }}
@@ -124,10 +159,35 @@ export function SyncedBrainGraph({
             <div className="mt-2 line-clamp-2 font-mono text-[9px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
               {node.detail}
             </div>
-          </div>
+          </button>
         ))}
       </div>
       <div className="border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/28 px-4 py-3">
+        {selectedNode && (
+          <div className="mb-4 border-b border-[hsl(var(--border))]/45 pb-3">
+            <BrainGraphSectionLabel>selected node</BrainGraphSectionLabel>
+            <div className="flex items-start gap-2">
+              <PixelCharacter
+                kind={selectedNode.kind}
+                seed={`${selectedNode.id}:selected`}
+                status={selectedNode.status}
+                size="sm"
+                className={selectedNode.live ? "animate-pulse" : "opacity-75"}
+              />
+              <div className="min-w-0">
+                <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-50">
+                  {selectedNode.label}
+                </div>
+                <div className="mt-1 truncate font-mono text-[17px] leading-tight text-[hsl(var(--text-primary))]">
+                  {selectedNode.value}
+                </div>
+                <p className="mt-2 font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+                  {selectedNode.detail}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <BrainGraphSectionLabel>live signals</BrainGraphSectionLabel>
         <div className="space-y-2">
           {signals.map((row) => (

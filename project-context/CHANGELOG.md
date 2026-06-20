@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): make the brain graph a calmer live surface
+- Made the shared synced brain graph selectable so the right rail explains one chosen machine/agent/skill/project/vault node instead of forcing every detail into always-visible cards.
+- Added active-link pulse markers tied only to real active links from the graph DTO/model, preserving the no-fake-liveness contract while making real sync activity visually legible.
+- Collapsed Machine repair commands plus agent-bus/skill-mesh diagnostics behind focused disclosure so the first viewport stays graph-first and proof-oriented.
+- Verified with root TypeScript, production Next build, generated docs baseline check, and `git diff --check`.
+
 ### feat(sync): add canonical synced brain graph DTO
 - Added owner-gated Convex `getSyncedBrainGraph`, joining persisted agent-stack inventories, machine proof reports, canonical `brainActivities`, and optional portfolio/task signals into one graph DTO for apps, API clients, and agents.
 - Exposed the graph through authenticated `GET /api/v1/me/synced-brain/graph` and hosted MCP `get_synced_brain_graph`, with generated docs/openapi/llms surfaces updated to 107 endpoints and 12 hosted MCP tools.

@@ -370,17 +370,12 @@ function MachineSyncMeshPanel({
       </div>
 
       {report && (
-        <div className="mt-4 border-t border-[hsl(var(--border))]/55 pt-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-65">
-              proof + repair runbook
-            </span>
-            <span className="ml-auto font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
-              canonical local commands
-            </span>
-          </div>
+        <details className="mt-4 border-t border-[hsl(var(--border))]/55 pt-3">
+          <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
+            proof + repair commands
+          </summary>
           <p className="mt-2 max-w-4xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
-            Use these when a trusted Mac looks stale, has legacy daemons loaded, is missing inventory, or needs a fresh proof pushed back to the machine dashboard.
+            Open this only when a trusted Mac looks stale, has legacy daemons loaded, is missing inventory, or needs a fresh proof pushed back to the machine dashboard.
           </p>
           <div className="mt-3 grid gap-2 lg:grid-cols-2">
             <CopyableCommand command={report.commands.migrateHome} dimmed />
@@ -390,7 +385,7 @@ function MachineSyncMeshPanel({
             <CopyableCommand command={report.commands.vaultShare} dimmed />
             <CopyableCommand command={report.commands.verifyCurrent} dimmed />
           </div>
-        </div>
+        </details>
       )}
 
       {latestProof && (
@@ -750,8 +745,15 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
           loading={loading}
           onRefresh={() => void load(true)}
         />
-        {report?.agentBus && <AgentBusPanel agentBus={report.agentBus} />}
-        {report?.skillSync && <SkillSyncProofPanel skillSync={report.skillSync} />}
+        {(report?.agentBus || report?.skillSync) && (
+          <details className="mt-4 border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/22 px-4 py-3">
+            <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-55">
+              agent bus + skill mesh diagnostics
+            </summary>
+            {report?.agentBus && <AgentBusPanel agentBus={report.agentBus} />}
+            {report?.skillSync && <SkillSyncProofPanel skillSync={report.skillSync} />}
+          </details>
+        )}
 
         <PaneDivider />
 
@@ -759,7 +761,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
           <div>
             <PaneSectionLabel>local agent host</PaneSectionLabel>
             <h2 className="font-mono text-[18px] leading-tight text-[hsl(var(--text-primary))]">
-              Fresh-computer proof surface for You.md, shared skills, MCP wiring, project clones, resident sync, and env-vault readiness.
+              Safe local proof for shared skills, MCP wiring, project clones, resident sync, and env-vault readiness.
             </h2>
             <p className="mt-3 max-w-3xl font-mono text-[11px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-62">
               This localhost-only pane reads safe local metadata from the signed-in machine. It does not read or return raw .env.local values.

@@ -42,6 +42,7 @@ PRD Version: 2.3
 - [x] Wire Home and Skills/Skill Mesh to the canonical synced brain graph DTO while preserving local/inventory fallback graph builders
 - [x] Live-smoke production Convex `GET /api/v1/me/synced-brain/graph` and hosted MCP `get_synced_brain_graph` with redacted/safe output checks
 - [x] Add `npm run sync:graph:smoke` so the synced-brain graph REST/MCP proof is repeatable without printing secrets
+- [x] Make the shared synced brain graph selectable with real active-link pulses and collapse Machine repair/diagnostic clutter behind focused disclosure
 - [ ] Next pass: remove remaining non-canonical fallback liveness paths after production API/MCP graph smoke proves parity
 - [ ] Next pass: publish `youmd@0.8.11` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
