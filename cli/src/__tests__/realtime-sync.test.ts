@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS,
+  DEFAULT_AGENT_STACK_REPAIR_INTERVAL_SECONDS,
   buildRealtimeSyncStatusFile,
   describeRealtimeSecretVault,
+  findAgentStackDriftRepairTarget,
   realtimeSyncHeadSignature,
   resolveAgentStackInventoryDir,
   shouldRunBoundedSync,
@@ -132,6 +134,63 @@ describe("realtime sync helpers", () => {
 
   it("uses a bounded default cadence for resident agent stack inventory", () => {
     expect(DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS).toBe(1800);
+  });
+
+  it("uses a bounded default cadence for resident agent stack repair", () => {
+    expect(DEFAULT_AGENT_STACK_REPAIR_INTERVAL_SECONDS).toBe(1800);
+  });
+
+  it("targets only the local drift row for resident agent stack repair", () => {
+    const drift = {
+      summary: { driftCount: 1, staleCount: 0, unsafeCount: 0 },
+      machines: [
+        {
+          hostName: "source-mac",
+          status: "baseline",
+          stale: false,
+          issues: [],
+          repairCommands: [],
+          secretValuesExposed: false,
+        },
+        {
+          hostName: "Houstons-Mac-Mini.lan",
+          status: "drift",
+          stale: false,
+          issues: ["418 fewer skill names than baseline"],
+          repairCommands: ["youmd stack sync", "youmd skill sync"],
+          secretValuesExposed: false,
+        },
+      ],
+      secretValuesExposed: false as const,
+    };
+
+    expect(findAgentStackDriftRepairTarget(drift, "houstons-mac-mini")).toMatchObject({
+      hostName: "Houstons-Mac-Mini.lan",
+      status: "drift",
+    });
+    expect(findAgentStackDriftRepairTarget(drift, "source-mac")).toBeNull();
+  });
+
+  it("repairs stale local baseline rows without treating healthy ahead rows as broken", () => {
+    expect(
+      findAgentStackDriftRepairTarget(
+        {
+          machines: [{ hostName: "source-mac", status: "baseline", stale: true, issues: ["inventory proof is stale"], secretValuesExposed: false }],
+          secretValuesExposed: false,
+        },
+        "source-mac",
+      ),
+    ).toMatchObject({ status: "baseline", stale: true });
+
+    expect(
+      findAgentStackDriftRepairTarget(
+        {
+          machines: [{ hostName: "source-mac", status: "ahead", stale: false, issues: [], secretValuesExposed: false }],
+          secretValuesExposed: false,
+        },
+        "source-mac",
+      ),
+    ).toBeNull();
   });
 
   it("resolves the resident agent stack inventory directory safely", () => {

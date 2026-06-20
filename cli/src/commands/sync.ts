@@ -13,7 +13,7 @@ import {
   bundleResolutionNotice,
   bundleLooksInitialized,
 } from "../lib/config";
-import { apiErrorMessage, createRealtimeSyncSession, getMe, recordBrainActivity } from "../lib/api";
+import { apiErrorMessage, createRealtimeSyncSession, getAgentStackInventoryDrift, getMe, recordBrainActivity } from "../lib/api";
 import { pushCommand } from "./push";
 import { pullCommand, detectLocalDirtyState, stableContentHash } from "./pull";
 import { syncAllSkills } from "../lib/skills";
@@ -24,8 +24,10 @@ import { mergeSections, decisionLabel } from "../lib/merge";
 import { BrailleSpinner } from "../lib/render";
 import {
   DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS,
+  DEFAULT_AGENT_STACK_REPAIR_INTERVAL_SECONDS,
   describeRealtimeAgentBus,
   describeRealtimeSecretVault,
+  findAgentStackDriftRepairTarget,
   realtimeSyncHeadSignature,
   resolveAgentStackInventoryDir,
   shouldRunBoundedSync,
@@ -255,10 +257,6 @@ function envNumber(name: string, fallback: number): number {
   return Number.isFinite(next) && next > 0 ? next : fallback;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 let wakeLiveSyncSleep: (() => void) | null = null;
 
 function liveSyncSleep(ms: number): Promise<void> {
@@ -333,11 +331,16 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
     "YOUMD_LIVE_SYNC_INVENTORY_INTERVAL_SECONDS",
     DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS,
   ) * 1000;
+  const repairMinMs = envNumber(
+    "YOUMD_LIVE_SYNC_REPAIR_INTERVAL_SECONDS",
+    DEFAULT_AGENT_STACK_REPAIR_INTERVAL_SECONDS,
+  ) * 1000;
   const commandTimeoutMs = envNumber("YOUMD_LIVE_SYNC_COMMAND_TIMEOUT_MS", 180) * 1000;
   const ttlSeconds = envNumber("YOUMD_LIVE_SYNC_SESSION_TTL_SECONDS", 3600);
   const stackSyncEnabled = process.env.YOUMD_LIVE_SYNC_STACK !== "0";
   const contextSyncEnabled = process.env.YOUMD_LIVE_SYNC_CONTEXT !== "0";
   const inventorySyncEnabled = process.env.YOUMD_LIVE_SYNC_INVENTORY !== "0";
+  const repairSyncEnabled = process.env.YOUMD_LIVE_SYNC_REPAIR !== "0";
 
   let stopped = false;
   let lastSignature = "";
@@ -345,6 +348,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   let lastStackRunAt = 0;
   let lastContextRunAt = 0;
   let lastInventoryRunAt = 0;
+  let lastRepairRunAt = 0;
   let lastAgentMessageAt = 0;
   let materializing = false;
   let pendingReason: string | null = null;
@@ -447,11 +451,51 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
 
         if (inventorySyncEnabled && shouldRunBoundedSync(lastInventoryRunAt, now, inventoryMinMs)) {
           lastInventoryRunAt = now;
+          const inventoryDir = resolveAgentStackInventoryDir();
           runYoumdSubcommand(
             "agent stack inventory sync",
-            ["skill", "inventory", "--out-dir", resolveAgentStackInventoryDir(), "--sync"],
+            ["skill", "inventory", "--out-dir", inventoryDir, "--sync"],
             commandTimeoutMs,
           );
+        }
+
+        if (repairSyncEnabled && shouldRunBoundedSync(lastRepairRunAt, now, repairMinMs)) {
+          lastRepairRunAt = now;
+          const drift = await getAgentStackInventoryDrift({ limit: 20 });
+          if (drift.ok) {
+            const repairTarget = findAgentStackDriftRepairTarget(drift.data);
+            if (repairTarget) {
+              const issueText = (repairTarget.issues ?? []).slice(0, 4).join("; ") || repairTarget.status || "drift";
+              console.log(chalk.dim("  -- agent stack drift repair: ") + chalk.yellow(issueText));
+              await recordDaemonCheckpoint({
+                kind: "repairing",
+                status: "repairing",
+                title: "realtime daemon repairing agent stack drift",
+                detail: issueText,
+                metadata: {
+                  hostName: repairTarget.hostName ?? os.hostname(),
+                  status: repairTarget.status ?? null,
+                  stale: repairTarget.stale === true,
+                  issueCount: repairTarget.issues?.length ?? 0,
+                  repairCommands: repairTarget.repairCommands ?? [],
+                  secretValuesExposed: false,
+                },
+              });
+              const inventoryDir = resolveAgentStackInventoryDir();
+              runYoumdSubcommand("identity pull before agent stack repair", ["pull"], commandTimeoutMs);
+              runYoumdSubcommand("shared skill/stack repair", ["stack", "sync"], commandTimeoutMs);
+              runYoumdSubcommand("installed skill render repair", ["skill", "sync"], commandTimeoutMs);
+              runYoumdSubcommand(
+                "agent stack inventory repair proof",
+                ["skill", "inventory", "--out-dir", inventoryDir, "--sync"],
+                commandTimeoutMs,
+              );
+              runYoumdSubcommand("machine proof repair", ["machine", "verify", "--write-report", "--sync-report"], commandTimeoutMs);
+            }
+          } else {
+            const message = apiErrorMessage(drift.data) || `HTTP ${drift.status}`;
+            console.log(chalk.yellow(`  agent stack drift check unavailable: ${message}`));
+          }
         }
       } while (pendingReason && !stopped);
     } finally {

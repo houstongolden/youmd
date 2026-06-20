@@ -247,7 +247,7 @@ describe("portfolio repo update history", () => {
     expect(otherInventories).toHaveLength(0);
   });
 
-  it("computes secret-safe agent stack drift against the freshest baseline", async () => {
+  it("computes secret-safe agent stack drift against the best complete baseline", async () => {
     const t = convexTest(schema);
     await seedUsers(t);
     const asOwner = t.withIdentity({ subject: CLERK });
@@ -304,6 +304,32 @@ describe("portfolio repo update history", () => {
       generatedAt: 1_781_719_000_000,
     });
 
+    await asOwner.mutation(api.portfolio.upsertAgentStackInventory, {
+      clerkId: CLERK,
+      machineKey: "fresh-but-incomplete",
+      hostName: "fresh-but-incomplete",
+      rootDir: "/Users/houston/Desktop/CODE_YOU/youmd",
+      inventorySchemaVersion: "local-agent-stack-inventory/v1",
+      uniqueSkillNames: 12,
+      uniqueRealSkillFiles: 18,
+      directExposureSkillRecords: 18,
+      canonicalSkillFiles: 18,
+      youmdCatalogSkills: 12,
+      missingFromYoumdCatalog: 0,
+      duplicateNameDifferentRealpaths: 0,
+      sameRealpathMirrors: 0,
+      projectSignals: 1,
+      ownershipRollup: {},
+      syncPolicyRollup: {},
+      provenanceRollup: {},
+      missingCatalogSamples: [],
+      duplicateNameSamples: [],
+      mirrorSamples: [],
+      source: "youmd-cli",
+      secretValuesExposed: false,
+      generatedAt: 1_781_721_000_000,
+    });
+
     const drift = await asOwner.query(api.portfolio.getAgentStackInventoryDrift, {
       clerkId: CLERK,
       limit: 10,
@@ -314,13 +340,14 @@ describe("portfolio repo update history", () => {
     expect(drift.baseline).toMatchObject({
       machineKey: "macbook-youmd",
       hostName: "houston-macbook",
-      selection: "latest-generatedAt",
+      selection: "best-complete-safe-snapshot",
     });
     expect(drift.summary).toMatchObject({
-      machineCount: 2,
-      driftCount: 1,
+      machineCount: 3,
+      driftCount: 2,
       unsafeCount: 0,
     });
+    expect(drift.machines[0].machineKey).toBe("macbook-youmd");
     const mini = drift.machines.find((row) => row.machineKey === "mac-mini-youmd");
     expect(mini).toMatchObject({
       status: "drift",
@@ -333,6 +360,8 @@ describe("portfolio repo update history", () => {
       secretValuesExposed: false,
     });
     expect(mini?.issues).toContain("3 fewer skill names than baseline");
+    expect(mini?.repairCommands).toContain("youmd stack sync");
+    expect(mini?.repairCommands).toContain("youmd skill sync");
     expect(mini?.repairCommands).toContain("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync");
   });
 

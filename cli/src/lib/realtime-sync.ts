@@ -89,6 +89,28 @@ export type RealtimeSyncHead = {
 export const REALTIME_SYNC_STATUS_PATH = path.join(os.homedir(), ".youmd", "realtime-sync-status.json");
 export const REALTIME_AGENT_INBOX_PATH = path.join(os.homedir(), ".youmd", "agent-bus", "inbox.json");
 export const DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS = 1800;
+export const DEFAULT_AGENT_STACK_REPAIR_INTERVAL_SECONDS = 1800;
+
+export type AgentStackDriftMachineLike = {
+  machineKey?: string;
+  hostName?: string;
+  status?: string;
+  stale?: boolean;
+  issues?: string[];
+  repairCommands?: string[];
+  secretValuesExposed?: boolean;
+};
+
+export type AgentStackInventoryDriftLike = {
+  baseline?: { hostName?: string; machineKey?: string } | null;
+  summary?: {
+    driftCount?: number;
+    staleCount?: number;
+    unsafeCount?: number;
+  };
+  machines?: AgentStackDriftMachineLike[];
+  secretValuesExposed?: false;
+};
 
 export type RealtimeAgentMessage = {
   id?: string;
@@ -309,6 +331,32 @@ export function describeRealtimeAgentBus(head: RealtimeSyncHead | null | undefin
     sendCommand: 'youmd agent send "hello from this Mac"',
     secretValuesExposed: false,
   };
+}
+
+function normalizeHostForDrift(value: string | undefined | null): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\.local$/, "")
+    .replace(/\.lan$/, "");
+}
+
+export function findAgentStackDriftRepairTarget(
+  drift: AgentStackInventoryDriftLike | null | undefined,
+  hostName = os.hostname(),
+): AgentStackDriftMachineLike | null {
+  if (!drift || drift.secretValuesExposed !== false) return null;
+  const localHost = normalizeHostForDrift(hostName);
+  if (!localHost) return null;
+  const machines = drift.machines ?? [];
+  const row = machines.find((machine) => normalizeHostForDrift(machine.hostName) === localHost);
+  if (!row) return null;
+  if (row.secretValuesExposed === true) return row;
+  if (row.stale === true) return row;
+  const status = String(row.status ?? "").toLowerCase();
+  if (status === "drift" || status === "unsafe") return row;
+  if ((row.issues ?? []).length > 0 && status !== "ok" && status !== "ahead") return row;
+  return null;
 }
 
 export function realtimeSyncHeadSignature(head: RealtimeSyncHead | null | undefined): string {

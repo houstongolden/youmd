@@ -2,6 +2,13 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): add resident Skill Mesh drift repair
+- Changed agent-stack drift baseline selection from "newest snapshot" to "best complete safe snapshot" so a newly synced but incomplete Mac cannot become the trusted baseline by accident.
+- Drift repair commands now include the safe reconciliation chain: `youmd pull`, `youmd stack sync`, `youmd skill sync`, inventory sync, and machine proof sync.
+- `youmd sync --live --daemon` now checks the local machine's drift row on a bounded cadence and, when stale/divergent/unsafe, runs the same conservative repair chain automatically before writing fresh inventory and machine proof metadata.
+- Added `YOUMD_LIVE_SYNC_REPAIR=0` and `YOUMD_LIVE_SYNC_REPAIR_INTERVAL_SECONDS` controls for resident repair tuning.
+- Verified with focused Convex drift tests, CLI realtime-sync tests, CLI TypeScript build, and focused ESLint.
+
 ### feat(sync): expose agent stack drift across API, MCP, CLI, and Skill Mesh
 - Added `GET /api/v1/me/agent-stack/drift`, backed by a Convex drift query that compares the latest trusted-machine inventory baseline against recent machine snapshots.
 - The drift model reports machine counts, stale rows, unsafe rows, count deltas, issue labels, and exact repair commands for inventory refresh and machine verification.

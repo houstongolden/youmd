@@ -41,7 +41,8 @@ PRD Version: 2.3
 - [ ] Next pass: add optional MCP resources for agent stack topology/report files
 - [ ] Build the full web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views beyond the first Skills-pane view
 - [x] Add resident realtime reconciliation for safe Skill Mesh inventory summaries through `youmd sync --live --daemon`
-- [ ] Next pass: broaden resident reconciliation beyond inventory summaries into repairable drift actions across trusted machines and agents
+- [x] Broaden resident reconciliation beyond inventory summaries into safe repair actions for stale/divergent local Skill Mesh drift
+- [ ] Next pass: add richer trusted-machine repair action UI and agent-bus repair receipts
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
 

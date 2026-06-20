@@ -98,11 +98,29 @@ function agentStackCounts(row: Doc<"agentStackInventories">) {
   };
 }
 
+function compareAgentStackBaseline(a: Doc<"agentStackInventories">, b: Doc<"agentStackInventories">) {
+  const aSafe = a.secretValuesExposed === false ? 1 : 0;
+  const bSafe = b.secretValuesExposed === false ? 1 : 0;
+  return (
+    bSafe - aSafe ||
+    b.uniqueSkillNames - a.uniqueSkillNames ||
+    b.uniqueRealSkillFiles - a.uniqueRealSkillFiles ||
+    b.directExposureSkillRecords - a.directExposureSkillRecords ||
+    b.canonicalSkillFiles - a.canonicalSkillFiles ||
+    b.sameRealpathMirrors - a.sameRealpathMirrors ||
+    b.generatedAt - a.generatedAt ||
+    b.updatedAt - a.updatedAt
+  );
+}
+
 function buildAgentStackInventoryDrift(inventories: Doc<"agentStackInventories">[]) {
   const sorted = [...inventories].sort((a, b) => b.generatedAt - a.generatedAt || b.updatedAt - a.updatedAt);
-  const baseline = sorted[0] ?? null;
+  const baseline = [...inventories].sort(compareAgentStackBaseline)[0] ?? null;
+  const displayRows = baseline
+    ? [baseline, ...sorted.filter((row) => row.machineKey !== baseline.machineKey)]
+    : sorted;
   const now = Date.now();
-  const rows = baseline ? sorted.map((row) => {
+  const rows = baseline ? displayRows.map((row) => {
     const skillDelta = row.uniqueSkillNames - baseline.uniqueSkillNames;
     const fileDelta = row.uniqueRealSkillFiles - baseline.uniqueRealSkillFiles;
     const catalogGapDelta = row.missingFromYoumdCatalog - baseline.missingFromYoumdCatalog;
@@ -117,15 +135,22 @@ function buildAgentStackInventoryDrift(inventories: Doc<"agentStackInventories">
       stale ? "inventory proof is stale" : "",
       row.secretValuesExposed ? "inventory reports secret exposure" : "",
     ].filter(Boolean);
-    const status = row.machineKey === baseline.machineKey
-      ? "baseline"
-      : row.secretValuesExposed
-        ? "unsafe"
+    const status = row.secretValuesExposed
+      ? "unsafe"
+      : row.machineKey === baseline.machineKey
+        ? "baseline"
         : issues.length > 0
           ? "drift"
           : skillDelta > 0 || fileDelta > 0
             ? "ahead"
             : "ok";
+    const repairCommands = status === "baseline" ? [] : [
+      "youmd pull",
+      "youmd stack sync",
+      "youmd skill sync",
+      "youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync",
+      "youmd machine verify --write-report --sync-report",
+    ];
     return {
       machineKey: row.machineKey,
       hostName: row.hostName,
@@ -143,10 +168,7 @@ function buildAgentStackInventoryDrift(inventories: Doc<"agentStackInventories">
       staleByMs,
       status,
       issues,
-      repairCommands: status === "baseline" ? [] : [
-        "youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync",
-        "youmd machine verify --write-report --sync-report",
-      ],
+      repairCommands,
       secretValuesExposed: row.secretValuesExposed === true,
     };
   }) : [];
@@ -161,7 +183,7 @@ function buildAgentStackInventoryDrift(inventories: Doc<"agentStackInventories">
       generatedAt: baseline.generatedAt,
       updatedAt: baseline.updatedAt,
       counts: agentStackCounts(baseline),
-      selection: "latest-generatedAt",
+      selection: "best-complete-safe-snapshot",
     } : null,
     summary: {
       machineCount: sorted.length,
