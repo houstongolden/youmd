@@ -673,11 +673,11 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
   const syncedProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 8 } : "skip");
   const brainActivities = useQuery(api.brainActivity.listRecent, clerkId ? { clerkId, limit: 24 } : "skip");
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/local/machine-readiness?root=${rootMode}&refresh=1`, {
+      const response = await fetch(`/api/local/machine-readiness?root=${rootMode}${forceRefresh ? "&refresh=1" : ""}`, {
         cache: "no-store",
         credentials: "include",
       });
@@ -805,7 +805,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
           brainActivities={brainActivities}
           rootMode={rootMode}
           loading={loading}
-          onRefresh={() => void load()}
+          onRefresh={() => void load(true)}
         />
         {report?.agentBus && <AgentBusPanel agentBus={report.agentBus} />}
         {report?.skillSync && <SkillSyncProofPanel skillSync={report.skillSync} />}
@@ -840,7 +840,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
             ))}
             <button
               type="button"
-              onClick={() => void load()}
+              onClick={() => void load(true)}
               className="flex h-8 items-center gap-2 bg-[hsl(var(--bg))]/60 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-60 transition-opacity hover:opacity-90"
             >
               <RefreshCw size={13} />

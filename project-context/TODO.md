@@ -50,6 +50,7 @@ PRD Version: 2.3
 - [x] Extract the synced brain graph renderer into a reusable component so Machine, Home, Skills, and future Tauri surfaces can share one real-data visual primitive
 - [x] Extract the synced graph data adapter and wire Home to the same real graph model, replacing the older mini mesh stat strip
 - [x] Cache/dedupe local machine-readiness scans and slow passive shell polling so Home/Machine graph hydration does not stack repeated long filesystem scans
+- [x] Browser-verify Home, Machine, and Skills mesh graph surfaces hydrate in the authenticated shell without console errors
 - [ ] Next pass: prove the repair runbook on the Mac mini after `youmd@0.8.12` is published and compare synced inventory/proof rows
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly

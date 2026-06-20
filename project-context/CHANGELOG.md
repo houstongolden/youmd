@@ -6,13 +6,14 @@
 - Added in-process caching and request dedupe to `/api/local/machine-readiness` so Home, Machine, and shell summary reads share one local readiness scan instead of stacking filesystem/daemon checks.
 - Passive reads get a 30-second fresh cache and up to 5-minute stale response while a background refresh runs; Machine's explicit refresh button uses `refresh=1` to force a real proof scan.
 - Slowed the dashboard shell background readiness poll from every 10 seconds to every 60 seconds.
-- Verified with `npm run build`, `git diff --check`, and an authenticated localhost smoke: first call `miss` took 5.56s, immediate repeat calls returned `fresh` in 0.50s and 0.40s.
+- Split Machine's passive load from manual refresh so opening the Machine pane uses the cached endpoint; only the Refresh/Retry controls force a real proof scan.
+- Verified with `npm run build`, `git diff --check`, authenticated localhost cache smoke, and browser proof for Home, Machine, and Skills graph/mesh surfaces.
 
 ### refactor(sync): share the synced brain graph surface
 - Extracted the Machine tab's real synced brain graph into `src/components/sync/SyncedBrainGraph.tsx` so Home, Skills, Machine, and future Tauri surfaces can reuse one visual primitive instead of growing separate graph panels.
 - Added a shared `machineBrainGraphModel` adapter for local readiness, synced proofs, Convex `brainActivities`, agent bus, skills, projects, daemons, Secret Vault metadata, and optional portfolio context.
 - Home now uses the same graph model and replaces its older mini mesh stat strip with the real graph surface, keeping Machine as the deeper proof/runbook page.
-- Verified with `npm run build` and `git diff --check`; local browser auth loaded the shell skeleton and machine-readiness calls, but the screenshot automation timed out before hydrated graph text was captured.
+- Verified with `npm run build`, `git diff --check`, and authenticated browser screenshots/text checks for `/shell?tab=home`, `/shell?tab=machine`, and `/shell?tab=skills&view=mesh`.
 
 ### feat(shell): filter the live brain log
 - The shell Live Log now has compact filters for `all`, `agents`, `ops`, and `skills`.
