@@ -89,6 +89,15 @@ type AgentStackDrift = {
 
 type SkillPaneMode = "catalog" | "mesh";
 type SkillMeshDetailMode = "report" | "sources" | "proof" | "audit";
+type SkillMeshActivityFilter = "all" | "skills" | "machines" | "vault" | "sync";
+
+const SKILL_MESH_ACTIVITY_FILTERS: Array<{ value: SkillMeshActivityFilter; label: string }> = [
+  { value: "all", label: "all" },
+  { value: "skills", label: "skills" },
+  { value: "machines", label: "machines" },
+  { value: "vault", label: "vault" },
+  { value: "sync", label: "sync" },
+];
 
 const BUNDLED_SKILLS: SkillEntry[] = [
   {
@@ -496,8 +505,14 @@ function machineProofForInventory(
   return proofIndexes.byHost.get(machineHostKey(inventory));
 }
 
-function isSkillMeshActivity(activity: BrainActivityEntry) {
-  const haystack = [
+function normalizeSkillMeshActivityFilter(value: string | null): SkillMeshActivityFilter {
+  return SKILL_MESH_ACTIVITY_FILTERS.some((option) => option.value === value)
+    ? value as SkillMeshActivityFilter
+    : "all";
+}
+
+function skillMeshActivityText(activity: BrainActivityEntry) {
+  return [
     activity.source,
     activity.channel,
     activity.kind,
@@ -510,6 +525,22 @@ function isSkillMeshActivity(activity: BrainActivityEntry) {
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
+}
+
+function isSkillMeshActivity(activity: BrainActivityEntry, filter: SkillMeshActivityFilter = "all") {
+  const haystack = skillMeshActivityText(activity);
+  if (filter === "skills") {
+    return ["agent-stack", "skill", "inventory", "catalog", "dry"].some((term) => haystack.includes(term));
+  }
+  if (filter === "machines") {
+    return ["machine", "daemon", "proof"].some((term) => haystack.includes(term));
+  }
+  if (filter === "vault") {
+    return ["vault", "secret"].some((term) => haystack.includes(term));
+  }
+  if (filter === "sync") {
+    return ["sync", "pull", "push", "reconcile", "realtime", "repo"].some((term) => haystack.includes(term));
+  }
   return [
     "agent-stack",
     "skill",
@@ -759,6 +790,8 @@ function SkillMeshView({
   machineProofs,
   graphDto,
   brainActivities,
+  activityFilter,
+  onActivityFilterChange,
   isLoading,
 }: {
   inventories: AgentStackInventory[] | undefined;
@@ -766,6 +799,8 @@ function SkillMeshView({
   machineProofs: MachineProofReport[] | undefined;
   graphDto?: SyncedBrainGraphDto;
   brainActivities?: BrainActivityEntry[];
+  activityFilter: SkillMeshActivityFilter;
+  onActivityFilterChange: (filter: SkillMeshActivityFilter) => void;
   isLoading: boolean;
 }) {
   const latest = inventories?.[0];
@@ -923,6 +958,8 @@ function SkillMeshView({
               drift={drift}
               attentionCount={attentionCount}
               brainActivities={brainActivities}
+              activityFilter={activityFilter}
+              onActivityFilterChange={onActivityFilterChange}
             />
           )}
 
@@ -1113,6 +1150,8 @@ function SkillMeshReportPanel({
   drift,
   attentionCount,
   brainActivities,
+  activityFilter,
+  onActivityFilterChange,
 }: {
   latest: AgentStackInventory;
   sourceGroups: ReturnType<typeof buildSourceGroups>;
@@ -1121,6 +1160,8 @@ function SkillMeshReportPanel({
   drift?: AgentStackDrift;
   attentionCount: number;
   brainActivities?: BrainActivityEntry[];
+  activityFilter: SkillMeshActivityFilter;
+  onActivityFilterChange: (filter: SkillMeshActivityFilter) => void;
 }) {
   const houstonManaged = sourceGroups.find((group) => group.label === "Houston managed");
   const references = sourceGroups
@@ -1152,8 +1193,15 @@ function SkillMeshReportPanel({
             command: "you sync --live --daemon",
             description: "keep identity, skills, stacks, inventory, and machine proof reconciled",
           };
-  const activityEntries = (brainActivities ?? [])
-    .filter(isSkillMeshActivity)
+  const activities = brainActivities ?? [];
+  const activityCounts = new Map<SkillMeshActivityFilter, number>(
+    SKILL_MESH_ACTIVITY_FILTERS.map((option) => [
+      option.value,
+      activities.filter((activity) => isSkillMeshActivity(activity, option.value)).length,
+    ])
+  );
+  const activityEntries = activities
+    .filter((activity) => isSkillMeshActivity(activity, activityFilter))
     .map(toLiveLogEntry);
 
   return (
@@ -1204,7 +1252,27 @@ function SkillMeshReportPanel({
       </div>
 
       <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
-        <PaneSectionLabel>recent mesh activity</PaneSectionLabel>
+        <div className="flex flex-wrap items-center gap-2">
+          <PaneSectionLabel>recent mesh activity</PaneSectionLabel>
+          <div className="ml-auto flex flex-wrap gap-1">
+            {SKILL_MESH_ACTIVITY_FILTERS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onActivityFilterChange(option.value)}
+                className={[
+                  "px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-[background,color,opacity]",
+                  activityFilter === option.value
+                    ? "bg-[hsl(var(--shell-active))] text-[hsl(var(--text-primary))]"
+                    : "text-[hsl(var(--text-secondary))] opacity-45 hover:bg-[hsl(var(--shell-chrome-hover))] hover:opacity-85",
+                ].join(" ")}
+                style={{ borderRadius: "var(--radius)" }}
+              >
+                {option.label} {activityCounts.get(option.value) ?? 0}
+              </button>
+            ))}
+          </div>
+        </div>
         <LiveBrainLog
           entries={activityEntries}
           compact
@@ -1533,6 +1601,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const [localMode, setLocalMode] = useState<SkillPaneMode>(() => searchParams.get("view") === "mesh" ? "mesh" : "catalog");
   const requestedView = searchParams.get("view");
   const mode: SkillPaneMode = requestedView === "mesh" || requestedView === "catalog" ? requestedView : localMode;
+  const activityFilter = normalizeSkillMeshActivityFilter(searchParams.get("activity"));
 
   // Merge bundled + registry skills, deduplicating by name
   const allSkills: SkillEntry[] = [...BUNDLED_SKILLS];
@@ -1595,6 +1664,19 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
       params.set("view", "mesh");
     } else {
       params.delete("view");
+      params.delete("activity");
+    }
+    router.replace(`/shell?${params.toString()}`, { scroll: false });
+  };
+
+  const setActivityFilter = (nextFilter: SkillMeshActivityFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "skills");
+    params.set("view", "mesh");
+    if (nextFilter === "all") {
+      params.delete("activity");
+    } else {
+      params.set("activity", nextFilter);
     }
     router.replace(`/shell?${params.toString()}`, { scroll: false });
   };
@@ -1688,6 +1770,8 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           machineProofs={machineProofs}
           graphDto={syncedBrainGraph}
           brainActivities={brainActivities}
+          activityFilter={activityFilter}
+          onActivityFilterChange={setActivityFilter}
           isLoading={meshLoading}
         />
       ) : (

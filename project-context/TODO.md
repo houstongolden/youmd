@@ -52,6 +52,7 @@ PRD Version: 2.3
 - [x] Add browser-visible access to the newest generated local Skill Mesh HTML report from the Skills pane
 - [x] Add a dynamic in-app Skill Mesh report mode for source-of-truth, sync health, catalog coverage, DRY pressure, and next command
 - [x] Add recent skill/inventory/machine/vault activity drilldown to the dynamic Skill Mesh report
+- [x] Add URL-backed Skill Mesh activity lanes for skills, machines, vault, and sync proof evidence
 - [ ] Build the full web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views beyond the first Skills-pane view
 - [x] Add resident realtime reconciliation for safe Skill Mesh inventory summaries through `youmd sync --live --daemon`
 - [x] Broaden resident reconciliation beyond inventory summaries into safe repair actions for stale/divergent local Skill Mesh drift

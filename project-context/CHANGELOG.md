@@ -5,6 +5,7 @@
 ### feat(sync): show recent mesh activity in Skill Mesh
 - Skill Mesh report mode now queries the canonical `brainActivities` stream and filters it to skill, inventory, machine, daemon, vault, and sync events.
 - Added a compact embedded Live Brain Log so the report shows real recent sync/proof activity with the same project/entity/host/agent click targets as the main Live Log.
+- Added URL-backed activity lanes for `all`, `skills`, `machines`, `vault`, and `sync`, so direct links such as `/shell?tab=skills&view=mesh&activity=machines` open focused proof evidence.
 - Kept the activity drilldown bounded to eight rows and safe metadata only, preserving the no raw skill bodies, prompt logs, `.env.local`, token, or vault secret contract.
 - Verified with root TypeScript, production Next build, and clean-reference agent-docs CI.
 
