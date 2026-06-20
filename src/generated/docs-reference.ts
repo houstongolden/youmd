@@ -41,13 +41,13 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "5f04f1125ec8c63c8886931f0f8800fc47fc456a972628eab296611e50cf4e65",
+  "sourceHash": "f655b9ab88274f4c621c532811e8ce002b1a6a48cfa6c6566fa9b81c8fad46e8",
   "cli": {
     "version": "0.8.12"
   },
   "counts": {
     "endpoints": 107,
-    "internalRoutes": 10,
+    "internalRoutes": 11,
     "mcpTools": 6,
     "hostedMcpTools": 12,
     "cliCommands": 31,
@@ -1286,6 +1286,11 @@ export const docsReference = {
       "method": "GET",
       "path": "/api/local/machine-readiness",
       "reason": "localhost-only signed-in machine readiness metadata"
+    },
+    {
+      "method": "POST",
+      "path": "/api/local/skill-mesh-repair",
+      "reason": "localhost-only signed-in Skill Mesh repair bridge for whitelisted local CLI actions"
     },
     {
       "method": "POST",

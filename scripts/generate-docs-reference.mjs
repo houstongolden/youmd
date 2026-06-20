@@ -89,6 +89,7 @@ const INTERNAL_ROUTES = new Map([
   ["GET /api/local/browser-session", "localhost-only CLI-to-browser session bootstrap for local visual testing"],
   ["GET /api/local/agent-stack-report", "localhost-only signed-in agent stack HTML report viewer"],
   ["GET /api/local/machine-readiness", "localhost-only signed-in machine readiness metadata"],
+  ["POST /api/local/skill-mesh-repair", "localhost-only signed-in Skill Mesh repair bridge for whitelisted local CLI actions"],
 ]);
 
 // Every documented endpoint must land in one of these categories. The docs

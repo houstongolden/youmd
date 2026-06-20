@@ -91,6 +91,17 @@ type AgentStackDrift = {
 type SkillPaneMode = "catalog" | "mesh";
 type SkillMeshDetailMode = "overview" | "sources" | "machines" | "audit";
 type SkillMeshActivityFilter = "all" | "skills" | "machines" | "vault" | "sync";
+type LocalSkillMeshRepairResult = {
+  success?: boolean;
+  error?: string;
+  action?: string;
+  command?: string;
+  stdout?: string;
+  stderr?: string;
+  durationMs?: number;
+  timedOut?: boolean;
+  secretValuesExposed?: false;
+};
 
 const SKILL_MESH_ACTIVITY_FILTERS: Array<{ value: SkillMeshActivityFilter; label: string }> = [
   { value: "all", label: "all" },
@@ -1431,6 +1442,11 @@ function MachineSnapshotRow({
   drift?: AgentStackDrift["machines"][number];
   proof?: MachineProofReport;
 }) {
+  const [repairState, setRepairState] = useState<{
+    status: "idle" | "running" | "ok" | "error";
+    message?: string;
+    result?: LocalSkillMeshRepairResult;
+  }>({ status: "idle" });
   const driftOk = drift?.status === "baseline" || drift?.status === "ok" || drift?.status === "ahead";
   const proofStale = isMachineProofStale(proof);
   const repairCommands = Array.from(new Set([
@@ -1438,6 +1454,43 @@ function MachineSnapshotRow({
     ...(proofStale ? ["you machine verify --write-report --sync-report"] : []),
   ].filter(Boolean))).slice(0, 4);
   const primaryIssue = drift?.issues?.[0] ?? (proofStale ? "machine proof is stale or missing" : "");
+  const repairAction: "sync-now" | "verify" | null = !driftOk ? "sync-now" : proofStale ? "verify" : null;
+
+  const handleLocalRepair = async () => {
+    if (!repairAction) return;
+    setRepairState({ status: "running", message: repairAction === "sync-now" ? "running local repair..." : "refreshing proof..." });
+    try {
+      const response = await fetch("/api/local/skill-mesh-repair", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: repairAction,
+          rootDir: inventory.rootDir,
+          hostName: inventory.hostName,
+        }),
+      });
+      const result = await response.json().catch(() => ({})) as LocalSkillMeshRepairResult;
+      if (!response.ok || !result.success) {
+        setRepairState({
+          status: "error",
+          message: result.error || result.stderr || "local repair did not complete",
+          result,
+        });
+        return;
+      }
+      setRepairState({
+        status: "ok",
+        message: result.command ? `completed: ${result.command}` : "local repair completed",
+        result,
+      });
+    } catch (err) {
+      setRepairState({
+        status: "error",
+        message: err instanceof Error ? err.message : "local repair request failed",
+      });
+    }
+  };
+
   return (
     <div className="border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px]">
       <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto_auto_auto]">
@@ -1457,8 +1510,33 @@ function MachineSnapshotRow({
       </div>
       {repairCommands.length > 0 && (
         <div className="mt-2 grid gap-1.5 border-l border-[hsl(var(--accent))]/45 pl-3">
-          <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-42">
-            repair chain
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-42">
+              repair chain
+            </div>
+            {repairAction && (
+              <button
+                type="button"
+                onClick={handleLocalRepair}
+                disabled={repairState.status === "running"}
+                className={[
+                  "px-2 py-1 font-mono text-[8.5px] uppercase tracking-[0.12em] transition-[background,color,opacity]",
+                  repairState.status === "ok"
+                    ? "text-[hsl(var(--success))]"
+                    : repairState.status === "error"
+                      ? "text-yellow-500"
+                      : "bg-[hsl(var(--shell-active))] text-[hsl(var(--text-primary))] hover:opacity-85",
+                  repairState.status === "running" ? "opacity-45" : "",
+                ].join(" ")}
+                style={{ borderRadius: "var(--radius)" }}
+              >
+                {repairState.status === "running"
+                  ? "running..."
+                  : repairAction === "sync-now"
+                    ? "run repair on this Mac"
+                    : "refresh proof on this Mac"}
+              </button>
+            )}
           </div>
           {repairCommands.map((command) => (
             <CommandRow
@@ -1467,6 +1545,18 @@ function MachineSnapshotRow({
               description="copy and run on this machine to reconcile skill mesh drift"
             />
           ))}
+          {repairState.message && (
+            <div className={[
+              "truncate font-mono text-[9px]",
+              repairState.status === "ok"
+                ? "text-[hsl(var(--success))]"
+                : repairState.status === "error"
+                  ? "text-yellow-500"
+                  : "text-[hsl(var(--text-secondary))] opacity-45",
+            ].join(" ")} title={repairState.message}>
+              {repairState.message}
+            </div>
+          )}
         </div>
       )}
     </div>
