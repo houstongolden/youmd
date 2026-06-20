@@ -71,7 +71,7 @@ type AgentStackDrift = {
 };
 
 type SkillPaneMode = "catalog" | "mesh";
-type SkillMeshDetailMode = "sources" | "proof" | "audit";
+type SkillMeshDetailMode = "report" | "sources" | "proof" | "audit";
 
 const BUNDLED_SKILLS: SkillEntry[] = [
   {
@@ -729,7 +729,7 @@ function SkillMeshView({
     ? buildSkillMeshTopology({ latest, sourceGroups, proofSummary, machineCount, secretLeak })
     : null;
   const graph = graphDto ?? topology;
-  const [detailMode, setDetailMode] = useState<SkillMeshDetailMode>("sources");
+  const [detailMode, setDetailMode] = useState<SkillMeshDetailMode>("report");
   const proofClean = latest ? proofSummary.matched === machineCount && proofSummary.stale === 0 && proofSummary.unsafe === 0 : false;
   const reviewCount = sourceGroups.find((group) => group.label === "Needs review")?.value ?? 0;
   const attentionCount = latest ? reviewCount + latest.missingFromYoumdCatalog + latest.duplicateNameDifferentRealpaths : 0;
@@ -825,6 +825,7 @@ function SkillMeshView({
           <section className="border-y border-[hsl(var(--border))]/55 py-2">
             <div className="flex flex-wrap items-center gap-2">
               {([
+                ["report", "report"],
                 ["sources", "source map"],
                 ["proof", "machine proof"],
                 ["audit", "audit details"],
@@ -849,6 +850,17 @@ function SkillMeshView({
               </span>
             </div>
           </section>
+
+          {detailMode === "report" && (
+            <SkillMeshReportPanel
+              latest={latest}
+              sourceGroups={sourceGroups}
+              proofSummary={proofSummary}
+              machineCount={machineCount}
+              drift={drift}
+              attentionCount={attentionCount}
+            />
+          )}
 
           {detailMode === "sources" && <SourceGroupPanel groups={sourceGroups} />}
 
@@ -1025,6 +1037,149 @@ function SkillMeshReportAccess({ reportHtmlPath }: { reportHtmlPath?: string }) 
         </span>
         <code className="truncate text-[hsl(var(--accent))]/70">agent-stack://inventory/report.html</code>
       </div>
+    </div>
+  );
+}
+
+function SkillMeshReportPanel({
+  latest,
+  sourceGroups,
+  proofSummary,
+  machineCount,
+  drift,
+  attentionCount,
+}: {
+  latest: AgentStackInventory;
+  sourceGroups: ReturnType<typeof buildSourceGroups>;
+  proofSummary: { matched: number; missing: number; stale: number; unsafe: number };
+  machineCount: number;
+  drift?: AgentStackDrift;
+  attentionCount: number;
+}) {
+  const houstonManaged = sourceGroups.find((group) => group.label === "Houston managed");
+  const references = sourceGroups
+    .filter((group) => group.label === "GStack reference" || group.label === "Public / upstream" || group.label === "Runtime/plugin")
+    .reduce((sum, group) => sum + group.value, 0);
+  const proofClean = machineCount > 0 && proofSummary.matched === machineCount && proofSummary.stale === 0 && proofSummary.unsafe === 0;
+  const driftCount = drift?.summary.driftCount ?? 0;
+  const staleCount = drift?.summary.staleCount ?? 0;
+  const unsafeCount = drift?.summary.unsafeCount ?? 0;
+  const catalogedPercent = latest.uniqueSkillNames > 0
+    ? Math.round((latest.youmdCatalogSkills / latest.uniqueSkillNames) * 100)
+    : 0;
+  const action = !proofClean
+    ? {
+        command: "you machine verify --write-report --sync-report",
+        description: "refresh readiness proof so every trusted inventory has current machine evidence",
+      }
+    : driftCount > 0 || staleCount > 0 || unsafeCount > 0
+      ? {
+          command: "you skill inventory status",
+          description: "inspect drift rows before changing ownership or sync policy",
+        }
+      : attentionCount > 0
+        ? {
+            command: "you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync",
+            description: "refresh catalog gaps, DRY review samples, and local HTML/JSON report",
+          }
+        : {
+            command: "you sync --live --daemon",
+            description: "keep identity, skills, stacks, inventory, and machine proof reconciled",
+          };
+
+  return (
+    <section className="border-l border-[hsl(var(--accent))]/70 bg-[hsl(var(--bg))]/35 px-4 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <PaneSectionLabel>dynamic report</PaneSectionLabel>
+          <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+            What You.md knows about this skill mesh right now
+          </h3>
+          <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
+            Safe synced metadata only: ownership, provenance, drift, catalog coverage, machine proof, and DRY review pressure.
+          </p>
+        </div>
+        <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-42">
+          {formatInventoryTime(latest.generatedAt)}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-4">
+        <ReportSignal
+          label="source of truth"
+          value={formatCount(houstonManaged?.value)}
+          detail={`Houston-managed skills stay canonical; ${references.toLocaleString()} external/runtime references stay grouped until promoted.`}
+          tone="ok"
+          samples={houstonManaged?.samples ?? []}
+        />
+        <ReportSignal
+          label="sync health"
+          value={`${proofSummary.matched}/${machineCount}`}
+          detail={`${driftCount} drift / ${staleCount} stale / ${unsafeCount} unsafe across trusted inventory rows.`}
+          tone={proofClean && driftCount === 0 && staleCount === 0 && unsafeCount === 0 ? "ok" : "accent"}
+        />
+        <ReportSignal
+          label="catalog coverage"
+          value={`${catalogedPercent}%`}
+          detail={`${latest.youmdCatalogSkills.toLocaleString()} cataloged of ${latest.uniqueSkillNames.toLocaleString()} discovered names; ${latest.missingFromYoumdCatalog.toLocaleString()} gaps remain.`}
+          tone={latest.missingFromYoumdCatalog > 0 ? "accent" : "ok"}
+          samples={latest.missingCatalogSamples.slice(0, 3)}
+        />
+        <ReportSignal
+          label="DRY review"
+          value={latest.duplicateNameDifferentRealpaths.toLocaleString()}
+          detail={`${latest.sameRealpathMirrors.toLocaleString()} healthy mirror clusters are preserved; duplicate-name cases need owner-aware review, not deletion.`}
+          tone={latest.duplicateNameDifferentRealpaths > 0 ? "warn" : "ok"}
+          samples={latest.duplicateNameSamples.slice(0, 3)}
+        />
+      </div>
+
+      <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+        <PaneSectionLabel>next useful command</PaneSectionLabel>
+        <CommandRow command={action.command} description={action.description} />
+      </div>
+    </section>
+  );
+}
+
+function ReportSignal({
+  label,
+  value,
+  detail,
+  tone = "neutral",
+  samples = [],
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  tone?: "neutral" | "accent" | "warn" | "ok";
+  samples?: string[];
+}) {
+  const color = tone === "accent"
+    ? "text-[hsl(var(--accent))]"
+    : tone === "warn"
+      ? "text-yellow-500"
+      : tone === "ok"
+        ? "text-[hsl(var(--success))]"
+        : "text-[hsl(var(--text-primary))]";
+  return (
+    <div className="border-t border-[hsl(var(--border))]/45 pt-2">
+      <div className={`font-mono text-[18px] leading-none ${color}`}>{value}</div>
+      <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+        {label}
+      </div>
+      <p className="mt-2 font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+        {detail}
+      </p>
+      {samples.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {samples.map((sample) => (
+            <div key={sample} className="truncate font-mono text-[8.5px] text-[hsl(var(--text-secondary))] opacity-38" title={sample}>
+              {sample}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

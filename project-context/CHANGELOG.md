@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): add dynamic Skill Mesh report mode
+- Added a default `report` mode to the Skills pane Skill Mesh so the app summarizes the live synced inventory as a decision surface before exposing raw source/proof/audit tables.
+- The dynamic report uses existing safe inventory, source-group, proof, and drift semantics to explain source of truth, sync health, catalog coverage, and DRY review pressure.
+- Added one context-sensitive next command so the report points users toward proof refresh, drift inspection, inventory sync, or resident live sync depending on the current mesh state.
+- Verified with root TypeScript, production Next build, and clean-reference agent-docs CI.
+
 ### feat(sync): open local Skill Mesh HTML report from the app
 - Added signed-in localhost-only `GET /api/local/agent-stack-report`, which serves the newest generated `local-agent-stack-inventory-*.html` report from `~/.you/agent-stack-inventory` or legacy `~/.youmd/agent-stack-inventory`.
 - Added a compact report access row to Skill Mesh's existing verify/compare area so the browser can open the current machine's full visual inventory without adding another dashboard panel.
