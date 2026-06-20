@@ -359,7 +359,11 @@ function latestInventoryJsonPath(outDir: string): string | null {
         return false;
       }
     })
-    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+    .sort((a, b) => {
+      const delta = fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs;
+      if (delta !== 0) return delta;
+      return path.basename(b).localeCompare(path.basename(a));
+    });
   return files[0] || null;
 }
 

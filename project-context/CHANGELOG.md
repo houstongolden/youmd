@@ -8,6 +8,12 @@
 - Added `YOUMD_LIVE_SYNC_INVENTORY=0`, `YOUMD_LIVE_SYNC_INVENTORY_INTERVAL_SECONDS`, and `YOUMD_AGENT_STACK_INVENTORY_DIR` controls for machine-specific tuning.
 - Bumped the CLI package to `0.8.11` and raised the fresh-machine minimum version to `0.8.11`.
 
+### fix(ci): unblock trusted CLI publish tests
+- The first `youmd@0.8.11` trusted publish workflow run triggered successfully but failed in the CLI test stage before npm publish.
+- Fixed the CI-only install-script test dependency on root Next.js packages by mocking `next/server` and dynamically importing the route.
+- Made latest agent-stack inventory proof selection deterministic when fixture JSON files share the same mtime.
+- Raised CLI Vitest test/hook timeout to 60 seconds so slow publish runners do not fail valid setup-heavy tests.
+
 ### feat(skills): add app-facing Skill Mesh view
 - Added a `skill catalog` / `skill mesh` mode switch to the Skills pane.
 - The Skill Mesh view reads the existing owner-gated Convex `agentStackInventories` data and renders machine inventory counts, latest machine/root, ownership/sync/provenance rollups, catalog-gap samples, DRY review queues, healthy mirror samples, synced machine rows, and copyable verify/compare commands.

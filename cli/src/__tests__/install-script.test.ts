@@ -1,9 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { GET } from "../../../src/app/install.sh/route";
+vi.mock("next/server", () => ({
+  NextResponse: class MockNextResponse {
+    constructor(private readonly body: string) {}
+
+    async text() {
+      return this.body;
+    }
+  },
+}));
 
 describe("install.sh route", () => {
   it("avoids Bash 3.2 empty-array expansion under set -u", async () => {
+    const { GET } = await import("../../../src/app/install.sh/route");
     const response = await GET();
     const script = await response.text();
 
