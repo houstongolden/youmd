@@ -6,7 +6,7 @@
 - The public `install.sh` route now runs `youmd machine sync-now` automatically when `YOUMD_INSTALL_MACHINE_SYNC=1` or `YOUMD_API_KEY` is present.
 - Auth-bearing installs now attempt `youmd login --key "$YOUMD_API_KEY"` first, then reconcile identity, shared stacks, skills, MCP config, inventory, machine proof, and daemons through the same first-class command used for Mac Mini repair.
 - The unauthenticated installer "Next" block now points at `youmd machine sync-now --root ~/Desktop/CODE_YOU` instead of a long manual pull/sync/daemon checklist.
-- Verified with the focused install route regression test, focused ESLint, and `git diff --check`. A full production build compiled successfully, then the TypeScript phase hung and was interrupted; no source failure was reported.
+- Verified with the focused install route regression test, focused ESLint, `git diff --check`, live `https://you.md/install.sh` / `https://www.you.md/install.sh` route checks, and a temp-home source-channel installer smoke that installed `youmd 0.8.11` and showed `machine sync-now` / `machine full-sync`. A full production build compiled successfully, then the TypeScript phase hung and was interrupted; no source failure was reported.
 
 ### feat(machine): add one-command machine sync proof
 - Added `youmd machine sync-now` to reconcile a trusted Mac in one command: identity pull/sync, shared stack sync, catalog skill install, skill render, Claude/Codex MCP install, agent-stack inventory sync, machine proof sync, Skill Mesh status, and resident daemon install.
