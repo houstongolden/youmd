@@ -292,37 +292,37 @@ Use the curl installer as the product surface. The youmd binary is the helper un
 RUNTIME
 
 echo "Installing native You.md skills..."
-youmd skill install all >/dev/null 2>&1 || true
-youmd skill sync >/dev/null 2>&1 || true
+you skill install all >/dev/null 2>&1 || true
+you skill sync >/dev/null 2>&1 || true
 
 if [ "\${YOU_INSTALL_INVENTORY:-\${YOUMD_INSTALL_INVENTORY:-1}}" = "1" ]; then
   INVENTORY_DIR="\${YOU_AGENT_STACK_INVENTORY_DIR:-\${YOUMD_AGENT_STACK_INVENTORY_DIR:-$YOUMD_HOME_DIR/agent-stack-inventory}}"
   mkdir -p "$INVENTORY_DIR"
   echo "Creating secret-safe local agent stack inventory..."
-  if youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync >/dev/null 2>&1; then
+  if you skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync >/dev/null 2>&1; then
     echo "  - inventory: $INVENTORY_DIR"
   else
-    echo "  - inventory skipped; run \`youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync\` after login/sync"
+    echo "  - inventory skipped; run \`you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync\` after login/sync"
   fi
 fi
 
 # Auto-configure MCP for whichever local agents are present, so they know how
 # to use you.md out of the box. Each host write is non-fatal and backs up the
 # existing config. Skipped hosts can still be wired later with
-# \`youmd mcp --install <host> --auto\`.
+# \`you mcp --install <host> --auto\`.
 echo "Configuring MCP for detected agents..."
 MCP_CONFIGURED=0
 if command -v claude >/dev/null 2>&1 || [ -f "$HOME/.claude.json" ]; then
-  if youmd mcp --install claude --auto >/dev/null 2>&1; then echo "  - Claude Code"; MCP_CONFIGURED=1; fi
+  if you mcp --install claude --auto >/dev/null 2>&1; then echo "  - Claude Code"; MCP_CONFIGURED=1; fi
 fi
 if [ -d "$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
-  if youmd mcp --install codex --auto >/dev/null 2>&1; then echo "  - Codex"; MCP_CONFIGURED=1; fi
+  if you mcp --install codex --auto >/dev/null 2>&1; then echo "  - Codex"; MCP_CONFIGURED=1; fi
 fi
 if [ -d "$HOME/.cursor" ]; then
-  if youmd mcp --install cursor --auto >/dev/null 2>&1; then echo "  - Cursor"; MCP_CONFIGURED=1; fi
+  if you mcp --install cursor --auto >/dev/null 2>&1; then echo "  - Cursor"; MCP_CONFIGURED=1; fi
 fi
 if [ "$MCP_CONFIGURED" = "0" ]; then
-  echo "  (no Claude Code / Codex / Cursor detected — run \\\`youmd mcp --install <host> --auto\\\` after installing one)"
+  echo "  (no Claude Code / Codex / Cursor detected — run \\\`you mcp --install <host> --auto\\\` after installing one)"
 fi
 
 YOU_BOOTSTRAP_API_KEY="\${YOU_API_KEY:-\${YOUMD_API_KEY:-}}"
@@ -331,19 +331,19 @@ if [ "\${YOU_INSTALL_MACHINE_SYNC:-\${YOUMD_INSTALL_MACHINE_SYNC:-0}}" = "1" ] |
   SYNC_LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
   echo "Reconciling this machine with You.md skill mesh..."
   if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
-    youmd login --key "$YOU_BOOTSTRAP_API_KEY" >/dev/null 2>&1 || true
+    you login --key "$YOU_BOOTSTRAP_API_KEY" >/dev/null 2>&1 || true
   fi
-  if youmd machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"; then
+  if you machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"; then
     echo "  - machine sync proof complete"
   else
-    echo "  - machine sync needs follow-up; run: youmd machine sync-now --root \\"$SYNC_ROOT\\""
+    echo "  - machine sync needs follow-up; run: you machine sync-now --root \\"$SYNC_ROOT\\""
   fi
 fi
 
 if [ "\${YOU_INSTALL_DAEMON:-\${YOUMD_INSTALL_DAEMON:-0}}" = "1" ]; then
   if [ "$(uname -s 2>/dev/null || true)" = "Darwin" ]; then
     echo "Installing resident You.md sync daemon..."
-    youmd stack daemon install || true
+    you stack daemon install || true
   else
     echo "Resident daemon auto-install is currently macOS launchd-only; skipping."
   fi
@@ -356,8 +356,8 @@ if [ "$USING_USER_NPM_PREFIX" = "1" ]; then
 fi
 echo ""
 echo "Next:"
-echo "  youmd login          # press Enter to authenticate this machine in the browser"
-echo "  youmd machine sync-now --root ~/Desktop/CODE_YOU"
+echo "  you login            # press Enter to authenticate this machine in the browser"
+echo "  you machine sync-now --root ~/Desktop/CODE_YOU"
 echo "                       # sync your brain, skills, stacks, MCP, inventory, proof, and daemons"
 echo "  you                  # meet U; it will guide onboarding, stacks, and next moves"
 echo ""

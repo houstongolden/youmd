@@ -157,13 +157,13 @@ function shellHomeAssignment(name: string, value: string): string {
 
 export function buildFreshMachineBootstrapCommand(apiKey?: string): string {
   const script = `set -euo pipefail
-export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-ROOT="\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}"
-DAYS="\${YOUMD_ACTIVE_DAYS:-30}"
-EXPAND_DAYS="\${YOUMD_EXPAND_ACTIVE_DAYS:-90}"
-LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
-HYDRATE_TIMEOUT="\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"
-MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.11}"
+export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+ROOT="\${YOU_CODE_ROOT:-\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}}"
+DAYS="\${YOU_ACTIVE_DAYS:-\${YOUMD_ACTIVE_DAYS:-30}}"
+EXPAND_DAYS="\${YOU_EXPAND_ACTIVE_DAYS:-\${YOUMD_EXPAND_ACTIVE_DAYS:-90}}"
+LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
+HYDRATE_TIMEOUT="\${YOU_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}}"
+MIN_YOUMD_VERSION="\${YOU_MIN_VERSION:-\${YOUMD_MIN_VERSION:-0.8.11}}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -189,18 +189,18 @@ version_at_least() {
 }
 ensure_youmd_min_version() {
   local installed
-  installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+  installed="$(you --version 2>/dev/null | tr -d '[:space:]' || true)"
   echo "[you.md] installed version: \${installed:-unknown}"
   if [ -n "$installed" ] && version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
     return 0
   fi
-  echo "[you.md] installed youmd is older than required \${MIN_YOUMD_VERSION}; forcing GitHub source install"
-  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash
-  export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-  installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+  echo "[you.md] installed you is older than required \${MIN_YOUMD_VERSION}; forcing GitHub source install"
+  curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL=source YOU_SOURCE_REF=main bash
+  export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  installed="$(you --version 2>/dev/null | tr -d '[:space:]' || true)"
   echo "[you.md] installed version after forced source install: \${installed:-unknown}"
   if [ -z "$installed" ] || ! version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
-    echo "[you.md] youmd \${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore. npm latest may still be behind; rerun after this commit is deployed or install from GitHub main." >&2
+    echo "[you.md] you \${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore. npm latest may still be behind; rerun after this commit is deployed or install from GitHub main." >&2
     exit 1
   fi
 }
@@ -232,7 +232,7 @@ bootstrap_prereqs() {
   fi
   if [ -x /opt/homebrew/bin/brew ]; then eval "$(/opt/homebrew/bin/brew shellenv)" || true; fi
   if [ -x /usr/local/bin/brew ]; then eval "$(/usr/local/bin/brew shellenv)" || true; fi
-  export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
   if command_exists brew; then
     MAJOR="$(node_major)"
@@ -246,7 +246,7 @@ bootstrap_prereqs() {
     command_exists bun || brew install bun || brew install oven-sh/bun/bun || true
   fi
 
-  export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+  export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
   command_exists corepack && corepack enable || true
   if command_exists corepack && ! command_exists pnpm; then
     corepack prepare pnpm@latest --activate || true
@@ -287,130 +287,134 @@ ensure_github_auth() {
 bootstrap_prereqs
 
 echo "[you.md] installing runtime from GitHub main"
-curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL=source YOUMD_SOURCE_REF=main bash
-export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-if ! command_exists youmd; then
-  echo "[you.md] youmd was installed but is not on PATH. Try a new Terminal, then rerun this command." >&2
+curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL=source YOU_SOURCE_REF=main bash
+export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+if ! command_exists you; then
+  echo "[you.md] you was installed but is not on PATH. Try a new Terminal, then rerun this command." >&2
   exit 1
 fi
 ensure_youmd_min_version
 
-if [ -n "\${YOUMD_API_KEY:-}" ]; then
+YOU_BOOTSTRAP_API_KEY="\${YOU_API_KEY:-\${YOUMD_API_KEY:-}}"
+if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
   echo "[you.md] logging in with bootstrap key"
-  youmd login --key "$YOUMD_API_KEY"
+  you login --key "$YOU_BOOTSTRAP_API_KEY"
 else
-  echo "[you.md] no YOUMD_API_KEY set; starting interactive login"
-  youmd login
+  echo "[you.md] no YOU_API_KEY set; starting interactive login"
+  you login
 fi
 
 echo "[you.md] pulling identity bundle and syncing local brain"
-youmd pull
-youmd sync
-youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) authenticated, pulled identity, and started setup" || true
+you pull
+you sync
+you agent send --channel machine-sync --kind status "fresh machine \$(hostname) authenticated, pulled identity, and started setup" || true
 
 echo "[you.md] installing resident realtime/identity/skillstack/project-context daemons early"
-youmd stack daemon install || true
-youmd stack daemon status || true
-youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) installed resident realtime/skillstack daemons" || true
+you stack daemon install || true
+you stack daemon status || true
+you agent send --channel machine-sync --kind status "fresh machine \$(hostname) installed resident realtime/skillstack daemons" || true
 
 GITHUB_READY=0
 if ensure_github_auth; then
   GITHUB_READY=1
-elif [ "\${YOUMD_REQUIRE_GITHUB_AUTH:-1}" = "1" ]; then
+elif [ "\${YOU_REQUIRE_GITHUB_AUTH:-\${YOUMD_REQUIRE_GITHUB_AUTH:-1}}" = "1" ]; then
   echo "[you.md] stopping after You.md identity/daemon setup because GitHub auth is required for private repos." >&2
   exit 2
 fi
 
 echo "[you.md] restoring shared skills, stacks, and agent host config"
-youmd machine setup || echo "[you.md] machine setup reported a warning; continuing to skills/MCP so the next run can self-heal"
-youmd skill install all || true
-youmd skill sync || true
-youmd mcp --install claude --auto || true
-youmd mcp --install codex --auto || true
-youmd skill link claude || true
-youmd skill link codex || true
-youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored shared skills/stacks and MCP config" || true
+you machine setup || echo "[you.md] machine setup reported a warning; continuing to skills/MCP so the next run can self-heal"
+you skill install all || true
+you skill sync || true
+you mcp --install claude --auto || true
+you mcp --install codex --auto || true
+you skill link claude || true
+you skill link codex || true
+you agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored shared skills/stacks and MCP config" || true
 
 if [ "$GITHUB_READY" != "1" ]; then
   echo "[you.md] GitHub auth is still missing; project clone pass skipped. Rerun after gh auth login."
-  youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: GitHub auth required before private project clone" || true
+  you agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: GitHub auth required before private project clone" || true
   exit 2
 fi
 
 RECENT_ONLY_ARGS=()
-if youmd machine --help 2>/dev/null | grep -q -- "--recent-only"; then
+if you machine --help 2>/dev/null | grep -q -- "--recent-only"; then
   RECENT_ONLY_ARGS=(--recent-only)
 else
   echo "[you.md] installed CLI does not expose --recent-only yet; using noninteractive no-to-older-projects fallback"
 fi
 run_machine_projects_recent_only() {
   if [ "\${#RECENT_ONLY_ARGS[@]}" -gt 0 ]; then
-    youmd machine projects "$@"
+    you machine projects "$@"
   else
-    youmd machine projects "$@" </dev/null
+    you machine projects "$@" </dev/null
   fi
 }
 
 echo "[you.md] hydrating portfolio graph from You.md/GitHub before the 30-day local clone pass"
-run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true
+run_with_timeout "$HYDRATE_TIMEOUT" you project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true
 PROJECT_ARGS=(--root "$ROOT" --days "$DAYS" "\${RECENT_ONLY_ARGS[@]}")
-if [ -n "\${YOUMD_MAX_CLONE_PROJECTS:-}" ]; then
-  PROJECT_ARGS+=(--max-clone-projects "$YOUMD_MAX_CLONE_PROJECTS")
+MAX_CLONE_PROJECTS="\${YOU_MAX_CLONE_PROJECTS:-\${YOUMD_MAX_CLONE_PROJECTS:-}}"
+if [ -n "$MAX_CLONE_PROJECTS" ]; then
+  PROJECT_ARGS+=(--max-clone-projects "$MAX_CLONE_PROJECTS")
 fi
 echo "[you.md] previewing graph-backed 30-day project setup plan (ACTIVE + Top Priority/Focusing only)"
 run_machine_projects_recent_only "\${PROJECT_ARGS[@]}" --dry-run || true
 echo "[you.md] creating code workspace and cloning ACTIVE + Top Priority/Focusing 30-day project repos"
 run_machine_projects_recent_only "\${PROJECT_ARGS[@]}"
-youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) finished 30-day active/focused project clone pass into $ROOT" || true
+you agent send --channel machine-sync --kind status "fresh machine \$(hostname) finished 30-day active/focused project clone pass into $ROOT" || true
 
 echo "[you.md] checking encrypted env-vault tooling without printing secrets"
-youmd env backup --root "$ROOT" --preflight || true
+you env backup --root "$ROOT" --preflight || true
 SECRET_VAULT_RESTORED=0
-ALLOW_LOCAL_ENV_VAULT_FALLBACK="\${YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK:-0}"
-if [ -z "\${YOUMD_ENV_VAULT:-}" ] && [ "\${YOUMD_SECRET_VAULT_PULL:-1}" = "1" ]; then
-  SECRET_VAULT_DIR="\${YOUMD_SECRET_VAULT_DIR:-$HOME/.youmd/secret-vault}"
+ENV_VAULT_PATH="\${YOU_ENV_VAULT:-\${YOUMD_ENV_VAULT:-}}"
+ALLOW_LOCAL_ENV_VAULT_FALLBACK="\${YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK:-\${YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK:-0}}"
+if [ -z "$ENV_VAULT_PATH" ] && [ "\${YOU_SECRET_VAULT_PULL:-\${YOUMD_SECRET_VAULT_PULL:-1}}" = "1" ]; then
+  SECRET_VAULT_DIR="\${YOU_SECRET_VAULT_DIR:-\${YOUMD_SECRET_VAULT_DIR:-$HOME/.you/secret-vault}}"
   echo "[you.md] registering this Mac as a trusted Secret Vault device"
-  youmd env vault device-register || true
+  you env vault device-register || true
   echo "[you.md] checking You.md Secret Vault for the latest encrypted env vault and trusted-device envelope"
-  if youmd env vault pull --out "$SECRET_VAULT_DIR" --restore --root "$ROOT" --map-existing --existing-only --skip-agent-auth; then
+  if you env vault pull --out "$SECRET_VAULT_DIR" --restore --root "$ROOT" --map-existing --existing-only --skip-agent-auth; then
     SECRET_VAULT_RESTORED=1
     echo "[you.md] restored env vault through trusted-device Secret Vault"
-    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored encrypted env vault through trusted-device Secret Vault" || true
+    you agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored encrypted env vault through trusted-device Secret Vault" || true
   else
     echo "[you.md] account-backed Secret Vault restore is waiting for a trusted-device share"
-    echo "[you.md] source Mac action: youmd env vault share"
-    echo "[you.md] new Mac retry: youmd env vault pull --restore --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
-    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) registered Secret Vault device and is waiting for source Mac trusted-device share" || true
+    echo "[you.md] source Mac action: you env vault share"
+    echo "[you.md] new Mac retry: you env vault pull --restore --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
+    you agent send --channel machine-sync --kind status "fresh machine \$(hostname) registered Secret Vault device and is waiting for source Mac trusted-device share" || true
   fi
 fi
-if [ "$SECRET_VAULT_RESTORED" != "1" ] && [ -z "\${YOUMD_ENV_VAULT:-}" ]; then
+if [ "$SECRET_VAULT_RESTORED" != "1" ] && [ -z "$ENV_VAULT_PATH" ]; then
   if [ "$ALLOW_LOCAL_ENV_VAULT_FALLBACK" = "1" ]; then
     echo "[you.md] opt-in local/iCloud passphrase vault fallback enabled"
     for DEFAULT_ENV_VAULT_DIR in "$HOME/Desktop/youmd-env-vault" "$HOME/Library/Mobile Documents/com~apple~CloudDocs/Desktop/youmd-env-vault" "$HOME/Library/Mobile Documents/com~apple~CloudDocs/youmd-env-vault"; do
       if [ -d "$DEFAULT_ENV_VAULT_DIR" ]; then
         DETECTED_ENV_VAULT="$(find "$DEFAULT_ENV_VAULT_DIR" -maxdepth 1 -type f \\( -name "env-vault-*.tar.enc" -o -name "env-vault-*.tar.age" -o -name "env-vault-*.tar.gpg" \\) -print 2>/dev/null | sort | tail -n 1 || true)"
         if [ -n "$DETECTED_ENV_VAULT" ]; then
-          export YOUMD_ENV_VAULT="$DETECTED_ENV_VAULT"
-          echo "[you.md] using detected env vault: $YOUMD_ENV_VAULT"
+          ENV_VAULT_PATH="$DETECTED_ENV_VAULT"
+          export YOU_ENV_VAULT="$ENV_VAULT_PATH"
+          echo "[you.md] using detected env vault: $ENV_VAULT_PATH"
           break
         fi
       fi
     done
   else
     echo "[you.md] local/iCloud passphrase vault fallback disabled by default"
-    echo "[you.md] set YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1 or YOUMD_ENV_VAULT=/path/to/env-vault only if you intentionally want the older passphrase flow"
+    echo "[you.md] set YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1 or YOU_ENV_VAULT=/path/to/env-vault only if you intentionally want the older passphrase flow"
   fi
 fi
 if [ "$SECRET_VAULT_RESTORED" = "1" ]; then
   :
-elif [ -n "\${YOUMD_ENV_VAULT:-}" ]; then
+elif [ -n "$ENV_VAULT_PATH" ]; then
   echo "[you.md] using explicit/opt-in local encrypted vault fallback"
-  if [ ! -f "$YOUMD_ENV_VAULT" ]; then
-    echo "[you.md] env vault path does not exist: $YOUMD_ENV_VAULT" >&2
+  if [ ! -f "$ENV_VAULT_PATH" ]; then
+    echo "[you.md] env vault path does not exist: $ENV_VAULT_PATH" >&2
     exit 1
   fi
   if [ -z "\${ENV_VAULT_PASS:-}" ] && command_exists security; then
-    KEYCHAIN_SERVICE="\${YOUMD_ENV_VAULT_KEYCHAIN_SERVICE:-youmd-env-vault}"
+    KEYCHAIN_SERVICE="\${YOU_ENV_VAULT_KEYCHAIN_SERVICE:-\${YOU_ENV_VAULT_KEYCHAIN_SERVICE:-you-env-vault}}"
     if ENV_VAULT_PASS_FROM_KEYCHAIN="$(security find-generic-password -a "\${USER:-\${LOGNAME:-houston}}" -s "$KEYCHAIN_SERVICE" -w 2>/dev/null)"; then
       export ENV_VAULT_PASS="$ENV_VAULT_PASS_FROM_KEYCHAIN"
       unset ENV_VAULT_PASS_FROM_KEYCHAIN
@@ -420,107 +424,107 @@ elif [ -n "\${YOUMD_ENV_VAULT:-}" ]; then
     fi
   fi
   echo "[you.md] listing encrypted .env.local vault before restore"
-  youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --list --map-existing --existing-only --skip-agent-auth
+  you env restore "$ENV_VAULT_PATH" --root "$ROOT" --list --map-existing --existing-only --skip-agent-auth
   echo "[you.md] restoring encrypted .env.local vault into existing cloned project dirs"
-  youmd env restore "$YOUMD_ENV_VAULT" --root "$ROOT" --map-existing --existing-only --skip-agent-auth
-  youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored encrypted env vault into existing project dirs" || true
+  you env restore "$ENV_VAULT_PATH" --root "$ROOT" --map-existing --existing-only --skip-agent-auth
+  you agent send --channel machine-sync --kind status "fresh machine \$(hostname) restored encrypted env vault into existing project dirs" || true
 else
   echo "[you.md] env vault not restored yet"
   echo "[you.md] On the old/source Mac, create the encrypted vault first:"
-  echo "youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"
+  echo "you env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"
   echo "[you.md] Then share local decrypt access to registered trusted Macs:"
-  echo "youmd env vault share"
+  echo "you env vault share"
   echo "[you.md] Then retry on this Mac:"
-  echo "youmd env vault pull --restore --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
+  echo "you env vault pull --restore --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
   echo "[you.md] This strict fresh-machine flow intentionally does not ask for a local vault passphrase on the new Mac by default."
   echo "[you.md] Optional fallback: create a transferable local copy without account sync:"
-  echo "youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"
+  echo "you env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault"
   echo "[you.md] Local/iCloud auto-detect is opt-in only. Rerun with:"
-  echo "YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1 YOUMD_REQUIRE_ENV_VAULT=1 <same command>"
+  echo "YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1 YOU_REQUIRE_ENV_VAULT=1 <same command>"
   echo "[you.md] Move the generated env-vault-*.tar.enc file to this Mac, then rerun this command with:"
-  echo "YOUMD_ENV_VAULT=/path/to/env-vault-YYYYMMDDTHHMMZ.tar.enc YOUMD_REQUIRE_ENV_VAULT=1 <same command>"
+  echo "YOU_ENV_VAULT=/path/to/env-vault-YYYYMMDDTHHMMZ.tar.enc YOU_REQUIRE_ENV_VAULT=1 <same command>"
   echo "[you.md] Or restore manually after clone:"
-  echo "youmd env restore <vault> --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
-  if [ "\${YOUMD_REQUIRE_ENV_VAULT:-}" = "1" ]; then
+  echo "you env restore <vault> --root \\"$ROOT\\" --map-existing --existing-only --skip-agent-auth"
+  if [ "\${YOU_REQUIRE_ENV_VAULT:-\${YOU_REQUIRE_ENV_VAULT:-}}" = "1" ]; then
     echo "[you.md] strict proof is waiting for trusted-device Secret Vault share or an explicitly provided local vault; stopping before readiness is marked complete" >&2
-    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: waiting for trusted-device Secret Vault share or explicit local vault fallback" || true
+    you agent send --channel machine-sync --kind status "fresh machine \$(hostname) stopped: waiting for trusted-device Secret Vault share or explicit local vault fallback" || true
     exit 1
   fi
 fi
 echo "[you.md] reconciling identity/skills after env-vault and source-Mac updates"
-youmd pull || true
-youmd sync || true
-youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) reconciled You.md bundle after env-vault handling" || true
+you pull || true
+you sync || true
+you agent send --channel machine-sync --kind status "fresh machine \$(hostname) reconciled You.md bundle after env-vault handling" || true
 echo "[you.md] rehydrating portfolio graph with local README/project-context/env-key evidence"
-run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true
+run_with_timeout "$HYDRATE_TIMEOUT" you project portfolio-hydrate --root "$ROOT" --days "$DAYS" --limit "$LIMIT" || true
 echo "[you.md] auditing cloned project readiness"
-youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report || true
-youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) synced machine readiness proof for $ROOT" || true
+you machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report || true
+you agent send --channel machine-sync --kind status "fresh machine \$(hostname) synced machine readiness proof for $ROOT" || true
 FULL_PROJECT_SET_COMPLETE=0
-EXPAND_TO_90="\${YOUMD_EXPAND_TO_90_DAYS:-}"
-if [ -z "$EXPAND_TO_90" ] && [ "\${YOUMD_SKIP_90_DAY_EXPANSION_PROMPT:-}" != "1" ] && [ -t 0 ]; then
+EXPAND_TO_90="\${YOU_EXPAND_TO_90_DAYS:-\${YOUMD_EXPAND_TO_90_DAYS:-}}"
+if [ -z "$EXPAND_TO_90" ] && [ "\${YOU_SKIP_90_DAY_EXPANSION_PROMPT:-\${YOUMD_SKIP_90_DAY_EXPANSION_PROMPT:-}}" != "1" ] && [ -t 0 ]; then
   printf "\\n[you.md] expand to all active projects from the last \${EXPAND_DAYS} days before calling setup complete? [y/N] "
   read -r EXPAND_TO_90
 fi
 case "$EXPAND_TO_90" in
   y|Y|yes|YES|1|true|TRUE)
     echo "[you.md] expanding workspace to active \${EXPAND_DAYS}-day project set"
-    run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate --root "$ROOT" --days "$EXPAND_DAYS" --limit "$LIMIT" || true
+    run_with_timeout "$HYDRATE_TIMEOUT" you project portfolio-hydrate --root "$ROOT" --days "$EXPAND_DAYS" --limit "$LIMIT" || true
     EXPAND_PROJECT_ARGS=(--root "$ROOT" --days "$EXPAND_DAYS" "\${RECENT_ONLY_ARGS[@]}")
-    if [ -n "\${YOUMD_MAX_CLONE_PROJECTS:-}" ]; then
-      EXPAND_PROJECT_ARGS+=(--max-clone-projects "$YOUMD_MAX_CLONE_PROJECTS")
+    if [ -n "$MAX_CLONE_PROJECTS" ]; then
+      EXPAND_PROJECT_ARGS+=(--max-clone-projects "$MAX_CLONE_PROJECTS")
     fi
     run_machine_projects_recent_only "\${EXPAND_PROJECT_ARGS[@]}" --dry-run || true
     run_machine_projects_recent_only "\${EXPAND_PROJECT_ARGS[@]}"
-    run_with_timeout "$HYDRATE_TIMEOUT" youmd project portfolio-hydrate --root "$ROOT" --days "$EXPAND_DAYS" --limit "$LIMIT" || true
-    youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report || true
-    youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) expanded to active/focused \${EXPAND_DAYS}-day project set and synced proof" || true
+    run_with_timeout "$HYDRATE_TIMEOUT" you project portfolio-hydrate --root "$ROOT" --days "$EXPAND_DAYS" --limit "$LIMIT" || true
+    you machine verify --root "$ROOT" --max-projects "$LIMIT" --write-report --sync-report || true
+    you agent send --channel machine-sync --kind status "fresh machine \$(hostname) expanded to active/focused \${EXPAND_DAYS}-day project set and synced proof" || true
     FULL_PROJECT_SET_COMPLETE=1
     ;;
   *)
     echo "[you.md] stopped after the \${DAYS}-day active project setup; \${EXPAND_DAYS}-day expansion remains intentionally open."
     ;;
 esac
-if [ "\${YOUMD_RUN_CHECKS:-}" = "1" ]; then
+if [ "\${YOU_RUN_CHECKS:-\${YOUMD_RUN_CHECKS:-}}" = "1" ]; then
   echo "[you.md] running bounded package checks"
-  youmd machine verify --root "$ROOT" --max-projects "$LIMIT" --run-checks --max-check-projects "\${YOUMD_MAX_CHECK_PROJECTS:-8}" --check-timeout-ms "\${YOUMD_CHECK_TIMEOUT_MS:-120000}" --write-report --sync-report || true
+  you machine verify --root "$ROOT" --max-projects "$LIMIT" --run-checks --max-check-projects "\${YOU_MAX_CHECK_PROJECTS:-\${YOUMD_MAX_CHECK_PROJECTS:-8}}" --check-timeout-ms "\${YOU_CHECK_TIMEOUT_MS:-\${YOUMD_CHECK_TIMEOUT_MS:-120000}}" --write-report --sync-report || true
 else
-  echo "[you.md] bounded package checks skipped; set YOUMD_RUN_CHECKS=1 to run lint/typecheck/test/build caps"
+  echo "[you.md] bounded package checks skipped; set YOU_RUN_CHECKS=1 to run lint/typecheck/test/build caps"
 fi
-if [ "\${YOUMD_INSTALL_DEPS:-}" = "1" ] || [ "\${YOUMD_PROBE_SERVERS:-}" = "1" ]; then
+if [ "\${YOU_INSTALL_DEPS:-\${YOUMD_INSTALL_DEPS:-}}" = "1" ] || [ "\${YOU_PROBE_SERVERS:-\${YOUMD_PROBE_SERVERS:-}}" = "1" ]; then
   echo "[you.md] running bounded clean-host install/server proof"
   VERIFY_ARGS=(--root "$ROOT" --max-projects "$LIMIT")
-  if [ "\${YOUMD_INSTALL_DEPS:-}" = "1" ]; then
-    VERIFY_ARGS+=(--install-deps --max-install-projects "\${YOUMD_MAX_INSTALL_PROJECTS:-4}" --install-timeout-ms "\${YOUMD_INSTALL_TIMEOUT_MS:-180000}")
+  if [ "\${YOU_INSTALL_DEPS:-\${YOUMD_INSTALL_DEPS:-}}" = "1" ]; then
+    VERIFY_ARGS+=(--install-deps --max-install-projects "\${YOU_MAX_INSTALL_PROJECTS:-\${YOUMD_MAX_INSTALL_PROJECTS:-4}}" --install-timeout-ms "\${YOU_INSTALL_TIMEOUT_MS:-\${YOUMD_INSTALL_TIMEOUT_MS:-180000}}")
   fi
-  if [ "\${YOUMD_PROBE_SERVERS:-}" = "1" ]; then
-    VERIFY_ARGS+=(--probe-servers --max-server-projects "\${YOUMD_MAX_SERVER_PROJECTS:-3}" --server-timeout-ms "\${YOUMD_SERVER_TIMEOUT_MS:-45000}" --server-start-port "\${YOUMD_SERVER_START_PORT:-4310}")
+  if [ "\${YOU_PROBE_SERVERS:-\${YOUMD_PROBE_SERVERS:-}}" = "1" ]; then
+    VERIFY_ARGS+=(--probe-servers --max-server-projects "\${YOU_MAX_SERVER_PROJECTS:-\${YOUMD_MAX_SERVER_PROJECTS:-3}}" --server-timeout-ms "\${YOU_SERVER_TIMEOUT_MS:-\${YOUMD_SERVER_TIMEOUT_MS:-45000}}" --server-start-port "\${YOU_SERVER_START_PORT:-\${YOUMD_SERVER_START_PORT:-4310}}")
   fi
-  youmd machine verify "\${VERIFY_ARGS[@]}" --write-report --sync-report || true
+  you machine verify "\${VERIFY_ARGS[@]}" --write-report --sync-report || true
 else
-  echo "[you.md] clean-host install/server proof skipped; set YOUMD_INSTALL_DEPS=1 and YOUMD_PROBE_SERVERS=1 to install deps and smoke-probe local dev servers"
+  echo "[you.md] clean-host install/server proof skipped; set YOU_INSTALL_DEPS=1 and YOU_PROBE_SERVERS=1 to install deps and smoke-probe local dev servers"
 fi
 echo "[you.md] confirming resident realtime/identity/skillstack/project-context daemons"
-youmd stack daemon install || true
-youmd stack daemon status || true
-youmd status
+you stack daemon install || true
+you stack daemon status || true
+you status
 if [ "$FULL_PROJECT_SET_COMPLETE" = "1" ]; then
   echo "[you.md] fresh-machine full \${EXPAND_DAYS}-day project setup complete: $ROOT"
-  youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) complete: full \${EXPAND_DAYS}-day active/focused setup at $ROOT" || true
+  you agent send --channel machine-sync --kind status "fresh machine \$(hostname) complete: full \${EXPAND_DAYS}-day active/focused setup at $ROOT" || true
 else
   echo "[you.md] fresh-machine \${DAYS}-day setup pass complete; \${EXPAND_DAYS}-day expansion is still open: $ROOT"
-  youmd agent send --channel machine-sync --kind status "fresh machine \$(hostname) complete for \${DAYS}-day active/focused pass at $ROOT; \${EXPAND_DAYS}-day expansion still open" || true
+  you agent send --channel machine-sync --kind status "fresh machine \$(hostname) complete for \${DAYS}-day active/focused pass at $ROOT; \${EXPAND_DAYS}-day expansion still open" || true
 fi`;
 
   const assignments = [
-    apiKey ? `YOUMD_API_KEY=${shellQuote(apiKey)}` : null,
-    shellHomeAssignment("YOUMD_CODE_ROOT", FRESH_MACHINE_BOOTSTRAP_ROOT),
-    `YOUMD_ACTIVE_DAYS=${shellQuote(String(FRESH_MACHINE_BOOTSTRAP_DAYS))}`,
-    `YOUMD_PROJECT_LIMIT=${shellQuote(String(FRESH_MACHINE_BOOTSTRAP_LIMIT))}`,
-    `YOUMD_REQUIRE_ENV_VAULT=${shellQuote("1")}`,
+    apiKey ? `YOU_API_KEY=${shellQuote(apiKey)}` : null,
+    shellHomeAssignment("YOU_CODE_ROOT", FRESH_MACHINE_BOOTSTRAP_ROOT),
+    `YOU_ACTIVE_DAYS=${shellQuote(String(FRESH_MACHINE_BOOTSTRAP_DAYS))}`,
+    `YOU_PROJECT_LIMIT=${shellQuote(String(FRESH_MACHINE_BOOTSTRAP_LIMIT))}`,
+    `YOU_REQUIRE_ENV_VAULT=${shellQuote("1")}`,
   ].filter(Boolean);
 
-  const pathPrefix = `PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"`;
+  const pathPrefix = `PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"`;
   return `${[pathPrefix, ...assignments].join(" ")} bash -lc ${shellQuote(script)}`;
 }
 
@@ -539,7 +543,7 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     "",
     authLine,
     "",
-    "Behind-the-scenes operating rule: use the You.md CLI and You Agent yourself before asking Houston to do anything. Run deterministic commands like `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`, `youmd skill install all`, `youmd skill sync`, `youmd env vault list`, `youmd env vault device-register`, `youmd env vault pull --restore`, `youmd machine prompt`, `youmd machine verify`, `youmd project portfolio-hydrate`, and `youmd agent status` as needed. Use `youmd agent send --channel machine-sync --kind status \"...\"` to report setup milestones back to Houston's other trusted Macs over the realtime agent bus. Use `you` / `youmd chat` only when you need the You Agent to synthesize or route context, then turn its output into concrete shell actions. Interrupt Houston only for true human-gated steps: GitHub browser auth, source-Mac Secret Vault share if the trusted-device envelope has not been created yet, local vault passphrase/Keychain only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOUMD_ENV_VAULT` is explicitly provided, npm OTP, OS permissions, or an explicit choice such as the 90-day expansion.",
+    "Behind-the-scenes operating rule: use the You.md CLI and You Agent yourself before asking Houston to do anything. Run deterministic commands like `you status`, `you whoami`, `you pull`, `you sync`, `you skill install all`, `you skill sync`, `you env vault list`, `you env vault device-register`, `you env vault pull --restore`, `you machine prompt`, `you machine verify`, `you project portfolio-hydrate`, and `you agent status` as needed. Use `you agent send --channel machine-sync --kind status \"...\"` to report setup milestones back to Houston's other trusted Macs over the realtime agent bus. Use `you` / `you chat` only when you need the You Agent to synthesize or route context, then turn its output into concrete shell actions. Interrupt Houston only for true human-gated steps: GitHub browser auth, source-Mac Secret Vault share if the trusted-device envelope has not been created yet, local vault passphrase/Keychain only when `YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOU_ENV_VAULT` is explicitly provided, npm OTP, OS permissions, or an explicit choice such as the 90-day expansion.",
     "",
     "Exact setup command:",
     "",
@@ -556,26 +560,26 @@ export function buildFreshMachineBootstrapMessage(apiKey?: string, keyError?: st
     "- install/configure MCP for Claude Code and Codex",
     "- restore shared agent skills, stack config, Claude/Codex links, and agent host config",
     "- use the installed You.md CLI behind the scenes for status, skill sync, Secret Vault pull, portfolio graph hydration, machine verification, and You Agent context routing instead of making Houston manually drive those steps",
-    "- publish setup milestones through `youmd agent send` so Houston's source Mac and realtime daemon can see the Mac mini come online without clipboard babysitting",
+    "- publish setup milestones through `you agent send` so Houston's source Mac and realtime daemon can see the Mac mini come online without clipboard babysitting",
     "- hydrate the portfolio graph from You.md + authenticated GitHub before cloning",
     `- preview the graph-backed plan, create \`${FRESH_MACHINE_BOOTSTRAP_ROOT}\`, and clone only projects marked ACTIVE plus Top Priority/Focusing from the last ${FRESH_MACHINE_BOOTSTRAP_DAYS} days first`,
     `- ask whether to expand to all ACTIVE plus Top Priority/Focusing projects from the last ${FRESH_MACHINE_BOOTSTRAP_EXPAND_DAYS} days before calling the full project clone set complete`,
-    "- check env-vault tooling, register this Mac as a trusted Secret Vault device, pull the latest account-backed You.md Secret Vault encrypted snapshot when available, unwrap the vault passphrase locally through a trusted-device key envelope, restore env files into existing cloned project dirs with `--map-existing --existing-only --skip-agent-auth`, or stop with the exact source-Mac `youmd env vault share` action instead of asking for a passphrase on the new Mac. Local/iCloud passphrase fallback runs only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOUMD_ENV_VAULT` is explicitly provided. After env handling, rehydrate local project/env evidence.",
-    "- reconcile `youmd pull && youmd sync` after env-vault handling so source-Mac bundle updates, new trusted-device envelopes, shared skills, and machine proof state do not leave this Mac showing `remote ahead`",
+    "- check env-vault tooling, register this Mac as a trusted Secret Vault device, pull the latest account-backed You.md Secret Vault encrypted snapshot when available, unwrap the vault passphrase locally through a trusted-device key envelope, restore env files into existing cloned project dirs with `--map-existing --existing-only --skip-agent-auth`, or stop with the exact source-Mac `you env vault share` action instead of asking for a passphrase on the new Mac. Local/iCloud passphrase fallback runs only when `YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or `YOU_ENV_VAULT` is explicitly provided. After env handling, rehydrate local project/env evidence.",
+    "- reconcile `you pull && you sync` after env-vault handling so source-Mac bundle updates, new trusted-device envelopes, shared skills, and machine proof state do not leave this Mac showing `remote ahead`",
     "- write and sync a secret-safe machine proof report, with optional bounded install/check/server proof flags",
     "- bound portfolio hydration with `YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS` so large restored roots do not wedge setup",
     "",
     "After the command finishes, report:",
-    "- the `youmd status` sync state",
+    "- the `you status` sync state",
     "- the `~/Desktop/CODE_YOU` project count",
     "- whether the encrypted env vault restored",
     "- whether Claude/Codex MCP config was installed",
     "- the synced machine proof status",
     "- whether I should expand to the 90-day active project set if I have not answered yet",
     "",
-    "Secret rule: raw `.env.local` values are not embedded in this prompt. Best path: on the old/source Mac, run `youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` once, then after the new Mac registers itself run `youmd env vault share` on the source Mac. That uploads only encrypted archive bytes plus safe manifest metadata, and stores only per-device encrypted passphrase envelopes. A trusted new Mac pulls the encrypted snapshot after login and decrypts locally with its private device key; raw env values never hit the browser, chat, or You.md servers. If the envelope is missing, the command stops and sends a machine-sync status telling the source Mac to run `youmd env vault share`. Local fallback is opt-in only: run `youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to the new machine, then rerun with `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or explicit `YOUMD_ENV_VAULT=/path/to/env-vault-*.tar.enc`. Vault listing prints variable names/counts and target paths only, never values, maps old folder names onto cloned dirs, and skips agent auth config so it does not clobber the new machine's active Claude/Codex login.",
+    "Secret rule: raw `.env.local` values are not embedded in this prompt. Best path: on the old/source Mac, run `you env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault` once, then after the new Mac registers itself run `you env vault share` on the source Mac. That uploads only encrypted archive bytes plus safe manifest metadata, and stores only per-device encrypted passphrase envelopes. A trusted new Mac pulls the encrypted snapshot after login and decrypts locally with its private device key; raw env values never hit the browser, chat, or You.md servers. If the envelope is missing, the command stops and sends a machine-sync status telling the source Mac to run `you env vault share`. Local fallback is opt-in only: run `you env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault`, move the generated `env-vault-*.tar.enc` file to the new machine, then rerun with `YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1` or explicit `YOU_ENV_VAULT=/path/to/env-vault-*.tar.enc`. Vault listing prints variable names/counts and target paths only, never values, maps old folder names onto cloned dirs, and skips agent auth config so it does not clobber the new machine's active Claude/Codex login.",
     "Project gate: inactive, unsorted, on-ice, abandoned, killed, and unreviewed GitHub-only repos are skipped by default. Manually mark a project Active and Top Priority/Focusing in Portfolio before expecting it to clone on the new computer.",
-    "Done-ness rule: this web-shell command includes `YOUMD_REQUIRE_ENV_VAULT=1`, so it fails instead of pretending setup is complete when the encrypted env vault is missing.",
+    "Done-ness rule: this web-shell command includes `YOU_REQUIRE_ENV_VAULT=1`, so it fails instead of pretending setup is complete when the encrypted env vault is missing.",
   ].join("\n");
 }
 
@@ -2765,9 +2769,9 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
 
         // Custom messages for skills and stacks
         const noticeContent = trimmed === "/skills"
-            ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use portfolio-graph-auditor\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nscaffold a project: youmd skill init-project\n\navailable: youstack-start, youstack-maintainer, machine-bootstrap, portfolio-graph-auditor, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
+            ? "[switched to skills]\n\nidentity-aware agent skills — markdown templates with {{identity}} variables.\n\nuse in chat: /skill use portfolio-graph-auditor\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nscaffold a project: you skill init-project\n\navailable: youstack-start, youstack-maintainer, machine-bootstrap, portfolio-graph-auditor, claude-md-generator, project-context-init, voice-sync, meta-improve, proactive-context-fill, you-logs"
           : trimmed === "/skillmesh" || trimmed === "/mesh"
-            ? "[switched to skill mesh]\n\nopen the Skill Mesh toggle in Skills to inspect synced local/global inventory: machine counts, catalog gaps, DRY review queues, mirror clusters, ownership/source rollups, and exact verification commands.\n\nrefresh: youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync\nprove: youmd machine verify --write-report --sync-report"
+            ? "[switched to skill mesh]\n\nopen the Skill Mesh toggle in Skills to inspect synced local/global inventory: machine counts, catalog gaps, DRY review queues, mirror clusters, ownership/source rollups, and exact verification commands.\n\nrefresh: you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync\nprove: you machine verify --write-report --sync-report"
           : trimmed === "/stacks" || trimmed === "/youstacks"
             ? "[switched to youstacks]\n\nnamed expertise packages for different domains. default visibility is private.\n\nuse in chat: /skill use youstack-maintainer\ninstall runtime: curl -fsSL https://you.md/install.sh | bash\nexamples: personal-agent-start, bamfstack-public, coding-copilot, scientific-research, content-studio"
           : trimmed === "/machine" || trimmed === "/computer" || trimmed === "/readiness" || trimmed === "/daemons"
@@ -2825,7 +2829,7 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
                 {
                   id: crypto.randomUUID(),
                   role: "system-notice",
-                  content: `skill "${skillName}" not found in registry. install via CLI: youmd skill install ${skillName}`,
+                  content: `skill "${skillName}" not found in registry. install via CLI: you skill install ${skillName}`,
                 },
               ]);
               return;
@@ -2994,8 +2998,8 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
           onPaneSwitch("help");
         }
         const helpText = onPaneSwitch
-          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nPROJECTS\n/portfolio -- project graph, dependencies, reusable patterns, skill propagation\n/projects -- same as /portfolio\n/task agent youmd: verify sync proof -- save an agent-owned project task\n/task me personal: follow up with billing -- save a human-owned personal task\n/braindump project:youmd ... -- capture raw dump, summary, insights, proposed tasks\n/history -- bundle version history\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/machine -- local sync, MCP, project clone, and env-vault readiness\n/skill use {name} -- activate skill in this conversation\n\nAPI + CONNECTORS\n/api -- provider/env inventory, API risk tiers, service-account notes\n/apis -- same as /api\n/env -- secret-safe env key-name audit surface\n/mcp -- hosted MCP endpoint and stack namespace\n/connectors -- app grants, custom API/MCP, webhooks\n/crawlers -- sources, Firecrawl/native crawlers, crons, loops\n/loops -- daily reports, monitored refresh cadence, source versions\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
-          : "available commands:\n/profile, /portrait, /portfolio, /projects, /task agent youmd: title, /braindump project:youmd ...\n/edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /machine, /skill use {name}\n/api, /apis, /env, /mcp, /connectors, /crawlers, /loops\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
+          ? "available commands:\n\nIDENTITY\n/profile -- live profile preview\n/portrait -- ascii portrait editor + format picker\n/portrait show -- render portrait variants inline\n/portrait --regenerate -- re-scrape sources and update portrait\n/edit -- edit identity context (files, json, sources)\n/json -- raw identity json\n/files -- file browser\n/sources -- manage connected sources\n\nPROJECTS\n/portfolio -- project graph, dependencies, reusable patterns, skill propagation\n/projects -- same as /portfolio\n/task agent youmd: verify sync proof -- save an agent-owned project task\n/task me personal: follow up with billing -- save a human-owned personal task\n/braindump project:you ... -- capture raw dump, summary, insights, proposed tasks\n/history -- bundle version history\n\nSHARING\n/share -- create shareable identity link (copies to clipboard)\n/share --private -- include private context in link\n/share --project {name} -- project-scoped context link\n/publish -- publish latest bundle publicly\n\nSKILLS + STACKS\n/skills -- browse + install skills\n/stacks -- manage named private/public YouStacks\n/machine -- local sync, MCP, project clone, and env-vault readiness\n/skill use {name} -- activate skill in this conversation\n\nAPI + CONNECTORS\n/api -- provider/env inventory, API risk tiers, service-account notes\n/apis -- same as /api\n/env -- secret-safe env key-name audit surface\n/mcp -- hosted MCP endpoint and stack namespace\n/connectors -- app grants, custom API/MCP, webhooks\n/crawlers -- sources, Firecrawl/native crawlers, crons, loops\n/loops -- daily reports, monitored refresh cadence, source versions\n\nACCOUNT\n/vault -- api keys + secrets manager\n/agents -- connected agent integrations (MCP)\n/settings -- account, billing, session log\n/activity -- agent activity log\n\nDATA\n/analytics -- profile views + agent reads\n\nMEMORY\n/memory -- memory stats by category\n/recall -- recent memories\n/recall {query} -- search memories by keyword\n\nSYSTEM\n/status -- @username | plan | version | published/draft\n/help -- show this reference"
+          : "available commands:\n/profile, /portrait, /portfolio, /projects, /task agent youmd: title, /braindump project:you ...\n/edit, /json, /files, /sources\n/share, /share --private, /share --project {name}, /publish\n/skills, /stacks, /machine, /skill use {name}\n/api, /apis, /env, /mcp, /connectors, /crawlers, /loops\n/vault, /agents, /settings, /activity\n/analytics, /history\n/memory, /recall, /recall {query}\n/status, /help";
 
         setDisplayMessages((prev) => [
           ...prev,

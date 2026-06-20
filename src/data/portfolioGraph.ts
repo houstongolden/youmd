@@ -141,7 +141,7 @@ export const apiSurfaces: ApiSurface[] = [
     notes: "Primary source of truth for human/project context and local agent startup.",
     docsUrls: ["https://you.md/api/v1/docs/reference", "https://you.md/api/v1/docs/openapi.json"],
     integrationTypes: ["developer-agent", "local-agent"],
-    curlCommand: 'curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfolio/graph',
+    curlCommand: 'curl -H "Authorization: Bearer $YOU_API_KEY" https://you.md/api/v1/me/portfolio/graph',
   },
   {
     slug: "youmd-mcp",

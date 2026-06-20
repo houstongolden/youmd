@@ -40,9 +40,9 @@ When an agent receives a You.md link or works inside a You.md-enabled repo:
 3. If a public profile is involved, fetch `GET /api/v1/profiles?username=<username>` or the human profile at `https://you.md/<username>`.
 4. If local MCP is configured, call `whoami`.
 5. For local coding agents, call `get_agent_brief` before planning. It combines identity, repo instructions, project context, active requests, open TODOs, installed skills, and recommended next moves.
-6. If a stack is involved, inspect the manifest with `get_stack_manifest` or `youmd stack inspect --path <dir>`.
-7. Route ambiguous work through `route_stack_request` or `youmd stack route --path <dir> "request"`.
-8. Run `youmd stack doctor --path <dir>` before sharing, improving, publishing, or trusting a stack.
+6. If a stack is involved, inspect the manifest with `get_stack_manifest` or `you stack inspect --path <dir>`.
+7. Route ambiguous work through `route_stack_request` or `you stack route --path <dir> "request"`.
+8. Run `you stack doctor --path <dir>` before sharing, improving, publishing, or trusting a stack.
 9. Mutate only the smallest durable surface: one memory, one project memory, one section, one stack file, or one visibility setting.
 10. Leave an audit trail through MCP/API or project context so the next agent can resume.
 
@@ -98,87 +98,87 @@ Core runtime commands:
 
 ```bash
 you
-youmd login
-youmd whoami
-youmd status
-youmd pull
-youmd push
-youmd sync
-youmd diff
-youmd export
-youmd preview
-youmd mcp --json
-youmd mcp --install codex --auto
-youmd mcp --install claude --auto
-youmd mcp --install cursor --auto
+you login
+you whoami
+you status
+you pull
+you push
+you sync
+you diff
+you export
+you preview
+you mcp --json
+you mcp --install codex --auto
+you mcp --install claude --auto
+you mcp --install cursor --auto
 ```
 
-Use `you` for the live U conversation. Use `youmd` for non-interactive commands inside coding agents.
+Use `you` as the primary runtime command. `youmd` remains installed as a compatibility alias for existing non-interactive scripts and older agent docs.
 
 ## CLI Commands
 
-All 31 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `youmd <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
+All 31 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `you <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
 
 ### AUTH
 
-- `youmd login`: Authenticate with the You.md platform
-- `youmd logout`: Clear local authentication for this machine
-- `youmd register`: Register a new You.md identity
-- `youmd whoami`: Show current authenticated user
+- `you login`: Authenticate with the You.md platform
+- `you logout`: Clear local authentication for this machine
+- `you register`: Register a new You.md identity
+- `you whoami`: Show current authenticated user
 
 ### BUNDLE
 
-- `youmd init`: Initialize a local .you/ identity context (interactive)
-- `youmd build`: Compile local you.md bundle from profile/ and preferences/ files
-- `youmd status`: Show pipeline/build status
-- `youmd push`: Upload ~/.you/ files to you.md and publish
-- `youmd pull`: Download your profile from you.md to ~/.you/ files
-- `youmd sync`: Sync ~/.you/ files with you.md (pull + push)
-- `youmd diff [v1] [v2]`: Compare bundle versions: `youmd diff` (local vs remote) or `youmd diff <v1> <v2>`
-- `youmd export`: Export profile to you.json and/or you.md
-- `youmd okf [subcommand] [arg]`: Open Knowledge Format - export/import/validate/health/view for portable OKF bundles (identity, skills, stacks)
-- `youmd publish`: Push compiled bundle to the platform API
+- `you init`: Initialize a local .you/ identity context (interactive)
+- `you build`: Compile local you.md bundle from profile/ and preferences/ files
+- `you status`: Show pipeline/build status
+- `you push`: Upload ~/.you/ files to you.md and publish
+- `you pull`: Download your profile from you.md to ~/.you/ files
+- `you sync`: Sync ~/.you/ files with you.md (pull + push)
+- `you diff [v1] [v2]`: Compare bundle versions: `youmd diff` (local vs remote) or `youmd diff <v1> <v2>`
+- `you export`: Export profile to you.json and/or you.md
+- `you okf [subcommand] [arg]`: Open Knowledge Format - export/import/validate/health/view for portable OKF bundles (identity, skills, stacks)
+- `you publish`: Push compiled bundle to the platform API
 
 ### CHAT
 
-- `youmd chat`: Talk to the You agent - update your profile, add sources, ask questions
-- `youmd memories [subcommand] [args...]`: Manage your memory brain (list, add, stats)
-- `youmd private [subcommand] [args...]`: Manage private context (notes, links, projects)
-- `youmd project [subcommand] [args...]`: Manage project agent context (init, list, show, memories)
-- `youmd prompts [subcommand] [args...]`: Search, browse, and catalog your past messages across agent sessions
+- `you chat`: Talk to the You agent - update your profile, add sources, ask questions
+- `you memories [subcommand] [args...]`: Manage your memory brain (list, add, stats)
+- `you private [subcommand] [args...]`: Manage private context (notes, links, projects)
+- `you project [subcommand] [args...]`: Manage project agent context (init, list, show, memories)
+- `you prompts [subcommand] [args...]`: Search, browse, and catalog your past messages across agent sessions
 
 ### SKILLS
 
-- `youmd skill [subcommand] [args...]`: Identity-aware agent skills (list, install, use, sync, inventory, init-project)
-- `youmd stack [subcommand] [args...]`: Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update, install)
+- `you skill [subcommand] [args...]`: Identity-aware agent skills (list, install, use, sync, inventory, init-project)
+- `you stack [subcommand] [args...]`: Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link, guard, eval, update, install)
 
 ### MONITORING
 
-- `youmd agent [subcommand] [message...]`: Send/receive trusted-device realtime agent messages
-- `youmd logs`: View agent activity log -- see what agents read/wrote and when
-- `youmd agents`: List connected agents and their activity summary
+- `you agent [subcommand] [message...]`: Send/receive trusted-device realtime agent messages
+- `you logs`: View agent activity log -- see what agents read/wrote and when
+- `you agents`: List connected agents and their activity summary
 
 ### MCP
 
-- `youmd mcp`: Start the You.md MCP server (identity context for Claude, Cursor, any MCP client)
+- `you mcp`: Start the You.md MCP server (identity context for Claude, Cursor, any MCP client)
 
 ### SHARING
 
-- `youmd link [subcommand] [arg]`: Manage context links (create, list, revoke, preview)
-- `youmd keys [subcommand]`: Manage API keys (list, create, revoke)
-- `youmd add <source> <url>`: Add a source URL to local config (website, linkedin, x, blog, youtube, github)
+- `you link [subcommand] [arg]`: Manage context links (create, list, revoke, preview)
+- `you keys [subcommand]`: Manage API keys (list, create, revoke)
+- `you add <source> <url>`: Add a source URL to local config (website, linkedin, x, blog, youtube, github)
 
 ### PREVIEW
 
-- `youmd preview`: Start a local preview server
+- `you preview`: Start a local preview server
 
 ### SECURITY
 
-- `youmd env [subcommand] [args...]`: encrypted .env.local vault - back up and restore secrets across machines
+- `you env [subcommand] [args...]`: encrypted .env.local vault - back up and restore secrets across machines
 
 ### MACHINE & SYNC
 
-- `youmd machine [subcommand]`: set up a new machine with your synced skills, stacks, and agent config
+- `you machine [subcommand]`: set up a new machine with your synced skills, stacks, and agent config
 
 ## MCP
 
@@ -285,7 +285,7 @@ Common authenticated categories:
 
 Common error recovery:
 
-- `401`: missing, expired, invalid, or revoked API key. Re-run `youmd login` or rotate the key.
+- `401`: missing, expired, invalid, or revoked API key. Re-run `you login` or rotate the key.
 - `404`: profile, context token, bundle version, or local section not found.
 - `409 ancestor_mismatch` (error.code): remote bundle changed since local parent hash. Pull, inspect diff, then push again.
 - `413`: chat or compaction payload is too large.
@@ -312,12 +312,12 @@ YouStacks are named expertise packages. A stack can contain:
 Local stack commands:
 
 ```bash
-youmd stack inspect --path stacks/<name>
-youmd stack doctor --path stacks/<name>
-youmd stack smoke --path stacks/<name>
-youmd stack capabilities --path stacks/<name>
-youmd stack route --path stacks/<name> "review this like me before we ship"
-youmd stack link --path stacks/<name> --hosts codex,claude,cursor --target .
+you stack inspect --path stacks/<name>
+you stack doctor --path stacks/<name>
+you stack smoke --path stacks/<name>
+you stack capabilities --path stacks/<name>
+you stack route --path stacks/<name> "review this like me before we ship"
+you stack link --path stacks/<name> --hosts codex,claude,cursor --target .
 ```
 
 Shared HTTP stack routes:
@@ -404,7 +404,7 @@ Use this prompt when starting a Claude Code, Codex, Cursor, or similar agent ses
 Read my You.md context first.
 
 Use the fastest available path:
-1. call the youmd MCP whoami tool if available
+1. call the You.md MCP whoami tool if available
 2. call get_agent_brief to load identity plus local project state
 3. if you need full detail, call get_identity
 4. before editing this repo, read project-context/
@@ -425,11 +425,11 @@ npm run agent-docs:handoff:json
 npm run agent-docs:lint
 npm run llms:smoke -- --base-url https://www.you.md
 npx tsc --noEmit
-youmd whoami
-youmd status
-youmd mcp --json
-youmd stack doctor --path cli/examples/youstack-bamfstack-public
-youmd stack smoke --path cli/examples/youstack-bamfstack-public
+you whoami
+you status
+you mcp --json
+you stack doctor --path cli/examples/youstack-bamfstack-public
+you stack smoke --path cli/examples/youstack-bamfstack-public
 ```
 
 Hosted:

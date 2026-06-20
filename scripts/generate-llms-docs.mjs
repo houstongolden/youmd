@@ -100,7 +100,7 @@ function cliCommandLines(docsReference) {
       group = { title: command.group, lines: [] };
       groups.push(group);
     }
-    group.lines.push(`- \`youmd ${command.usage}\`: ${asciiText(command.description)}`);
+    group.lines.push(`- \`you ${command.usage}\`: ${asciiText(command.description)}`);
   }
   return groups
     .map((group) => `### ${group.title}\n\n${group.lines.join("\n")}`)
@@ -161,7 +161,7 @@ You.md is an MCP where the context is you: the tools below resolve a specific pe
 - [MCP Server](https://you.md/docs#mcp-server): Local stdio MCP and same-origin JSON-RPC MCP surfaces.
 - Local stdio MCP (via the runtime) exposes ${docsReference.counts.mcpTools} tools, including \`whoami\`, \`get_identity\`, \`get_agent_brief\`, \`get_project_context\`, \`add_memory\`, \`add_project_memory\`, \`get_stack_manifest\`, \`get_stack_capabilities\`, \`route_stack_request\`, and \`smoke_stack\`.
 - Hosted JSON-RPC MCP (\`POST /api/v1/mcp\`) exposes ${docsReference.counts.hostedMcpTools} tools: ${hostedMcpToolNames(docsReference)}.
-- Preferred local setup: \`curl -fsSL https://you.md/install.sh | bash\`, then \`youmd mcp --install codex --auto\` or \`youmd mcp --install claude --auto\`.
+- Preferred local setup: \`curl -fsSL https://you.md/install.sh | bash\`, then \`you mcp --install codex --auto\` or \`you mcp --install claude --auto\`. The installed \`youmd\` binary remains a compatibility alias for existing scripts.
 
 ## Agent Workflows
 
@@ -176,12 +176,12 @@ The runtime registers ${docsReference.counts.cliCommands} CLI commands; the full
 
 - \`curl -fsSL https://you.md/install.sh | bash\`: Install the runtime.
 - \`you\`: Open the live You.md agent conversation.
-- \`youmd whoami\`: Verify authenticated identity.
-- \`youmd status\`: Check local bundle status.
-- \`youmd mcp --json\`: Print MCP configuration.
-- \`youmd stack doctor --path stacks/<name>\`: Static stack readiness check.
-- \`youmd stack smoke --path stacks/<name>\`: Local stack smoke test.
-- \`youmd stack route --path stacks/<name> "request"\`: Route a request through stack capabilities.
+- \`you whoami\`: Verify authenticated identity.
+- \`you status\`: Check local bundle status.
+- \`you mcp --json\`: Print MCP configuration.
+- \`you stack doctor --path stacks/<name>\`: Static stack readiness check.
+- \`you stack smoke --path stacks/<name>\`: Local stack smoke test.
+- \`you stack route --path stacks/<name> "request"\`: Route a request through stack capabilities.
 
 ## Privacy
 
@@ -259,9 +259,9 @@ When an agent receives a You.md link or works inside a You.md-enabled repo:
 3. If a public profile is involved, fetch \`GET /api/v1/profiles?username=<username>\` or the human profile at \`https://you.md/<username>\`.
 4. If local MCP is configured, call \`whoami\`.
 5. For local coding agents, call \`get_agent_brief\` before planning. It combines identity, repo instructions, project context, active requests, open TODOs, installed skills, and recommended next moves.
-6. If a stack is involved, inspect the manifest with \`get_stack_manifest\` or \`youmd stack inspect --path <dir>\`.
-7. Route ambiguous work through \`route_stack_request\` or \`youmd stack route --path <dir> "request"\`.
-8. Run \`youmd stack doctor --path <dir>\` before sharing, improving, publishing, or trusting a stack.
+6. If a stack is involved, inspect the manifest with \`get_stack_manifest\` or \`you stack inspect --path <dir>\`.
+7. Route ambiguous work through \`route_stack_request\` or \`you stack route --path <dir> "request"\`.
+8. Run \`you stack doctor --path <dir>\` before sharing, improving, publishing, or trusting a stack.
 9. Mutate only the smallest durable surface: one memory, one project memory, one section, one stack file, or one visibility setting.
 10. Leave an audit trail through MCP/API or project context so the next agent can resume.
 
@@ -312,26 +312,26 @@ Core runtime commands:
 
 \`\`\`bash
 you
-youmd login
-youmd whoami
-youmd status
-youmd pull
-youmd push
-youmd sync
-youmd diff
-youmd export
-youmd preview
-youmd mcp --json
-youmd mcp --install codex --auto
-youmd mcp --install claude --auto
-youmd mcp --install cursor --auto
+you login
+you whoami
+you status
+you pull
+you push
+you sync
+you diff
+you export
+you preview
+you mcp --json
+you mcp --install codex --auto
+you mcp --install claude --auto
+you mcp --install cursor --auto
 \`\`\`
 
-Use \`you\` for the live U conversation. Use \`youmd\` for non-interactive commands inside coding agents.
+Use \`you\` as the primary runtime command. \`youmd\` remains installed as a compatibility alias for existing non-interactive scripts and older agent docs.
 
 ## CLI Commands
 
-All ${docsReference.counts.cliCommands} registered runtime commands, generated from the commander registrations in \`cli/src/index.ts\` (run \`youmd <command> --help\` for per-command options; namespaces like \`skill\`, \`stack\`, \`memories\`, and \`private\` take subcommands):
+All ${docsReference.counts.cliCommands} registered runtime commands, generated from the commander registrations in \`cli/src/index.ts\` (run \`you <command> --help\` for per-command options; namespaces like \`skill\`, \`stack\`, \`memories\`, and \`private\` take subcommands):
 
 ${cliCommandLines(docsReference) || "- No generated CLI commands found."}
 
@@ -425,7 +425,7 @@ Common authenticated categories:
 
 Common error recovery:
 
-- \`401\`: missing, expired, invalid, or revoked API key. Re-run \`youmd login\` or rotate the key.
+- \`401\`: missing, expired, invalid, or revoked API key. Re-run \`you login\` or rotate the key.
 - \`404\`: profile, context token, bundle version, or local section not found.
 - \`409 ancestor_mismatch\` (error.code): remote bundle changed since local parent hash. Pull, inspect diff, then push again.
 - \`413\`: chat or compaction payload is too large.
@@ -452,12 +452,12 @@ YouStacks are named expertise packages. A stack can contain:
 Local stack commands:
 
 \`\`\`bash
-youmd stack inspect --path stacks/<name>
-youmd stack doctor --path stacks/<name>
-youmd stack smoke --path stacks/<name>
-youmd stack capabilities --path stacks/<name>
-youmd stack route --path stacks/<name> "review this like me before we ship"
-youmd stack link --path stacks/<name> --hosts codex,claude,cursor --target .
+you stack inspect --path stacks/<name>
+you stack doctor --path stacks/<name>
+you stack smoke --path stacks/<name>
+you stack capabilities --path stacks/<name>
+you stack route --path stacks/<name> "review this like me before we ship"
+you stack link --path stacks/<name> --hosts codex,claude,cursor --target .
 \`\`\`
 
 Shared HTTP stack routes:
@@ -540,7 +540,7 @@ Use this prompt when starting a Claude Code, Codex, Cursor, or similar agent ses
 Read my You.md context first.
 
 Use the fastest available path:
-1. call the youmd MCP whoami tool if available
+1. call the You.md MCP whoami tool if available
 2. call get_agent_brief to load identity plus local project state
 3. if you need full detail, call get_identity
 4. before editing this repo, read project-context/
@@ -561,11 +561,11 @@ npm run agent-docs:handoff:json
 npm run agent-docs:lint
 npm run llms:smoke -- --base-url https://www.you.md
 npx tsc --noEmit
-youmd whoami
-youmd status
-youmd mcp --json
-youmd stack doctor --path cli/examples/youstack-bamfstack-public
-youmd stack smoke --path cli/examples/youstack-bamfstack-public
+you whoami
+you status
+you mcp --json
+you stack doctor --path cli/examples/youstack-bamfstack-public
+you stack smoke --path cli/examples/youstack-bamfstack-public
 \`\`\`
 
 Hosted:
