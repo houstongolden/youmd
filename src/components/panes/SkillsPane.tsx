@@ -189,6 +189,91 @@ function numericRollupEntries(rollup: Record<string, unknown> | undefined, limit
     .slice(0, limit);
 }
 
+function rollupValue(rollup: Record<string, unknown> | undefined, label: string) {
+  const raw = rollup?.[label];
+  return typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
+}
+
+function rollupValueIncludes(rollup: Record<string, unknown> | undefined, terms: string[]) {
+  if (!rollup) return 0;
+  return Object.entries(rollup).reduce((sum, [label, raw]) => {
+    if (typeof raw !== "number" || !Number.isFinite(raw)) return sum;
+    const normalized = label.toLowerCase();
+    return terms.some((term) => normalized.includes(term)) ? sum + raw : sum;
+  }, 0);
+}
+
+function topRollupLabels(rollup: Record<string, unknown> | undefined, terms: string[], limit = 3) {
+  if (!rollup) return [];
+  return Object.entries(rollup)
+    .flatMap(([label, raw]) => {
+      if (typeof raw !== "number" || !Number.isFinite(raw)) return [];
+      const normalized = label.toLowerCase();
+      return terms.some((term) => normalized.includes(term)) ? [{ label, value: raw }] : [];
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit)
+    .map((row) => `${row.label} ${row.value.toLocaleString()}`);
+}
+
+function buildSourceGroups(inventory: AgentStackInventory | undefined) {
+  if (!inventory) return [];
+  const ownership = inventory.ownershipRollup as Record<string, unknown> | undefined;
+  const provenance = inventory.provenanceRollup as Record<string, unknown> | undefined;
+  const sync = inventory.syncPolicyRollup as Record<string, unknown> | undefined;
+  return [
+    {
+      label: "Houston managed",
+      value:
+        rollupValue(ownership, "houston-owned-shared") +
+        rollupValue(ownership, "houston-owned-science"),
+      detail: "canonical shared ops plus SciStack/HubStack/AstroStack skills",
+      tone: "ok" as const,
+      samples: topRollupLabels(provenance, ["agent-shared", "scistack", "hubstack", "astrostack"]),
+    },
+    {
+      label: "GStack reference",
+      value: rollupValue(ownership, "gstack-managed-reference"),
+      detail: "local reference stack; catalog as source, do not absorb ownership",
+      tone: "accent" as const,
+      samples: topRollupLabels(provenance, ["gstack"]),
+    },
+    {
+      label: "Public / upstream",
+      value:
+        rollupValue(ownership, "external-science-extension") +
+        rollupValue(ownership, "public-marketplace-helper") +
+        rollupValueIncludes(provenance, ["skills.sh", "clawhub"]),
+      detail: "public registries, opt-in upstream extensions, and marketplace helpers",
+      tone: "neutral" as const,
+      samples: topRollupLabels(provenance, ["skills.sh", "clawhub", "extension", "marketplace"]),
+    },
+    {
+      label: "Runtime/plugin",
+      value:
+        rollupValue(ownership, "plugin-bundled") +
+        rollupValue(ownership, "youmd-catalog-cache"),
+      detail: "Codex/OpenAI plugin caches and You.md catalog cache references",
+      tone: "neutral" as const,
+      samples: topRollupLabels(provenance, ["plugin", "codex", "openai", "you.md"]),
+    },
+    {
+      label: "Needs review",
+      value:
+        rollupValue(sync, "review-before-sync") +
+        rollupValue(ownership, "unknown") +
+        rollupValue(ownership, "host-local-or-mirror") +
+        inventory.duplicateNameDifferentRealpaths,
+      detail: "ambiguous owners, host-local mirrors, and same-name DRY review cases",
+      tone: inventory.duplicateNameDifferentRealpaths > 0 ? "warn" as const : "ok" as const,
+      samples: [
+        ...topRollupLabels(ownership, ["unknown", "host-local", "mirror"]),
+        ...(inventory.duplicateNameSamples ?? []).slice(0, 2),
+      ].slice(0, 3),
+    },
+  ];
+}
+
 function machineProofKey(row: Pick<AgentStackInventory | MachineProofReport, "machineKey" | "hostName" | "rootDir">) {
   return row.machineKey || `${row.hostName}::${row.rootDir}`;
 }
@@ -238,6 +323,56 @@ function RollupColumn({ title, rows }: { title: string; rows: Array<{ label: str
         )}
       </div>
     </div>
+  );
+}
+
+function SourceGroupPanel({ groups }: { groups: ReturnType<typeof buildSourceGroups> }) {
+  return (
+    <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <PaneSectionLabel>source groups</PaneSectionLabel>
+          <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+            Owner-managed vs external references
+          </h3>
+          <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
+            The mesh keeps Houston-owned canonical skills authoritative, while public/plugin/GStack sources stay grouped as references unless explicitly promoted.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 xl:grid-cols-5">
+        {groups.map((group) => {
+          const toneClass =
+            group.tone === "ok"
+              ? "text-[hsl(var(--success))]"
+              : group.tone === "warn"
+                ? "text-yellow-500"
+                : group.tone === "accent"
+                  ? "text-[hsl(var(--accent))]"
+                  : "text-[hsl(var(--text-primary))]";
+          return (
+            <div key={group.label} className="min-w-0 border-t border-[hsl(var(--border))]/45 pt-2">
+              <div className={`font-mono text-[17px] leading-none ${toneClass}`}>{formatCount(group.value)}</div>
+              <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
+                {group.label}
+              </div>
+              <p className="mt-2 min-h-10 font-mono text-[9px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+                {group.detail}
+              </p>
+              {group.samples.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {group.samples.map((sample) => (
+                    <div key={sample} className="truncate font-mono text-[8.5px] text-[hsl(var(--text-secondary))] opacity-38" title={sample}>
+                      {sample}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -293,6 +428,7 @@ function SkillMeshView({
   const ownershipRows = numericRollupEntries(latest?.ownershipRollup as Record<string, unknown> | undefined);
   const syncRows = numericRollupEntries(latest?.syncPolicyRollup as Record<string, unknown> | undefined);
   const provenanceRows = numericRollupEntries(latest?.provenanceRollup as Record<string, unknown> | undefined);
+  const sourceGroups = buildSourceGroups(latest);
 
   return (
     <div className="space-y-6">
@@ -365,6 +501,8 @@ function SkillMeshView({
               </span>
             </div>
           </section>
+
+          <SourceGroupPanel groups={sourceGroups} />
 
           {drift?.baseline && (
             <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
@@ -824,6 +962,18 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
     }
   };
 
+  const setMode = (nextMode: SkillPaneMode) => {
+    setLocalMode(nextMode);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "skills");
+    if (nextMode === "mesh") {
+      params.set("view", "mesh");
+    } else {
+      params.delete("view");
+    }
+    router.replace(`/shell?${params.toString()}`, { scroll: false });
+  };
+
   const openSkill = (skillName: string) => {
     router.push(skillDetailHref(skillName), { scroll: false });
   };
@@ -948,7 +1098,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           <button
             key={nextMode}
             type="button"
-            onClick={() => setLocalMode(nextMode)}
+            onClick={() => setMode(nextMode)}
             className={[
               "px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] transition-[background,color,opacity]",
               mode === nextMode

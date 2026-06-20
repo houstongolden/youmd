@@ -2785,7 +2785,10 @@ export function useYouAgent(options: UseYouAgentOptions = {}) {
       };
 
       if (paneCommands[trimmed] && onPaneSwitch) {
-        onPaneSwitch(paneCommands[trimmed]);
+        onPaneSwitch(
+          paneCommands[trimmed],
+          trimmed === "/skillmesh" || trimmed === "/mesh" ? { view: "mesh" } : undefined
+        );
 
         // Custom messages for skills and stacks
         const noticeContent = trimmed === "/skills"

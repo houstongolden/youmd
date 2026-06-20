@@ -1950,7 +1950,7 @@ export function buildGithubConnectedProtocol(
 // ---------------------------------------------------------------------------
 
 export interface UseYouAgentOptions {
-  onPaneSwitch?: (pane: RightPane) => void;
+  onPaneSwitch?: (pane: RightPane, options?: { view?: string }) => void;
   isOnboarding?: boolean;
   onboardingGreeting?: string;
   onDone?: () => void;

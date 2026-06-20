@@ -1377,7 +1377,7 @@ export function DashboardContent() {
   const [repoUpdateBusy, setRepoUpdateBusy] = useState(false);
   const repoUpdateRunnerRef = useRef<(() => Promise<void>) | null>(null);
 
-  const openPane = useCallback((pane: RightPane, subTab?: EditSubTab) => {
+  const openPane = useCallback((pane: RightPane, subTab?: EditSubTab, options?: { view?: string }) => {
     if (subTab) setEditInitialSubTab(subTab);
     setPanelOpen(true);
     setMobileView("preview");
@@ -1386,6 +1386,11 @@ export function DashboardContent() {
     const params = new URLSearchParams(searchParams.toString());
     if (pane !== "portfolio") params.delete("project");
     if (pane !== "github") params.delete("integration");
+    if (pane === "skills" && options?.view) {
+      params.set("view", options.view);
+    } else if (pane !== "skills") {
+      params.delete("view");
+    }
     params.set("tab", pane);
 
     const nextQuery = params.toString();
@@ -1395,8 +1400,8 @@ export function DashboardContent() {
   }, [pathname, router, searchParams, shellQueryString]);
 
   const agent = useYouAgent({
-    onPaneSwitch: (pane) => {
-      openPane(pane); // auto-open the panel when agent switches to it
+    onPaneSwitch: (pane, options) => {
+      openPane(pane, undefined, options); // auto-open the panel when agent switches to it
     },
     // Pass the connected repo name so the agent runs the post-connect protocol.
     // githubConnection is null when not connected, undefined while loading.

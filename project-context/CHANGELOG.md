@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(skills): group Skill Mesh sources
+- Added a stable five-bucket source grouping to the Skills pane Skill Mesh: Houston managed, GStack reference, public/upstream, runtime/plugin, and needs review.
+- The grouping is derived from real synced agent-stack inventory rollups so machines with zero GStack/public/plugin exposure still show an explicit `0` instead of hiding that source class.
+- `/skillmesh` and `/mesh` now route the shell to Skills with `view=mesh`, and the Skill Mesh toggle keeps `/shell?tab=skills&view=mesh` reload/share safe.
+- Verified with `npm run build`, `git diff --check`, and authenticated localhost browser proof for `/shell?tab=skills&view=mesh` showing all five source buckets with no console errors or failed responses.
+
 ### perf(machine): cache local readiness scans
 - Added in-process caching and request dedupe to `/api/local/machine-readiness` so Home, Machine, and shell summary reads share one local readiness scan instead of stacking filesystem/daemon checks.
 - Passive reads get a 30-second fresh cache and up to 5-minute stale response while a background refresh runs; Machine's explicit refresh button uses `refresh=1` to force a real proof scan.
