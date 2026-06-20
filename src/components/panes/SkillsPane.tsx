@@ -9,6 +9,13 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { PaneCallout, PaneSectionLabel, PaneDivider } from "./shared";
 import { skillPropagation } from "@/data/portfolioGraph";
 import type { Doc } from "../../../convex/_generated/dataModel";
+import {
+  SyncedBrainGraph,
+  type SyncedBrainGraphActivity,
+  type SyncedBrainGraphLink,
+  type SyncedBrainGraphNode,
+  type SyncedBrainGraphSignal,
+} from "@/components/sync/SyncedBrainGraph";
 
 interface SkillEntry {
   name: string;
@@ -274,6 +281,148 @@ function buildSourceGroups(inventory: AgentStackInventory | undefined) {
   ];
 }
 
+function buildSkillMeshTopology({
+  latest,
+  sourceGroups,
+  proofSummary,
+  machineCount,
+  secretLeak,
+}: {
+  latest: AgentStackInventory;
+  sourceGroups: ReturnType<typeof buildSourceGroups>;
+  proofSummary: { matched: number; missing: number; stale: number; unsafe: number };
+  machineCount: number;
+  secretLeak: boolean;
+}) {
+  const groupValue = (label: string) => sourceGroups.find((group) => group.label === label)?.value ?? 0;
+  const reviewCount = groupValue("Needs review");
+  const hasProofIssues = proofSummary.missing > 0 || proofSummary.stale > 0 || proofSummary.unsafe > 0;
+  const hasCatalogGaps = latest.missingFromYoumdCatalog > 0;
+  const hasReviewPressure = reviewCount > 0 || latest.duplicateNameDifferentRealpaths > 0;
+  const nodes: SyncedBrainGraphNode[] = [
+    {
+      id: "youmd",
+      label: "you.md mesh",
+      value: `${latest.uniqueSkillNames.toLocaleString()} skills`,
+      detail: `${latest.uniqueRealSkillFiles.toLocaleString()} real files / ${machineCount} trusted machine${machineCount === 1 ? "" : "s"}`,
+      x: 50,
+      y: 46,
+      kind: "shell",
+      status: secretLeak ? "warn" : "ready",
+      live: !secretLeak,
+      tone: secretLeak ? "danger" : "success",
+    },
+    {
+      id: "machines",
+      label: "machines",
+      value: `${machineCount}`,
+      detail: `${latest.hostName} / ${formatInventoryTime(latest.generatedAt)}`,
+      x: 16,
+      y: 22,
+      kind: "machine",
+      status: hasProofIssues ? "warn" : "ready",
+      live: proofSummary.matched > 0 && !hasProofIssues,
+      tone: hasProofIssues ? "accent" : "success",
+    },
+    {
+      id: "houston",
+      label: "houston owned",
+      value: groupValue("Houston managed").toLocaleString(),
+      detail: "canonical shared and science-stack skills stay authoritative",
+      x: 82,
+      y: 20,
+      kind: "agent",
+      status: groupValue("Houston managed") > 0 ? "ready" : "idle",
+      live: groupValue("Houston managed") > 0,
+      tone: "success",
+    },
+    {
+      id: "references",
+      label: "references",
+      value: (groupValue("GStack reference") + groupValue("Public / upstream")).toLocaleString(),
+      detail: "GStack plus public/upstream sources are grouped before promotion",
+      x: 82,
+      y: 73,
+      kind: "agent",
+      status: groupValue("GStack reference") + groupValue("Public / upstream") > 0 ? "active" : "idle",
+      live: groupValue("GStack reference") + groupValue("Public / upstream") > 0,
+      tone: "accent",
+    },
+    {
+      id: "runtime",
+      label: "runtime",
+      value: groupValue("Runtime/plugin").toLocaleString(),
+      detail: "plugin caches and You.md catalog cache are references",
+      x: 50,
+      y: 84,
+      kind: "shell",
+      status: groupValue("Runtime/plugin") > 0 ? "ready" : "idle",
+      live: groupValue("Runtime/plugin") > 0,
+      tone: "muted",
+    },
+    {
+      id: "review",
+      label: "review queue",
+      value: reviewCount.toLocaleString(),
+      detail: "ambiguous owners, mirrors, and duplicate-name DRY cases",
+      x: 17,
+      y: 73,
+      kind: "agent",
+      status: hasReviewPressure ? "warn" : "ready",
+      live: hasReviewPressure,
+      tone: hasReviewPressure ? "accent" : "success",
+    },
+    {
+      id: "catalog",
+      label: "catalog",
+      value: hasCatalogGaps ? `${latest.missingFromYoumdCatalog.toLocaleString()} gaps` : "clean",
+      detail: "what You.md has cataloged versus host-discovered skills",
+      x: 50,
+      y: 12,
+      kind: "shell",
+      status: hasCatalogGaps ? "warn" : "ready",
+      live: hasCatalogGaps,
+      tone: hasCatalogGaps ? "accent" : "success",
+    },
+  ];
+  const links: SyncedBrainGraphLink[] = [
+    { from: "machines", to: "youmd", active: machineCount > 0 },
+    { from: "houston", to: "youmd", active: groupValue("Houston managed") > 0 },
+    { from: "references", to: "youmd", active: groupValue("GStack reference") + groupValue("Public / upstream") > 0 },
+    { from: "runtime", to: "youmd", active: groupValue("Runtime/plugin") > 0 },
+    { from: "review", to: "youmd", active: hasReviewPressure },
+    { from: "catalog", to: "youmd", active: !hasCatalogGaps },
+    { from: "houston", to: "review", active: hasReviewPressure },
+    { from: "references", to: "catalog", active: hasCatalogGaps },
+  ];
+  const signals: SyncedBrainGraphSignal[] = [
+    { label: "inventory age", value: formatInventoryTime(latest.generatedAt), live: true },
+    { label: "trusted machines", value: `${machineCount}`, live: machineCount > 1 },
+    { label: "machine proof", value: `${proofSummary.matched}/${machineCount}`, live: proofSummary.matched === machineCount && machineCount > 0 },
+    { label: "catalog gaps", value: latest.missingFromYoumdCatalog.toLocaleString(), live: hasCatalogGaps },
+    { label: "DRY review", value: latest.duplicateNameDifferentRealpaths.toLocaleString(), live: latest.duplicateNameDifferentRealpaths > 0 },
+    { label: "secret exposure", value: secretLeak ? "review" : "none", live: !secretLeak },
+  ];
+  const latestActivity: SyncedBrainGraphActivity[] = [
+    {
+      id: `${latest._id}:inventory`,
+      source: latest.hostName,
+      title: `inventory synced ${formatInventoryTime(latest.generatedAt)}`,
+    },
+    {
+      id: `${latest._id}:source-groups`,
+      source: "source groups",
+      title: `${groupValue("Houston managed").toLocaleString()} Houston-owned / ${reviewCount.toLocaleString()} review`,
+    },
+    {
+      id: `${latest._id}:proof`,
+      source: "machine proof",
+      title: `${proofSummary.matched}/${machineCount} inventories have readiness proof`,
+    },
+  ];
+  return { nodes, links, signals, latestActivity };
+}
+
 function machineProofKey(row: Pick<AgentStackInventory | MachineProofReport, "machineKey" | "hostName" | "rootDir">) {
   return row.machineKey || `${row.hostName}::${row.rootDir}`;
 }
@@ -376,6 +525,75 @@ function SourceGroupPanel({ groups }: { groups: ReturnType<typeof buildSourceGro
   );
 }
 
+function SkillsSurfaceHeader({
+  mode,
+  installedCount,
+  availableCount,
+  totalCount,
+  totalUses,
+  showAllSkills,
+  mcpCopied,
+  onInstallMcp,
+  onToggleAllSkills,
+}: {
+  mode: SkillPaneMode;
+  installedCount: number;
+  availableCount: number;
+  totalCount: number;
+  totalUses: number;
+  showAllSkills: boolean;
+  mcpCopied: boolean;
+  onInstallMcp: () => void;
+  onToggleAllSkills: () => void;
+}) {
+  return (
+    <section className="border-l border-[hsl(var(--accent))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 max-w-3xl">
+          <PaneSectionLabel>{mode === "mesh" ? "skill mesh" : "skills"}</PaneSectionLabel>
+          <h2 className="font-mono text-[15px] leading-tight text-[hsl(var(--text-primary))]">
+            {mode === "mesh" ? "Synced skill topology" : "Identity-aware agent skills"}
+          </h2>
+          <p className="mt-2 font-mono text-[10.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+            {mode === "mesh"
+              ? "Trusted-machine inventory, source ownership, catalog gaps, DRY review, and proof status from real synced metadata."
+              : `Rendered skill templates for local agents. ${installedCount}/${totalCount} installed; ${availableCount} available for the catalog.`}
+          </p>
+        </div>
+        <div className="grid min-w-[260px] grid-cols-3 gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
+          <span className="text-[hsl(var(--success))]">{installedCount} installed</span>
+          <span className="text-[hsl(var(--text-secondary))] opacity-55">{totalUses} uses</span>
+          <span className="text-[hsl(var(--text-secondary))] opacity-55">{availableCount} available</span>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[hsl(var(--border))]/45 pt-3">
+        <button
+          type="button"
+          onClick={onInstallMcp}
+          className="cursor-pointer px-3 py-1.5 font-mono text-[10px] text-[hsl(var(--accent))] transition-colors hover:bg-[hsl(var(--accent))]/[0.10]"
+          style={{ borderRadius: "var(--radius)" }}
+          title="copy Claude MCP install command"
+        >
+          {mcpCopied ? "copied MCP command" : "install MCP"}
+        </button>
+        {mode === "catalog" && (
+          <button
+            type="button"
+            onClick={onToggleAllSkills}
+            className="cursor-pointer px-3 py-1.5 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-65 transition-[background,opacity] hover:bg-[hsl(var(--shell-chrome-hover))] hover:opacity-90"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            {showAllSkills ? "hide available" : "show available"}
+          </button>
+        )}
+        <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-38">
+          {mode === "mesh" ? "safe metadata only" : "templates + {{identity}}"}
+        </span>
+      </div>
+    </section>
+  );
+}
+
 function SampleList({ title, values }: { title: string; values: string[] }) {
   return (
     <div>
@@ -429,6 +647,9 @@ function SkillMeshView({
   const syncRows = numericRollupEntries(latest?.syncPolicyRollup as Record<string, unknown> | undefined);
   const provenanceRows = numericRollupEntries(latest?.provenanceRollup as Record<string, unknown> | undefined);
   const sourceGroups = buildSourceGroups(latest);
+  const topology = latest
+    ? buildSkillMeshTopology({ latest, sourceGroups, proofSummary, machineCount, secretLeak })
+    : null;
 
   return (
     <div className="space-y-6">
@@ -465,6 +686,28 @@ function SkillMeshView({
 
       {latest && (
         <>
+          {topology && (
+            <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <PaneSectionLabel>live topology</PaneSectionLabel>
+                  <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+                    Real synced brain graph for skills
+                  </h3>
+                  <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
+                    Nodes and firing states are derived from synced inventory, source groups, proof coverage, catalog gaps, and DRY review counts.
+                  </p>
+                </div>
+              </div>
+              <SyncedBrainGraph
+                nodes={topology.nodes}
+                links={topology.links}
+                signals={topology.signals}
+                latestActivity={topology.latestActivity}
+              />
+            </section>
+          )}
+
           <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -929,6 +1172,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
 
   const installedSkills = allSkills.filter((s) => installedNames.has(s.name));
   const availableSkills = allSkills.filter((s) => !installedNames.has(s.name));
+  const totalUses = (installs ?? []).reduce((sum, install) => sum + (install.useCount ?? 0), 0);
   const routeSkillName = skillNameFromPath(pathname);
   const legacySkillName = searchParams.get("skill");
   const selectedSkillName = routeSkillName ?? legacySkillName;
@@ -1022,76 +1266,17 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
 
   return (
     <div className="p-6 space-y-6">
-      {/* ── Always-visible explainer ─────────────────────────── */}
-      <PaneCallout label="skills">
-        <p className="text-[11px] font-mono text-[hsl(var(--text-primary))] opacity-80 leading-relaxed">
-          Identity-aware agent instructions that get rendered with YOUR data
-          and shipped to your AI tools (Claude Code, Cursor, etc.)
-        </p>
-
-        <div className="space-y-1.5">
-          <div className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider opacity-80">
-            what they do
-          </div>
-          <p className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-70 leading-relaxed">
-            Templates with {`{{var}}`} placeholders that get filled with your
-            real identity. Each tool reads them automatically.
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="text-[10px] font-mono text-[hsl(var(--accent))] uppercase tracking-wider opacity-80">
-            examples
-          </div>
-          <ul className="text-[11px] font-mono text-[hsl(var(--text-secondary))] opacity-70 leading-relaxed space-y-1 pl-3">
-            <li>
-              • <span className="text-[hsl(var(--text-primary))] opacity-80">youstack-start</span>:
-              gives local agents the identity, project state, and next move
-            </li>
-            <li>
-              • <span className="text-[hsl(var(--text-primary))] opacity-80">youstack-maintainer</span>:
-              keeps named stacks organized, updated, private by default, and publish-ready
-            </li>
-            <li>
-              • <span className="text-[hsl(var(--text-primary))] opacity-80">claude-md-generator</span>:
-              bootstraps repo-visible agent instructions with your context
-            </li>
-            <li>
-              • <span className="text-[hsl(var(--text-primary))] opacity-80">proactive-context-fill</span>:
-              detects thin context and proposes safe additive improvements
-            </li>
-            <li>
-              • <span className="text-[hsl(var(--text-primary))] opacity-80">portfolio-graph-auditor</span>:
-              maps active projects, APIs, MCPs, env keys, and reusable patterns without printing secrets
-            </li>
-          </ul>
-        </div>
-
-        <p className="text-[10px] font-mono text-[hsl(var(--text-secondary))] opacity-50 leading-relaxed pt-1 border-t border-[hsl(var(--accent))] border-opacity-20">
-          Most skills work AUTOMATICALLY once you install youmd MCP. Manual
-          install only needed for special skills. YouStacks use the same skill
-          layer, but package multiple skills, workflows, examples, tests, and
-          host adapters under one named stack.
-        </p>
-
-        {/* Quick action buttons */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <button
-            onClick={handleInstallMcp}
-            className="text-[10px] font-mono text-[hsl(var(--accent))] border border-[hsl(var(--accent))] px-3 py-1.5 hover:bg-[hsl(var(--accent)/0.1)] transition-colors"
-            title="copy install command"
-          >
-            {mcpCopied ? "copied Claude MCP install command" : "install MCP"}
-          </button>
-          <button
-            onClick={() => setShowAllSkills((v) => !v)}
-            className="text-[10px] font-mono text-[hsl(var(--text-secondary))] border border-[hsl(var(--border))] px-3 py-1.5 hover:text-[hsl(var(--text-primary))] hover:border-[hsl(var(--accent))] transition-colors"
-            style={{ borderRadius: "var(--radius)" }}
-          >
-            {showAllSkills ? "hide all skills" : "view all skills"}
-          </button>
-        </div>
-      </PaneCallout>
+      <SkillsSurfaceHeader
+        mode={mode}
+        installedCount={installedSkills.length}
+        availableCount={availableSkills.length}
+        totalCount={allSkills.length}
+        totalUses={totalUses}
+        showAllSkills={showAllSkills}
+        mcpCopied={mcpCopied}
+        onInstallMcp={handleInstallMcp}
+        onToggleAllSkills={() => setShowAllSkills((value) => !value)}
+      />
 
       <div className="flex flex-wrap items-center gap-2 border-y border-[hsl(var(--border))]/55 py-2">
         {(["catalog", "mesh"] as const).map((nextMode) => (
@@ -1172,7 +1357,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           </span>
           <span className="text-[hsl(var(--text-secondary))] opacity-20">|</span>
           <span className="text-[hsl(var(--text-secondary))] opacity-40">
-            {installs.reduce((sum, install) => sum + (install.useCount ?? 0), 0)} total uses
+            {totalUses} total uses
           </span>
         </div>
       )}

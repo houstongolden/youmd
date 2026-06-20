@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(skills): foreground live topology
+- Replaced the tall always-visible Skills explainer with a compact mode-aware header, keeping install/use actions visible without forcing users through education copy on every visit.
+- Added a real-data Skill Mesh topology graph derived from synced inventory, source groups, proof coverage, catalog gaps, DRY review counts, and secret-exposure status.
+- Kept dense audit/proof tables below the graph so the first viewport explains the live system while raw rollups and repair commands remain available.
+- Verified with `npm run build`, `git diff --check`, authenticated browser proof for `/shell?tab=skills&view=mesh`, and catalog-mode smoke for `/shell?tab=skills`; both had no console errors or failed responses.
+
 ### feat(skills): group Skill Mesh sources
 - Added a stable five-bucket source grouping to the Skills pane Skill Mesh: Houston managed, GStack reference, public/upstream, runtime/plugin, and needs review.
 - The grouping is derived from real synced agent-stack inventory rollups so machines with zero GStack/public/plugin exposure still show an explicit `0` instead of hiding that source class.
