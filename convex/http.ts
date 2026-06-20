@@ -2638,6 +2638,31 @@ http.route({
   }),
 });
 
+// GET /api/v1/me/agent-stack/drift — Compare synced machine inventories against the freshest baseline.
+http.route({
+  path: "/api/v1/me/agent-stack/drift",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private", "projects");
+    if (denied) return denied;
+
+    const url = new URL(request.url);
+    const limit = cleanFiniteNumber(url.searchParams.get("limit"), 12);
+    try {
+      const drift = await ctx.runQuery(api.portfolio.getAgentStackInventoryDrift, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        limit,
+      });
+      return json(drift);
+    } catch (err) {
+      return serverErrorResponse("me/agent-stack/drift", err, "Failed to compute agent stack inventory drift");
+    }
+  }),
+});
+
 // POST /api/v1/me/realtime-sync/session — Mint a short-lived websocket credential for trusted local daemons.
 http.route({
   path: "/api/v1/me/realtime-sync/session",

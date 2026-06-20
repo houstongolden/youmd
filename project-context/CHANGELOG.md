@@ -2,6 +2,14 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): expose agent stack drift across API, MCP, CLI, and Skill Mesh
+- Added `GET /api/v1/me/agent-stack/drift`, backed by a Convex drift query that compares the latest trusted-machine inventory baseline against recent machine snapshots.
+- The drift model reports machine counts, stale rows, unsafe rows, count deltas, issue labels, and exact repair commands for inventory refresh and machine verification.
+- Local stdio MCP and hosted JSON-RPC MCP `get_agent_stack_inventory` now include drift by default, with `include_drift: false` available for smaller reads.
+- `youmd skill inventory status` now includes drift in `--json` output and renders baseline, summary, stale/divergent machines, and repair commands in text mode.
+- The Skills pane `skill mesh` view now shows a machine drift section and marks each synced machine row as same, drift, stale, or unsafe.
+- Verified with Convex codegen, focused Convex/MCP tests, focused ESLint, CLI build, production Next build, `docs:check`, and `git diff --check`.
+
 ### feat(skills): stream inventory progress and phase timings
 - `youmd skill inventory` now runs the scanner as a streaming child process instead of blocking on `execFileSync`, so long Mac inventory runs can update the live CLI spinner through secret-safe phases.
 - The scanner emits optional `--progress` events on stderr while keeping stdout reserved for the final JSON result.

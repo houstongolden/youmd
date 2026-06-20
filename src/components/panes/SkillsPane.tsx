@@ -25,6 +25,41 @@ type InstalledSkillSummary = {
 };
 
 type AgentStackInventory = Doc<"agentStackInventories">;
+type AgentStackDrift = {
+  baseline: null | {
+    hostName: string;
+    rootDir: string;
+    generatedAt: number;
+    counts: {
+      uniqueSkillNames: number;
+      uniqueRealSkillFiles: number;
+      missingFromYoumdCatalog: number;
+      duplicateNameDifferentRealpaths: number;
+    };
+  };
+  summary: {
+    machineCount: number;
+    driftCount: number;
+    staleCount: number;
+    unsafeCount: number;
+    okCount: number;
+  };
+  machines: Array<{
+    machineKey: string;
+    hostName: string;
+    rootDir: string;
+    status: string;
+    stale: boolean;
+    issues: string[];
+    deltas: {
+      uniqueSkillNames: number;
+      uniqueRealSkillFiles: number;
+      missingFromYoumdCatalog: number;
+      duplicateNameDifferentRealpaths: number;
+    };
+  }>;
+  secretValuesExposed: false;
+};
 
 type SkillPaneMode = "catalog" | "mesh";
 
@@ -213,14 +248,17 @@ function SampleList({ title, values }: { title: string; values: string[] }) {
 
 function SkillMeshView({
   inventories,
+  drift,
   isLoading,
 }: {
   inventories: AgentStackInventory[] | undefined;
+  drift: AgentStackDrift | undefined;
   isLoading: boolean;
 }) {
   const latest = inventories?.[0];
   const machineCount = inventories?.length ?? 0;
   const secretLeak = inventories?.some((inventory) => inventory.secretValuesExposed) ?? false;
+  const driftByMachineKey = new Map((drift?.machines ?? []).map((machine) => [machine.machineKey, machine]));
   const ownershipRows = numericRollupEntries(latest?.ownershipRollup as Record<string, unknown> | undefined);
   const syncRows = numericRollupEntries(latest?.syncPolicyRollup as Record<string, unknown> | undefined);
   const provenanceRows = numericRollupEntries(latest?.provenanceRollup as Record<string, unknown> | undefined);
@@ -297,6 +335,53 @@ function SkillMeshView({
             </div>
           </section>
 
+          {drift?.baseline && (
+            <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <PaneSectionLabel>machine drift</PaneSectionLabel>
+                  <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+                    baseline: {drift.baseline.hostName}
+                  </h3>
+                  <p className="mt-1 max-w-3xl truncate font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-48">
+                    {drift.baseline.rootDir}
+                  </p>
+                </div>
+                <div className="grid grid-cols-4 gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
+                  <span className="text-[hsl(var(--text-secondary))] opacity-55">{drift.summary.machineCount} machines</span>
+                  <span className={drift.summary.driftCount > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
+                    {drift.summary.driftCount} drift
+                  </span>
+                  <span className={drift.summary.staleCount > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
+                    {drift.summary.staleCount} stale
+                  </span>
+                  <span className={drift.summary.unsafeCount > 0 ? "text-yellow-500" : "text-[hsl(var(--success))]"}>
+                    {drift.summary.unsafeCount} unsafe
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {drift.machines.slice(0, 6).map((machine) => (
+                  <div key={machine.machineKey} className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto]">
+                    <div className="min-w-0">
+                      <div className="truncate text-[hsl(var(--text-primary))]">{machine.hostName}</div>
+                      <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">
+                        {machine.issues[0] ?? "matches baseline counts"}
+                      </div>
+                    </div>
+                    <span className={machine.status === "baseline" || machine.status === "ok" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+                      {machine.status}
+                    </span>
+                    <span className="text-[hsl(var(--text-secondary))] opacity-52">
+                      {machine.deltas.uniqueSkillNames >= 0 ? "+" : ""}{machine.deltas.uniqueSkillNames} skills
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section className="grid gap-4 xl:grid-cols-3">
             <RollupColumn title="ownership" rows={ownershipRows} />
             <RollupColumn title="sync policy" rows={syncRows} />
@@ -313,18 +398,11 @@ function SkillMeshView({
             <PaneSectionLabel>trusted machine snapshots</PaneSectionLabel>
             <div className="space-y-2">
               {(inventories ?? []).map((inventory) => (
-                <div
+                <MachineSnapshotRow
                   key={inventory._id}
-                  className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto]"
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
-                    <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">{inventory.rootDir}</div>
-                  </div>
-                  <span className="text-[hsl(var(--accent))]">{inventory.uniqueSkillNames.toLocaleString()} skills</span>
-                  <span className="text-[hsl(var(--text-secondary))] opacity-58">{inventory.missingFromYoumdCatalog.toLocaleString()} gaps</span>
-                  <span className="text-[hsl(var(--text-secondary))] opacity-42">{formatInventoryTime(inventory.generatedAt)}</span>
-                </div>
+                  inventory={inventory}
+                  drift={driftByMachineKey.get(inventory.machineKey)}
+                />
               ))}
             </div>
           </section>
@@ -339,6 +417,30 @@ function SkillMeshView({
           </section>
         </>
       )}
+    </div>
+  );
+}
+
+function MachineSnapshotRow({
+  inventory,
+  drift,
+}: {
+  inventory: AgentStackInventory;
+  drift?: AgentStackDrift["machines"][number];
+}) {
+  const driftOk = drift?.status === "baseline" || drift?.status === "ok";
+  return (
+    <div className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto_auto]">
+      <div className="min-w-0">
+        <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
+        <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">{inventory.rootDir}</div>
+      </div>
+      <span className="text-[hsl(var(--accent))]">{inventory.uniqueSkillNames.toLocaleString()} skills</span>
+      <span className="text-[hsl(var(--text-secondary))] opacity-58">{inventory.missingFromYoumdCatalog.toLocaleString()} gaps</span>
+      <span className={driftOk ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+        {drift?.status ?? "unknown"}
+      </span>
+      <span className="text-[hsl(var(--text-secondary))] opacity-42">{formatInventoryTime(inventory.generatedAt)}</span>
     </div>
   );
 }
@@ -559,9 +661,10 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   // Query published skills from registry
   const registrySkills = useQuery(api.skills.listPublished, { limit: 20 });
   const agentStackInventories = useQuery(api.portfolio.listAgentStackInventories, clerkId ? { clerkId, limit: 12 } : "skip");
+  const agentStackDrift = useQuery(api.portfolio.getAgentStackInventoryDrift, clerkId ? { clerkId, limit: 12 } : "skip");
 
   const isLoading = installs === undefined || registrySkills === undefined;
-  const meshLoading = agentStackInventories === undefined;
+  const meshLoading = agentStackInventories === undefined || agentStackDrift === undefined;
   const installMap = new Map<string, InstalledSkillSummary>(
     (installs ?? []).map((install) => [
       install.skillName,
@@ -770,7 +873,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
       </div>
 
       {mode === "mesh" ? (
-        <SkillMeshView inventories={agentStackInventories} isLoading={meshLoading} />
+        <SkillMeshView inventories={agentStackInventories} drift={agentStackDrift as AgentStackDrift | undefined} isLoading={meshLoading} />
       ) : (
         <>
       <div>

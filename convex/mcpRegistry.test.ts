@@ -124,6 +124,7 @@ describe("HOSTED_MCP_TOOLS registry — structural completeness", () => {
     expect(spec?.scopes).toEqual(["read:private"]);
     expect(spec?.inputSchema.properties.limit).toBeDefined();
     expect(spec?.inputSchema.properties.include_repo_snapshot).toBeDefined();
+    expect(spec?.inputSchema.properties.include_drift).toBeDefined();
     expect(spec?.description).toContain("skill/stack counts");
     expect(spec?.description).toContain("without exposing secrets");
   });

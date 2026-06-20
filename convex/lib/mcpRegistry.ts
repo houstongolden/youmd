@@ -814,6 +814,10 @@ export const HOSTED_MCP_TOOLS: McpToolSpec[] = [
           type: "boolean",
           description: "Include safe agent-stack snapshot files from the authenticated repo mirror when available (default true).",
         },
+        include_drift: {
+          type: "boolean",
+          description: "Include server-computed machine drift against the freshest inventory baseline (default true).",
+        },
       },
     },
     scopes: ["read:private"],
@@ -821,6 +825,11 @@ export const HOSTED_MCP_TOOLS: McpToolSpec[] = [
       if (!auth) return errorResult("authentication required — pass your you.md API key as Bearer token");
       const limit = boundedNumber(args.limit, 5, 1, 20);
       const inventories = await ctx.runQuery(api.portfolio.listAgentStackInventories, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        limit,
+      });
+      const drift = args.include_drift === false ? null : await ctx.runQuery(api.portfolio.getAgentStackInventoryDrift, {
         clerkId: auth.userId,
         _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         limit,
@@ -861,6 +870,7 @@ export const HOSTED_MCP_TOOLS: McpToolSpec[] = [
           {
             schemaVersion: "you-md/agent-stack-mcp/v1",
             inventories,
+            drift,
             repoSnapshot,
             secretValuesExposed: false,
           },

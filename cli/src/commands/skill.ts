@@ -10,7 +10,7 @@ import * as path from "path";
 import * as os from "os";
 import * as readline from "readline";
 import * as yaml from "js-yaml";
-import { execFileSync, spawn } from "child_process";
+import { spawn } from "child_process";
 import chalk from "chalk";
 import {
   readSkillCatalog,
@@ -35,7 +35,7 @@ import {
 import { loadIdentityData, resolveVariable, renderSkillTemplate } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
-import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, getAgentStackInventories, recordBrainActivity, syncAgentStackInventory, type AgentStackInventorySyncPayload, type SkillInsight, type SyncedAgentStackInventory } from "../lib/api";
+import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, getAgentStackInventories, getAgentStackInventoryDrift, recordBrainActivity, syncAgentStackInventory, type AgentStackInventoryDrift, type AgentStackInventorySyncPayload, type SkillInsight, type SyncedAgentStackInventory } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 
@@ -322,6 +322,25 @@ function inventoryDelta(localValue: number | undefined, remoteValue: number | un
   const delta = remoteValue - localValue;
   if (delta === 0) return chalk.green("0");
   return delta > 0 ? chalk.green(`+${delta}`) : ACCENT(String(delta));
+}
+
+function renderInventoryDrift(drift: AgentStackInventoryDrift | null): void {
+  if (!drift?.baseline) return;
+  console.log("");
+  console.log(
+    `  ${DIM("drift baseline")} ${chalk.cyan(drift.baseline.hostName)}${DIM(` · ${compactDate(drift.baseline.generatedAt)} · ${drift.baseline.counts.uniqueSkillNames} skills`)}`
+  );
+  console.log(
+    `  ${DIM("drift summary ")} ` +
+    `${chalk.cyan(String(drift.summary.machineCount))} machines · ` +
+    `${drift.summary.driftCount > 0 ? ACCENT(String(drift.summary.driftCount)) : chalk.green("0")} drift · ` +
+    `${drift.summary.staleCount > 0 ? ACCENT(String(drift.summary.staleCount)) : chalk.green("0")} stale · ` +
+    `${drift.summary.unsafeCount > 0 ? ACCENT(String(drift.summary.unsafeCount)) : chalk.green("0")} unsafe`
+  );
+  const issueRows = drift.machines.filter((machine) => machine.status !== "baseline" && machine.issues.length > 0).slice(0, 4);
+  for (const machine of issueRows) {
+    console.log(`  ${ACCENT(machine.status.padEnd(8))} ${chalk.cyan(machine.hostName)} ${DIM(machine.issues.slice(0, 2).join("; "))}`);
+  }
 }
 
 function inventoryHostName(snapshot: InventorySnapshot): string {
@@ -1530,7 +1549,10 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
     return;
   }
 
-  const res = await getAgentStackInventories({ limit });
+  const [res, driftRes] = await Promise.all([
+    getAgentStackInventories({ limit }),
+    getAgentStackInventoryDrift({ limit }),
+  ]);
   if (!res.ok) {
     const message = apiErrorMessage(res.data) || `HTTP ${res.status}`;
     if (jsonOutput) {
@@ -1548,6 +1570,7 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
   }
 
   const inventories = res.data?.inventories ?? [];
+  const drift = driftRes.ok ? driftRes.data : null;
   if (jsonOutput) {
     console.log(JSON.stringify({
       success: true,
@@ -1561,6 +1584,7 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
           }
         : null,
       inventories,
+      drift,
       secretValuesExposed: false,
     }, null, 2));
     return;
@@ -1628,6 +1652,8 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
     console.log("");
     console.log(DIM("  * matches this machine's local latest host name"));
   }
+
+  renderInventoryDrift(drift);
 
   console.log("");
   console.log(DIM("  refresh: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --sync`));

@@ -1,6 +1,6 @@
 # You.md
 
-> Generated agent index. Source hash: e2ad55ce0a7dd655b3a341f1da7ef969638a0cbab1bd38db91c412cea8ed77b2. CLI version: 0.8.11. Reference intelligence: 2026-06-19T15:31:38.182Z.
+> Generated agent index. Source hash: 51cc48a5d29a37af09396c390ada93e4b624d08cd1d2b14045c34a33e749dabc. CLI version: 0.8.11. Reference intelligence: 2026-06-19T15:31:38.182Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -15,7 +15,7 @@ You.md is the agent brain and expertise-stack layer for the agent internet. It g
 
 ## Agent-Readable Surfaces
 
-- [Docs Reference](https://you.md/api/v1/docs/reference): Machine-readable docs manifest generated from 105 documented routes (9 internal/retired routes excluded), 6 local MCP tools, 11 hosted MCP tools, and 31 CLI commands.
+- [Docs Reference](https://you.md/api/v1/docs/reference): Machine-readable docs manifest generated from 106 documented routes (9 internal/retired routes excluded), 6 local MCP tools, 11 hosted MCP tools, and 31 CLI commands.
 - [OpenAPI Inventory](https://you.md/api/v1/docs/openapi.json): Generated OpenAPI-style API inventory.
 - [MCP Discovery](https://you.md/.well-known/mcp.json): MCP discovery metadata for web-capable agents.
 - [MCP Endpoint](https://you.md/api/v1/mcp): Same-origin JSON-RPC endpoint for web-capable MCP clients.

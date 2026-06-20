@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "e2ad55ce0a7dd655b3a341f1da7ef969638a0cbab1bd38db91c412cea8ed77b2",
+  "sourceHash": "51cc48a5d29a37af09396c390ada93e4b624d08cd1d2b14045c34a33e749dabc",
   "cli": {
     "version": "0.8.11"
   },
   "counts": {
-    "endpoints": 105,
+    "endpoints": 106,
     "internalRoutes": 9,
     "mcpTools": 6,
     "hostedMcpTools": 11,
     "cliCommands": 31,
-    "convexRoutes": 86,
+    "convexRoutes": 87,
     "nextRoutes": 27
   },
   "endpoints": [
@@ -84,6 +84,17 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Convex HTTP action",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/agent-stack/drift",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Compare synced machine inventories against the freshest baseline.",
       "sources": [
         "convex"
       ]
@@ -1388,7 +1399,8 @@ export const docsReference = {
       "description": "Read the authenticated user's latest You.md agent-stack inventory snapshots: skill/stack counts, machine roots, You.md catalog gaps, DRY review queues, mirror clusters, provenance/source rollups, and repo snapshot files. Use to audit cross-machine skill drift and sync health without exposing secrets.",
       "inputFields": [
         "limit",
-        "include_repo_snapshot"
+        "include_repo_snapshot",
+        "include_drift"
       ],
       "required": [],
       "requiresAuth": true

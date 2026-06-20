@@ -37,7 +37,8 @@ PRD Version: 2.3
 - [x] Add `youmd skill inventory status` for local-vs-synced machine inventory rows, count drift, JSON output, and exact Mac-to-Mac refresh/verify/diff commands
 - [ ] Next pass: publish `youmd@0.8.11` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
-- [ ] Next pass: add richer API/MCP drift query models and optional MCP resources for agent stack topology
+- [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison
+- [ ] Next pass: add optional MCP resources for agent stack topology/report files
 - [ ] Build the full web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views beyond the first Skills-pane view
 - [x] Add resident realtime reconciliation for safe Skill Mesh inventory summaries through `youmd sync --live --daemon`
 - [ ] Next pass: broaden resident reconciliation beyond inventory summaries into repairable drift actions across trusted machines and agents

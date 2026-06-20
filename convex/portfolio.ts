@@ -60,6 +60,7 @@ const UPDATE_STEP_STATUSES = ["running", "success", "failed", "skipped", "pendin
 const MAX_ACTIVITY_FIELD_CHARS = 120;
 const MAX_ACTIVITY_TITLE_CHARS = 180;
 const MAX_ACTIVITY_DETAIL_CHARS = 1_500;
+const AGENT_STACK_STALE_MS = 6 * 60 * 60 * 1000;
 
 function normalizeTaskStatus(value: string | undefined, fallback: string): string {
   const next = value?.trim();
@@ -81,6 +82,97 @@ function normalizeManualProjectStatus(value: string | undefined): typeof PROJECT
   return next && PROJECT_MANUAL_STATUSES.includes(next as typeof PROJECT_MANUAL_STATUSES[number])
     ? next as typeof PROJECT_MANUAL_STATUSES[number]
     : "active";
+}
+
+function agentStackCounts(row: Doc<"agentStackInventories">) {
+  return {
+    uniqueSkillNames: row.uniqueSkillNames,
+    uniqueRealSkillFiles: row.uniqueRealSkillFiles,
+    directExposureSkillRecords: row.directExposureSkillRecords,
+    canonicalSkillFiles: row.canonicalSkillFiles,
+    youmdCatalogSkills: row.youmdCatalogSkills,
+    missingFromYoumdCatalog: row.missingFromYoumdCatalog,
+    duplicateNameDifferentRealpaths: row.duplicateNameDifferentRealpaths,
+    sameRealpathMirrors: row.sameRealpathMirrors,
+    projectSignals: row.projectSignals,
+  };
+}
+
+function buildAgentStackInventoryDrift(inventories: Doc<"agentStackInventories">[]) {
+  const sorted = [...inventories].sort((a, b) => b.generatedAt - a.generatedAt || b.updatedAt - a.updatedAt);
+  const baseline = sorted[0] ?? null;
+  const now = Date.now();
+  const rows = baseline ? sorted.map((row) => {
+    const skillDelta = row.uniqueSkillNames - baseline.uniqueSkillNames;
+    const fileDelta = row.uniqueRealSkillFiles - baseline.uniqueRealSkillFiles;
+    const catalogGapDelta = row.missingFromYoumdCatalog - baseline.missingFromYoumdCatalog;
+    const dryReviewDelta = row.duplicateNameDifferentRealpaths - baseline.duplicateNameDifferentRealpaths;
+    const staleByMs = Math.max(0, baseline.generatedAt - row.generatedAt);
+    const stale = now - row.updatedAt > AGENT_STACK_STALE_MS || staleByMs > AGENT_STACK_STALE_MS;
+    const issues = [
+      skillDelta < 0 ? `${Math.abs(skillDelta)} fewer skill names than baseline` : "",
+      fileDelta < 0 ? `${Math.abs(fileDelta)} fewer real SKILL.md files than baseline` : "",
+      catalogGapDelta > 0 ? `${catalogGapDelta} more You.md catalog gaps than baseline` : "",
+      dryReviewDelta > 0 ? `${dryReviewDelta} more DRY review cases than baseline` : "",
+      stale ? "inventory proof is stale" : "",
+      row.secretValuesExposed ? "inventory reports secret exposure" : "",
+    ].filter(Boolean);
+    const status = row.machineKey === baseline.machineKey
+      ? "baseline"
+      : row.secretValuesExposed
+        ? "unsafe"
+        : issues.length > 0
+          ? "drift"
+          : skillDelta > 0 || fileDelta > 0
+            ? "ahead"
+            : "ok";
+    return {
+      machineKey: row.machineKey,
+      hostName: row.hostName,
+      rootDir: row.rootDir,
+      generatedAt: row.generatedAt,
+      updatedAt: row.updatedAt,
+      counts: agentStackCounts(row),
+      deltas: {
+        uniqueSkillNames: skillDelta,
+        uniqueRealSkillFiles: fileDelta,
+        missingFromYoumdCatalog: catalogGapDelta,
+        duplicateNameDifferentRealpaths: dryReviewDelta,
+      },
+      stale,
+      staleByMs,
+      status,
+      issues,
+      repairCommands: status === "baseline" ? [] : [
+        "youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync",
+        "youmd machine verify --write-report --sync-report",
+      ],
+      secretValuesExposed: row.secretValuesExposed === true,
+    };
+  }) : [];
+
+  return {
+    schemaVersion: "you-md/agent-stack-drift/v1",
+    generatedAt: now,
+    baseline: baseline ? {
+      machineKey: baseline.machineKey,
+      hostName: baseline.hostName,
+      rootDir: baseline.rootDir,
+      generatedAt: baseline.generatedAt,
+      updatedAt: baseline.updatedAt,
+      counts: agentStackCounts(baseline),
+      selection: "latest-generatedAt",
+    } : null,
+    summary: {
+      machineCount: sorted.length,
+      driftCount: rows.filter((row) => row.status === "drift").length,
+      staleCount: rows.filter((row) => row.stale).length,
+      unsafeCount: rows.filter((row) => row.secretValuesExposed).length,
+      okCount: rows.filter((row) => row.status === "ok" || row.status === "baseline" || row.status === "ahead").length,
+    },
+    machines: rows,
+    secretValuesExposed: false as const,
+  };
 }
 
 function projectFocusRank(status: string, suppliedRank?: number): number {
@@ -1929,6 +2021,24 @@ export const listAgentStackInventories = query({
       .withIndex("by_userId_generatedAt", (q) => q.eq("userId", user._id))
       .order("desc")
       .take(limit);
+  },
+});
+
+export const getAgentStackInventoryDrift = query({
+  args: {
+    clerkId: v.string(),
+    _internalAuthToken: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const user = await loadOwner(ctx, args.clerkId, args._internalAuthToken);
+    const limit = Math.max(1, Math.min(Number(args.limit ?? 12), 50));
+    const inventories = await ctx.db
+      .query("agentStackInventories")
+      .withIndex("by_userId_generatedAt", (q) => q.eq("userId", user._id))
+      .order("desc")
+      .take(limit);
+    return buildAgentStackInventoryDrift(inventories);
   },
 });
 

@@ -1273,6 +1273,10 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
           type: "boolean",
           description: "Include the canonical repo snapshot file paths written by You.md sync (default true).",
         },
+        include_drift: {
+          type: "boolean",
+          description: "Include server-computed machine drift against the freshest inventory baseline (default true).",
+        },
       },
     },
     handler: async (args, ctx) => {
@@ -1285,11 +1289,15 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
 
       const limit = boundedNumber(args.limit, 5, 1, 20);
       const result = await ctx.apiRequest(`/api/v1/me/agent-stack/inventories?limit=${limit}`) as Record<string, unknown>;
+      const drift = args.include_drift === false
+        ? null
+        : await ctx.apiRequest(`/api/v1/me/agent-stack/drift?limit=${limit}`) as Record<string, unknown>;
       const includeRepoSnapshot = args.include_repo_snapshot !== false;
       const payload: Record<string, unknown> = {
         schemaVersion: "you-md/agent-stack-mcp/v1",
         source: "youmd-api",
         ...result,
+        drift,
         secretValuesExposed: false,
       };
       if (includeRepoSnapshot) {
@@ -1302,7 +1310,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
           note: "Use hosted MCP get_repo_file or the GitHub mirror to inspect snapshot file contents.",
         };
       }
-      ctx.logActivity("read", "agent-stack/inventory", { limit, includeRepoSnapshot });
+      ctx.logActivity("read", "agent-stack/inventory", { limit, includeRepoSnapshot, includeDrift: args.include_drift !== false });
       return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
     },
   },

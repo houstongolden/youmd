@@ -247,6 +247,95 @@ describe("portfolio repo update history", () => {
     expect(otherInventories).toHaveLength(0);
   });
 
+  it("computes secret-safe agent stack drift against the freshest baseline", async () => {
+    const t = convexTest(schema);
+    await seedUsers(t);
+    const asOwner = t.withIdentity({ subject: CLERK });
+
+    await asOwner.mutation(api.portfolio.upsertAgentStackInventory, {
+      clerkId: CLERK,
+      machineKey: "macbook-youmd",
+      hostName: "houston-macbook",
+      rootDir: "/Users/houston/Desktop/CODE_2025/youmd",
+      inventorySchemaVersion: "local-agent-stack-inventory/v1",
+      uniqueSkillNames: 430,
+      uniqueRealSkillFiles: 827,
+      directExposureSkillRecords: 412,
+      canonicalSkillFiles: 817,
+      youmdCatalogSkills: 12,
+      missingFromYoumdCatalog: 418,
+      duplicateNameDifferentRealpaths: 73,
+      sameRealpathMirrors: 136,
+      projectSignals: 12,
+      ownershipRollup: {},
+      syncPolicyRollup: {},
+      provenanceRollup: {},
+      missingCatalogSamples: ["academic-paper"],
+      duplicateNameSamples: ["autoplan"],
+      mirrorSamples: ["agent-stack-inventory"],
+      source: "youmd-cli",
+      secretValuesExposed: false,
+      generatedAt: 1_781_720_000_000,
+    });
+
+    await asOwner.mutation(api.portfolio.upsertAgentStackInventory, {
+      clerkId: CLERK,
+      machineKey: "mac-mini-youmd",
+      hostName: "houston-mac-mini",
+      rootDir: "/Users/houston/Desktop/CODE_YOU/youmd",
+      inventorySchemaVersion: "local-agent-stack-inventory/v1",
+      uniqueSkillNames: 427,
+      uniqueRealSkillFiles: 824,
+      directExposureSkillRecords: 409,
+      canonicalSkillFiles: 815,
+      youmdCatalogSkills: 12,
+      missingFromYoumdCatalog: 420,
+      duplicateNameDifferentRealpaths: 74,
+      sameRealpathMirrors: 133,
+      projectSignals: 10,
+      ownershipRollup: {},
+      syncPolicyRollup: {},
+      provenanceRollup: {},
+      missingCatalogSamples: ["academic-paper"],
+      duplicateNameSamples: ["autoplan"],
+      mirrorSamples: ["agent-stack-inventory"],
+      source: "youmd-cli",
+      secretValuesExposed: false,
+      generatedAt: 1_781_719_000_000,
+    });
+
+    const drift = await asOwner.query(api.portfolio.getAgentStackInventoryDrift, {
+      clerkId: CLERK,
+      limit: 10,
+    });
+
+    expect(drift.schemaVersion).toBe("you-md/agent-stack-drift/v1");
+    expect(drift.secretValuesExposed).toBe(false);
+    expect(drift.baseline).toMatchObject({
+      machineKey: "macbook-youmd",
+      hostName: "houston-macbook",
+      selection: "latest-generatedAt",
+    });
+    expect(drift.summary).toMatchObject({
+      machineCount: 2,
+      driftCount: 1,
+      unsafeCount: 0,
+    });
+    const mini = drift.machines.find((row) => row.machineKey === "mac-mini-youmd");
+    expect(mini).toMatchObject({
+      status: "drift",
+      deltas: {
+        uniqueSkillNames: -3,
+        uniqueRealSkillFiles: -3,
+        missingFromYoumdCatalog: 2,
+        duplicateNameDifferentRealpaths: 1,
+      },
+      secretValuesExposed: false,
+    });
+    expect(mini?.issues).toContain("3 fewer skill names than baseline");
+    expect(mini?.repairCommands).toContain("youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync");
+  });
+
   it("persists repo update runs with ordered steps", async () => {
     const t = convexTest(schema);
     await seedUsers(t);

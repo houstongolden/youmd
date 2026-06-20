@@ -1093,6 +1093,60 @@ export interface SyncedAgentStackInventory {
   updatedAt: number;
 }
 
+export interface AgentStackInventoryCounts {
+  uniqueSkillNames: number;
+  uniqueRealSkillFiles: number;
+  directExposureSkillRecords: number;
+  canonicalSkillFiles: number;
+  youmdCatalogSkills: number;
+  missingFromYoumdCatalog: number;
+  duplicateNameDifferentRealpaths: number;
+  sameRealpathMirrors: number;
+  projectSignals: number;
+}
+
+export interface AgentStackInventoryDrift {
+  schemaVersion: "you-md/agent-stack-drift/v1";
+  generatedAt: number;
+  baseline: null | {
+    machineKey: string;
+    hostName: string;
+    rootDir: string;
+    generatedAt: number;
+    updatedAt: number;
+    counts: AgentStackInventoryCounts;
+    selection: string;
+  };
+  summary: {
+    machineCount: number;
+    driftCount: number;
+    staleCount: number;
+    unsafeCount: number;
+    okCount: number;
+  };
+  machines: Array<{
+    machineKey: string;
+    hostName: string;
+    rootDir: string;
+    generatedAt: number;
+    updatedAt: number;
+    counts: AgentStackInventoryCounts;
+    deltas: {
+      uniqueSkillNames: number;
+      uniqueRealSkillFiles: number;
+      missingFromYoumdCatalog: number;
+      duplicateNameDifferentRealpaths: number;
+    };
+    stale: boolean;
+    staleByMs: number;
+    status: string;
+    issues: string[];
+    repairCommands: string[];
+    secretValuesExposed: boolean;
+  }>;
+  secretValuesExposed: false;
+}
+
 export async function savePortfolioTask(
   payload: PortfolioTaskPayload
 ): Promise<ApiResponse<PortfolioWriteResult>> {
@@ -1199,6 +1253,17 @@ export async function getAgentStackInventories(opts?: {
   if (opts?.limit) params.set("limit", String(opts.limit));
   const qs = params.toString();
   return apiRequest<{ inventories: SyncedAgentStackInventory[] }>(`/api/v1/me/agent-stack/inventories${qs ? `?${qs}` : ""}`, {
+    token: getToken(),
+  });
+}
+
+export async function getAgentStackInventoryDrift(opts?: {
+  limit?: number;
+}): Promise<ApiResponse<AgentStackInventoryDrift>> {
+  const params = new URLSearchParams();
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return apiRequest<AgentStackInventoryDrift>(`/api/v1/me/agent-stack/drift${qs ? `?${qs}` : ""}`, {
     token: getToken(),
   });
 }
