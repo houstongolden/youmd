@@ -17,8 +17,12 @@ describe("install.sh route", () => {
     const script = await response.text();
 
     expect(script).toContain('NPM_GLOBAL_PREFIX=""');
+    expect(script).toContain('PACKAGE="youmd@$CLI_VERSION"');
     expect(script).toContain("npm_install_global()");
     expect(script).toContain('npm install -g --prefix "$NPM_GLOBAL_PREFIX" "$@"');
+    expect(script).toContain('PATH_WITHOUT_YOUMD=""');
+    expect(script).toContain('[ "$BIN_PATH" != "$YOUMD_BIN_DIR/$BIN_NAME" ]');
+    expect(script).toContain("hash -r");
     expect(script).toContain("Creating secret-safe local agent stack inventory");
     expect(script).toContain('youmd skill inventory --out-dir "$INVENTORY_DIR" --sync');
     expect(script).toContain('YOUMD_INSTALL_INVENTORY:-1');

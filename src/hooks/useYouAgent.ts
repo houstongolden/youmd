@@ -163,7 +163,7 @@ DAYS="\${YOUMD_ACTIVE_DAYS:-30}"
 EXPAND_DAYS="\${YOUMD_EXPAND_ACTIVE_DAYS:-90}"
 LIMIT="\${YOUMD_PROJECT_LIMIT:-80}"
 HYDRATE_TIMEOUT="\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}"
-MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.7}"
+MIN_YOUMD_VERSION="\${YOUMD_MIN_VERSION:-0.8.11}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -200,7 +200,7 @@ ensure_youmd_min_version() {
   installed="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
   echo "[you.md] installed version after forced source install: \${installed:-unknown}"
   if [ -z "$installed" ] || ! version_at_least "$installed" "$MIN_YOUMD_VERSION"; then
-    echo "[you.md] youmd \${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, and fresh-machine restore. npm latest may still be behind; rerun after this commit is deployed or install from GitHub main." >&2
+    echo "[you.md] youmd \${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore. npm latest may still be behind; rerun after this commit is deployed or install from GitHub main." >&2
     exit 1
   fi
 }

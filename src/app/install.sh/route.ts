@@ -8,8 +8,8 @@ function buildInstallerScript() {
   return `#!/usr/bin/env bash
 set -euo pipefail
 
-PACKAGE="youmd@latest"
 CLI_VERSION="${cliVersion}"
+PACKAGE="youmd@$CLI_VERSION"
 REPO_URL="\${YOUMD_REPO_URL:-https://github.com/houstongolden/youmd.git}"
 INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-source}"
 SOURCE_REF="\${YOUMD_SOURCE_REF:-main}"
@@ -88,13 +88,36 @@ link_runtime_bins() {
     if [ -x "$YOUMD_NPM_PREFIX/bin/$BIN_NAME" ]; then
       BIN_PATH="$YOUMD_NPM_PREFIX/bin/$BIN_NAME"
     else
-      BIN_PATH="$(command -v "$BIN_NAME" 2>/dev/null || true)"
+      BIN_PATH=""
+      NPM_PREFIX="$(npm prefix -g 2>/dev/null || true)"
+      NPM_BIN_DIR="\${NPM_PREFIX:+$NPM_PREFIX/bin}"
+      if [ -n "$NPM_BIN_DIR" ] && [ -x "$NPM_BIN_DIR/$BIN_NAME" ]; then
+        BIN_PATH="$NPM_BIN_DIR/$BIN_NAME"
+      else
+        OLD_PATH="$PATH"
+        PATH_WITHOUT_YOUMD=""
+        IFS=:
+        for PATH_PART in $OLD_PATH; do
+          if [ "$PATH_PART" != "$YOUMD_BIN_DIR" ]; then
+            if [ -z "$PATH_WITHOUT_YOUMD" ]; then
+              PATH_WITHOUT_YOUMD="$PATH_PART"
+            else
+              PATH_WITHOUT_YOUMD="$PATH_WITHOUT_YOUMD:$PATH_PART"
+            fi
+          fi
+        done
+        unset IFS
+        PATH="$PATH_WITHOUT_YOUMD"
+        BIN_PATH="$(command -v "$BIN_NAME" 2>/dev/null || true)"
+        PATH="$OLD_PATH"
+      fi
     fi
-    if [ -n "$BIN_PATH" ]; then
+    if [ -n "$BIN_PATH" ] && [ "$BIN_PATH" != "$YOUMD_BIN_DIR/$BIN_NAME" ]; then
       ln -sf "$BIN_PATH" "$YOUMD_BIN_DIR/$BIN_NAME"
     fi
   done
   prepend_path_once "$YOUMD_BIN_DIR"
+  hash -r 2>/dev/null || true
 }
 
 persist_user_path_hint() {
