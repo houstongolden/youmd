@@ -49,17 +49,6 @@ type PortfolioActivity = {
   occurredAt: number;
 };
 
-type BrainDumpCapture = {
-  _id: Id<"brainDumpCaptures">;
-  source: string;
-  rawText: string;
-  summary?: string;
-  insights?: string[];
-  projectSlugs?: string[];
-  tags?: string[];
-  createdAt: number;
-};
-
 const DONE_STATUSES = new Set(["done", "cancelled"]);
 const PRIORITY_WEIGHT: Record<string, number> = {
   urgent: 0,
@@ -340,97 +329,6 @@ function TaskBoardColumn({
   );
 }
 
-function ProjectPulse({ projects }: { projects: PortfolioProject[] }) {
-  return (
-    <section>
-      <PaneSectionLabel>active project focus</PaneSectionLabel>
-      {projects.length === 0 ? (
-        <div className="border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/30 px-4 py-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
-          no focused projects saved yet
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {projects.slice(0, 6).map((project) => (
-            <div key={project.slug} className="grid gap-3 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 md:grid-cols-[0.7fr_1fr_auto]">
-              <div>
-                <div className="font-mono text-[11px] text-[hsl(var(--text-primary))]">{project.name}</div>
-                <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-65">
-                  {project.focusStatus ?? project.status}
-                </div>
-              </div>
-              <p className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
-                {project.summary ?? project.stackName ?? "No project summary saved yet."}
-              </p>
-              <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-40">
-                {relativeTime(project.lastActivityAt ?? project.updatedAt)}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ActivityPulse({ activities }: { activities: PortfolioActivity[] }) {
-  return (
-    <section>
-      <PaneSectionLabel>shipped / moved recently</PaneSectionLabel>
-      {activities.length === 0 ? (
-        <div className="border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/30 px-4 py-3 font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
-          no recent shipping events in the portfolio graph yet
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {activities.slice(0, 6).map((activity) => (
-            <div key={`${activity.projectSlug}-${activity.kind}-${activity.occurredAt}-${activity.title}`} className="grid gap-3 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 md:grid-cols-[0.7fr_1fr_auto]">
-              <div>
-                <div className="font-mono text-[11px] text-[hsl(var(--text-primary))]">{activity.title}</div>
-                <div className="mt-1 font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-65">
-                  {activity.projectSlug} / {activity.kind}
-                </div>
-              </div>
-              <p className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
-                {activity.summary ?? activity.source}
-              </p>
-              <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-40">
-                {relativeTime(activity.occurredAt)}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function CapturePulse({ captures }: { captures: BrainDumpCapture[] }) {
-  if (captures.length === 0) return null;
-  return (
-    <>
-      <PaneDivider />
-      <section>
-        <PaneSectionLabel>latest brain dumps</PaneSectionLabel>
-        <div className="space-y-2">
-          {captures.slice(0, 4).map((capture) => (
-            <div key={capture._id} className="grid gap-3 border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-3 md:grid-cols-[0.8fr_1fr_auto]">
-              <div className="font-mono text-[11px] text-[hsl(var(--text-primary))]">
-                {capture.summary ?? capture.rawText.slice(0, 96)}
-              </div>
-              <div className="font-mono text-[9.5px] leading-4 text-[hsl(var(--text-secondary))] opacity-50">
-                {(capture.insights ?? []).slice(0, 2).join(" / ") || capture.rawText.slice(0, 140)}
-              </div>
-              <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-65">
-                {(capture.projectSlugs ?? []).join(", ") || "personal"}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
 function useTaskActions(clerkId?: string) {
   const updateTaskTriage = useMutation(api.portfolio.updateTaskTriage);
   const updateTaskDetails = useMutation(api.portfolio.updateTaskDetails);
@@ -490,65 +388,6 @@ function partitionTasks(tasks: PortfolioTask[]) {
     agentTasks: openTasks.filter((task) => task.ownerType === "agent"),
     personalTasks: openTasks.filter((task) => !task.projectSlug),
   };
-}
-
-function HomeSkillSyncProof({
-  readiness,
-  onOpenMachine,
-}: {
-  readiness: LocalMachineReadiness | null;
-  onOpenMachine?: () => void;
-}) {
-  const skillSync = readiness?.skillSync;
-  const proof = skillSync?.highlightedSkill;
-  const readyCount = proof
-    ? [
-        proof.canonicalPresent,
-        proof.renderedPresent,
-        proof.claudePresent,
-        proof.codexPresent,
-        proof.catalogPresent,
-        proof.stackMapPresent,
-      ].filter(Boolean).length
-    : 0;
-
-  return (
-    <div className="border-l border-[hsl(var(--success))]/70 bg-[hsl(var(--bg))]/30 px-4 py-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-70">
-          live skill mesh
-        </span>
-        <span className={`ml-auto font-mono text-[8.5px] uppercase tracking-[0.14em] ${skillSync?.status === "ready" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}`}>
-          {skillSync?.status ?? "checking"}
-        </span>
-      </div>
-      <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="font-mono text-[15px] leading-tight text-[hsl(var(--text-primary))]">
-            {proof?.name ?? "project-clarity-audit"}
-          </div>
-          <p className="mt-2 max-w-3xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
-            A shared skill created on one Mac is now a canonical agent capability across trusted machines, Claude, Codex, and the You.md catalog.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-45">
-            {skillSync
-              ? `${skillSync.canonicalCount} shared / ${skillSync.claudeMirrorCount} claude / ${skillSync.codexMirrorCount} codex / ${readyCount}/6 proof`
-              : "reading local sync state"}
-          </span>
-          <button
-            type="button"
-            onClick={onOpenMachine}
-            className="h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]"
-            style={{ borderRadius: "var(--radius)" }}
-          >
-            machine proof
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function HomeDsiViewProof({
@@ -719,6 +558,106 @@ function HomeOperatingMesh({
   );
 }
 
+function HomeFocusPanel({
+  humanTasks,
+  agentTasks,
+  focusedProjects,
+  recentActivity,
+  onOpenTasks,
+  onOpenPortfolio,
+}: {
+  humanTasks: PortfolioTask[];
+  agentTasks: PortfolioTask[];
+  focusedProjects: PortfolioProject[];
+  recentActivity: PortfolioActivity[];
+  onOpenTasks?: () => void;
+  onOpenPortfolio?: () => void;
+}) {
+  const nextHumanTask = humanTasks[0];
+  const nextAgentTask = agentTasks[0];
+  const topProject = focusedProjects[0];
+  const latestActivity = recentActivity[0];
+  const rows = [
+    {
+      label: "needs Houston",
+      value: humanTasks.length,
+      title: nextHumanTask?.title ?? "nothing waiting on you",
+      detail: nextHumanTask ? `${taskScope(nextHumanTask)} / ${nextHumanTask.status.replace("_", " ")}` : "clean lane",
+      action: "tasks",
+      onClick: onOpenTasks,
+    },
+    {
+      label: "agent queue",
+      value: agentTasks.length,
+      title: nextAgentTask?.title ?? "no agent-owned work waiting",
+      detail: nextAgentTask ? `${taskScope(nextAgentTask)} / ${nextAgentTask.status.replace("_", " ")}` : "ready for a new assignment",
+      action: "tasks",
+      onClick: onOpenTasks,
+    },
+    {
+      label: "focus project",
+      value: focusedProjects.length,
+      title: topProject?.name ?? "no focused project selected",
+      detail: topProject ? `${topProject.focusStatus ?? topProject.status} / ${relativeTime(topProject.lastActivityAt ?? topProject.updatedAt)}` : "open portfolio to set focus",
+      action: "projects",
+      onClick: onOpenPortfolio,
+    },
+    {
+      label: "latest signal",
+      value: recentActivity.length,
+      title: latestActivity?.title ?? "activity stream is quiet",
+      detail: latestActivity ? `${latestActivity.projectSlug} / ${relativeTime(latestActivity.occurredAt)}` : "open live log for the full stream",
+      action: "projects",
+      onClick: onOpenPortfolio,
+    },
+  ];
+
+  return (
+    <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/30 px-4 py-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div>
+          <PaneSectionLabel>focus router</PaneSectionLabel>
+          <h3 className="font-mono text-[16px] leading-tight text-[hsl(var(--text-primary))]">
+            Today&apos;s lanes
+          </h3>
+        </div>
+        <button
+          type="button"
+          onClick={onOpenTasks}
+          className="ml-auto h-8 cursor-pointer border border-[hsl(var(--border))]/70 px-3 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] transition-colors hover:border-[hsl(var(--accent))]"
+          style={{ borderRadius: "var(--radius)" }}
+        >
+          open board
+        </button>
+      </div>
+      <div className="mt-3 divide-y divide-[hsl(var(--border))]/45">
+        {rows.map((row) => (
+          <button
+            key={row.label}
+            type="button"
+            onClick={row.onClick}
+            className="grid w-full cursor-pointer gap-3 py-3 text-left transition-opacity hover:opacity-85 md:grid-cols-[92px_minmax(0,1fr)_auto]"
+          >
+            <div>
+              <div className="font-mono text-[18px] leading-none text-[hsl(var(--text-primary))]">{row.value}</div>
+              <div className="mt-1 font-mono text-[8px] uppercase tracking-[0.15em] text-[hsl(var(--text-secondary))] opacity-42">
+                {row.label}
+              </div>
+            </div>
+            <div className="min-w-0">
+              <div className="truncate font-mono text-[11px] text-[hsl(var(--text-primary))]">{row.title}</div>
+              <div className="mt-1 truncate font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-45">{row.detail}</div>
+            </div>
+            <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-[hsl(var(--accent))] opacity-75">
+              {row.action}
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function HomePane({
   clerkId,
   onOpenPane,
@@ -729,13 +668,11 @@ export function HomePane({
   const graph = useQuery(api.portfolio.listPortfolioGraph, clerkId ? { clerkId } : "skip");
   const dsiView = useQuery(api.dsi.getDefaultHomeView, clerkId ? { clerkId } : "skip");
   const ensureDefaultHomeView = useMutation(api.dsi.ensureDefaultHomeView);
-  const { busyTaskId, statusLine, setStatus, setOwner, setPersonal } = useTaskActions(clerkId);
   const [machineReadiness, setMachineReadiness] = useState<LocalMachineReadiness | null>(null);
 
   const tasks = useMemo(() => (graph?.tasks ?? []) as PortfolioTask[], [graph?.tasks]);
   const projects = useMemo(() => (graph?.projects ?? []) as PortfolioProject[], [graph?.projects]);
   const activities = useMemo(() => (graph?.projectActivities ?? []) as PortfolioActivity[], [graph?.projectActivities]);
-  const captures = useMemo(() => (graph?.recentCaptures ?? []) as BrainDumpCapture[], [graph?.recentCaptures]);
   const { openTasks, humanTasks, agentTasks, personalTasks } = useMemo(() => partitionTasks(tasks), [tasks]);
   const focusedProjects = useMemo(() => {
     return projects
@@ -813,13 +750,6 @@ export function HomePane({
           <MiniStat value={focusedProjects.length} label="focused projects" />
         </div>
 
-        <HomeSkillSyncProof readiness={machineReadiness} onOpenMachine={() => onOpenPane?.("machine")} />
-        <HomeDsiViewProof
-          dsiView={dsiView}
-          onOpenMachine={() => onOpenPane?.("machine")}
-          onOpenTasks={() => onOpenPane?.("tasks")}
-          onOpenSkills={() => onOpenPane?.("skills")}
-        />
         <HomeOperatingMesh
           readiness={machineReadiness}
           projects={projects}
@@ -828,47 +758,26 @@ export function HomePane({
           onOpenMachine={() => onOpenPane?.("machine")}
           onOpenAgents={() => onOpenPane?.("agents")}
         />
-
-        {statusLine && (
-          <div className="border-l border-[hsl(var(--accent))]/70 bg-[hsl(var(--accent))]/[0.035] px-4 py-2 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[hsl(var(--accent))]">
-            {statusLine}
-          </div>
-        )}
+        <HomeFocusPanel
+          humanTasks={humanTasks}
+          agentTasks={agentTasks}
+          focusedProjects={focusedProjects}
+          recentActivity={recentActivity}
+          onOpenTasks={() => onOpenPane?.("tasks")}
+          onOpenPortfolio={() => onOpenPane?.("portfolio")}
+        />
+        <HomeDsiViewProof
+          dsiView={dsiView}
+          onOpenMachine={() => onOpenPane?.("machine")}
+          onOpenTasks={() => onOpenPane?.("tasks")}
+          onOpenSkills={() => onOpenPane?.("skills")}
+        />
 
         {graph === undefined ? (
           <PaneEmptyState>loading your project and task graph...</PaneEmptyState>
         ) : openTasks.length === 0 && focusedProjects.length === 0 ? (
           <PaneEmptyState>no active tasks or focused projects yet</PaneEmptyState>
-        ) : (
-          <>
-            <TaskQueue
-              label="needs Houston"
-              tasks={humanTasks.slice(0, 5)}
-              empty="no human-owned tasks waiting"
-              busyTaskId={busyTaskId}
-              onStatus={setStatus}
-              onOwner={setOwner}
-              onPersonal={setPersonal}
-              compact
-            />
-            <PaneDivider />
-            <TaskQueue
-              label="agent queue"
-              tasks={agentTasks.slice(0, 5)}
-              empty="no agent-owned tasks waiting"
-              busyTaskId={busyTaskId}
-              onStatus={setStatus}
-              onOwner={setOwner}
-              onPersonal={setPersonal}
-              compact
-            />
-            <PaneDivider />
-            <ProjectPulse projects={focusedProjects} />
-            <PaneDivider />
-            <ActivityPulse activities={recentActivity} />
-            <CapturePulse captures={captures} />
-          </>
-        )}
+        ) : null}
       </div>
     </>
   );

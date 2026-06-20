@@ -57,6 +57,7 @@ PRD Version: 2.3
 - [x] Keep task routing actions available in both board cards and list rows
 - [x] Foreground the Machine You sync mesh on Home with live local readiness, skill, agent-bus, vault, project, task, and shipping signals
 - [x] Reframe Home as the default DSI View surface rather than a static dashboard tab
+- [x] Remove duplicated Home task queues, project/activity rows, brain-dump rows, and extra skill-mesh proof block in favor of one focus router plus drill-ins
 - [ ] Next pass: consolidate Analytics/Activity/Stats/Live Log into one clearer Brain Activity surface with project/skill/entity click targets
 - [ ] Next pass: add a cleaner Skills matrix showing custom skills by project, stack, machine/environment, and latest activity
 - [ ] Next pass: add the actual DSI widget catalog/editor so the You Agent can persist custom Home widgets from chat

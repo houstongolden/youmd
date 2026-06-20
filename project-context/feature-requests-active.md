@@ -41,13 +41,14 @@ Last Updated: 2026-06-20
 **Actionable Scope:**
 1. Make Tasks a proper project-management surface, not only a list. **DONE first slice:** board/list modes, project/personal filter, search, owner/status/scope filters, and Kanban columns for doing/ready/proposed/later/done/killed.
 2. Keep personal tasks and project tasks in one router with explicit human/agent ownership. **DONE existing + preserved:** board cards and list rows keep `me`, `agent`, `doing`, `done`, and `personal` actions.
-3. Make Home more customizable and DSI-oriented. **DONE first slice:** Home now frames itself as the default saved live View and links into task board, mesh proof, and skills.
+3. Make Home more customizable and DSI-oriented. **DONE first slice:** Home now frames itself as the default saved live View and links into task board, mesh proof, and skills. **DONE minimal-surface follow-up:** Home no longer duplicates full Tasks/Portfolio/Activity detail rows and instead uses a compact focus router.
 4. Foreground the Machine You sync mesh and agent/machine activity on Home. **DONE first slice:** Home shows daemon count, shared skill count, agent-bus messages, vault snapshot status, focused projects, open tasks, and latest shipping signal from safe local readiness/portfolio data.
 5. Clean up the left IA so core surfaces are obvious and advanced/system details do not create tab soup. **OPEN.**
 6. Build a clean custom skills view showing skills by project, stack, machine/environment, and latest activity. **OPEN.**
 7. Consolidate Analytics, Activity, Stats, Live Log, history, and feed surfaces into one clearer Brain Activity surface. **OPEN.**
 8. Add an actual DSI widget catalog/editor so the You Agent can create/modify Home Views from chat. **OPEN.**
 **Progress (2026-06-19):** Upgraded `TasksPane` to board-first Kanban with list mode retained, project/personal filtering, search, owner/status/scope filters, project display names, and compact task cards. Added `HomeOperatingMesh` so Home foregrounds real local readiness and brain/activity signals instead of burying machines/agents under Settings. Production build and type checks pass.
+**Progress (2026-06-20 minimal-surface follow-up):** Removed Home's duplicate compact task queues, project pulse, activity pulse, brain-dump pulse, and separate skill-mesh proof block. Added a single focus router that surfaces the next Houston-owned task, agent-owned task, focus project, and latest project signal, with drill-ins to Tasks and Portfolio while Machine keeps the mesh proof.
 
 ### 142. Add personality to the sync mesh and define You.md as a Dynamic Software Interface
 **Status:** IN PROGRESS / FIRST UI + PERSISTED HOME VIEW SLICE COMPLETE

@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(home): reduce duplicated activity surfaces
+- Home no longer renders duplicate task queues, project pulse rows, activity pulse rows, brain-dump rows, or a second skill-mesh proof block.
+- Added a compact focus router that summarizes the next human task, agent task, focused project, and latest project signal, then routes into Tasks or Portfolio for detail.
+- Kept Machine mesh and DSI proof on Home while letting Tasks, Machine, Portfolio, and Live Log own their detailed views.
+
 ### feat(machine): render real synced brain graph
 - Machine readiness now renders a compact synced brain graph above the proof tables, using real local readiness, synced machine proofs, Convex `brainActivities`, agent-bus state, skill mirror counts, project readiness, daemon status, and Secret Vault metadata.
 - Graph nodes only show live/pulse states when backed by recent activity timestamps, active agent-bus/realtime state, or ready proof metadata; no decorative/fake activity is generated.
