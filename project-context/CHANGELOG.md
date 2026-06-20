@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### perf(machine): cache local readiness scans
+- Added in-process caching and request dedupe to `/api/local/machine-readiness` so Home, Machine, and shell summary reads share one local readiness scan instead of stacking filesystem/daemon checks.
+- Passive reads get a 30-second fresh cache and up to 5-minute stale response while a background refresh runs; Machine's explicit refresh button uses `refresh=1` to force a real proof scan.
+- Slowed the dashboard shell background readiness poll from every 10 seconds to every 60 seconds.
+- Verified with `npm run build`, `git diff --check`, and an authenticated localhost smoke: first call `miss` took 5.56s, immediate repeat calls returned `fresh` in 0.50s and 0.40s.
+
 ### refactor(sync): share the synced brain graph surface
 - Extracted the Machine tab's real synced brain graph into `src/components/sync/SyncedBrainGraph.tsx` so Home, Skills, Machine, and future Tauri surfaces can reuse one visual primitive instead of growing separate graph panels.
 - Added a shared `machineBrainGraphModel` adapter for local readiness, synced proofs, Convex `brainActivities`, agent bus, skills, projects, daemons, Secret Vault metadata, and optional portfolio context.

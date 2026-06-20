@@ -677,7 +677,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/local/machine-readiness?root=${rootMode}`, {
+      const response = await fetch(`/api/local/machine-readiness?root=${rootMode}&refresh=1`, {
         cache: "no-store",
         credentials: "include",
       });

@@ -1358,7 +1358,7 @@ export function DashboardContent() {
     };
 
     loadMachineReadiness();
-    const interval = window.setInterval(loadMachineReadiness, 10000);
+    const interval = window.setInterval(loadMachineReadiness, 60000);
     return () => {
       cancelled = true;
       window.clearInterval(interval);
