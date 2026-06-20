@@ -35,7 +35,7 @@ import {
 import { loadIdentityData, resolveVariable, renderSkillTemplate } from "../lib/skill-renderer";
 import { BrailleSpinner, renderRichResponse } from "../lib/render";
 import { isAuthenticated } from "../lib/config";
-import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, recordBrainActivity, syncAgentStackInventory, type AgentStackInventorySyncPayload, type SkillInsight } from "../lib/api";
+import { apiErrorMessage, browseSkills, publishSkill as apiPublishSkill, getMySkills, getRegistrySkill, getSkillInsights, getFleetSnapshot, getAgentStackInventories, recordBrainActivity, syncAgentStackInventory, type AgentStackInventorySyncPayload, type SkillInsight, type SyncedAgentStackInventory } from "../lib/api";
 import { readSkillFile, getSkillDir } from "../lib/skills";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 
@@ -188,9 +188,17 @@ function inventoryNames(snapshot: InventorySnapshot): Set<string> {
   return new Set((snapshot.uniqueSkills || []).map((skill) => skill.name).filter(Boolean) as string[]);
 }
 
-function findLatestInventoryJson(outDir: string, sinceMs: number): string | null {
+function sortInventoryJsonPaths(files: string[]): string[] {
+  return files.sort((a, b) => {
+    const delta = fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs;
+    if (delta !== 0) return delta;
+    return path.basename(b).localeCompare(path.basename(a));
+  });
+}
+
+function findLatestInventoryJson(outDir: string, sinceMs = 0): string | null {
   if (!fs.existsSync(outDir)) return null;
-  const files = fs.readdirSync(outDir)
+  const files = sortInventoryJsonPaths(fs.readdirSync(outDir)
     .filter((file) => /^local-agent-stack-inventory-.*\.json$/.test(file))
     .map((file) => path.join(outDir, file))
     .filter((file) => {
@@ -199,8 +207,7 @@ function findLatestInventoryJson(outDir: string, sinceMs: number): string | null
       } catch {
         return false;
       }
-    })
-    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+    }));
   return files[0] || null;
 }
 
@@ -221,6 +228,33 @@ function renderInventoryTotals(totals: InventoryTotals): void {
     if (typeof value !== "number") continue;
     console.log(`  ${DIM(label.padEnd(maxLabel + 2))}${chalk.cyan(value.toLocaleString())}`);
   }
+}
+
+function compactDate(value?: string | number): string {
+  if (typeof value === "string" && value) return value.replace(/\.\d{3}Z$/, "Z");
+  if (typeof value === "number" && Number.isFinite(value)) return new Date(value).toISOString().replace(/\.\d{3}Z$/, "Z");
+  return "unknown";
+}
+
+function inventoryTotalsFromSynced(row: SyncedAgentStackInventory): InventoryTotals {
+  return {
+    uniqueSkillNames: row.uniqueSkillNames,
+    uniqueRealSkillFiles: row.uniqueRealSkillFiles,
+    directExposureSkillRecords: row.directExposureSkillRecords,
+    canonicalSkillFiles: row.canonicalSkillFiles,
+    youmdCatalogSkills: row.youmdCatalogSkills,
+    missingFromYoumdCatalog: row.missingFromYoumdCatalog,
+    duplicateNameDifferentRealpaths: row.duplicateNameDifferentRealpaths,
+    sameRealpathMirrors: row.sameRealpathMirrors,
+    projectSignals: row.projectSignals,
+  };
+}
+
+function inventoryDelta(localValue: number | undefined, remoteValue: number | undefined): string {
+  if (typeof localValue !== "number" || typeof remoteValue !== "number") return DIM("?");
+  const delta = remoteValue - localValue;
+  if (delta === 0) return chalk.green("0");
+  return delta > 0 ? chalk.green(`+${delta}`) : ACCENT(String(delta));
 }
 
 function inventoryHostName(snapshot: InventorySnapshot): string {
@@ -1400,9 +1434,148 @@ function inventoryDiffCmd(args: string[]): void {
   console.log("");
 }
 
+async function inventoryStatusCmd(args: string[]): Promise<void> {
+  const { flags } = parseFlagArgs(args);
+  const outDir = path.resolve(flagString(flags, "out-dir") || path.join(os.homedir(), ".youmd", "agent-stack-inventory"));
+  const limitRaw = flagString(flags, "limit");
+  const limit = limitRaw && Number.isFinite(Number(limitRaw))
+    ? Math.max(1, Math.min(50, Math.trunc(Number(limitRaw))))
+    : 12;
+  const jsonOutput = flags.json === true;
+  const latestPath = findLatestInventoryJson(outDir);
+  const local = latestPath ? readInventorySnapshot(latestPath) : null;
+  const localTotals = local?.totals || {};
+
+  if (!isAuthenticated()) {
+    if (jsonOutput) {
+      console.log(JSON.stringify({
+        success: false,
+        error: "not_authenticated",
+        repair: "youmd login",
+        secretValuesExposed: false,
+      }, null, 2));
+      return;
+    }
+    console.log("");
+    console.log(chalk.yellow("  not authenticated. run: ") + chalk.cyan("youmd login"));
+    console.log(DIM("  then: ") + chalk.cyan("youmd skill inventory status"));
+    console.log("");
+    return;
+  }
+
+  const res = await getAgentStackInventories({ limit });
+  if (!res.ok) {
+    const message = apiErrorMessage(res.data) || `HTTP ${res.status}`;
+    if (jsonOutput) {
+      console.log(JSON.stringify({
+        success: false,
+        error: message,
+        secretValuesExposed: false,
+      }, null, 2));
+      return;
+    }
+    console.log("");
+    console.log(chalk.yellow(`  inventory status unavailable: ${message}`));
+    console.log("");
+    return;
+  }
+
+  const inventories = res.data?.inventories ?? [];
+  if (jsonOutput) {
+    console.log(JSON.stringify({
+      success: true,
+      local: local
+        ? {
+            path: latestPath,
+            hostName: inventoryHostName(local),
+            generatedAt: local.generatedAt,
+            rootDir: local.roots?.workspace || local.repoRoot,
+            totals: localTotals,
+          }
+        : null,
+      inventories,
+      secretValuesExposed: false,
+    }, null, 2));
+    return;
+  }
+
+  console.log("");
+  console.log("  " + chalk.bold("skill inventory status"));
+  console.log("");
+  if (local && latestPath) {
+    console.log(`  ${DIM("local latest")} ${chalk.cyan(inventoryHostName(local))}${DIM(local.generatedAt ? ` · ${compactDate(local.generatedAt)}` : "")}`);
+    console.log(`  ${DIM("local json  ")} ${chalk.cyan(latestPath)}`);
+    if (localTotals) {
+      console.log(
+        `  ${DIM("local counts")} ` +
+        `${chalk.cyan(String(localTotals.uniqueSkillNames ?? "?"))} skills · ` +
+        `${chalk.cyan(String(localTotals.uniqueRealSkillFiles ?? "?"))} files · ` +
+        `${ACCENT(String(localTotals.missingFromYoumdCatalog ?? 0))} catalog gaps · ` +
+        `${ACCENT(String(localTotals.duplicateNameDifferentRealpaths ?? 0))} DRY reviews`
+      );
+    }
+  } else {
+    console.log(chalk.yellow("  local latest: missing"));
+    console.log(DIM("  repair: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --sync`));
+  }
+
+  console.log("");
+  if (inventories.length === 0) {
+    console.log(chalk.yellow("  no synced machine inventories found yet."));
+  } else {
+    const rows = inventories.map((row) => {
+      const totals = inventoryTotalsFromSynced(row);
+      const localHost = local ? inventoryHostName(local) : "";
+      const sameHost = localHost && row.hostName === localHost;
+      return {
+        row,
+        totals,
+        marker: sameHost ? "*" : " ",
+      };
+    });
+    console.log(`  ${DIM("synced machines")} ${chalk.cyan(String(inventories.length))}${DIM(` · limit ${limit}`)}`);
+    console.log("");
+    console.log(
+      `  ${DIM("  host".padEnd(26))}` +
+      `${DIM("updated".padEnd(22))}` +
+      `${DIM("skills".padStart(8))}` +
+      `${DIM(" files".padStart(8))}` +
+      `${DIM(" gaps".padStart(8))}` +
+      `${DIM(" dry".padStart(7))}` +
+      `${DIM(" Δskills".padStart(10))}`
+    );
+    for (const { row, totals, marker } of rows) {
+      const host = `${marker} ${row.hostName}`.slice(0, 25).padEnd(26);
+      const updated = compactDate(row.updatedAt).slice(0, 21).padEnd(22);
+      console.log(
+        `  ${chalk.cyan(host)}` +
+        `${DIM(updated)}` +
+        `${String(totals.uniqueSkillNames ?? "?").padStart(8)}` +
+        `${String(totals.uniqueRealSkillFiles ?? "?").padStart(8)}` +
+        `${String(totals.missingFromYoumdCatalog ?? "?").padStart(8)}` +
+        `${String(totals.duplicateNameDifferentRealpaths ?? "?").padStart(7)}` +
+        `${inventoryDelta(localTotals.uniqueSkillNames, totals.uniqueSkillNames).padStart(10)}`
+      );
+      if (row.rootDir) console.log(`  ${DIM("  root")} ${DIM(row.rootDir)}`);
+    }
+    console.log("");
+    console.log(DIM("  * matches this machine's local latest host name"));
+  }
+
+  console.log("");
+  console.log(DIM("  refresh: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --sync`));
+  console.log(DIM("  verify:  ") + chalk.cyan("youmd machine verify --write-report --sync-report"));
+  console.log(DIM("  exact diff needs two local JSON files: ") + chalk.cyan("youmd skill inventory diff macbook.json mac-mini.json"));
+  console.log("");
+}
+
 async function inventoryCmd(args: string[]): Promise<void> {
   if (args[0] === "diff") {
     inventoryDiffCmd(args.slice(1));
+    return;
+  }
+  if (args[0] === "status" || args[0] === "remote" || args[0] === "machines") {
+    await inventoryStatusCmd(args.slice(1));
     return;
   }
 
@@ -1937,6 +2110,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       console.log(`    ${chalk.cyan("inventory [--out-dir dir]".padEnd(28))} ${DIM("map local/global skills, mirrors, catalog gaps, and DRY risks")}`);
       console.log(`    ${chalk.cyan("inventory --sync".padEnd(28))} ${DIM("persist safe inventory metadata to Convex + repo snapshot")}`);
       console.log(`    ${chalk.cyan("inventory --no-repo-sync".padEnd(28))} ${DIM("skip GitHub snapshot push when syncing inventory")}`);
+      console.log(`    ${chalk.cyan("inventory status".padEnd(28))} ${DIM("show synced machine inventory summaries and count drift")}`);
       console.log(`    ${chalk.cyan("inventory diff <a> <b>".padEnd(28))} ${DIM("compare two machine inventory JSON snapshots")}`);
       console.log(`    ${chalk.cyan("metrics".padEnd(28))} ${DIM("usage stats and effectiveness scores")}`);
       console.log(`    ${chalk.cyan("search <query>".padEnd(28))} ${DIM("search skills by name or description")}`);

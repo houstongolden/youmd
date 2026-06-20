@@ -33,6 +33,7 @@ PRD Version: 2.3
 - [x] Harden install-time inventory scanning with bounded traversal, repeated-scan caching, and visible `walkIssues`
 - [x] Teach `youmd machine verify` to load the latest local agent-stack inventory proof and include skill mesh counts/report paths in the secret-safe machine proof JSON
 - [x] Add first app-facing Skill Mesh view under Skills for synced machine inventory counts, ownership/provenance rollups, catalog gaps, DRY queues, mirror clusters, and verification commands
+- [x] Add `youmd skill inventory status` for local-vs-synced machine inventory rows, count drift, JSON output, and exact Mac-to-Mac refresh/verify/diff commands
 - [ ] Next pass: publish `youmd@0.8.11` to npm, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [ ] Next pass: add richer API/MCP drift query models and optional MCP resources for agent stack topology

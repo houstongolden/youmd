@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(skills): show synced inventory status
+- Added `youmd skill inventory status` with aliases `remote` and `machines`.
+- The command reads the latest local `~/.youmd/agent-stack-inventory` proof, lists synced Convex machine inventory summaries, shows count drift against local skill totals, and prints the exact refresh/verify/diff commands for Mac-to-Mac proof.
+- Added `--json`, `--limit`, and `--out-dir` support for agent use and app integration.
+- Verified with CLI TypeScript build, compiled human/JSON command smokes, a bounded local inventory generation + sync into `~/.youmd/agent-stack-inventory`, and `git diff --check`.
+
 ### feat(sync): refresh Skill Mesh from resident daemon
 - Added a bounded resident inventory lane to `youmd sync --live --daemon`.
 - The live daemon now runs `youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --sync` every 30 minutes by default, so trusted machines keep safe Skill Mesh metadata synced into Convex/GitHub after initial curl setup.
