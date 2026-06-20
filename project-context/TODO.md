@@ -46,6 +46,7 @@ PRD Version: 2.3
 - [x] Broaden resident reconciliation beyond inventory summaries into safe repair actions for stale/divergent local Skill Mesh drift
 - [x] Lead dashboard, docs, postinstall, and local readiness command-copy surfaces with canonical `you` / `YOU_*` / `~/.you` while retaining legacy `youmd` compatibility aliases
 - [x] Add a Machine readiness proof/repair runbook and agent-bus repair receipt view so stale Mac setup can be diagnosed from the app
+- [x] Add a real synced brain graph to Machine readiness using local readiness, machine proofs, brain activity, agent bus, skill mesh, projects, daemons, and Secret Vault signals
 - [ ] Next pass: prove the repair runbook on the Mac mini after `youmd@0.8.12` is published and compare synced inventory/proof rows
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
@@ -88,6 +89,7 @@ PRD Version: 2.3
 - [x] Move the second-brain GitHub repo/update-history surface to the top of Settings and truncate noisy API/session sections
 - [x] Make Machine's new-computer setup block collapsible into a compact first-run row
 - [x] Add a foreground `you sync mesh` on Machine that summarizes real local/Convex signals for trusted machines, agent bus, shared skill mesh, project graph, and Secret Vault readiness
+- [x] Convert Machine's top mesh into a graph-first live surface with status-linked machine/agent/shell nodes and recent `brainActivities` firing rows
 - [x] Verify Machine collapse + sync mesh in the Codex in-app Browser with localhost readiness hydrated
 - [x] Simplify the shell chat history into an always-visible one-line list with no section icon, no toggle, no per-chat subtitles, and a 50-session first page
 - [x] Generate/backfill useful chat titles from first prompts or existing session summaries so the left rail reads like real chat history instead of raw ids

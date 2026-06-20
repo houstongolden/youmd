@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(machine): render real synced brain graph
+- Machine readiness now renders a compact synced brain graph above the proof tables, using real local readiness, synced machine proofs, Convex `brainActivities`, agent-bus state, skill mirror counts, project readiness, daemon status, and Secret Vault metadata.
+- Graph nodes only show live/pulse states when backed by recent activity timestamps, active agent-bus/realtime state, or ready proof metadata; no decorative/fake activity is generated.
+- Removed the older linear mesh strip so the graph becomes the primary minimal-surface view while detailed proof/runbook sections remain available below.
+
 ### feat(machine): surface proof repair runbook
 - Machine readiness now exposes a canonical copyable repair runbook: `you machine migrate-home --yes`, `you machine sync-now`, inventory refresh/sync, daemon install, vault share, and proof commands.
 - The agent-bus panel now highlights recent machine-sync/repair/vault receipts so cross-Mac setup has visible coordination evidence, not just daemon rows.

@@ -56,6 +56,37 @@ type SyncedMachineProof = {
   warnings: string[];
 };
 
+type SyncedBrainActivity = {
+  activityId: string;
+  source: string;
+  channel?: string | null;
+  kind?: string | null;
+  title: string;
+  status: "live" | "ok" | "warn" | "error" | "info";
+  occurredAt: number;
+  sourceHost?: string | null;
+  sourceAgent?: string | null;
+};
+
+type BrainGraphNode = {
+  id: string;
+  label: string;
+  value: string;
+  detail: string;
+  x: number;
+  y: number;
+  kind: "machine" | "agent" | "shell";
+  status: PixelCharacterStatus;
+  live: boolean;
+  tone: "success" | "accent" | "muted" | "danger";
+};
+
+type BrainGraphLink = {
+  from: string;
+  to: string;
+  active: boolean;
+};
+
 function statusClass(status: LocalReadinessStatus | LocalProjectReadiness["status"]) {
   if (status === "ready") return "text-[hsl(var(--success))]";
   if (status === "warn" || status === "needs-env" || status === "partial") return "text-[hsl(var(--accent))]";
@@ -89,6 +120,20 @@ function formatTime(value?: string | number) {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function isRecent(value?: string | number | null, minutes = 10) {
+  if (!value) return false;
+  const time = new Date(value).getTime();
+  if (!Number.isFinite(time)) return false;
+  return Date.now() - time < minutes * 60 * 1000;
+}
+
+function graphTone(status?: string): BrainGraphNode["tone"] {
+  if (status === "ready" || status === "active" || status === "live" || status === "ok") return "success";
+  if (status === "blocked" || status === "failed" || status === "missing" || status === "error") return "danger";
+  if (status === "warn" || status === "needs-env" || status === "partial" || status === "scope-missing") return "accent";
+  return "muted";
 }
 
 function StatCell({ label, value }: { label: string; value: string | number }) {
@@ -283,15 +328,245 @@ function MeshMetric({
   );
 }
 
+function SyncedBrainGraph({
+  report,
+  syncedProofs,
+  brainActivities,
+}: {
+  report: LocalMachineReadiness | null;
+  syncedProofs?: SyncedMachineProof[];
+  brainActivities?: SyncedBrainActivity[];
+}) {
+  const proofCount = syncedProofs?.length ?? 0;
+  const currentHost = report?.hostName ?? syncedProofs?.[0]?.hostName ?? "local";
+  const trustedHosts = Array.from(new Set((syncedProofs ?? []).map((proof) => proof.hostName).filter(Boolean))).slice(0, 3);
+  const recentActivities = (brainActivities ?? []).filter((activity) =>
+    activity.status === "live" || isRecent(activity.occurredAt, 12)
+  );
+  const agentBusLive = report?.agentBus?.state === "active" || isRecent(report?.agentBus?.latestMessageAt, 12);
+  const skillLive = report?.skillSync?.status === "ready" && isRecent(report.skillSync.highlightedSkill.updatedAt, 60 * 24);
+  const projectLive = (report?.summary.projectReady ?? 0) > 0;
+  const vaultLive = report?.envVault.accountSnapshotStatus === "ready" || isRecent(report?.envVault.accountSnapshotUpdatedAt, 60 * 24);
+  const realtimeLive = Boolean(report?.daemons.some((daemon) => daemon.label.endsWith(".realtime-sync") && daemon.loaded));
+  const status = report?.summary.status ?? syncedProofs?.[0]?.status ?? "unknown";
+  const nodeById = new Map<string, BrainGraphNode>();
+  const nodes: BrainGraphNode[] = [
+    {
+      id: "brain",
+      label: "you.md brain",
+      value: recentActivities.length > 0 ? `${recentActivities.length} live` : "ready",
+      detail: "Convex activity, identity, sync proof",
+      x: 50,
+      y: 46,
+      kind: "shell",
+      status: recentActivities.length > 0 || agentBusLive ? "active" : "ready",
+      live: recentActivities.length > 0 || agentBusLive,
+      tone: recentActivities.length > 0 || agentBusLive ? "success" : "muted",
+    },
+    {
+      id: "machines",
+      label: "trusted Macs",
+      value: `${Math.max(proofCount, trustedHosts.length || (report ? 1 : 0))}`,
+      detail: [currentHost, ...trustedHosts.filter((host) => host !== currentHost)].slice(0, 3).join(" / ") || "waiting for proof",
+      x: 18,
+      y: 20,
+      kind: "machine",
+      status: pixelStatus(status),
+      live: realtimeLive || isRecent(report?.generatedAt, 12),
+      tone: graphTone(status),
+    },
+    {
+      id: "skills",
+      label: "skills",
+      value: report?.skillSync ? `${report.skillSync.canonicalCount}` : "sync",
+      detail: report?.skillSync ? `${report.skillSync.codexMirrorCount} codex / ${report.skillSync.claudeMirrorCount} claude` : "no local skill proof yet",
+      x: 78,
+      y: 20,
+      kind: "agent",
+      status: pixelStatus(report?.skillSync?.status),
+      live: skillLive,
+      tone: graphTone(report?.skillSync?.status),
+    },
+    {
+      id: "projects",
+      label: "projects",
+      value: report ? `${report.summary.projectReady}/${report.summary.projectScanned}` : "scan",
+      detail: report ? `${report.summary.projectContext} contexts / ${report.summary.envLocal} env locals` : "local readiness not loaded",
+      x: 82,
+      y: 72,
+      kind: "shell",
+      status: pixelStatus(report?.summary.status),
+      live: projectLive && isRecent(report?.generatedAt, 30),
+      tone: graphTone(report?.summary.status),
+    },
+    {
+      id: "vault",
+      label: "vault",
+      value: report?.envVault.accountSnapshotStatus ?? "unknown",
+      detail: report?.envVault.latestAccountSnapshot
+        ? `${report.envVault.latestAccountSnapshot.projectCount ?? 0} projects / ${report.envVault.latestAccountSnapshot.variableCount ?? 0} vars`
+        : "encrypted metadata only",
+      x: 22,
+      y: 72,
+      kind: "shell",
+      status: pixelStatus(report?.envVault.accountSnapshotStatus),
+      live: vaultLive,
+      tone: graphTone(report?.envVault.accountSnapshotStatus),
+    },
+    {
+      id: "agents",
+      label: "agents",
+      value: report?.agentBus?.state ?? "quiet",
+      detail: report?.agentBus ? `${report.agentBus.recentCount} msgs / ${report.agentBus.channelCount} channels` : "agent bus not observed",
+      x: 50,
+      y: 10,
+      kind: "agent",
+      status: pixelStatus(report?.agentBus?.state),
+      live: agentBusLive,
+      tone: graphTone(report?.agentBus?.state),
+    },
+    {
+      id: "activity",
+      label: "activity",
+      value: brainActivities ? `${brainActivities.length}` : "--",
+      detail: recentActivities[recentActivities.length - 1]?.title ?? "durable brain stream",
+      x: 50,
+      y: 84,
+      kind: "agent",
+      status: recentActivities.length > 0 ? "active" : "idle",
+      live: recentActivities.length > 0,
+      tone: recentActivities.length > 0 ? "success" : "muted",
+    },
+  ];
+  for (const node of nodes) nodeById.set(node.id, node);
+
+  const links: BrainGraphLink[] = [
+    { from: "machines", to: "brain", active: realtimeLive || proofCount > 0 },
+    { from: "agents", to: "brain", active: agentBusLive },
+    { from: "skills", to: "brain", active: skillLive || report?.skillSync?.status === "ready" },
+    { from: "projects", to: "brain", active: projectLive },
+    { from: "vault", to: "brain", active: vaultLive },
+    { from: "activity", to: "brain", active: recentActivities.length > 0 },
+    { from: "skills", to: "projects", active: Boolean(report?.skillSync && report.summary.projectScanned > 0) },
+    { from: "agents", to: "activity", active: agentBusLive || recentActivities.some((activity) => activity.source.includes("agent")) },
+  ];
+  const signalRows: Array<{ label: string; value: string; live: boolean }> = [
+    { label: "realtime", value: realtimeLive ? "loaded" : "not loaded", live: realtimeLive },
+    { label: "agent bus", value: report?.agentBus ? `${report.agentBus.recentCount} messages` : "not observed", live: agentBusLive },
+    { label: "activity stream", value: brainActivities ? `${recentActivities.length}/${brainActivities.length} recent` : "loading", live: recentActivities.length > 0 },
+    { label: "skill mesh", value: report?.skillSync ? `${report.skillSync.status} / ${report.skillSync.canonicalCount} shared` : "waiting", live: report?.skillSync?.status === "ready" },
+    { label: "project graph", value: report ? `${report.summary.projectReady}/${report.summary.projectScanned} ready` : "waiting", live: projectLive },
+    { label: "secret vault", value: report?.envVault.accountSnapshotStatus ?? "unknown", live: vaultLive },
+  ];
+
+  return (
+    <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(260px,0.85fr)]">
+      <div className="relative min-h-[360px] overflow-hidden border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/35">
+        <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
+          {links.map((link) => {
+            const from = nodeById.get(link.from);
+            const to = nodeById.get(link.to);
+            if (!from || !to) return null;
+            return (
+              <line
+                key={`${link.from}-${link.to}`}
+                x1={`${from.x}%`}
+                y1={`${from.y}%`}
+                x2={`${to.x}%`}
+                y2={`${to.y}%`}
+                stroke={link.active ? "hsl(var(--success) / 0.46)" : "hsl(var(--border) / 0.48)"}
+                strokeWidth={link.active ? 1.4 : 1}
+                strokeDasharray={link.active ? "0" : "4 6"}
+              />
+            );
+          })}
+        </svg>
+        {nodes.map((node) => {
+          const toneClass =
+            node.tone === "success"
+              ? "border-[hsl(var(--success))]/55 text-[hsl(var(--success))]"
+              : node.tone === "danger"
+                ? "border-red-400/60 text-red-300"
+                : node.tone === "accent"
+                  ? "border-[hsl(var(--accent))]/60 text-[hsl(var(--accent))]"
+                  : "border-[hsl(var(--border))]/70 text-[hsl(var(--text-secondary))]";
+          return (
+            <div
+              key={node.id}
+              className={[
+                "absolute z-10 w-[148px] -translate-x-1/2 -translate-y-1/2 border bg-[hsl(var(--bg-raised))]/92 px-3 py-2",
+                toneClass,
+                node.live ? "shadow-[0_0_24px_hsl(var(--success)/0.10)]" : "",
+              ].join(" ")}
+              style={{ left: `${node.x}%`, top: `${node.y}%` }}
+            >
+              <div className="flex items-center gap-2">
+                <PixelCharacter
+                  kind={node.kind}
+                  seed={`${node.id}:${node.label}:${node.value}`}
+                  status={node.status}
+                  size="xs"
+                  className={node.live ? "animate-pulse" : "opacity-75"}
+                />
+                <div className="min-w-0">
+                  <div className="truncate font-mono text-[9px] uppercase tracking-[0.14em]">
+                    {node.label}
+                  </div>
+                  <div className="mt-1 truncate font-mono text-[13px] leading-none text-[hsl(var(--text-primary))]">
+                    {node.value}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-2 line-clamp-2 font-mono text-[9px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-50">
+                {node.detail}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="border-l border-[hsl(var(--border))]/70 bg-[hsl(var(--bg))]/28 px-4 py-3">
+        <PaneSectionLabel>live signals</PaneSectionLabel>
+        <div className="space-y-2">
+          {signalRows.map((row) => (
+            <div key={row.label} className="flex items-center gap-3 border-t border-[hsl(var(--border))]/35 pt-2 font-mono text-[10px]">
+              <span className={row.live ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-35"}>
+                {row.live ? "live" : "idle"}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[hsl(var(--text-secondary))] opacity-58">{row.label}</span>
+              <span className="max-w-[150px] truncate text-[hsl(var(--text-primary))] opacity-80">{row.value}</span>
+            </div>
+          ))}
+        </div>
+        {recentActivities.length > 0 && (
+          <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+            <PaneSectionLabel>latest firing</PaneSectionLabel>
+            <div className="space-y-1.5">
+              {recentActivities.slice(-4).map((activity) => (
+                <div key={activity.activityId} className="font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-58">
+                  <span className="text-[hsl(var(--text-primary))] opacity-85">{activity.source}</span>
+                  <span className="opacity-35"> / </span>
+                  {activity.title}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MachineSyncMeshPanel({
   report,
   syncedProofs,
+  brainActivities,
   rootMode,
   loading,
   onRefresh,
 }: {
   report: LocalMachineReadiness | null;
   syncedProofs?: SyncedMachineProof[];
+  brainActivities?: SyncedBrainActivity[];
   rootMode: RootMode;
   loading: boolean;
   onRefresh: () => void;
@@ -308,14 +583,6 @@ function MachineSyncMeshPanel({
   ).slice(0, 5);
   const visibleHosts = Array.from(new Set([currentHost, ...trustedHosts].filter((host): host is string => Boolean(host)))).slice(0, 5);
   const status = report?.summary.status ?? latestProof?.status ?? "unknown";
-  const meshNodes = [
-    ["you.md", "identity"],
-    ["realtime", report?.daemons.find((daemon) => daemon.label.endsWith(".realtime-sync"))?.loaded ? "live" : "polling"],
-    ["agents", report?.agentBus?.state ?? "quiet"],
-    ["skills", report?.skillSync.status ?? "waiting"],
-    ["projects", report ? `${report.summary.projectReady}/${report.summary.projectScanned}` : proofCount ? `${proofCount} proofs` : "pending"],
-    ["vault", report?.envVault.accountSnapshotStatus ?? "unknown"],
-  ];
 
   return (
     <section className="mt-4 border-l border-[hsl(var(--success))]/60 bg-[hsl(var(--bg))]/30 px-4 py-4">
@@ -357,6 +624,8 @@ function MachineSyncMeshPanel({
           refresh
         </button>
       </div>
+
+      <SyncedBrainGraph report={report} syncedProofs={syncedProofs} brainActivities={brainActivities} />
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         <MeshMetric
@@ -401,20 +670,6 @@ function MachineSyncMeshPanel({
           tone={report?.envVault.accountSnapshotStatus === "ready" ? "success" : "accent"}
           character={<PixelCharacter kind="shell" seed="secret-vault" status={pixelStatus(report?.envVault.accountSnapshotStatus)} size="sm" />}
         />
-      </div>
-
-      <div className="mt-4 overflow-x-auto">
-        <div className="flex min-w-max items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))]">
-          {meshNodes.map(([label, detail], index) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className="border-l border-[hsl(var(--border))]/75 bg-[hsl(var(--bg-raised))]/30 px-3 py-2">
-                <span className="text-[hsl(var(--text-primary))]">{label}</span>
-                <span className="ml-2 opacity-40">{detail}</span>
-              </div>
-              {index < meshNodes.length - 1 && <span className="opacity-25">/</span>}
-            </div>
-          ))}
-        </div>
       </div>
 
       {report && (
@@ -657,6 +912,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
   const [copiedNotice, setCopiedNotice] = useState<string | null>(null);
   const [setupCollapsed, setSetupCollapsed] = useState(false);
   const syncedProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 8 } : "skip");
+  const brainActivities = useQuery(api.brainActivity.listRecent, clerkId ? { clerkId, limit: 24 } : "skip");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -787,6 +1043,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
         <MachineSyncMeshPanel
           report={report}
           syncedProofs={syncedProofs}
+          brainActivities={brainActivities}
           rootMode={rootMode}
           loading={loading}
           onRefresh={() => void load()}
