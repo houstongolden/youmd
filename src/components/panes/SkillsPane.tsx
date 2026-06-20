@@ -990,6 +990,7 @@ function SkillMeshView({
           <section>
             <PaneSectionLabel>verify and compare</PaneSectionLabel>
             <div className="space-y-2">
+              <SkillMeshReportAccess reportHtmlPath={latest.reportHtmlPath} />
               <CommandRow command="you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" description="refresh this machine's local/global skill mesh, catalog discovered references, and sync safe metadata" />
               <CommandRow command="you machine verify --write-report --sync-report" description="write machine readiness proof with the latest skill mesh counts attached" />
               <CommandRow command="you skill inventory diff macbook.json mac-mini.json" description="compare two trusted machine snapshots before calling sync parity clean" />
@@ -997,6 +998,33 @@ function SkillMeshView({
           </section>
         </>
       )}
+    </div>
+  );
+}
+
+function SkillMeshReportAccess({ reportHtmlPath }: { reportHtmlPath?: string }) {
+  return (
+    <div className="border-l border-[hsl(var(--accent))]/55 bg-[hsl(var(--bg))]/35 px-3 py-3 font-mono">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <a
+          href="/api/local/agent-stack-report"
+          target="_blank"
+          rel="noreferrer"
+          className="bg-[hsl(var(--shell-active))] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-[hsl(var(--text-primary))] transition-opacity hover:opacity-85"
+          style={{ borderRadius: "var(--radius)" }}
+        >
+          open local HTML report
+        </a>
+        <span className="text-[9.5px] text-[hsl(var(--text-secondary))] opacity-45">
+          Latest generated visual inventory. Localhost + signed-in session only.
+        </span>
+      </div>
+      <div className="mt-2 grid gap-2 text-[9.5px] text-[hsl(var(--text-secondary))] md:grid-cols-[minmax(0,1fr)_auto]">
+        <span className="min-w-0 truncate opacity-45" title={reportHtmlPath ?? undefined}>
+          {reportHtmlPath ?? "run the inventory command to write ~/.you/agent-stack-inventory/*.html"}
+        </span>
+        <code className="truncate text-[hsl(var(--accent))]/70">agent-stack://inventory/report.html</code>
+      </div>
     </div>
   );
 }

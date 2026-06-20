@@ -49,6 +49,7 @@ PRD Version: 2.3
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison
 - [x] Add hosted MCP resources for agent stack topology/report files, including generated safe HTML and repo-backed markdown/JSON snapshots
 - [x] Add `npm run sync:agent-stack:smoke` to prove agent-stack REST summaries, hosted MCP tool/resources, generated HTML report, and repo snapshots
+- [x] Add browser-visible access to the newest generated local Skill Mesh HTML report from the Skills pane
 - [ ] Build the full web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views beyond the first Skills-pane view
 - [x] Add resident realtime reconciliation for safe Skill Mesh inventory summaries through `youmd sync --live --daemon`
 - [x] Broaden resident reconciliation beyond inventory summaries into safe repair actions for stale/divergent local Skill Mesh drift

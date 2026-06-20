@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): open local Skill Mesh HTML report from the app
+- Added signed-in localhost-only `GET /api/local/agent-stack-report`, which serves the newest generated `local-agent-stack-inventory-*.html` report from `~/.you/agent-stack-inventory` or legacy `~/.youmd/agent-stack-inventory`.
+- Added a compact report access row to Skill Mesh's existing verify/compare area so the browser can open the current machine's full visual inventory without adding another dashboard panel.
+- Kept the hosted MCP report URI visible as `agent-stack://inventory/report.html` so local browser proof and agent resource proof point to the same Skill Mesh artifact family.
+- Verified with root TypeScript, production Next build, and agent-docs CI with the new local route counted as internal/public-docs-excluded.
+
 ### feat(sync): add hosted Skill Mesh HTML resource
 - Added hosted MCP resource `agent-stack://inventory/report.html`, generated from persisted safe agent-stack inventories, drift, and repo mirror metadata.
 - The report keeps the HTML/audit intelligence available to agents without requiring local filesystem access and without exposing raw skill bodies, prompt logs, env values, tokens, or vault contents.
