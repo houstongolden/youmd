@@ -72,6 +72,13 @@
 - `/skillmesh` and `/mesh` now route the shell to Skills with `view=mesh`, and the Skill Mesh toggle keeps `/shell?tab=skills&view=mesh` reload/share safe.
 - Verified with `npm run build`, `git diff --check`, and authenticated localhost browser proof for `/shell?tab=skills&view=mesh` showing all five source buckets with no console errors or failed responses.
 
+### feat(skills): tighten Skill Mesh mode structure
+- Skill Mesh now has a cleaner mode stack: `overview`, `source map`, `machines`, and `audit details`.
+- The live brain graph header now exposes a compact evidence strip with Convex inventory, machine proof, recent activity, project counts, and latest freshness when the canonical synced graph DTO is present.
+- Kept machine parity visible in overview using trusted-machine/inventory summary rows while moving dense machine drift and proof detail rows into the `machines` mode.
+- Folded local HTML report access into the existing next-action area in the verify/compare controls instead of introducing another always-visible surface.
+- Verified with root TypeScript and production Next build.
+
 ### perf(machine): cache local readiness scans
 - Added in-process caching and request dedupe to `/api/local/machine-readiness` so Home, Machine, and shell summary reads share one local readiness scan instead of stacking filesystem/daemon checks.
 - Passive reads get a 30-second fresh cache and up to 5-minute stale response while a background refresh runs; Machine's explicit refresh button uses `refresh=1` to force a real proof scan.

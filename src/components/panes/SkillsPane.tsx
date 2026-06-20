@@ -88,7 +88,7 @@ type AgentStackDrift = {
 };
 
 type SkillPaneMode = "catalog" | "mesh";
-type SkillMeshDetailMode = "report" | "sources" | "proof" | "audit";
+type SkillMeshDetailMode = "overview" | "sources" | "machines" | "audit";
 type SkillMeshActivityFilter = "all" | "skills" | "machines" | "vault" | "sync";
 
 const SKILL_MESH_ACTIVITY_FILTERS: Array<{ value: SkillMeshActivityFilter; label: string }> = [
@@ -211,6 +211,25 @@ function formatInventoryTime(value: number | undefined) {
   const diffHr = Math.floor(diffMin / 60);
   if (diffHr < 24) return `${diffHr}h ago`;
   return `${Math.floor(diffHr / 24)}d ago`;
+}
+
+function graphEvidenceText(evidence: SyncedBrainGraphDto["evidence"] | undefined) {
+  if (!evidence) return "source: local inventory fallback";
+  const parts = [
+    `${evidence.inventoryCount ?? 0} inventories`,
+    `${evidence.machineProofCount ?? 0} proofs`,
+    `${evidence.recentBrainActivityCount ?? evidence.brainActivityCount ?? 0} recent activity`,
+    `${evidence.focusedProjectCount ?? evidence.projectCount ?? 0} projects`,
+  ];
+  const latest = [
+    evidence.latestBrainActivityAt,
+    evidence.latestMachineProofAt,
+    evidence.latestInventoryAt,
+    evidence.latestProjectActivityAt,
+  ]
+    .filter((value): value is number => typeof value === "number")
+    .sort((a, b) => b - a)[0];
+  return `source: Convex synced brain / ${parts.join(" / ")} / latest ${formatInventoryTime(latest)}`;
 }
 
 function numericRollupEntries(rollup: Record<string, unknown> | undefined, limit = 8) {
@@ -806,7 +825,6 @@ function SkillMeshView({
   const latest = inventories?.[0];
   const machineCount = inventories?.length ?? 0;
   const secretLeak = inventories?.some((inventory) => inventory.secretValuesExposed) ?? false;
-  const driftByMachineKey = new Map((drift?.machines ?? []).map((machine) => [machine.machineKey, machine]));
   const proofIndexes = buildMachineProofIndexes(machineProofs);
   const proofSummary = (inventories ?? []).reduce(
     (acc, inventory) => {
@@ -827,7 +845,7 @@ function SkillMeshView({
     ? buildSkillMeshTopology({ latest, sourceGroups, proofSummary, machineCount, secretLeak })
     : null;
   const graph = graphDto ?? topology;
-  const [detailMode, setDetailMode] = useState<SkillMeshDetailMode>("report");
+  const [detailMode, setDetailMode] = useState<SkillMeshDetailMode>("overview");
   const proofClean = latest ? proofSummary.matched === machineCount && proofSummary.stale === 0 && proofSummary.unsafe === 0 : false;
   const reviewCount = sourceGroups.find((group) => group.label === "Needs review")?.value ?? 0;
   const attentionCount = latest ? reviewCount + latest.missingFromYoumdCatalog + latest.duplicateNameDifferentRealpaths : 0;
@@ -864,10 +882,13 @@ function SkillMeshView({
                 <div>
                   <PaneSectionLabel>live skill brain</PaneSectionLabel>
                   <h3 className="font-mono text-[17px] leading-tight text-[hsl(var(--text-primary))]">
-                    Synced skills, stacks, machines, and source ownership.
+                    Your synced brain graph, built from real machine reports.
                   </h3>
                   <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
-                    Real inventory and proof metadata only. The graph lights up from synced machine reports, source groups, catalog gaps, and DRY review counts.
+                    No mock nodes: every pulse is backed by synced inventory, machine proof, project context, or recent brain activity.
+                  </p>
+                  <p className="mt-2 font-mono text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-38">
+                    {graphEvidenceText(graphDto?.evidence)}
                   </p>
                 </div>
                 <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))] opacity-48">
@@ -923,9 +944,9 @@ function SkillMeshView({
           <section className="border-y border-[hsl(var(--border))]/55 py-2">
             <div className="flex flex-wrap items-center gap-2">
               {([
-                ["report", "report"],
+                ["overview", "overview"],
                 ["sources", "source map"],
-                ["proof", "machine proof"],
+                ["machines", "machines"],
                 ["audit", "audit details"],
               ] as const).map(([nextMode, label]) => (
                 <button
@@ -949,11 +970,13 @@ function SkillMeshView({
             </div>
           </section>
 
-          {detailMode === "report" && (
+          {detailMode === "overview" && (
             <SkillMeshReportPanel
               latest={latest}
+              inventories={inventories ?? []}
               sourceGroups={sourceGroups}
               proofSummary={proofSummary}
+              proofIndexes={proofIndexes}
               machineCount={machineCount}
               drift={drift}
               attentionCount={attentionCount}
@@ -965,107 +988,14 @@ function SkillMeshView({
 
           {detailMode === "sources" && <SourceGroupPanel groups={sourceGroups} />}
 
-          {detailMode === "proof" && drift?.baseline && (
-            <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <PaneSectionLabel>machine drift</PaneSectionLabel>
-                  <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
-                    baseline: {drift.baseline.hostName}
-                  </h3>
-                  <p className="mt-1 max-w-3xl truncate font-mono text-[9.5px] text-[hsl(var(--text-secondary))] opacity-48">
-                    {drift.baseline.rootDir}
-                  </p>
-                </div>
-              <div className="grid grid-cols-4 gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
-                  <span className="text-[hsl(var(--text-secondary))] opacity-55">{drift.summary.machineCount} machines</span>
-                  <span className={drift.summary.driftCount > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
-                    {drift.summary.driftCount} drift
-                  </span>
-                  <span className={drift.summary.staleCount > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
-                    {drift.summary.staleCount} stale
-                  </span>
-                  <span className={drift.summary.unsafeCount > 0 ? "text-yellow-500" : "text-[hsl(var(--success))]"}>
-                    {drift.summary.unsafeCount} unsafe
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                {drift.machines.slice(0, 6).map((machine) => (
-                  <div key={machine.machineKey} className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto]">
-                    <div className="min-w-0">
-                      <div className="truncate text-[hsl(var(--text-primary))]">{machine.hostName}</div>
-                      <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">
-                        {machine.issues[0] ?? "matches baseline counts"}
-                      </div>
-                    </div>
-                    <span className={machine.status === "baseline" || machine.status === "ok" ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
-                      {machine.status}
-                    </span>
-                    <span className="text-[hsl(var(--text-secondary))] opacity-52">
-                      {machine.deltas.uniqueSkillNames >= 0 ? "+" : ""}{machine.deltas.uniqueSkillNames} skills
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {detailMode === "proof" && (
-          <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <PaneSectionLabel>machine proof</PaneSectionLabel>
-                <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
-                  inventory plus readiness attestation
-                </h3>
-                <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
-                  Fresh-machine proof joins the skill mesh with project/env/MCP readiness. This is the check before calling a second Mac synced.
-                </p>
-              </div>
-              <div className="grid grid-cols-4 gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
-                <span className={proofSummary.matched === machineCount ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
-                  {proofSummary.matched}/{machineCount} proof
-                </span>
-                <span className={proofSummary.missing > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
-                  {proofSummary.missing} missing
-                </span>
-                <span className={proofSummary.stale > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
-                  {proofSummary.stale} stale
-                </span>
-                <span className={proofSummary.unsafe > 0 ? "text-yellow-500" : "text-[hsl(var(--success))]"}>
-                  {proofSummary.unsafe} unsafe
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              {(inventories ?? []).slice(0, 6).map((inventory) => {
-                const proof = machineProofForInventory(inventory, proofIndexes);
-                const stale = isMachineProofStale(proof);
-                return (
-                  <div key={inventory._id} className="grid gap-2 border-t border-[hsl(var(--border))]/45 py-2 font-mono text-[10px] md:grid-cols-[1fr_auto_auto_auto]">
-                    <div className="min-w-0">
-                      <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
-                      <div className="truncate text-[hsl(var(--text-secondary))] opacity-45">
-                        {proof?.warnings?.[0] ?? (proof ? "latest proof has no warnings" : "no machine proof synced yet")}
-                      </div>
-                    </div>
-                    <span className={proof?.status === "ready" ? "text-[hsl(var(--success))]" : proof ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))] opacity-45"}>
-                      {proof?.status ?? "missing"}
-                    </span>
-                    <span className={stale ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
-                      {proof ? formatInventoryTime(proof.updatedAt) : "no proof"}
-                    </span>
-                    <span className={proof?.secretValuesExposed ? "text-yellow-500" : "text-[hsl(var(--text-secondary))] opacity-52"}>
-                      secrets {proof?.secretValuesExposed ? "review" : "safe"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          {detailMode === "machines" && (
+            <MachineProofPanel
+              inventories={inventories ?? []}
+              drift={drift}
+              proofIndexes={proofIndexes}
+              proofSummary={proofSummary}
+              machineCount={machineCount}
+            />
           )}
 
           {detailMode === "audit" && (
@@ -1084,31 +1014,6 @@ function SkillMeshView({
             </>
           )}
 
-          {detailMode === "proof" && (
-          <section>
-            <PaneSectionLabel>trusted machine snapshots</PaneSectionLabel>
-            <div className="space-y-2">
-              {(inventories ?? []).map((inventory) => (
-                <MachineSnapshotRow
-                  key={inventory._id}
-                  inventory={inventory}
-                  drift={driftByMachineKey.get(inventory.machineKey)}
-                  proof={machineProofForInventory(inventory, proofIndexes)}
-                />
-              ))}
-            </div>
-          </section>
-          )}
-
-          <section>
-            <PaneSectionLabel>verify and compare</PaneSectionLabel>
-            <div className="space-y-2">
-              <SkillMeshReportAccess reportHtmlPath={latest.reportHtmlPath} />
-              <CommandRow command="you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" description="refresh this machine's local/global skill mesh, catalog discovered references, and sync safe metadata" />
-              <CommandRow command="you machine verify --write-report --sync-report" description="write machine readiness proof with the latest skill mesh counts attached" />
-              <CommandRow command="you skill inventory diff macbook.json mac-mini.json" description="compare two trusted machine snapshots before calling sync parity clean" />
-            </div>
-          </section>
         </>
       )}
     </div>
@@ -1144,8 +1049,10 @@ function SkillMeshReportAccess({ reportHtmlPath }: { reportHtmlPath?: string }) 
 
 function SkillMeshReportPanel({
   latest,
+  inventories,
   sourceGroups,
   proofSummary,
+  proofIndexes,
   machineCount,
   drift,
   attentionCount,
@@ -1154,8 +1061,10 @@ function SkillMeshReportPanel({
   onActivityFilterChange,
 }: {
   latest: AgentStackInventory;
+  inventories: AgentStackInventory[];
   sourceGroups: ReturnType<typeof buildSourceGroups>;
   proofSummary: { matched: number; missing: number; stale: number; unsafe: number };
+  proofIndexes: ReturnType<typeof buildMachineProofIndexes>;
   machineCount: number;
   drift?: AgentStackDrift;
   attentionCount: number;
@@ -1251,6 +1160,13 @@ function SkillMeshReportPanel({
         />
       </div>
 
+      <MachineParityPanel
+        inventories={inventories}
+        drift={drift}
+        proofIndexes={proofIndexes}
+        brainActivities={brainActivities}
+      />
+
       <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
         <div className="flex flex-wrap items-center gap-2">
           <PaneSectionLabel>recent mesh activity</PaneSectionLabel>
@@ -1284,9 +1200,182 @@ function SkillMeshReportPanel({
 
       <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
         <PaneSectionLabel>next useful command</PaneSectionLabel>
+        <div className="mb-2">
+          <SkillMeshReportAccess reportHtmlPath={latest.reportHtmlPath} />
+        </div>
         <CommandRow command={action.command} description={action.description} />
       </div>
     </section>
+  );
+}
+
+function MachineProofPanel({
+  inventories,
+  drift,
+  proofIndexes,
+  proofSummary,
+  machineCount,
+}: {
+  inventories: AgentStackInventory[];
+  drift?: AgentStackDrift;
+  proofIndexes: ReturnType<typeof buildMachineProofIndexes>;
+  proofSummary: { matched: number; missing: number; stale: number; unsafe: number };
+  machineCount: number;
+}) {
+  const driftByMachineKey = new Map((drift?.machines ?? []).map((machine) => [machine.machineKey, machine]));
+  const baselineHost = drift?.baseline?.hostName ?? inventories[0]?.hostName ?? "unknown";
+  return (
+    <section className="border-l border-[hsl(var(--border))]/80 bg-[hsl(var(--bg))]/35 px-4 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <PaneSectionLabel>machines</PaneSectionLabel>
+          <h3 className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+            Cross-computer proof for the same skill mesh
+          </h3>
+          <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
+            Baseline: {baselineHost}. This view combines inventory drift, readiness proof, freshness, and secret-safety evidence.
+          </p>
+        </div>
+        <div className="grid grid-cols-4 gap-3 font-mono text-[9px] uppercase tracking-[0.12em]">
+          <span className={proofSummary.matched === machineCount ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+            {proofSummary.matched}/{machineCount} proof
+          </span>
+          <span className={(drift?.summary.driftCount ?? 0) > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
+            {drift?.summary.driftCount ?? 0} drift
+          </span>
+          <span className={proofSummary.stale > 0 ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
+            {proofSummary.stale} stale
+          </span>
+          <span className={proofSummary.unsafe > 0 ? "text-yellow-500" : "text-[hsl(var(--success))]"}>
+            {proofSummary.unsafe} unsafe
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {inventories.length ? inventories.map((inventory) => (
+          <MachineSnapshotRow
+            key={inventory._id}
+            inventory={inventory}
+            drift={driftByMachineKey.get(inventory.machineKey)}
+            proof={machineProofForInventory(inventory, proofIndexes)}
+          />
+        )) : (
+          <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
+            No synced machine inventories yet.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-4 grid gap-2 border-t border-[hsl(var(--border))]/45 pt-3 md:grid-cols-2">
+        <CommandRow command="you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" description="refresh this computer's local/global skill mesh and sync safe metadata" />
+        <CommandRow command="you machine verify --write-report --sync-report" description="attach readiness proof to the latest synced inventory" />
+      </div>
+    </section>
+  );
+}
+
+function hostLooksLikeMini(hostName: string) {
+  return hostName.toLowerCase().includes("mini");
+}
+
+function hostLooksLikeMacBook(hostName: string) {
+  const normalized = hostName.toLowerCase();
+  return normalized.includes("macbook") || normalized.includes("mbp") || normalized.includes("book");
+}
+
+function latestMachineActivity(hostName: string, activities: BrainActivityEntry[] | undefined) {
+  const hostKey = normalizeMachineKeyPart(hostName);
+  return (activities ?? [])
+    .filter((activity) => {
+      const sourceHost = normalizeMachineKeyPart(activity.sourceHost ?? "");
+      const title = normalizeMachineKeyPart(activity.title);
+      return sourceHost === hostKey || title.includes(hostKey);
+    })
+    .filter((activity) => isSkillMeshActivity(activity))
+    .sort((a, b) => b.occurredAt - a.occurredAt)[0];
+}
+
+function MachineParityPanel({
+  inventories,
+  drift,
+  proofIndexes,
+  brainActivities,
+}: {
+  inventories: AgentStackInventory[];
+  drift?: AgentStackDrift;
+  proofIndexes: ReturnType<typeof buildMachineProofIndexes>;
+  brainActivities?: BrainActivityEntry[];
+}) {
+  const baselineHost = drift?.baseline?.hostName ?? inventories[0]?.hostName ?? "unknown";
+  const miniSeen = inventories.some((inventory) => hostLooksLikeMini(inventory.hostName));
+  const macBookSeen = inventories.some((inventory) => hostLooksLikeMacBook(inventory.hostName));
+  const driftByMachineKey = new Map((drift?.machines ?? []).map((machine) => [machine.machineKey, machine]));
+  const rows = inventories.slice(0, 5).map((inventory) => {
+    const proof = machineProofForInventory(inventory, proofIndexes);
+    const driftRow = driftByMachineKey.get(inventory.machineKey);
+    const activity = latestMachineActivity(inventory.hostName, brainActivities);
+    const stale = isMachineProofStale(proof);
+    const status = inventory.secretValuesExposed
+      ? "unsafe"
+      : driftRow?.status ?? (proof && !stale ? "ok" : "proof needed");
+    return { inventory, proof, driftRow, activity, stale, status };
+  });
+  const allRowsClean = rows.length > 0 && rows.every((row) =>
+    !row.inventory.secretValuesExposed &&
+    (row.status === "baseline" || row.status === "ok" || row.status === "ahead") &&
+    row.proof &&
+    !row.stale
+  );
+
+  return (
+    <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <PaneSectionLabel>machine parity</PaneSectionLabel>
+          <p className="mt-1 max-w-3xl font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-48">
+            Cross-Mac proof for the same local/global skill mesh. Baseline: {baselineHost}.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 font-mono text-[8.5px] uppercase tracking-[0.12em]">
+          <span className={macBookSeen ? "text-[hsl(var(--success))]" : "text-[hsl(var(--text-secondary))] opacity-42"}>
+            MacBook {macBookSeen ? "seen" : "missing"}
+          </span>
+          <span className={miniSeen ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+            Mac mini {miniSeen ? "seen" : "missing"}
+          </span>
+          <span className={allRowsClean ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+            {allRowsClean ? "parity clean" : "needs proof"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        {rows.length ? rows.map(({ inventory, proof, driftRow, activity, stale, status }) => (
+          <div key={inventory._id} className="grid gap-2 border-t border-[hsl(var(--border))]/35 pt-2 font-mono text-[9.5px] md:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+            <div className="min-w-0">
+              <div className="truncate text-[hsl(var(--text-primary))]">{inventory.hostName}</div>
+              <div className="truncate text-[hsl(var(--text-secondary))] opacity-42">
+                {activity ? `${activity.title} / ${formatInventoryTime(activity.occurredAt)}` : inventory.rootDir}
+              </div>
+            </div>
+            <span className={status === "unsafe" || status === "drift" ? "text-yellow-500" : status === "proof needed" ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--success))]"}>
+              {status}
+            </span>
+            <span className={proof && !stale ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}>
+              proof {proof?.status ?? "missing"}
+            </span>
+            <span className="text-[hsl(var(--text-secondary))] opacity-50">
+              {driftRow?.issues[0] ?? `${inventory.uniqueSkillNames.toLocaleString()} skills`}
+            </span>
+          </div>
+        )) : (
+          <p className="font-mono text-[10px] text-[hsl(var(--text-secondary))] opacity-45">
+            No synced machine inventories yet.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 
