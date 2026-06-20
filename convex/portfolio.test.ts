@@ -58,7 +58,7 @@ describe("portfolio repo update history", () => {
       secretValuesExposed: false,
       reportPath: "/Users/houston/.you/machine-reports/latest.json",
       source: "cli",
-      agentName: "youmd machine verify",
+      agentName: "you machine verify",
       generatedAt: 1_781_700_000_000,
     });
 
@@ -86,7 +86,7 @@ describe("portfolio repo update history", () => {
       secretValuesExposed: false,
       reportPath: "/Users/houston/.you/machine-reports/latest.json",
       source: "cli",
-      agentName: "youmd machine verify",
+      agentName: "you machine verify",
       generatedAt: 1_781_700_100_000,
     });
 
@@ -126,7 +126,7 @@ describe("portfolio repo update history", () => {
       entityType: "machineProofReport",
       entityId: String(first.proofId),
       sourceHost: "houston-mac-mini",
-      sourceAgent: "youmd machine verify",
+      sourceAgent: "you machine verify",
       secretValuesExposed: false,
     });
     expect(activities[0].metadata).toMatchObject({
@@ -177,7 +177,7 @@ describe("portfolio repo update history", () => {
       reportJsonPath: "/Users/houston/.you/agent-stack-inventory/latest.json",
       reportHtmlPath: "/Users/houston/.you/agent-stack-inventory/latest.html",
       source: "youmd-cli",
-      agentName: "youmd skill inventory",
+      agentName: "you skill inventory",
       secretValuesExposed: false,
       generatedAt: 1_781_700_000_000,
     });
@@ -206,7 +206,7 @@ describe("portfolio repo update history", () => {
       reportJsonPath: "/Users/houston/.you/agent-stack-inventory/latest.json",
       reportHtmlPath: "/Users/houston/.you/agent-stack-inventory/latest.html",
       source: "youmd-cli",
-      agentName: "youmd skill inventory",
+      agentName: "you skill inventory",
       secretValuesExposed: false,
       generatedAt: 1_781_700_100_000,
     });
@@ -245,7 +245,7 @@ describe("portfolio repo update history", () => {
       entityType: "agentStackInventory",
       entityId: String(first.inventoryId),
       sourceHost: "houston-mac-mini",
-      sourceAgent: "youmd skill inventory",
+      sourceAgent: "you skill inventory",
       secretValuesExposed: false,
     });
     expect(activities[0].metadata).toMatchObject({
@@ -376,9 +376,9 @@ describe("portfolio repo update history", () => {
       secretValuesExposed: false,
     });
     expect(mini?.issues).toContain("3 fewer skill names than baseline");
-    expect(mini?.repairCommands).toContain("youmd stack sync");
-    expect(mini?.repairCommands).toContain("youmd skill sync");
-    expect(mini?.repairCommands).toContain("youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync");
+    expect(mini?.repairCommands).toContain("you stack sync");
+    expect(mini?.repairCommands).toContain("you skill sync");
+    expect(mini?.repairCommands).toContain("you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync");
   });
 
   it("persists repo update runs with ordered steps", async () => {

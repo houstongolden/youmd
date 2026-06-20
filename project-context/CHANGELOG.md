@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### fix(skill-mesh): lead repair surfaces with `you`
+- Updated Skill Mesh repair guidance across Convex drift summaries, local MCP, the Skills pane, installer regression tests, and CLI inventory status so copyable commands lead with the canonical `you` binary while retaining `youmd` only as compatibility/internal provenance.
+- `YOU_AGENT_STACK_INVENTORY_SCRIPT` is now the canonical override for the bundled/local scanner, with `YOUMD_AGENT_STACK_INVENTORY_SCRIPT` kept as a legacy fallback.
+- Verified with focused CLI tests, focused Convex inventory tests, CLI TypeScript build, and production Next build.
+
 ### feat(install): hand off curl install into machine sync proof
 - The public `install.sh` route now runs `youmd machine sync-now` automatically when `YOUMD_INSTALL_MACHINE_SYNC=1` or `YOUMD_API_KEY` is present.
 - Auth-bearing installs now attempt `youmd login --key "$YOUMD_API_KEY"` first, then reconcile identity, shared stacks, skills, MCP config, inventory, machine proof, and daemons through the same first-class command used for Mac Mini repair.

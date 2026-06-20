@@ -982,7 +982,7 @@ export function buildMachineVerificationProof(options: {
     options.installs && options.installs.results.length === 0 ? "no package projects were available for dependency install" : "",
     options.checks && options.checks.results.length === 0 ? "no package projects had requested check scripts" : "",
     options.servers && options.servers.results.length === 0 ? "no package projects had dev servers to probe" : "",
-    options.agentStackInventory === null ? "agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" : "",
+    options.agentStackInventory === null ? "agent stack inventory proof missing; run you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" : "",
     ...daemons.warnings,
     ...(options.servers?.results ?? [])
       .filter((result) => result.status === "failed" || result.status === "timeout")

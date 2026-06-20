@@ -1,5 +1,5 @@
 /**
- * youmd skill — identity-aware agent skill system.
+ * you skill — identity-aware agent skill system.
  *
  * Subcommand router following the project.ts pattern.
  * Manages skill lifecycle: install, remove, use, sync, link, init-project.
@@ -169,7 +169,7 @@ function flagString(flags: Record<string, string | boolean>, key: string): strin
 
 function resolveInventoryScript(): string | null {
   const candidates = [
-    process.env.YOUMD_AGENT_STACK_INVENTORY_SCRIPT,
+    process.env.YOU_AGENT_STACK_INVENTORY_SCRIPT || process.env.YOUMD_AGENT_STACK_INVENTORY_SCRIPT,
     path.join(os.homedir(), ".agent-shared", "claude-skills", "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
     path.join(getSkillsDir(), "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
     path.join(os.homedir(), ".youmd", "skills", "agent-stack-inventory", "scripts", "local-agent-stack-inventory.mjs"),
@@ -399,7 +399,7 @@ function buildAgentStackInventorySyncPayload(
     reportJsonPath: jsonPath,
     reportHtmlPath: htmlPath,
     source: "youmd-cli",
-    agentName: "youmd skill inventory",
+    agentName: "you skill inventory",
     totals: {
       uniqueSkillNames: safeInventoryCount(totals.uniqueSkillNames),
       uniqueRealSkillFiles: safeInventoryCount(totals.uniqueRealSkillFiles),
@@ -467,12 +467,12 @@ async function listSkills(): Promise<void> {
   const catalog = readSkillCatalog();
 
   console.log("");
-  console.log("  " + chalk.bold("youmd skills") + DIM(` (${catalog.skills.length} in catalog)`));
+  console.log("  " + chalk.bold("you skills") + DIM(` (${catalog.skills.length} in catalog)`));
   console.log("");
 
   if (catalog.skills.length === 0) {
     console.log(DIM("  no skills registered."));
-    console.log(DIM("  run ") + chalk.cyan("youmd skill add <name> <source>") + DIM(" to add one."));
+    console.log(DIM("  run ") + chalk.cyan("you skill add <name> <source>") + DIM(" to add one."));
     console.log("");
     return;
   }
@@ -532,7 +532,7 @@ async function listSkills(): Promise<void> {
     console.log("");
     console.log(
       DIM("  get started: ") +
-      chalk.cyan("youmd skill install youstack-start")
+      chalk.cyan("you skill install youstack-start")
     );
   }
   console.log("");
@@ -570,8 +570,8 @@ async function installSkillCmd(args: string[]): Promise<void> {
 
   if (!name) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill install <name>"));
-    console.log(DIM("  or:    youmd skill install all"));
+    console.log(chalk.yellow("  usage: you skill install <name>"));
+    console.log(DIM("  or:    you skill install all"));
     console.log("");
     return;
   }
@@ -651,8 +651,8 @@ async function installSkillCmd(args: string[]): Promise<void> {
 
     console.log("");
     console.log(chalk.yellow(`  skill "${name}" not found in catalog or registry.`));
-    console.log(DIM("  run ") + chalk.cyan("youmd skill list") + DIM(" to see available skills."));
-    console.log(DIM("  or:  ") + chalk.cyan("youmd skill browse") + DIM(" to check the registry."));
+    console.log(DIM("  run ") + chalk.cyan("you skill list") + DIM(" to see available skills."));
+    console.log(DIM("  or:  ") + chalk.cyan("you skill browse") + DIM(" to check the registry."));
     console.log("");
     return;
   }
@@ -725,8 +725,8 @@ async function removeSkillCmd(args: string[]): Promise<void> {
 
   if (!name) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill remove <name>"));
-    console.log(DIM("  or:    youmd skill remove all"));
+    console.log(chalk.yellow("  usage: you skill remove <name>"));
+    console.log(DIM("  or:    you skill remove all"));
     console.log("");
     return;
   }
@@ -749,7 +749,7 @@ async function skillUseCmd(args: string[]): Promise<void> {
   const name = args[0];
   if (!name) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill use <name>"));
+    console.log(chalk.yellow("  usage: you skill use <name>"));
     console.log("");
     return;
   }
@@ -862,7 +862,7 @@ function addSkillCmd(args: string[]): void {
 
   if (!name || !source) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill add <name> <source>"));
+    console.log(chalk.yellow("  usage: you skill add <name> <source>"));
     console.log(DIM("  source: local:/path/to/skill.md, github:owner/repo/path, or registry:<name>"));
     console.log("");
     return;
@@ -882,7 +882,7 @@ function addSkillCmd(args: string[]): void {
   console.log("");
   console.log(chalk.green("  \u2713") + ` ${chalk.bold(name)} added to catalog`);
   console.log(DIM(`  source: ${source}`));
-  console.log(DIM("  run ") + chalk.cyan(`youmd skill install ${name}`) + DIM(" to install."));
+  console.log(DIM("  run ") + chalk.cyan(`you skill install ${name}`) + DIM(" to install."));
   console.log("");
 }
 
@@ -891,7 +891,7 @@ async function createSkillCmd(args: string[]): Promise<void> {
   const ask = (q: string): Promise<string> => new Promise((res) => rl.question(q, (a: string) => res(a.trim())));
 
   console.log("");
-  console.log("  " + chalk.bold("youmd skill create"));
+  console.log("  " + chalk.bold("you skill create"));
   console.log(DIM("  scaffold a new identity-aware skill\n"));
 
   // Name
@@ -975,8 +975,8 @@ async function createSkillCmd(args: string[]): Promise<void> {
   console.log(DIM(`  ${path.join(skillDir, "SKILL.md")}`));
   console.log("");
   console.log(DIM("  edit the SKILL.md, then:"));
-  console.log(`    ${chalk.cyan(`youmd skill use ${slug}`)}   ${DIM("render with your identity")}`);
-  console.log(`    ${chalk.cyan(`youmd skill link claude`)} ${DIM("link to your project")}`);
+  console.log(`    ${chalk.cyan(`you skill use ${slug}`)}   ${DIM("render with your identity")}`);
+  console.log(`    ${chalk.cyan(`you skill link claude`)} ${DIM("link to your project")}`);
   console.log("");
 }
 
@@ -984,7 +984,7 @@ function pushSkillCmd(args: string[]): void {
   const name = args[0];
   if (!name) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill push <name>"));
+    console.log(chalk.yellow("  usage: you skill push <name>"));
     console.log("");
     return;
   }
@@ -1076,7 +1076,7 @@ function parseInitProjectMode(args: string[]): InitProjectMode {
 
 async function initProjectCmd(args: string[] = []): Promise<void> {
   console.log("");
-  console.log("  " + chalk.bold("youmd skill init-project"));
+  console.log("  " + chalk.bold("you skill init-project"));
   const mode = parseInitProjectMode(args);
 
   // Detect existing .youmd-project
@@ -1380,8 +1380,8 @@ async function improveCmd(): Promise<void> {
   ) {
     proposals.push(
       Number.isNaN(lastSyncedAtMs)
-        ? "run \"youmd skill sync\" — installed skills haven't been synced against your identity yet"
-        : "run \"youmd skill sync\" — your identity changed after the last skill sync"
+        ? "run \"you skill sync\" — installed skills haven't been synced against your identity yet"
+        : "run \"you skill sync\" — your identity changed after the last skill sync"
     );
   }
 
@@ -1391,7 +1391,7 @@ async function improveCmd(): Promise<void> {
     installed.length > 0 &&
     !hasLinkedClaudeSkills(process.cwd(), installed.map((s: { name: string }) => s.name))
   ) {
-    proposals.push("run \"youmd skill link claude\" — skills aren't linked to this project's agent");
+    proposals.push("run \"you skill link claude\" — skills aren't linked to this project's agent");
   }
 
   if (proposals.length > 0) {
@@ -1468,8 +1468,8 @@ function inventoryDiffCmd(args: string[]): void {
 
   if (!leftPath || !rightPath) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill inventory diff --left mac-mini.json --right laptop.json"));
-    console.log(DIM("  or:    youmd skill inventory diff mac-mini.json laptop.json"));
+    console.log(chalk.yellow("  usage: you skill inventory diff --left mac-mini.json --right laptop.json"));
+    console.log(DIM("  or:    you skill inventory diff mac-mini.json laptop.json"));
     console.log("");
     return;
   }
@@ -1544,14 +1544,14 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
       console.log(JSON.stringify({
         success: false,
         error: "not_authenticated",
-        repair: "youmd login",
+        repair: "you login",
         secretValuesExposed: false,
       }, null, 2));
       return;
     }
     console.log("");
-    console.log(chalk.yellow("  not authenticated. run: ") + chalk.cyan("youmd login"));
-    console.log(DIM("  then: ") + chalk.cyan("youmd skill inventory status"));
+    console.log(chalk.yellow("  not authenticated. run: ") + chalk.cyan("you login"));
+    console.log(DIM("  then: ") + chalk.cyan("you skill inventory status"));
     console.log("");
     return;
   }
@@ -1614,7 +1614,7 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
     }
   } else {
     console.log(chalk.yellow("  local latest: missing"));
-    console.log(DIM("  repair: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --register-catalog --sync`));
+    console.log(DIM("  repair: ") + chalk.cyan(`you skill inventory --out-dir ${outDir} --register-catalog --sync`));
   }
 
   console.log("");
@@ -1663,9 +1663,9 @@ async function inventoryStatusCmd(args: string[]): Promise<void> {
   renderInventoryDrift(drift);
 
   console.log("");
-  console.log(DIM("  refresh: ") + chalk.cyan(`youmd skill inventory --out-dir ${outDir} --register-catalog --sync`));
-  console.log(DIM("  verify:  ") + chalk.cyan("youmd machine verify --write-report --sync-report"));
-  console.log(DIM("  exact diff needs two local JSON files: ") + chalk.cyan("youmd skill inventory diff macbook.json mac-mini.json"));
+  console.log(DIM("  refresh: ") + chalk.cyan(`you skill inventory --out-dir ${outDir} --register-catalog --sync`));
+  console.log(DIM("  verify:  ") + chalk.cyan("you machine verify --write-report --sync-report"));
+  console.log(DIM("  exact diff needs two local JSON files: ") + chalk.cyan("you skill inventory diff macbook.json mac-mini.json"));
   console.log("");
 }
 
@@ -1689,7 +1689,7 @@ async function inventoryCmd(args: string[]): Promise<void> {
     console.log(DIM("    ~/.you/skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs"));
     console.log(DIM("    ~/.youmd/skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs (legacy)"));
     console.log("");
-    console.log(DIM("  run ") + chalk.cyan("youmd skill install agent-stack-inventory") + DIM(" or sync your shared skills, then retry."));
+    console.log(DIM("  run ") + chalk.cyan("you skill install agent-stack-inventory") + DIM(" or sync your shared skills, then retry."));
     console.log("");
     return;
   }
@@ -1756,7 +1756,7 @@ async function inventoryCmd(args: string[]): Promise<void> {
 
   if (shouldSync && parsed) {
     if (!isAuthenticated()) {
-      console.log(DIM("  sync skipped: run `youmd login` or set YOU_API_KEY to persist this machine inventory."));
+      console.log(DIM("  sync skipped: run `you login` or set YOU_API_KEY to persist this machine inventory."));
     } else {
       try {
         const res = await syncAgentStackInventory(
@@ -1787,7 +1787,7 @@ function searchCmd(args: string[]): void {
   const query = args.join(" ");
   if (!query) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill search <query>"));
+    console.log(chalk.yellow("  usage: you skill search <query>"));
     console.log("");
     return;
   }
@@ -1812,7 +1812,7 @@ function searchCmd(args: string[]): void {
 async function browseCmd(): Promise<void> {
   if (!isAuthenticated()) {
     console.log("");
-    console.log(chalk.yellow("  not authenticated. run: youmd login"));
+    console.log(chalk.yellow("  not authenticated. run: you login"));
     console.log("");
     return;
   }
@@ -1834,7 +1834,7 @@ async function browseCmd(): Promise<void> {
 
     if (skills.length === 0) {
       console.log(DIM("  no skills published yet."));
-      console.log(DIM("  be the first: ") + chalk.cyan("youmd skill publish <name>"));
+      console.log(DIM("  be the first: ") + chalk.cyan("you skill publish <name>"));
       console.log("");
       return;
     }
@@ -1850,7 +1850,7 @@ async function browseCmd(): Promise<void> {
       console.log(`    ${DIM("v" + s.version)} ${DIM(s.scope)} ${DIM(`[${s.identityFields.join(", ")}]`)}`);
     }
     console.log("");
-    console.log(DIM(`  install with: youmd skill install <name>`));
+    console.log(DIM(`  install with: you skill install <name>`));
   } catch {
     spinner.fail("registry unreachable");
   }
@@ -1861,7 +1861,7 @@ async function publishSkillCmd(args: string[]): Promise<void> {
   const name = args[0];
   if (!name) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill publish <name>"));
+    console.log(chalk.yellow("  usage: you skill publish <name>"));
     console.log(DIM("  publishes an installed skill to the you.md registry."));
     console.log("");
     return;
@@ -1869,7 +1869,7 @@ async function publishSkillCmd(args: string[]): Promise<void> {
 
   if (!isAuthenticated()) {
     console.log("");
-    console.log(chalk.yellow("  not authenticated. run: youmd login"));
+    console.log(chalk.yellow("  not authenticated. run: you login"));
     console.log("");
     return;
   }
@@ -1912,7 +1912,7 @@ async function publishSkillCmd(args: string[]): Promise<void> {
       console.log(
         chalk.green("  \u2713") + ` ${chalk.bold(entry.name)} is live on the registry`
       );
-      console.log(DIM(`  others can install with: youmd skill install ${entry.name}`));
+      console.log(DIM(`  others can install with: you skill install ${entry.name}`));
     } else {
       spinner.fail(apiErrorMessage(res.data) || "publish failed");
     }
@@ -1925,7 +1925,7 @@ async function publishSkillCmd(args: string[]): Promise<void> {
 async function remoteStatusCmd(): Promise<void> {
   if (!isAuthenticated()) {
     console.log("");
-    console.log(chalk.yellow("  not authenticated. run: youmd login"));
+    console.log(chalk.yellow("  not authenticated. run: you login"));
     console.log("");
     return;
   }
@@ -1965,7 +1965,7 @@ function infoCmd(args: string[]): void {
   const name = args[0];
   if (!name) {
     console.log("");
-    console.log(chalk.yellow("  usage: youmd skill info <name>"));
+    console.log(chalk.yellow("  usage: you skill info <name>"));
     console.log("");
     return;
   }
@@ -2170,7 +2170,7 @@ export async function skillCommand(subcommand?: string, ...args: string[]): Prom
       const installed = catalog.skills.filter((s) => s.installed);
 
       console.log("");
-      console.log("  " + chalk.bold("youmd skill") + DIM(" — identity-aware agent skills"));
+      console.log("  " + chalk.bold("you skill") + DIM(" — identity-aware agent skills"));
       console.log("");
 
       if (installed.length > 0) {

@@ -394,7 +394,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       ctx.logActivity("read", "skills");
       if (names.length === 0) {
         return {
-          content: [{ type: "text", text: "no skills installed. run: youmd skill install voice-sync" }],
+          content: [{ type: "text", text: "no skills installed. run: you skill install voice-sync" }],
         };
       }
       return { content: [{ type: "text", text: `installed skills:\n${names.map((n) => `- ${n}`).join("\n")}` }] };
@@ -415,7 +415,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
         }
         const projects = listProjects(root);
         if (projects.length === 0) {
-          return { content: [{ type: "text", text: "no projects detected. create one with: youmd project init <name>" }] };
+          return { content: [{ type: "text", text: "no projects detected. create one with: you project init <name>" }] };
         }
         const current = getCurrentProject();
         const list = projects
@@ -763,7 +763,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
         category: string; content: string; tags?: string[];
       };
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       if (!category || !ctx.memoryCategories.includes(category)) {
         return {
@@ -825,7 +825,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       const title = typeof args.title === "string" ? args.title.trim() : "";
       if (!title) {
@@ -889,7 +889,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       const taskId = typeof args.task_id === "string" ? args.task_id.trim() : "";
       if (!taskId) {
@@ -949,7 +949,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       const days = typeof args.days === "number" && Number.isFinite(args.days) ? args.days : 90;
       const limit = typeof args.limit === "number" && Number.isFinite(args.limit) ? args.limit : 80;
@@ -1031,7 +1031,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       const name = typeof args.name === "string" ? args.name.trim() : "";
       if (!name) {
@@ -1142,7 +1142,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       const rawText = typeof args.raw_text === "string" ? args.raw_text.trim() : "";
       if (!rawText) {
@@ -1221,7 +1221,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       const { sourceType, sourceUrl } = args as { sourceType: string; sourceUrl: string };
       try {
@@ -1262,7 +1262,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       const { scope, ttl } = args as { scope?: string; ttl?: string };
       try {
@@ -1340,7 +1340,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
         return {
-          content: [{ type: "text", text: "authentication required — run `youmd login` or provide a you.md API key" }],
+          content: [{ type: "text", text: "authentication required — run `you login` or provide a you.md API key" }],
           isError: true,
         };
       }
@@ -1425,7 +1425,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
     handler: async (args, ctx) => {
       if (!ctx.authenticated) {
-        return { content: [{ type: "text", text: "not authenticated — run youmd login first" }], isError: true };
+        return { content: [{ type: "text", text: "not authenticated — run you login first" }], isError: true };
       }
       const params = new URLSearchParams();
       const activityArgs = args as { limit?: number; agentName?: string; action?: string };

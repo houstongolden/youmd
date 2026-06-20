@@ -218,7 +218,7 @@ describe("machine readiness verifier", () => {
     expect(inventory?.counts.uniqueSkillNames).toBe(430);
     expect(inventory?.htmlPath).toBe(latestJson.replace(/\.json$/, ".html"));
     expect(proof.agentStackInventory?.counts.missingFromYoumdCatalog).toBe(418);
-    expect(proof.summary.warnings).not.toContain("agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync");
+    expect(proof.summary.warnings).not.toContain("agent stack inventory proof missing; run you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync");
   });
 
   it("warns when machine proof explicitly has no agent stack inventory", () => {
@@ -227,7 +227,7 @@ describe("machine readiness verifier", () => {
     const proof = buildMachineVerificationProof({ readiness, agentStackInventory: null });
 
     expect(proof.agentStackInventory).toBeUndefined();
-    expect(proof.summary.warnings).toContain("agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync");
+    expect(proof.summary.warnings).toContain("agent stack inventory proof missing; run you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync");
   });
 
   it("writes a secret-safe machine proof report", () => {

@@ -28,7 +28,7 @@ describe("buildAgentStackRepoSnapshotFiles", () => {
           duplicateNameSamples: ["autoplan", "ghp_should_redact_12345678901234567890"],
           mirrorSamples: ["agent-stack-inventory"],
           source: "youmd-cli",
-          agentName: "youmd skill inventory",
+          agentName: "you skill inventory",
           secretValuesExposed: false,
           generatedAt: Date.UTC(2026, 5, 19, 20),
           updatedAt: Date.UTC(2026, 5, 19, 20),

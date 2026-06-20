@@ -145,11 +145,11 @@ function buildAgentStackInventoryDrift(inventories: Doc<"agentStackInventories">
             ? "ahead"
             : "ok";
     const repairCommands = status === "baseline" ? [] : [
-      "youmd pull",
-      "youmd stack sync",
-      "youmd skill sync",
-      "youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync",
-      "youmd machine verify --write-report --sync-report",
+      "you pull",
+      "you stack sync",
+      "you skill sync",
+      "you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync",
+      "you machine verify --write-report --sync-report",
     ];
     return {
       machineKey: row.machineKey,

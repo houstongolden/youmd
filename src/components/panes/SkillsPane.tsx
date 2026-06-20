@@ -320,7 +320,7 @@ function SkillMeshView({
           </p>
           <div className="mt-3">
             <CommandRow
-              command="youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync"
+              command="you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync"
               description="generate HTML/JSON and persist safe counts to You.md"
             />
           </div>
@@ -496,9 +496,9 @@ function SkillMeshView({
           <section>
             <PaneSectionLabel>verify and compare</PaneSectionLabel>
             <div className="space-y-2">
-              <CommandRow command="youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" description="refresh this machine's local/global skill mesh, catalog discovered references, and sync safe metadata" />
-              <CommandRow command="youmd machine verify --write-report --sync-report" description="write machine readiness proof with the latest skill mesh counts attached" />
-              <CommandRow command="youmd skill inventory diff macbook.json mac-mini.json" description="compare two trusted machine snapshots before calling sync parity clean" />
+              <CommandRow command="you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" description="refresh this machine's local/global skill mesh, catalog discovered references, and sync safe metadata" />
+              <CommandRow command="you machine verify --write-report --sync-report" description="write machine readiness proof with the latest skill mesh counts attached" />
+              <CommandRow command="you skill inventory diff macbook.json mac-mini.json" description="compare two trusted machine snapshots before calling sync parity clean" />
             </div>
           </section>
         </>
@@ -707,7 +707,7 @@ function SkillDetailView({
           <div>
             <PaneSectionLabel>use in shell</PaneSectionLabel>
             <CommandRow command={useCmd} description="copy and paste into the You.md shell" />
-            <CommandRow command={`youmd skill use ${skill.name}`} description="local CLI equivalent for terminal agents" />
+            <CommandRow command={`you skill use ${skill.name}`} description="local CLI equivalent for terminal agents" />
           </div>
         </div>
 
@@ -1130,17 +1130,17 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
       <div>
         <PaneSectionLabel>cli quick start</PaneSectionLabel>
         <div className="space-y-2">
-          <CommandRow command="youmd skill install all" description="install all bundled skills" />
+          <CommandRow command="you skill install all" description="install all bundled skills" />
           <CommandRow command="/new computer" description="mint a scoped key and generate a one-command fresh-machine setup prompt" />
-          <CommandRow command="youmd machine prompt --root ~/Desktop/CODE_YOU --days 30" description="terminal-generated Claude/Codex bootstrap command" />
+          <CommandRow command="you machine prompt --root ~/Desktop/CODE_YOU --days 30" description="terminal-generated Claude/Codex bootstrap command" />
           <CommandRow command="/skill use portfolio-graph-auditor" description="audit projects, APIs, env keys, and reuse candidates" />
-          <CommandRow command="youmd project portfolio-audit --root ~/Desktop/CODE_2025" description="local project/API/env portfolio scan" />
-          <CommandRow command="youmd skill use youstack-maintainer" description="organize or improve a named stack" />
-          <CommandRow command="youmd skill init-project" description="AGENTS/CLAUDE bootstrap + project-context/ + .you/ + links" />
-          <CommandRow command="youmd skill link claude" description="link skills to Claude Code" />
-          <CommandRow command="youmd skill sync" description="re-render skills with latest identity" />
-          <CommandRow command="youmd skill create" description="scaffold a new custom skill" />
-          <CommandRow command="youmd skill improve" description="review metrics, find gaps" />
+          <CommandRow command="you project portfolio-audit --root ~/Desktop/CODE_2025" description="local project/API/env portfolio scan" />
+          <CommandRow command="you skill use youstack-maintainer" description="organize or improve a named stack" />
+          <CommandRow command="you skill init-project" description="AGENTS/CLAUDE bootstrap + project-context/ + .you/ + links" />
+          <CommandRow command="you skill link claude" description="link skills to Claude Code" />
+          <CommandRow command="you skill sync" description="re-render skills with latest identity" />
+          <CommandRow command="you skill create" description="scaffold a new custom skill" />
+          <CommandRow command="you skill improve" description="review metrics, find gaps" />
         </div>
       </div>
 
@@ -1159,7 +1159,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           <div className="space-y-1.5">
             <p className="text-[hsl(var(--text-primary))] opacity-70">2. interpolate</p>
             <p>
-              when you run <span className="text-[hsl(var(--accent))]">youmd skill use</span>, template
+              when you run <span className="text-[hsl(var(--accent))]">you skill use</span>, template
               variables resolve against your live brain data — voice, preferences, directives.
             </p>
           </div>
@@ -1173,7 +1173,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           <div className="space-y-1.5">
             <p className="text-[hsl(var(--text-primary))] opacity-70">4. link</p>
             <p>
-              <span className="text-[hsl(var(--accent))]">youmd skill link claude</span> writes rendered
+              <span className="text-[hsl(var(--accent))]">you skill link claude</span> writes rendered
               skills to .claude/skills/youmd/ — every coding agent knows who you are.
             </p>
           </div>
