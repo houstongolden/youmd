@@ -7,6 +7,7 @@ import { readRealtimeSyncStatusFile } from "./realtime-sync";
 
 export interface YoumdDaemon {
   label: string;
+  legacyLabel?: string;
   name: string;
   command: string;
   intervalSeconds: number;
@@ -17,6 +18,7 @@ export interface YoumdDaemon {
 
 export interface YoumdDaemonHealth extends YoumdDaemon {
   loaded: boolean;
+  legacyLoaded?: boolean;
   lastLogLine?: string;
   lastErrorLine?: string;
   lastActivityAt?: string;
@@ -33,6 +35,7 @@ function runtimeLogPath(file: string): string {
 export const YOUMD_DAEMONS: YoumdDaemon[] = [
   {
     label: "com.you.realtime-sync",
+    legacyLabel: "com.youmd.realtime-sync",
     name: "realtime brain",
     command: "youmd sync --live --daemon",
     intervalSeconds: 0,
@@ -41,6 +44,7 @@ export const YOUMD_DAEMONS: YoumdDaemon[] = [
   },
   {
     label: "com.you.skillstack-sync",
+    legacyLabel: "com.youmd.skillstack-sync",
     name: "skills/stacks",
     command: "youmd stack sync",
     intervalSeconds: 300,
@@ -50,6 +54,7 @@ export const YOUMD_DAEMONS: YoumdDaemon[] = [
   },
   {
     label: "com.you.identity-sync",
+    legacyLabel: "com.youmd.identity-sync",
     name: "identity/API",
     command: "youmd sync --daemon",
     intervalSeconds: 300,
@@ -58,6 +63,7 @@ export const YOUMD_DAEMONS: YoumdDaemon[] = [
   },
   {
     label: "com.you.context-sync",
+    legacyLabel: "com.youmd.context-sync",
     name: "project context",
     command: "youmd stack context-sync",
     intervalSeconds: 900,
@@ -148,6 +154,7 @@ export function getDaemonHealth(): YoumdDaemonHealth[] {
     return {
       ...daemon,
       loaded: isLaunchAgentLoaded(daemon.label),
+      legacyLoaded: daemon.legacyLabel ? isLaunchAgentLoaded(daemon.legacyLabel) : false,
       lastLogLine: tailUsefulLine(daemon.combinedLog ?? daemon.stdoutLog) ?? tailUsefulLine(daemon.stdoutLog),
       lastErrorLine,
       lastActivityAt: newestMtimeIso(logs),

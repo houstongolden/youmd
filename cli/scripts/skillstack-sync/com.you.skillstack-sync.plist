@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.youmd.identity-sync</string>
+    <string>com.you.skillstack-sync</string>
 
     <key>ProgramArguments</key>
     <array>
         <string>/bin/zsh</string>
         <string>-lc</string>
-        <string>youmd sync --daemon</string>
+        <string>youmd stack sync</string>
     </array>
 
     <key>StartInterval</key>
@@ -22,10 +22,10 @@
     <false/>
 
     <key>StandardOutPath</key>
-    <string>__HOME__/.youmd/logs/identity-sync.out.log</string>
+    <string>__HOME__/.you/logs/skillstack-sync.out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>__HOME__/.youmd/logs/identity-sync.err.log</string>
+    <string>__HOME__/.you/logs/skillstack-sync.err.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

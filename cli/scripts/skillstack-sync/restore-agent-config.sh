@@ -25,7 +25,7 @@ set -euo pipefail
 
 AGENT_SHARED="${HOME}/.agent-shared"
 SRC="${AGENT_SHARED}/agent-config"
-LOG_DIR="${HOME}/.youmd/logs"
+LOG_DIR="${YOU_HOME:-${YOUMD_HOME:-${HOME}/.you}}/logs"
 LOG_FILE="${LOG_DIR}/restore-agent-config.log"
 
 DRY_RUN=0

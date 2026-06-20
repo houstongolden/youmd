@@ -7,10 +7,12 @@ export type LocalReadinessStatus = "ready" | "warn" | "blocked" | "missing";
 
 export type LocalDaemonHealth = {
   label: string;
+  legacyLabel?: string;
   name: string;
   command: string;
   intervalSeconds: number;
   loaded: boolean;
+  legacyLoaded?: boolean;
   lastLogLine?: string;
   lastErrorLine?: string;
   lastActivityAt?: string;
@@ -19,6 +21,7 @@ export type LocalDaemonHealth = {
 
 type LocalDaemonConfig = {
   label: string;
+  legacyLabel?: string;
   name: string;
   command: string;
   intervalSeconds: number;
@@ -210,38 +213,42 @@ export type LocalMachineReadiness = {
 
 const DAEMONS: LocalDaemonConfig[] = [
   {
-    label: "com.youmd.realtime-sync",
+    label: "com.you.realtime-sync",
+    legacyLabel: "com.youmd.realtime-sync",
     name: "realtime brain",
     command: "youmd sync --live --daemon",
     intervalSeconds: 0,
-    stdoutLog: "~/.youmd/logs/realtime-sync.out.log",
-    stderrLog: "~/.youmd/logs/realtime-sync.err.log",
+    stdoutLog: "~/.you/logs/realtime-sync.out.log",
+    stderrLog: "~/.you/logs/realtime-sync.err.log",
   },
   {
-    label: "com.youmd.skillstack-sync",
+    label: "com.you.skillstack-sync",
+    legacyLabel: "com.youmd.skillstack-sync",
     name: "skills/stacks",
     command: "youmd stack sync",
     intervalSeconds: 300,
-    stdoutLog: "~/.youmd/logs/skillstack-sync.out.log",
-    stderrLog: "~/.youmd/logs/skillstack-sync.err.log",
-    combinedLog: "~/.youmd/logs/skillstack-sync.log",
+    stdoutLog: "~/.you/logs/skillstack-sync.out.log",
+    stderrLog: "~/.you/logs/skillstack-sync.err.log",
+    combinedLog: "~/.you/logs/skillstack-sync.log",
   },
   {
-    label: "com.youmd.identity-sync",
+    label: "com.you.identity-sync",
+    legacyLabel: "com.youmd.identity-sync",
     name: "identity/API",
     command: "youmd sync --daemon",
     intervalSeconds: 300,
-    stdoutLog: "~/.youmd/logs/identity-sync.out.log",
-    stderrLog: "~/.youmd/logs/identity-sync.err.log",
+    stdoutLog: "~/.you/logs/identity-sync.out.log",
+    stderrLog: "~/.you/logs/identity-sync.err.log",
   },
   {
-    label: "com.youmd.context-sync",
+    label: "com.you.context-sync",
+    legacyLabel: "com.youmd.context-sync",
     name: "project context",
     command: "youmd stack context-sync",
     intervalSeconds: 900,
-    stdoutLog: "~/.youmd/logs/context-sync.out.log",
-    stderrLog: "~/.youmd/logs/context-sync.err.log",
-    combinedLog: "~/.youmd/logs/context-sync.log",
+    stdoutLog: "~/.you/logs/context-sync.out.log",
+    stderrLog: "~/.you/logs/context-sync.err.log",
+    combinedLog: "~/.you/logs/context-sync.log",
   },
 ] as const;
 
@@ -322,6 +329,22 @@ function readJson(filePath: string): Record<string, unknown> | null {
   }
 }
 
+function firstExisting(paths: string[]): string {
+  return paths.find((candidate) => exists(candidate)) ?? paths[0] ?? "";
+}
+
+function youHomePath(relPath: string): string {
+  return firstExisting([`~/.you/${relPath}`, `~/.youmd/${relPath}`]);
+}
+
+function isYouHomeDirectory(relPath: string): boolean {
+  return isDirectory(`~/.you/${relPath}`) || isDirectory(`~/.youmd/${relPath}`);
+}
+
+function readYouHomeJson(relPath: string): Record<string, unknown> | null {
+  return readJson(`~/.you/${relPath}`) ?? readJson(`~/.youmd/${relPath}`);
+}
+
 function booleanField(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
@@ -394,10 +417,12 @@ function daemonHealth(): LocalDaemonHealth[] {
 
     return {
       label: daemon.label,
+      legacyLabel: daemon.legacyLabel,
       name: daemon.name,
       command: daemon.command,
       intervalSeconds: daemon.intervalSeconds,
       loaded: launchAgentLoaded(daemon.label),
+      legacyLoaded: daemon.legacyLabel ? launchAgentLoaded(daemon.legacyLabel) : false,
       lastLogLine: tailUsefulLine(daemon.combinedLog ?? daemon.stdoutLog) ?? tailUsefulLine(daemon.stdoutLog),
       lastErrorLine,
       lastActivityAt: newestMtimeIso(logs),
@@ -574,7 +599,7 @@ function localSkillSyncStatus(home: string): LocalMachineReadiness["skillSync"] 
   const canonicalRoot = path.join(home, ".agent-shared", "claude-skills");
   const claudeRoot = path.join(home, ".claude", "skills");
   const codexRoot = path.join(home, ".codex", "skills");
-  const youmdCatalogPath = path.join(home, ".youmd", "skills", "youmd-skills.yaml");
+  const youmdCatalogPath = expandHome(youHomePath("skills/youmd-skills.yaml"));
   const canonicalNames = skillNames(canonicalRoot);
   const claudeNames = skillNames(claudeRoot);
   const codexNames = skillNames(codexRoot);
@@ -626,7 +651,7 @@ function localSkillSyncStatus(home: string): LocalMachineReadiness["skillSync"] 
     recentSharedSkills: canonicalNames.slice(0, 6),
     highlightedSkill: highlighted,
     syncCommand: "youmd pull && youmd sync && youmd skill sync && git -C ~/.agent-shared pull --ff-only && ~/.agent-shared/bin/sync-agent-shared.sh",
-    verifyCommand: `rg -n "${highlightedName}" ~/.youmd/skills ~/.agent-shared/STACK-MAP.md && ls -la ~/.agent-shared/claude-skills/${highlightedName} ~/.claude/skills/${highlightedName} ~/.codex/skills/${highlightedName}`,
+    verifyCommand: `rg -n "${highlightedName}" ~/.you/skills ~/.youmd/skills ~/.agent-shared/STACK-MAP.md && ls -la ~/.agent-shared/claude-skills/${highlightedName} ~/.claude/skills/${highlightedName} ~/.codex/skills/${highlightedName}`,
     secretValuesExposed: false,
   };
 }
@@ -646,7 +671,7 @@ function stringField(value: unknown): string | undefined {
 }
 
 function latestMachineProof(): LocalMachineProofSummary | undefined {
-  const reportPath = expandHome("~/.youmd/machine-reports/latest.json");
+  const reportPath = expandHome(youHomePath("machine-reports/latest.json"));
   const proof = readJson(reportPath);
   if (!proof) return undefined;
   const summary =
@@ -686,7 +711,7 @@ function latestMachineProof(): LocalMachineProofSummary | undefined {
 }
 
 function realtimeSecretVaultStatus(): Pick<LocalMachineReadiness["envVault"], "accountSnapshotStatus" | "accountSnapshotSummary" | "accountSnapshotUpdatedAt" | "latestAccountSnapshot" | "accountPullCommand" | "accountRestoreCommand"> {
-  const status = readJson("~/.youmd/realtime-sync-status.json");
+  const status = readYouHomeJson("realtime-sync-status.json");
   const secretVault = status?.secretVault && typeof status.secretVault === "object"
     ? status.secretVault as Record<string, unknown>
     : null;
@@ -724,7 +749,7 @@ function realtimeSecretVaultStatus(): Pick<LocalMachineReadiness["envVault"], "a
 }
 
 function realtimeAgentBusStatus(): LocalMachineReadiness["agentBus"] {
-  const status = readJson("~/.youmd/realtime-sync-status.json");
+  const status = readYouHomeJson("realtime-sync-status.json");
   const agentBus = status?.agentBus && typeof status.agentBus === "object"
     ? status.agentBus as Record<string, unknown>
     : null;
@@ -768,7 +793,7 @@ function realtimeAgentBusStatus(): LocalMachineReadiness["agentBus"] {
     channelCount: numberField(agentBus?.channelCount),
     recentCount: numberField(agentBus?.recentCount) || messages.length,
     latestMessageAt: latest ? new Date(latest).toISOString() : undefined,
-    inboxPath: stringField(agentBus?.inboxPath) ?? "~/.youmd/agent-bus/inbox.json",
+    inboxPath: stringField(agentBus?.inboxPath) ?? "~/.you/agent-bus/inbox.json",
     sendCommand: stringField(agentBus?.sendCommand) ?? 'youmd agent send "hello from this Mac"',
     messages,
     secretValuesExposed: false,
@@ -783,14 +808,14 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
   const projects = projectReadiness(rootDir);
   const youmdCli = shell("command -v youmd");
   const youmdVersion = youmdCli.ok ? shell("youmd --version", 3500).stdout : "";
-  const config = readJson("~/.youmd/config.json");
+  const config = readYouHomeJson("config.json");
   const hasApiKey =
     (typeof config?.token === "string" && config.token.length > 0) ||
     (typeof process.env.YOUMD_API_KEY === "string" && process.env.YOUMD_API_KEY.length > 0);
   const sharedSkillRoot = path.join(home, ".agent-shared", "claude-skills");
   const claudeSkillsPresent = isDirectory("~/.claude/skills");
   const codexSkillsPresent = isDirectory("~/.codex/skills");
-  const youmdSkillsPresent = isDirectory("~/.youmd/skills");
+  const youmdSkillsPresent = isYouHomeDirectory("skills");
   const syncScriptPresent = exists("~/.agent-shared/bin/sync-agent-shared.sh");
   const agentStack = {
     status: statusFrom([youmdCli.ok, Boolean(config), hasApiKey, isDirectory(sharedSkillRoot), syncScriptPresent]) as LocalReadinessStatus,
@@ -826,7 +851,7 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     backupScriptPresent: exists("~/.agent-shared/bin/env-secure-backup.sh"),
     restoreScriptPresent: exists("~/.agent-shared/bin/env-secure-restore.sh"),
     interactiveBackupPresent: exists("~/.agent-shared/bin/env-backup-interactive.command"),
-    privateVaultKeyPresent: exists("~/.youmd/vault-key.enc"),
+    privateVaultKeyPresent: exists("~/.you/vault-key.enc") || exists("~/.youmd/vault-key.enc"),
     ...accountVault,
     secretValuesExposed: false as const,
     notes: [
@@ -837,7 +862,11 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     ],
   };
   const warnings = [
-    ...daemons.filter((daemon) => !daemon.loaded).map((daemon) => `${daemon.name} daemon not loaded`),
+    ...daemons
+      .filter((daemon) => !daemon.loaded)
+      .map((daemon) => daemon.legacyLoaded && daemon.legacyLabel
+        ? `${daemon.name} daemon still using legacy ${daemon.legacyLabel}`
+        : `${daemon.name} daemon not loaded`),
     ...daemons.flatMap((daemon) => (daemon.warning ? [`${daemon.name}: ${daemon.warning}`] : [])),
     projects.totals.needsEnv > 0 ? `${projects.totals.needsEnv} projects need env restore` : "",
     projects.scanned === 0 ? `no project directories found under ${rootDir}` : "",

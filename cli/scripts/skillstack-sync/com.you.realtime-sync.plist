@@ -3,29 +3,26 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.youmd.context-sync</string>
+    <string>com.you.realtime-sync</string>
 
     <key>ProgramArguments</key>
     <array>
         <string>/bin/zsh</string>
         <string>-lc</string>
-        <string>youmd stack context-sync</string>
+        <string>youmd sync --live --daemon</string>
     </array>
-
-    <key>StartInterval</key>
-    <integer>900</integer>
 
     <key>RunAtLoad</key>
     <true/>
 
     <key>KeepAlive</key>
-    <false/>
+    <true/>
 
     <key>StandardOutPath</key>
-    <string>__HOME__/.youmd/logs/context-sync.out.log</string>
+    <string>__HOME__/.you/logs/realtime-sync.out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>__HOME__/.youmd/logs/context-sync.err.log</string>
+    <string>__HOME__/.you/logs/realtime-sync.err.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

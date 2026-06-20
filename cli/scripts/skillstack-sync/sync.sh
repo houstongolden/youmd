@@ -17,7 +17,7 @@ set -euo pipefail
 # Config
 # ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-LOG_DIR="${HOME}/.youmd/logs"
+LOG_DIR="${YOU_HOME:-${YOUMD_HOME:-${HOME}/.you}}/logs"
 LOG_FILE="${LOG_DIR}/skillstack-sync.log"
 
 GIT_USER_NAME="${GIT_USER_NAME:-Houston Golden}"

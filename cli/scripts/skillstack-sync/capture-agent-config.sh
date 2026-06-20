@@ -19,7 +19,7 @@ set -euo pipefail
 
 AGENT_SHARED="${HOME}/.agent-shared"
 DEST="${AGENT_SHARED}/agent-config"
-LOG_DIR="${HOME}/.youmd/logs"
+LOG_DIR="${YOU_HOME:-${YOUMD_HOME:-${HOME}/.you}}/logs"
 LOG_FILE="${LOG_DIR}/capture-agent-config.log"
 
 DRY_RUN=0
@@ -83,9 +83,16 @@ capture_plist() {
   sed "s|${HOME}|__HOME__|g" "${src}" > "${target}"
   log "captured plist ${label} → agent-config/automations/launchd/${label}.plist"
 }
+capture_plist "com.you.skillstack-sync"
+capture_plist "com.you.identity-sync"
+capture_plist "com.you.context-sync"
+capture_plist "com.you.realtime-sync"
+# Legacy labels are captured only if present so restore audits can identify
+# old hosts, but `youmd stack daemon install` replaces them with com.you.*.
 capture_plist "com.youmd.skillstack-sync"
 capture_plist "com.youmd.identity-sync"
 capture_plist "com.youmd.context-sync"
+capture_plist "com.youmd.realtime-sync"
 capture_plist "com.houstongolden.agent-runtime-guard"
 
 if ! is_dry; then

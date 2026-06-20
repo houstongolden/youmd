@@ -10,15 +10,29 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LAUNCH_AGENTS_DIR="${HOME}/Library/LaunchAgents"
-LOG_DIR="${HOME}/.youmd/logs"
+LOG_DIR="${YOU_HOME:-${YOUMD_HOME:-${HOME}/.you}}/logs"
 
-PLISTS="com.youmd.realtime-sync com.youmd.skillstack-sync com.youmd.identity-sync com.youmd.context-sync"
+PLISTS="com.you.realtime-sync com.you.skillstack-sync com.you.identity-sync com.you.context-sync"
+LEGACY_PLISTS="com.youmd.realtime-sync com.youmd.skillstack-sync com.youmd.identity-sync com.youmd.context-sync"
 
 echo "==> Creating log directory: ${LOG_DIR}"
 mkdir -p "${LOG_DIR}"
 
 echo "==> Creating LaunchAgents directory: ${LAUNCH_AGENTS_DIR}"
 mkdir -p "${LAUNCH_AGENTS_DIR}"
+
+echo "==> Removing legacy com.youmd LaunchAgents if present"
+for label in ${LEGACY_PLISTS}; do
+  dst="${LAUNCH_AGENTS_DIR}/${label}.plist"
+  if launchctl list "${label}" >/dev/null 2>&1; then
+    echo "  Unloading legacy ${label}..."
+    launchctl unload "${dst}" 2>/dev/null || true
+  fi
+  if [ -f "${dst}" ]; then
+    echo "  Removing legacy ${dst}"
+    rm -f "${dst}"
+  fi
+done
 
 for label in ${PLISTS}; do
   src="${SCRIPT_DIR}/${label}.plist"
@@ -70,10 +84,10 @@ echo "  ${LOG_DIR}/context-sync.out.log     (daemon stdout)"
 echo "  ${LOG_DIR}/context-sync.err.log     (daemon stderr)"
 echo ""
 echo "Check daemon status:"
-echo "  launchctl list com.youmd.realtime-sync"
-echo "  launchctl list com.youmd.skillstack-sync"
-echo "  launchctl list com.youmd.identity-sync"
-echo "  launchctl list com.youmd.context-sync"
+echo "  launchctl list com.you.realtime-sync"
+echo "  launchctl list com.you.skillstack-sync"
+echo "  launchctl list com.you.identity-sync"
+echo "  launchctl list com.you.context-sync"
 echo ""
 echo "To uninstall:"
 for label in ${PLISTS}; do

@@ -284,7 +284,7 @@ function MachineSyncMeshPanel({
   const status = report?.summary.status ?? latestProof?.status ?? "unknown";
   const meshNodes = [
     ["you.md", "identity"],
-    ["realtime", report?.daemons.find((daemon) => daemon.label === "realtime-sync")?.loaded ? "live" : "polling"],
+    ["realtime", report?.daemons.find((daemon) => daemon.label.endsWith(".realtime-sync"))?.loaded ? "live" : "polling"],
     ["agents", report?.agentBus?.state ?? "quiet"],
     ["skills", report?.skillSync.status ?? "waiting"],
     ["projects", report ? `${report.summary.projectReady}/${report.summary.projectScanned}` : proofCount ? `${proofCount} proofs` : "pending"],
@@ -891,7 +891,7 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">{daemon.name}</span>
                         <span className={`ml-auto font-mono text-[9px] uppercase tracking-[0.14em] ${daemon.loaded ? "text-[hsl(var(--success))]" : "text-[hsl(var(--accent))]"}`}>
-                          {daemon.loaded ? "loaded" : "not loaded"}
+                          {daemon.loaded ? "loaded" : daemon.legacyLoaded ? "legacy loaded" : "not loaded"}
                         </span>
                       </div>
                       <div className="mt-1 font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-42">
@@ -903,7 +903,9 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                       <div className="mt-1 opacity-45">{formatTime(daemon.lastActivityAt)}</div>
                     </div>
                     <p className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
-                      {daemon.warning ?? daemon.lastLogLine ?? "no daemon log yet"}
+                      {daemon.legacyLoaded && daemon.legacyLabel
+                        ? `legacy ${daemon.legacyLabel} is still loaded; run youmd stack daemon install to replace it`
+                        : daemon.warning ?? daemon.lastLogLine ?? "no daemon log yet"}
                     </p>
                   </div>
                 ))}

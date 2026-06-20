@@ -584,15 +584,17 @@ export async function stackCommand(
     if (action === "uninstall") {
       console.log("");
       for (const daemon of YOUMD_DAEMONS) {
-        const plistPath = path.join(LAUNCH_AGENTS_DIR, `${daemon.label}.plist`);
-        // unload (ignore errors — may not be loaded)
-        child_process.spawnSync("launchctl", ["unload", plistPath], { stdio: "inherit" });
-        // remove plist if present
-        if (fs.existsSync(plistPath)) {
-          fs.unlinkSync(plistPath);
-          console.log("  " + chalk.green("removed") + " " + plistPath);
-        } else {
-          console.log("  " + chalk.dim("not found: ") + plistPath);
+        for (const label of [daemon.label, daemon.legacyLabel].filter(Boolean) as string[]) {
+          const plistPath = path.join(LAUNCH_AGENTS_DIR, `${label}.plist`);
+          // unload (ignore errors — may not be loaded)
+          child_process.spawnSync("launchctl", ["unload", plistPath], { stdio: "inherit" });
+          // remove plist if present
+          if (fs.existsSync(plistPath)) {
+            fs.unlinkSync(plistPath);
+            console.log("  " + chalk.green("removed") + " " + plistPath);
+          } else {
+            console.log("  " + chalk.dim("not found: ") + plistPath);
+          }
         }
       }
       console.log("");
@@ -609,6 +611,9 @@ export async function stackCommand(
         console.log("  " + state + "   " + daemon.label + DIM(` (${daemon.name}, ${cadence})`));
         if (daemon.lastActivityAt) {
           console.log("             " + DIM(`last activity: ${daemon.lastActivityAt}`));
+        }
+        if (daemon.legacyLoaded && daemon.legacyLabel) {
+          console.log("             " + chalk.yellow(`legacy loaded: ${daemon.legacyLabel}; run youmd stack daemon install to replace it`));
         }
         if (daemon.warning) {
           console.log("             " + chalk.yellow(`last warning: ${daemon.warning}`));

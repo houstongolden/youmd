@@ -29,7 +29,7 @@ Cross-machine sync toolkit for Houston Golden's agent skill/stack setup.
 ### Complementary sync planes
 
 - **Realtime identity/project/Skill Mesh plane:** `youmd sync --live --daemon` subscribes to Convex websocket updates, mints only a short-lived sync session token, materializes identity files and installed You.md skills locally, and triggers bounded shared stack/project-context plus safe agent-stack inventory syncs. It never prints or returns raw `.env.local` values.
-- **Identity repair plane:** `youmd sync --daemon` (Convex ↔ local profile, memories, preferences). Automated via `com.youmd.identity-sync` daemon as a timer-based fallback. Daemon mode refreshes local files/skills and skips unsafe lossy pushes instead of forcing over richer server data.
+- **Identity repair plane:** `youmd sync --daemon` (Convex ↔ local profile, memories, preferences). Automated via `com.you.identity-sync` daemon as a timer-based fallback. Daemon mode refreshes local files/skills and skips unsafe lossy pushes instead of forcing over richer server data.
 - **Project-context plane:** `youmd stack context-sync` safely commits and syncs only `AGENTS.md`, `CLAUDE.md`, `project-context/`, and `.claude/` in curated Houston-owned repos. It refuses to merge remote app-code changes.
 - **Env-vault plane:** `cli/scripts/env-vault/restore.sh` for secrets (manual, invoked on new machine); also available as `youmd env restore <vault>`.
 
@@ -42,10 +42,10 @@ cli/scripts/skillstack-sync/
 ├── sync.sh                         Core syncer (bash 3.2 compatible)
 ├── install-daemons.sh              Installs all resident LaunchAgents
 ├── bootstrap-new-mac.sh            New machine setup script
-├── com.youmd.realtime-sync.plist   LaunchAgent: runs `youmd sync --live --daemon` as a resident websocket + Skill Mesh syncer
-├── com.youmd.skillstack-sync.plist LaunchAgent: runs `youmd stack sync` every 5 min
-├── com.youmd.identity-sync.plist   LaunchAgent: runs `youmd sync --daemon` every 5 min
-├── com.youmd.context-sync.plist    LaunchAgent: runs `youmd stack context-sync` every 15 min
+├── com.you.realtime-sync.plist     LaunchAgent: runs `youmd sync --live --daemon` as a resident websocket + Skill Mesh syncer
+├── com.you.skillstack-sync.plist   LaunchAgent: runs `youmd stack sync` every 5 min
+├── com.you.identity-sync.plist     LaunchAgent: runs `youmd sync --daemon` every 5 min
+├── com.you.context-sync.plist      LaunchAgent: runs `youmd stack context-sync` every 15 min
 └── README.md                       This file
 ```
 
@@ -66,7 +66,7 @@ cli/scripts/skillstack-sync/
      → skips if no changes detected
 ```
 
-All actions logged to `~/.youmd/logs/skillstack-sync.log`.
+All actions logged to `~/.you/logs/skillstack-sync.log`, with legacy `~/.youmd` logs still readable during migration.
 
 ### Flags
 
@@ -106,35 +106,35 @@ bash cli/scripts/skillstack-sync/install-daemons.sh
 ```
 
 Installs four LaunchAgents:
-- `com.youmd.realtime-sync` → runs `youmd sync --live --daemon`, including a bounded `youmd skill inventory --sync` pass every 30 minutes by default
-- `com.youmd.skillstack-sync` → runs `youmd stack sync`
-- `com.youmd.identity-sync` → runs `youmd sync --daemon`
-- `com.youmd.context-sync` → runs `youmd stack context-sync`
+- `com.you.realtime-sync` → runs `youmd sync --live --daemon`, including a bounded `youmd skill inventory --sync` pass every 30 minutes by default
+- `com.you.skillstack-sync` → runs `youmd stack sync`
+- `com.you.identity-sync` → runs `youmd sync --daemon`
+- `com.you.context-sync` → runs `youmd stack context-sync`
 
 Skill Mesh inventory knobs:
 
 ```bash
 YOUMD_LIVE_SYNC_INVENTORY=0                    # disable resident inventory sync
 YOUMD_LIVE_SYNC_INVENTORY_INTERVAL_SECONDS=900 # tune cadence; default 1800
-YOUMD_AGENT_STACK_INVENTORY_DIR=~/.youmd/agent-stack-inventory
+YOU_AGENT_STACK_INVENTORY_DIR=~/.you/agent-stack-inventory
 ```
 
 Check status:
 ```bash
 youmd stack daemon status
 # or directly:
-launchctl list com.youmd.skillstack-sync
-launchctl list com.youmd.realtime-sync
-launchctl list com.youmd.identity-sync
-launchctl list com.youmd.context-sync
+launchctl list com.you.skillstack-sync
+launchctl list com.you.realtime-sync
+launchctl list com.you.identity-sync
+launchctl list com.you.context-sync
 ```
 
 Check logs:
 ```bash
-tail -f ~/.youmd/logs/skillstack-sync.log
-tail -f ~/.youmd/logs/skillstack-sync.out.log
-tail -f ~/.youmd/logs/identity-sync.out.log
-tail -f ~/.youmd/logs/context-sync.log
+tail -f ~/.you/logs/skillstack-sync.log
+tail -f ~/.you/logs/skillstack-sync.out.log
+tail -f ~/.you/logs/identity-sync.out.log
+tail -f ~/.you/logs/context-sync.log
 ```
 
 ### Uninstall daemons
@@ -145,12 +145,12 @@ youmd stack daemon uninstall
 
 Or manually:
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.youmd.skillstack-sync.plist
-launchctl unload ~/Library/LaunchAgents/com.youmd.identity-sync.plist
-launchctl unload ~/Library/LaunchAgents/com.youmd.context-sync.plist
-rm ~/Library/LaunchAgents/com.youmd.skillstack-sync.plist
-rm ~/Library/LaunchAgents/com.youmd.identity-sync.plist
-rm ~/Library/LaunchAgents/com.youmd.context-sync.plist
+launchctl unload ~/Library/LaunchAgents/com.you.skillstack-sync.plist
+launchctl unload ~/Library/LaunchAgents/com.you.identity-sync.plist
+launchctl unload ~/Library/LaunchAgents/com.you.context-sync.plist
+rm ~/Library/LaunchAgents/com.you.skillstack-sync.plist
+rm ~/Library/LaunchAgents/com.you.identity-sync.plist
+rm ~/Library/LaunchAgents/com.you.context-sync.plist
 ```
 
 ---

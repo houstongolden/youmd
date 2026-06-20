@@ -10,7 +10,7 @@
 # Usage: bash bootstrap-new-mac.sh
 
 set -euo pipefail
-export PATH="${HOME}/.youmd/bin:${HOME}/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
+export PATH="${HOME}/.you/bin:${HOME}/.you/npm-global/bin:${HOME}/.youmd/bin:${HOME}/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:${PATH}"
 
 AGENT_SHARED="${HOME}/.agent-shared"
 SCISTACK="${HOME}/.claude/scistack"
