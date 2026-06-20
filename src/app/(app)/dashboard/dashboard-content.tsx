@@ -1860,6 +1860,12 @@ export function DashboardContent() {
         title: activity.title,
         detail: activity.detail ?? undefined,
         status: activity.status,
+        projectSlug: activity.projectSlug ?? undefined,
+        entityType: activity.entityType ?? undefined,
+        entityId: activity.entityId ?? undefined,
+        sourceHost: activity.sourceHost ?? undefined,
+        sourceAgent: activity.sourceAgent ?? undefined,
+        sourceRuntime: activity.sourceRuntime ?? undefined,
       });
     }
 
@@ -1890,6 +1896,7 @@ export function DashboardContent() {
           title: agentRow.agentName,
           detail: `${agentRow.reads} reads · ${agentRow.writes} writes`,
           status: now - agentRow.lastSeen < 5 * 60 * 1000 ? "live" : "info",
+          sourceAgent: agentRow.agentName,
         });
       }
     }

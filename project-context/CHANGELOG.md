@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(activity): link brain log events to proof surfaces
+- Live Brain Log entries now preserve safe `projectSlug`, `entityType`, `entityId`, source host, source agent, and runtime metadata from `brainActivities`.
+- Added compact click targets on log rows so project events open project detail pages, skill/inventory events open Skill Mesh, machine/vault events open Machine proof, task events open Tasks, and agent events open Activity.
+- Kept the tags bounded to three per event and rendered as low-noise metadata chips so the central stream becomes navigable without adding another activity pane.
+- Verified with root TypeScript, production Next build, and clean-reference agent-docs CI.
+
 ### feat(sync): add dynamic Skill Mesh report mode
 - Added a default `report` mode to the Skills pane Skill Mesh so the app summarizes the live synced inventory as a decision surface before exposing raw source/proof/audit tables.
 - The dynamic report uses existing safe inventory, source-group, proof, and drift semantics to explain source of truth, sync health, catalog coverage, and DRY review pressure.

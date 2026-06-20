@@ -12,6 +12,12 @@ export type LiveLogEntry = {
   title: string;
   detail?: string;
   status?: "live" | "ok" | "warn" | "error" | "info";
+  projectSlug?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  sourceHost?: string | null;
+  sourceAgent?: string | null;
+  sourceRuntime?: string | null;
 };
 
 type LiveBrainLogProps = {
@@ -57,6 +63,64 @@ function pixelKind(source: string): "machine" | "agent" | "shell" {
   return "shell";
 }
 
+type ActivityTarget = {
+  label: string;
+  href?: string;
+  title?: string;
+};
+
+function entityHref(entityType?: string | null, entityId?: string | null) {
+  const normalized = (entityType ?? "").toLowerCase();
+  if (!normalized) return undefined;
+  if (normalized.includes("agentstack") || normalized.includes("skill") || normalized.includes("inventory")) {
+    return "/shell?tab=skills&view=mesh";
+  }
+  if (normalized.includes("machine") || normalized.includes("vault")) {
+    return "/shell?tab=machine";
+  }
+  if (normalized.includes("task")) {
+    return "/shell?tab=tasks";
+  }
+  if (normalized.includes("repo") || normalized.includes("github")) {
+    return "/shell?tab=settings";
+  }
+  if (entityId) return "/shell?tab=home";
+  return undefined;
+}
+
+function activityTargets(entry: LiveLogEntry): ActivityTarget[] {
+  const targets: ActivityTarget[] = [];
+  if (entry.projectSlug) {
+    targets.push({
+      label: entry.projectSlug,
+      href: `/shell/projects/${encodeURIComponent(entry.projectSlug)}`,
+      title: "open project",
+    });
+  }
+  if (entry.entityType) {
+    targets.push({
+      label: entry.entityType,
+      href: entityHref(entry.entityType, entry.entityId),
+      title: entry.entityId ? `${entry.entityType}: ${entry.entityId}` : entry.entityType,
+    });
+  }
+  if (entry.sourceHost) {
+    targets.push({
+      label: entry.sourceHost,
+      href: "/shell?tab=machine",
+      title: "open machine proof",
+    });
+  }
+  if (entry.sourceAgent) {
+    targets.push({
+      label: entry.sourceAgent,
+      href: "/shell?tab=agents",
+      title: "open agent activity",
+    });
+  }
+  return targets.slice(0, 3);
+}
+
 export function LiveBrainLog({
   entries,
   className = "",
@@ -99,40 +163,70 @@ export function LiveBrainLog({
         </div>
       ) : (
         <div className={compact ? "space-y-1" : "space-y-1.5"}>
-          {visibleEntries.map((entry) => (
-            <div
-              key={entry.id}
-              className={[
-                "grid items-start gap-2",
-                compact ? "grid-cols-[20px_58px_58px_1fr]" : "grid-cols-[22px_72px_76px_1fr]",
-              ].join(" ")}
-            >
-              <PixelCharacter
-                kind={pixelKind(entry.source)}
-                seed={`${entry.source}:${entry.channel ?? ""}:${entry.title}`}
-                status={pixelStatus(entry.status)}
-                size="xs"
-                className="mt-0.5 opacity-80"
-              />
-              <span className="text-[hsl(var(--text-secondary))] opacity-38 tabular-nums">
-                {formatLogTime(entry.at)}
-              </span>
-              <span className={["truncate uppercase tracking-[0.12em]", logStatusClass(entry.status)].join(" ")}>
-                {entry.source}
-              </span>
-              <span className="min-w-0">
-                <span className="text-[hsl(var(--text-primary))] opacity-88">{entry.title}</span>
-                {entry.detail && (
-                  <span className="text-[hsl(var(--text-secondary))] opacity-48"> {entry.detail}</span>
-                )}
-                {(entry.channel || entry.kind) && (
-                  <span className="ml-1 text-[hsl(var(--text-secondary))] opacity-32">
-                    [{[entry.channel, entry.kind].filter(Boolean).join(" / ")}]
-                  </span>
-                )}
-              </span>
-            </div>
-          ))}
+          {visibleEntries.map((entry) => {
+            const targets = activityTargets(entry);
+            return (
+              <div
+                key={entry.id}
+                className={[
+                  "grid items-start gap-2",
+                  compact ? "grid-cols-[20px_58px_58px_1fr]" : "grid-cols-[22px_72px_76px_1fr]",
+                ].join(" ")}
+              >
+                <PixelCharacter
+                  kind={pixelKind(entry.source)}
+                  seed={`${entry.source}:${entry.channel ?? ""}:${entry.title}`}
+                  status={pixelStatus(entry.status)}
+                  size="xs"
+                  className="mt-0.5 opacity-80"
+                />
+                <span className="text-[hsl(var(--text-secondary))] opacity-38 tabular-nums">
+                  {formatLogTime(entry.at)}
+                </span>
+                <span className={["truncate uppercase tracking-[0.12em]", logStatusClass(entry.status)].join(" ")}>
+                  {entry.source}
+                </span>
+                <span className="min-w-0">
+                  <span className="text-[hsl(var(--text-primary))] opacity-88">{entry.title}</span>
+                  {entry.detail && (
+                    <span className="text-[hsl(var(--text-secondary))] opacity-48"> {entry.detail}</span>
+                  )}
+                  {(entry.channel || entry.kind) && (
+                    <span className="ml-1 text-[hsl(var(--text-secondary))] opacity-32">
+                      [{[entry.channel, entry.kind].filter(Boolean).join(" / ")}]
+                    </span>
+                  )}
+                  {targets.length > 0 && (
+                    <span className="ml-2 inline-flex max-w-full flex-wrap gap-1 align-middle">
+                      {targets.map((target, targetIndex) => {
+                        const className = "inline-flex max-w-[12rem] truncate border border-[hsl(var(--border))]/60 px-1.5 py-0.5 text-[8.5px] uppercase tracking-[0.12em] text-[hsl(var(--text-secondary))] opacity-48 transition-opacity hover:opacity-85";
+                        return target.href ? (
+                          <a
+                            key={`${entry.id}:${targetIndex}:${target.label}`}
+                            href={target.href}
+                            title={target.title ?? target.label}
+                            className={className}
+                            style={{ borderRadius: "var(--radius)" }}
+                          >
+                            {target.label}
+                          </a>
+                        ) : (
+                          <span
+                            key={`${entry.id}:${targetIndex}:${target.label}`}
+                            title={target.title ?? target.label}
+                            className={className}
+                            style={{ borderRadius: "var(--radius)" }}
+                          >
+                            {target.label}
+                          </span>
+                        );
+                      })}
+                    </span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
       <div ref={endRef} />

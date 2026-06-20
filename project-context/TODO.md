@@ -122,7 +122,7 @@ PRD Version: 2.3
 - [x] Upgrade CLI skill/stack sync rows so shared canonical skill propagation and `~/.agent-shared` sync are visible in `brainActivities`
 - [x] Route explicit shared skill self-improvement proposals and API/MCP-reported skill outcomes into `brainActivities` with safe skill/outcome/entity metadata
 - [x] Route richer cross-agent coordination messages into `brainActivities` with project/skill/entity links
-- [ ] Next pass: surface the activity project/skill/entity links as compact click targets in `LiveBrainLog`
+- [x] Surface the activity project/skill/entity links as compact click targets in `LiveBrainLog`
 
 ### 2026-06-19 — Cross-machine skill sync proof UI
 - [x] Add local machine readiness metadata for shared skill sync proof
