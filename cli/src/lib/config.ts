@@ -2,9 +2,13 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-const GLOBAL_CONFIG_DIR = path.join(os.homedir(), ".youmd");
+const CANONICAL_GLOBAL_CONFIG_DIR = path.join(os.homedir(), ".you");
+const LEGACY_GLOBAL_CONFIG_DIR = path.join(os.homedir(), ".youmd");
+const GLOBAL_CONFIG_DIR = resolveYouHomeDir();
 const GLOBAL_CONFIG_FILE = path.join(GLOBAL_CONFIG_DIR, "config.json");
-const LOCAL_BUNDLE_DIR = ".youmd";
+const LEGACY_GLOBAL_CONFIG_FILE = path.join(LEGACY_GLOBAL_CONFIG_DIR, "config.json");
+const LOCAL_BUNDLE_DIR = ".you";
+const LEGACY_LOCAL_BUNDLE_DIR = ".youmd";
 const DEFAULT_API_URL = "https://kindly-cassowary-600.convex.site";
 const DEFAULT_APP_URL = "https://you.md";
 
@@ -31,20 +35,66 @@ export interface LocalConfig {
   lastPulledStableHash?: string; // timestamp-insensitive hash of the bundle as written by pull (dirty-check baseline)
 }
 
+function resolveYouHomeDir(): string {
+  const explicit = process.env.YOU_HOME?.trim() || process.env.YOUMD_HOME?.trim();
+  if (explicit) return path.resolve(explicit.replace(/^~(?=$|\/)/, os.homedir()));
+  return CANONICAL_GLOBAL_CONFIG_DIR;
+}
+
+export function getCanonicalGlobalConfigDir(): string {
+  return GLOBAL_CONFIG_DIR;
+}
+
+export function getLegacyGlobalConfigDir(): string {
+  return LEGACY_GLOBAL_CONFIG_DIR;
+}
+
+export function getLegacyGlobalConfigPath(): string {
+  return LEGACY_GLOBAL_CONFIG_FILE;
+}
+
+export function getLegacyHomeBundleDir(): string {
+  return LEGACY_GLOBAL_CONFIG_DIR;
+}
+
+function resolveReadableHomeBundleDir(): string {
+  if (bundleLooksInitialized(GLOBAL_CONFIG_DIR) || fs.existsSync(GLOBAL_CONFIG_FILE)) return GLOBAL_CONFIG_DIR;
+  if (!process.env.YOU_HOME && bundleLooksInitialized(LEGACY_GLOBAL_CONFIG_DIR)) return LEGACY_GLOBAL_CONFIG_DIR;
+  return GLOBAL_CONFIG_DIR;
+}
+
+function resolveReadableGlobalConfigPath(): string {
+  if (fs.existsSync(GLOBAL_CONFIG_FILE)) return GLOBAL_CONFIG_FILE;
+  if (!process.env.YOU_HOME && fs.existsSync(LEGACY_GLOBAL_CONFIG_FILE)) return LEGACY_GLOBAL_CONFIG_FILE;
+  return GLOBAL_CONFIG_FILE;
+}
+
 export function getGlobalConfigDir(): string {
   return GLOBAL_CONFIG_DIR;
 }
 
 export function getHomeBundleDir(): string {
-  return GLOBAL_CONFIG_DIR;
+  return resolveReadableHomeBundleDir();
 }
 
 export function getGlobalConfigPath(): string {
-  return GLOBAL_CONFIG_FILE;
+  return resolveReadableGlobalConfigPath();
 }
 
 export function getLocalBundleDir(): string {
   return path.resolve(process.cwd(), LOCAL_BUNDLE_DIR);
+}
+
+export function getLegacyLocalBundleDir(): string {
+  return path.resolve(process.cwd(), LEGACY_LOCAL_BUNDLE_DIR);
+}
+
+export function getWritableHomeBundleDir(): string {
+  return GLOBAL_CONFIG_DIR;
+}
+
+export function getWritableGlobalConfigPath(): string {
+  return GLOBAL_CONFIG_FILE;
 }
 
 export function getBundleConfigPath(bundleDir: string): string {
@@ -62,6 +112,8 @@ export function bundleLooksInitialized(bundleDir: string): boolean {
 export function resolveActiveBundleDir(): string | null {
   const localDir = getLocalBundleDir();
   if (bundleLooksInitialized(localDir)) return localDir;
+  const legacyLocalDir = getLegacyLocalBundleDir();
+  if (bundleLooksInitialized(legacyLocalDir)) return legacyLocalDir;
 
   const homeDir = getHomeBundleDir();
   if (bundleLooksInitialized(homeDir)) return homeDir;
@@ -143,19 +195,24 @@ export function markLocalBundle(bundleDir: string): void {
  */
 export function resolveSyncBundleDir(options: { local?: boolean } = {}): BundleDirResolution {
   const localDir = getLocalBundleDir();
-  const homeDir = getHomeBundleDir();
+  const legacyLocalDir = getLegacyLocalBundleDir();
+  const homeDir = getWritableHomeBundleDir();
 
   if (isHomeBundleDir(localDir)) {
     return { dir: homeDir, scope: "home", reason: "home-is-cwd", localBundlePresent: false };
   }
 
-  const localBundlePresent = bundleLooksInitialized(localDir);
+  const localBundlePresent = bundleLooksInitialized(localDir) || bundleLooksInitialized(legacyLocalDir);
 
   if (options.local) {
-    return { dir: localDir, scope: "local", reason: "flag", localBundlePresent };
+    const explicitLocal = bundleLooksInitialized(localDir) || !bundleLooksInitialized(legacyLocalDir) ? localDir : legacyLocalDir;
+    return { dir: explicitLocal, scope: "local", reason: "flag", localBundlePresent };
   }
   if (hasLocalBundleMarker(localDir)) {
     return { dir: localDir, scope: "local", reason: "marker", localBundlePresent };
+  }
+  if (hasLocalBundleMarker(legacyLocalDir)) {
+    return { dir: legacyLocalDir, scope: "local", reason: "marker", localBundlePresent };
   }
   return { dir: homeDir, scope: "home", reason: "default", localBundlePresent };
 }
@@ -334,23 +391,26 @@ function acquireFileLock(file: string): (() => void) | null {
 /** Ensure ~/.youmd is 0700 and config.json is 0600 (fix on read if wrong). */
 function enforceGlobalConfigPermissions(): void {
   if (process.platform === "win32") return;
+  const configPath = resolveReadableGlobalConfigPath();
+  const configDir = path.dirname(configPath);
   try {
-    const dirMode = fs.statSync(GLOBAL_CONFIG_DIR).mode & 0o777;
-    if (dirMode !== 0o700) fs.chmodSync(GLOBAL_CONFIG_DIR, 0o700);
+    const dirMode = fs.statSync(configDir).mode & 0o777;
+    if (dirMode !== 0o700) fs.chmodSync(configDir, 0o700);
   } catch { /* dir may not exist yet */ }
   try {
-    const fileMode = fs.statSync(GLOBAL_CONFIG_FILE).mode & 0o777;
-    if (fileMode !== 0o600) fs.chmodSync(GLOBAL_CONFIG_FILE, 0o600);
+    const fileMode = fs.statSync(configPath).mode & 0o777;
+    if (fileMode !== 0o600) fs.chmodSync(configPath, 0o600);
   } catch { /* file may not exist yet */ }
 }
 
 export function readGlobalConfig(): GlobalConfig {
-  if (!fs.existsSync(GLOBAL_CONFIG_FILE)) {
+  const configPath = resolveReadableGlobalConfigPath();
+  if (!fs.existsSync(configPath)) {
     return {};
   }
   let raw: string;
   try {
-    raw = fs.readFileSync(GLOBAL_CONFIG_FILE, "utf-8");
+    raw = fs.readFileSync(configPath, "utf-8");
   } catch {
     return {};
   }
@@ -361,12 +421,12 @@ export function readGlobalConfig(): GlobalConfig {
   } catch {
     // Preserve evidence instead of silently logging the user out
     try {
-      fs.copyFileSync(GLOBAL_CONFIG_FILE, GLOBAL_CONFIG_FILE + ".bak");
+      fs.copyFileSync(configPath, configPath + ".bak");
       console.error(
-        `warning: ${GLOBAL_CONFIG_FILE} is corrupt — saved a copy to config.json.bak`
+        `warning: ${configPath} is corrupt — saved a copy to config.json.bak`
       );
     } catch {
-      console.error(`warning: ${GLOBAL_CONFIG_FILE} is corrupt and could not be backed up`);
+      console.error(`warning: ${configPath} is corrupt and could not be backed up`);
     }
     return {};
   }
@@ -448,7 +508,7 @@ export function writeBundleConfig(bundleDir: string, config: LocalConfig): void 
 }
 
 export function localBundleExists(): boolean {
-  return fs.existsSync(getLocalBundleDir());
+  return fs.existsSync(getLocalBundleDir()) || fs.existsSync(getLegacyLocalBundleDir());
 }
 
 export function isAuthenticated(): boolean {
@@ -624,4 +684,3 @@ export function ensureSkillsDir(): string {
   }
   return dir;
 }
-

@@ -5,7 +5,12 @@ import * as readline from "readline";
 import * as child_process from "child_process";
 import chalk from "chalk";
 import { BrailleSpinner } from "../lib/render";
-import { isAuthenticated, resolveActiveBundleDir } from "../lib/config";
+import {
+  getCanonicalGlobalConfigDir,
+  getLegacyGlobalConfigDir,
+  isAuthenticated,
+  resolveActiveBundleDir,
+} from "../lib/config";
 import { apiErrorMessage, getPortfolioGraph, syncMachineProof } from "../lib/api";
 import type { MachineProofSyncPayload } from "../lib/api";
 import {
@@ -100,6 +105,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("setup") + chalk.dim("     bootstrap a fresh Mac: clone synced repos, restore skills, guide secrets + daemons"));
   console.log("    " + chalk.cyan("sync-now") + chalk.dim("  reconcile identity, shared skills/stacks, inventory, MCP, daemons, and proof"));
   console.log("    " + chalk.cyan("full-sync") + chalk.dim(" reconcile skills plus clone active projects, pull Secret Vault, and proof"));
+  console.log("    " + chalk.cyan("migrate-home") + chalk.dim(" migrate ~/.youmd runtime state to canonical ~/.you with legacy fallback"));
   console.log("    " + chalk.cyan("projects") + chalk.dim("  create/clone active You.md project repos into a Desktop code root"));
   console.log("    " + chalk.cyan("verify") + chalk.dim("    audit cloned project readiness without reading secret values"));
   console.log("    " + chalk.cyan("prompt") + chalk.dim("    print a one-command Claude Code/Codex fresh-computer setup prompt"));
@@ -136,6 +142,109 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("--no-clone") + chalk.dim("   (projects) create directories only"));
   console.log("    " + chalk.cyan("--force") + chalk.dim("      (restore) overwrite existing files without backing them up"));
   console.log("    " + chalk.cyan("--dry-run") + chalk.dim("    preview writes without changing files"));
+  console.log("");
+}
+
+function directoryStats(root: string): { exists: boolean; files: number; dirs: number; bytes: number } {
+  const stats = { exists: fs.existsSync(root), files: 0, dirs: 0, bytes: 0 };
+  if (!stats.exists) return stats;
+  const visit = (p: string) => {
+    let st: fs.Stats;
+    try {
+      st = fs.lstatSync(p);
+    } catch {
+      return;
+    }
+    if (st.isDirectory()) {
+      stats.dirs += 1;
+      for (const entry of fs.readdirSync(p)) visit(path.join(p, entry));
+      return;
+    }
+    if (st.isFile()) {
+      stats.files += 1;
+      stats.bytes += st.size;
+    }
+  };
+  visit(root);
+  return stats;
+}
+
+function copyDirMerge(src: string, dest: string): void {
+  if (!fs.existsSync(src)) return;
+  fs.mkdirSync(dest, { recursive: true, mode: 0o700 });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const from = path.join(src, entry.name);
+    const to = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirMerge(from, to);
+      continue;
+    }
+    if (entry.isSymbolicLink()) {
+      const target = fs.readlinkSync(from);
+      if (!fs.existsSync(to)) fs.symlinkSync(target, to);
+      continue;
+    }
+    if (entry.isFile()) {
+      if (!fs.existsSync(to)) fs.copyFileSync(from, to);
+      continue;
+    }
+  }
+}
+
+function updateYouShims(homeDir: string): void {
+  const binDir = path.join(homeDir, "bin");
+  fs.mkdirSync(binDir, { recursive: true, mode: 0o700 });
+  const npmBin = path.join(homeDir, "npm-global", "bin");
+  for (const bin of ["youmd", "you", "create-youmd"]) {
+    const preferred = path.join(npmBin, bin);
+    if (fs.existsSync(preferred)) {
+      const target = path.join(binDir, bin);
+      try { fs.rmSync(target, { force: true }); } catch { /* ignore */ }
+      fs.symlinkSync(preferred, target);
+    }
+  }
+}
+
+function machineMigrateHomeCommand(opts: { dryRun?: boolean; yes?: boolean } = {}): void {
+  const canonical = getCanonicalGlobalConfigDir();
+  const legacy = getLegacyGlobalConfigDir();
+  const apply = opts.yes === true && opts.dryRun !== true;
+  const beforeLegacy = directoryStats(legacy);
+  const beforeCanonical = directoryStats(canonical);
+
+  console.log("");
+  console.log("  " + chalk.bold("YOU home migration"));
+  console.log(chalk.dim(`  canonical: ${canonical}`));
+  console.log(chalk.dim(`  legacy:    ${legacy}`));
+  console.log(chalk.dim("  mode:      ") + (apply ? chalk.green("apply") : chalk.yellow("dry-run")));
+  console.log("");
+  console.log(chalk.dim("  legacy files:    ") + chalk.cyan(String(beforeLegacy.files)) + chalk.dim(` / ${beforeLegacy.bytes} bytes`));
+  console.log(chalk.dim("  canonical files: ") + chalk.cyan(String(beforeCanonical.files)) + chalk.dim(` / ${beforeCanonical.bytes} bytes`));
+
+  if (!beforeLegacy.exists && !beforeCanonical.exists) {
+    console.log(chalk.yellow("  no ~/.youmd or ~/.you runtime home exists yet"));
+    console.log("");
+    return;
+  }
+
+  if (!apply) {
+    console.log("");
+    console.log(chalk.dim("  no files changed. rerun with ") + chalk.cyan("youmd machine migrate-home --yes"));
+    console.log(chalk.dim("  after migration, export: ") + chalk.cyan('PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$PATH"'));
+    console.log("");
+    return;
+  }
+
+  copyDirMerge(legacy, canonical);
+  updateYouShims(canonical);
+  try { fs.chmodSync(canonical, 0o700); } catch { /* ignore */ }
+  const afterCanonical = directoryStats(canonical);
+
+  console.log("");
+  console.log(chalk.green("  migrated runtime state to canonical ~/.you"));
+  console.log(chalk.dim("  canonical files: ") + chalk.cyan(String(afterCanonical.files)) + chalk.dim(` / ${afterCanonical.bytes} bytes`));
+  console.log(chalk.dim("  legacy ~/.youmd was preserved for fallback compatibility"));
+  console.log(chalk.dim("  next shell PATH: ") + chalk.cyan('export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:$PATH"'));
   console.log("");
 }
 
@@ -818,6 +927,11 @@ export async function machineCommand(subcommand: string, opts: { force?: boolean
 
   if (subcommand === "full-sync" || subcommand === "full-setup") {
     await machineSyncNowCommand({ ...opts, full: true });
+    return;
+  }
+
+  if (subcommand === "migrate-home" || subcommand === "migrate-you-home" || subcommand === "migrate-to-you") {
+    machineMigrateHomeCommand(opts);
     return;
   }
 

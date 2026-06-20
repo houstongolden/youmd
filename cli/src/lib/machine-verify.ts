@@ -3,6 +3,7 @@ import * as path from "path";
 import * as childProcess from "child_process";
 import * as http from "http";
 import * as os from "os";
+import { getHomeBundleDir, getWritableHomeBundleDir } from "./config";
 
 export const DEFAULT_MACHINE_CHECK_SCRIPTS = ["typecheck", "lint", "test", "build"];
 export const DEFAULT_MACHINE_SERVER_START_PORT = 4310;
@@ -368,7 +369,7 @@ function latestInventoryJsonPath(outDir: string): string | null {
 }
 
 export function defaultAgentStackInventoryDir(): string {
-  return path.join(os.homedir(), ".youmd", "agent-stack-inventory");
+  return path.join(getHomeBundleDir(), "agent-stack-inventory");
 }
 
 export function loadLatestAgentStackInventoryProof(
@@ -924,7 +925,7 @@ export function buildMachineVerificationProof(options: {
     options.installs && options.installs.results.length === 0 ? "no package projects were available for dependency install" : "",
     options.checks && options.checks.results.length === 0 ? "no package projects had requested check scripts" : "",
     options.servers && options.servers.results.length === 0 ? "no package projects had dev servers to probe" : "",
-    options.agentStackInventory === null ? "agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync" : "",
+    options.agentStackInventory === null ? "agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" : "",
     ...(options.servers?.results ?? [])
       .filter((result) => result.status === "failed" || result.status === "timeout")
       .map((result) => result.reason ? `${result.dirName}: ${result.reason}` : "")
@@ -959,7 +960,7 @@ export function buildMachineVerificationProof(options: {
 }
 
 export function defaultMachineReportPath(): string {
-  return path.join(os.homedir(), ".youmd", "machine-reports", "latest.json");
+  return path.join(getWritableHomeBundleDir(), "machine-reports", "latest.json");
 }
 
 function timestampForPath(value: string): string {

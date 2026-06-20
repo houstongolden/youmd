@@ -35,6 +35,7 @@ import {
   getEnvApiKey,
   getEnvApiUrl,
   getGlobalConfigPath,
+  getHomeBundleDir,
   readGlobalConfig,
 } from "./config";
 import {
@@ -53,9 +54,9 @@ export function projectSlug(name: string): string {
     .slice(0, 64);
 }
 
-/** Global projects root: ~/.youmd/projects */
+/** Global projects root: ~/.you/projects, with legacy ~/.youmd read fallback through config helpers. */
 export function getGlobalProjectsRoot(): string {
-  return path.join(os.homedir(), ".youmd", "projects");
+  return path.join(getHomeBundleDir(), "projects");
 }
 
 /** Global per-project dir: ~/.youmd/projects/<slug> */

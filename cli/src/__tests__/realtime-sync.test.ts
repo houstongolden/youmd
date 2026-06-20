@@ -195,7 +195,7 @@ describe("realtime sync helpers", () => {
 
   it("resolves the resident agent stack inventory directory safely", () => {
     expect(resolveAgentStackInventoryDir({}, "/Users/houston")).toBe(
-      "/Users/houston/.youmd/agent-stack-inventory",
+      "/Users/houston/.you/agent-stack-inventory",
     );
     expect(
       resolveAgentStackInventoryDir(

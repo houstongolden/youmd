@@ -17,6 +17,8 @@ describe("install.sh route", () => {
     const script = await response.text();
 
     expect(script).toContain('NPM_GLOBAL_PREFIX=""');
+    expect(script).toContain('YOU_HOME_DIR="${YOU_HOME:-${YOUMD_HOME:-$HOME/.you}}"');
+    expect(script).toContain('$LEGACY_YOUMD_HOME_DIR/bin:$LEGACY_YOUMD_HOME_DIR/npm-global/bin');
     expect(script).toContain('PACKAGE="youmd@$CLI_VERSION"');
     expect(script).toContain("npm_install_global()");
     expect(script).toContain('npm install -g --prefix "$NPM_GLOBAL_PREFIX" "$@"');

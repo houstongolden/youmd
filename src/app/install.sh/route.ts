@@ -10,16 +10,18 @@ set -euo pipefail
 
 CLI_VERSION="${cliVersion}"
 PACKAGE="youmd@$CLI_VERSION"
-REPO_URL="\${YOUMD_REPO_URL:-https://github.com/houstongolden/youmd.git}"
-INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-source}"
-SOURCE_REF="\${YOUMD_SOURCE_REF:-main}"
-YOUMD_HOME_DIR="\${YOUMD_HOME:-$HOME/.youmd}"
-YOUMD_BIN_DIR="$YOUMD_HOME_DIR/bin"
-YOUMD_NPM_PREFIX="\${YOUMD_NPM_PREFIX:-$YOUMD_HOME_DIR/npm-global}"
+REPO_URL="\${YOU_REPO_URL:-\${YOUMD_REPO_URL:-https://github.com/houstongolden/youmd.git}}"
+INSTALL_CHANNEL="\${YOU_INSTALL_CHANNEL:-\${YOUMD_INSTALL_CHANNEL:-source}}"
+SOURCE_REF="\${YOU_SOURCE_REF:-\${YOUMD_SOURCE_REF:-main}}"
+YOU_HOME_DIR="\${YOU_HOME:-\${YOUMD_HOME:-$HOME/.you}}"
+YOUMD_HOME_DIR="$YOU_HOME_DIR"
+LEGACY_YOUMD_HOME_DIR="$HOME/.youmd"
+YOUMD_BIN_DIR="$YOU_HOME_DIR/bin"
+YOUMD_NPM_PREFIX="\${YOU_NPM_PREFIX:-\${YOUMD_NPM_PREFIX:-$YOU_HOME_DIR/npm-global}}"
 TMP_DIR=""
 NPM_GLOBAL_PREFIX=""
 USING_USER_NPM_PREFIX=0
-export PATH="$YOUMD_BIN_DIR:$YOUMD_NPM_PREFIX/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+export PATH="$YOUMD_BIN_DIR:$YOUMD_NPM_PREFIX/bin:$LEGACY_YOUMD_HOME_DIR/bin:$LEGACY_YOUMD_HOME_DIR/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 cleanup() {
   if [ -n "$TMP_DIR" ] && [ -d "$TMP_DIR" ]; then
@@ -121,7 +123,7 @@ link_runtime_bins() {
 }
 
 persist_user_path_hint() {
-  PATH_LINE='export PATH="$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"'
+  PATH_LINE='export PATH="$HOME/.you/bin:$HOME/.you/npm-global/bin:$HOME/.youmd/bin:$HOME/.youmd/npm-global/bin:/opt/homebrew/opt/node@22/bin:/usr/local/opt/node@22/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"'
   PROFILE_FILES=()
 
   if [ -n "\${YOUMD_SHELL_PROFILE:-}" ]; then
@@ -232,7 +234,8 @@ if [ "\${YOUMD_AUTO_UPDATE:-1}" = "0" ]; then
   exit 0
 fi
 
-STAMP_FILE="$HOME/.youmd/runtime-last-upgrade-check"
+YOU_HOME_DIR="\${YOU_HOME:-\${YOUMD_HOME:-$HOME/.you}}"
+STAMP_FILE="$YOU_HOME_DIR/runtime-last-upgrade-check"
 NOW="$(date +%s)"
 LAST="$(cat "$STAMP_FILE" 2>/dev/null || echo 0)"
 INTERVAL_SECONDS="\${YOUMD_AUTO_UPDATE_INTERVAL_SECONDS:-43200}"
@@ -241,7 +244,7 @@ if [ "\${YOUMD_AUTO_UPDATE_FORCE:-0}" != "1" ] && [ $((NOW - LAST)) -lt "$INTERV
   exit 0
 fi
 
-mkdir -p "$HOME/.youmd"
+mkdir -p "$YOU_HOME_DIR"
 printf '%s' "$NOW" > "$STAMP_FILE"
 
 if [ "\${1:-}" != "--quiet" ]; then
@@ -251,7 +254,7 @@ fi
 LOG_FILE="/tmp/youmd-auto-upgrade.log"
 PREV_VERSION="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
 
-curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_CHANNEL="\${YOUMD_INSTALL_CHANNEL:-source}" bash >"$LOG_FILE" 2>&1 || {
+curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL="\${YOU_INSTALL_CHANNEL:-\${YOUMD_INSTALL_CHANNEL:-source}}" bash >"$LOG_FILE" 2>&1 || {
   if [ "\${1:-}" != "--quiet" ]; then
     cat "$LOG_FILE"
   fi
@@ -281,8 +284,8 @@ Installed by:
 
 Agent preamble:
 
-    if [ -x "$HOME/.youmd/bin/youmd-auto-upgrade" ]; then
-      "$HOME/.youmd/bin/youmd-auto-upgrade" --quiet || true
+    if [ -x "$HOME/.you/bin/youmd-auto-upgrade" ]; then
+      "$HOME/.you/bin/youmd-auto-upgrade" --quiet || true
     fi
 
 Use the curl installer as the product surface. The youmd binary is the helper under the hood.
@@ -299,7 +302,7 @@ if [ "\${YOUMD_INSTALL_INVENTORY:-1}" = "1" ]; then
   if youmd skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync >/dev/null 2>&1; then
     echo "  - inventory: $INVENTORY_DIR"
   else
-    echo "  - inventory skipped; run \`youmd skill inventory --out-dir ~/.youmd/agent-stack-inventory --register-catalog --sync\` after login/sync"
+    echo "  - inventory skipped; run \`youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync\` after login/sync"
   fi
 fi
 
@@ -358,7 +361,7 @@ echo "                       # sync your brain, skills, stacks, MCP, inventory, 
 echo "  you                  # meet U; it will guide onboarding, stacks, and next moves"
 echo ""
 echo "Auto-update helper:"
-echo "  ~/.youmd/bin/youmd-auto-upgrade --quiet"
+echo "  ~/.you/bin/youmd-auto-upgrade --quiet"
 echo ""
 echo "Install with resident sync enabled:"
 echo "  curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_DAEMON=1 bash"

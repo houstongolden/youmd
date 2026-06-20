@@ -11,6 +11,7 @@ describe("config", () => {
     tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "youmd-config-test-"));
     originalHome = process.env.HOME;
     process.env.HOME = tmpHome;
+    vi.resetModules();
   });
 
   afterEach(() => {
@@ -26,7 +27,7 @@ describe("config", () => {
   });
 
   it("getConvexSiteUrl returns apiUrl from config when set", async () => {
-    const configDir = path.join(tmpHome, ".youmd");
+    const configDir = path.join(tmpHome, ".you");
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(
       path.join(configDir, "config.json"),
@@ -46,10 +47,21 @@ describe("config", () => {
     expect(isAuthenticated()).toBe(false);
   });
 
-  it("localBundleExists returns false when no .youmd dir", async () => {
+  it("localBundleExists returns false when no .you/.youmd dir", async () => {
     const { localBundleExists } = await import("../lib/config");
-    // We're in a temp dir with no .youmd
+    // We're in a temp dir with no .you or .youmd
     expect(localBundleExists()).toBe(false);
+  });
+
+  it("reads legacy ~/.youmd config when canonical ~/.you does not exist", async () => {
+    const configDir = path.join(tmpHome, ".youmd");
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(path.join(configDir, "config.json"), JSON.stringify({ username: "legacy-houston" }));
+
+    vi.resetModules();
+    const { readGlobalConfig, getGlobalConfigPath } = await import("../lib/config");
+    expect(readGlobalConfig().username).toBe("legacy-houston");
+    expect(getGlobalConfigPath()).toBe(path.join(configDir, "config.json"));
   });
 });
 

@@ -2,6 +2,7 @@ import * as child_process from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { getWritableHomeBundleDir } from "./config";
 import { readRealtimeSyncStatusFile } from "./realtime-sync";
 
 export interface YoumdDaemon {
@@ -25,40 +26,44 @@ export interface YoumdDaemonHealth extends YoumdDaemon {
   secretVaultSummary?: string;
 }
 
+function runtimeLogPath(file: string): string {
+  return path.join(getWritableHomeBundleDir(), "logs", file);
+}
+
 export const YOUMD_DAEMONS: YoumdDaemon[] = [
   {
-    label: "com.youmd.realtime-sync",
+    label: "com.you.realtime-sync",
     name: "realtime brain",
     command: "youmd sync --live --daemon",
     intervalSeconds: 0,
-    stdoutLog: "~/.youmd/logs/realtime-sync.out.log",
-    stderrLog: "~/.youmd/logs/realtime-sync.err.log",
+    stdoutLog: runtimeLogPath("realtime-sync.out.log"),
+    stderrLog: runtimeLogPath("realtime-sync.err.log"),
   },
   {
-    label: "com.youmd.skillstack-sync",
+    label: "com.you.skillstack-sync",
     name: "skills/stacks",
     command: "youmd stack sync",
     intervalSeconds: 300,
-    stdoutLog: "~/.youmd/logs/skillstack-sync.out.log",
-    stderrLog: "~/.youmd/logs/skillstack-sync.err.log",
-    combinedLog: "~/.youmd/logs/skillstack-sync.log",
+    stdoutLog: runtimeLogPath("skillstack-sync.out.log"),
+    stderrLog: runtimeLogPath("skillstack-sync.err.log"),
+    combinedLog: runtimeLogPath("skillstack-sync.log"),
   },
   {
-    label: "com.youmd.identity-sync",
+    label: "com.you.identity-sync",
     name: "identity/API",
     command: "youmd sync --daemon",
     intervalSeconds: 300,
-    stdoutLog: "~/.youmd/logs/identity-sync.out.log",
-    stderrLog: "~/.youmd/logs/identity-sync.err.log",
+    stdoutLog: runtimeLogPath("identity-sync.out.log"),
+    stderrLog: runtimeLogPath("identity-sync.err.log"),
   },
   {
-    label: "com.youmd.context-sync",
+    label: "com.you.context-sync",
     name: "project context",
     command: "youmd stack context-sync",
     intervalSeconds: 900,
-    stdoutLog: "~/.youmd/logs/context-sync.out.log",
-    stderrLog: "~/.youmd/logs/context-sync.err.log",
-    combinedLog: "~/.youmd/logs/context-sync.log",
+    stdoutLog: runtimeLogPath("context-sync.out.log"),
+    stderrLog: runtimeLogPath("context-sync.err.log"),
+    combinedLog: runtimeLogPath("context-sync.log"),
   },
 ];
 
@@ -147,7 +152,7 @@ export function getDaemonHealth(): YoumdDaemonHealth[] {
       lastErrorLine,
       lastActivityAt: newestMtimeIso(logs),
       warning,
-      ...(daemon.label === "com.youmd.realtime-sync"
+      ...(daemon.label === "com.you.realtime-sync"
         ? (() => {
             const status = readRealtimeSyncStatusFile();
             return status

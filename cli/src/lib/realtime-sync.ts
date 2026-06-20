@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { getHomeBundleDir, getWritableHomeBundleDir } from "./config";
 
 export type RealtimeSyncHead = {
   schemaVersion?: string;
@@ -86,8 +87,8 @@ export type RealtimeSyncHead = {
   };
 };
 
-export const REALTIME_SYNC_STATUS_PATH = path.join(os.homedir(), ".youmd", "realtime-sync-status.json");
-export const REALTIME_AGENT_INBOX_PATH = path.join(os.homedir(), ".youmd", "agent-bus", "inbox.json");
+export const REALTIME_SYNC_STATUS_PATH = path.join(getWritableHomeBundleDir(), "realtime-sync-status.json");
+export const REALTIME_AGENT_INBOX_PATH = path.join(getWritableHomeBundleDir(), "agent-bus", "inbox.json");
 export const DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS = 1800;
 export const DEFAULT_AGENT_STACK_REPAIR_INTERVAL_SECONDS = 1800;
 
@@ -501,5 +502,5 @@ export function resolveAgentStackInventoryDir(
     if (configured.startsWith("~/")) return path.join(homeDir, configured.slice(2));
     return configured;
   }
-  return path.join(homeDir, ".youmd", "agent-stack-inventory");
+  return path.join(homeDir, ".you", "agent-stack-inventory");
 }
