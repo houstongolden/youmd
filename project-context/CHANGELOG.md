@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(machine): surface proof repair runbook
+- Machine readiness now exposes a canonical copyable repair runbook: `you machine migrate-home --yes`, `you machine sync-now`, inventory refresh/sync, daemon install, vault share, and proof commands.
+- The agent-bus panel now highlights recent machine-sync/repair/vault receipts so cross-Mac setup has visible coordination evidence, not just daemon rows.
+- README, device auth success copy, landing sync snippet, installer stack runtime copy, bundled `machine-bootstrap`, and shared `/machine-sync` now lead with `you` / `~/.you` while retaining explicit legacy fallbacks.
+
 ### fix(app/docs): lead setup surfaces with canonical `you`
 - Dashboard Machine, Connect/API snippets, CLI postinstall/help text, generated docs, and local readiness commands now lead with `you ...`, `YOU_*`, and `~/.you` copy where users copy commands.
 - Compatibility surfaces remain intact: `youmd@latest` stays the npm package, `youmd://` stays the local MCP URI protocol, `YOUMD_*` remains a legacy env alias, and `~/.youmd` is still read as fallback during migration.

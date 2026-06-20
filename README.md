@@ -36,28 +36,28 @@ Public profile. Private vault. Skills system. Memory brain. Project context. Ver
 curl -fsSL https://you.md/install.sh | bash
 ```
 
-That installs the You.md runtime. The `youmd` command is the helper under the hood; users should think "one curl install, then U and my agents know my brain/stacks." Then:
+That installs the You.md runtime. The `you` command is the primary local interface; `youmd` remains the npm package and compatibility alias. Users should think "one curl install, then U and my agents know my brain/stacks." Then:
 
 ```bash
-youmd login              # press Enter for browser sign-in, or type your email for a code
-youmd init               # build your agent brain interactively
+you login                # press Enter for browser sign-in, or type your email for a code
+you init                 # build your agent brain interactively
 you                     # meet U — portrait, proactive context scan, live chat
-youmd stack doctor --path cli/examples/youstack-personal
-youmd stack smoke --path cli/examples/youstack-personal
-youmd push               # publish to you.md/<username>
-youmd skill init-project # wire your brain and stacks into the current repo
-youmd link create        # generate a shareable context link
+you stack doctor --path cli/examples/youstack-personal
+you stack smoke --path cli/examples/youstack-personal
+you push                 # publish to you.md/<username>
+you skill init-project   # wire your brain and stacks into the current repo
+you link create          # generate a shareable context link
 ```
 
-The installer also writes `~/.youmd/bin/youmd-auto-upgrade` so host agents can refresh the runtime before stack work.
+The installer also writes `~/.you/bin/youmd-auto-upgrade` so host agents can refresh the runtime before stack work.
 
 To enable the resident macOS sync daemon during install:
 
 ```bash
-curl -fsSL https://you.md/install.sh | YOUMD_INSTALL_DAEMON=1 bash
+curl -fsSL https://you.md/install.sh | YOU_INSTALL_DAEMON=1 bash
 ```
 
-You can also enable it later with `youmd stack daemon install`. It keeps identity/API sync, shared skills/stacks, and safe project-context files fresh in the background without syncing secrets or arbitrary app code.
+You can also enable it later with `you stack daemon install`. It keeps identity/API sync, shared skills/stacks, and safe project-context files fresh in the background without syncing secrets or arbitrary app code.
 
 ---
 
@@ -96,32 +96,32 @@ npm run agent-docs:ci
 
 | Command | What It Does |
 |---|---|
-| `youmd init` | Build your agent brain via AI conversation |
+| `you init` | Build your agent brain via AI conversation |
 | `you` | Meet U in the terminal — portrait, proactive context scan, live chat |
-| `youmd login` | Authenticate (Enter for browser sign-in, email code, or `--key`) |
-| `youmd logout` | Clear local authentication on this machine |
-| `youmd register` | Claim a username |
-| `youmd whoami` | Show current authenticated user |
-| `youmd build` | Compile bundle from local profile/ and preferences/ files |
-| `youmd publish` | Push compiled bundle to the platform |
-| `youmd push` | Upload local .youmd/ files and publish (with version control) |
-| `youmd pull` | Download your profile from you.md to local files |
-| `youmd sync` | Pull + push. `--watch` for auto-sync on file changes |
-| `youmd diff` | Show changes between local bundle and published version |
-| `youmd export` | Export to you.json and/or you.md (`--json`, `--md`, `-o path`) |
-| `youmd add <src> <url>` | Add a source (website, linkedin, x, blog, youtube, github) |
-| `youmd status` | Show pipeline/build status |
-| `youmd preview` | Local preview server on port 3333 |
-| `youmd chat` | Explicit long-form chat path; `you` is the main entry |
-| `youmd memories` | Manage your memory brain (list, add, stats) |
-| `youmd private` | Manage private context (notes, links, projects) |
-| `youmd project` | Manage project agent context (init, list, show, memories) |
-| `youmd skill` | Brain-aware agent skills (18 core subcommands -- see below) |
-| `youmd stack` | Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link) |
-| `youmd link` | Context links (create, list, revoke, preview) |
-| `youmd keys` | API key management (list, create, revoke) |
+| `you login` | Authenticate (Enter for browser sign-in, email code, or `--key`) |
+| `you logout` | Clear local authentication on this machine |
+| `you register` | Claim a username |
+| `you whoami` | Show current authenticated user |
+| `you build` | Compile bundle from local profile/ and preferences/ files |
+| `you publish` | Push compiled bundle to the platform |
+| `you push` | Upload local `.you/` files and publish (with version control) |
+| `you pull` | Download your profile from you.md to local files |
+| `you sync` | Pull + push. `--watch` for auto-sync on file changes |
+| `you diff` | Show changes between local bundle and published version |
+| `you export` | Export to you.json and/or you.md (`--json`, `--md`, `-o path`) |
+| `you add <src> <url>` | Add a source (website, linkedin, x, blog, youtube, github) |
+| `you status` | Show pipeline/build status |
+| `you preview` | Local preview server on port 3333 |
+| `you chat` | Explicit long-form chat path; `you` is the main entry |
+| `you memories` | Manage your memory brain (list, add, stats) |
+| `you private` | Manage private context (notes, links, projects) |
+| `you project` | Manage project agent context (init, list, show, memories) |
+| `you skill` | Brain-aware agent skills (18 core subcommands -- see below) |
+| `you stack` | Local YouStack manifests (inspect, doctor, smoke, capabilities, route, link) |
+| `you link` | Context links (create, list, revoke, preview) |
+| `you keys` | API key management (list, create, revoke) |
 
-### `youmd skill` Subcommands
+### `you skill` Subcommands
 
 | Subcommand | What It Does |
 |---|---|
@@ -144,7 +144,7 @@ npm run agent-docs:ci
 | `export [dir]` | Export all installed skills to a directory |
 | `info <name>` | Detailed info, metrics, and content preview |
 
-### `youmd project` Subcommands
+### `you project` Subcommands
 
 | Subcommand | What It Does |
 |---|---|
@@ -159,10 +159,10 @@ npm run agent-docs:ci
 
 ## Bundle Structure
 
-Your identity lives in `~/.youmd/`. Every file is markdown or JSON. No proprietary formats.
+Your identity lives in `~/.you/`, with legacy `~/.youmd/` read during migration. Every file is markdown or JSON. No proprietary formats.
 
 ```
-.youmd/
+.you/
   config.json              # Auth, username, sources
   you.md                   # Human-readable compiled identity
   you.json                 # Machine-readable compiled bundle
@@ -229,7 +229,7 @@ Keep your voice in sync across every agent tool.
 - **Writing voice:** {{voice.writing}}
 ```
 
-When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your live brain data.
+When you run `you skill use voice-sync`, every `{{var}}` resolves against your live brain data.
 
 ### Bundled Skills
 
@@ -247,14 +247,14 @@ When you run `youmd skill use voice-sync`, every `{{var}}` resolves against your
 
 ### How Skills Work
 
-1. **Install** -- `youmd skill install voice-sync`
-2. **Use** -- renders the template against your brain context: `youmd skill use voice-sync`
-3. **Sync** -- when your brain changes, `youmd skill sync` re-renders everything
-4. **Link** -- `youmd skill init-project` wires Claude + Codex by default, or use `youmd skill link claude` / `youmd skill link codex` directly
-5. **Publish** -- share your custom skills to the registry: `youmd skill publish my-skill`
-6. **Browse** -- find skills others have published: `youmd skill browse`
+1. **Install** -- `you skill install voice-sync`
+2. **Use** -- renders the template against your brain context: `you skill use voice-sync`
+3. **Sync** -- when your brain changes, `you skill sync` re-renders everything
+4. **Link** -- `you skill init-project` wires Claude + Codex by default, or use `you skill link claude` / `you skill link codex` directly
+5. **Publish** -- share your custom skills to the registry: `you skill publish my-skill`
+6. **Browse** -- find skills others have published: `you skill browse`
 
-Variable resolution follows dot notation: `voice.overall` reads `~/.youmd/voice/overall.md`. Works for `profile.*`, `preferences.*`, `voice.*`, `directives.*`, and `project_name`.
+Variable resolution follows dot notation: `voice.overall` reads `~/.you/voice/overall.md`. Works for `profile.*`, `preferences.*`, `voice.*`, `directives.*`, and `project_name`.
 
 ---
 
@@ -268,10 +268,10 @@ A copied stack freezes at copy time. Yours stays current — every stack re-rend
 
 ```bash
 curl -fsSL https://you.md/install.sh | bash
-youmd stack inspect --path cli/examples/youstack-personal
-youmd stack doctor --path cli/examples/youstack-bamfstack-public
-youmd stack smoke --path cli/examples/youstack-bamfstack-public
-youmd skill use youstack-maintainer
+you stack inspect --path cli/examples/youstack-personal
+you stack doctor --path cli/examples/youstack-bamfstack-public
+you stack smoke --path cli/examples/youstack-bamfstack-public
+you skill use youstack-maintainer
 ```
 
 Defaults:
@@ -303,13 +303,13 @@ You.md's bet: keep the brain, stack runtime, skills, and public stack examples m
 ## How It Works
 
 ```
-youmd init               # AI conversation builds your agent brain
-youmd push               # Publish to you.md/<username> (content-addressed, version-controlled)
-youmd skill init-project # Wire brain + stacks into current repo (AGENTS/CLAUDE + project-context/ + .you/ + Claude/Codex skills)
-youmd link create        # Generate shareable context link for other agents
+you init                 # AI conversation builds your agent brain
+you push                 # Publish to you.md/<username> (content-addressed, version-controlled)
+you skill init-project   # Wire brain + stacks into current repo (AGENTS/CLAUDE + project-context/ + .you/ + Claude/Codex skills)
+you link create          # Generate shareable context link for other agents
 ```
 
-Brain changes propagate. Run `youmd push` and your published profile updates. Run `youmd skill sync` and every agent tool gets the latest you.
+Brain changes propagate. Run `you push` and your published profile updates. Run `you skill sync` and every agent tool gets the latest you.
 
 Push/pull uses content-addressed hashing for conflict detection. If the remote has changes you haven't pulled, push returns a 409 and tells you to pull first. Git-like safety without the git.
 

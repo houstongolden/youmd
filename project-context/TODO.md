@@ -45,7 +45,8 @@ PRD Version: 2.3
 - [x] Add resident realtime reconciliation for safe Skill Mesh inventory summaries through `youmd sync --live --daemon`
 - [x] Broaden resident reconciliation beyond inventory summaries into safe repair actions for stale/divergent local Skill Mesh drift
 - [x] Lead dashboard, docs, postinstall, and local readiness command-copy surfaces with canonical `you` / `YOU_*` / `~/.you` while retaining legacy `youmd` compatibility aliases
-- [ ] Next pass: add richer trusted-machine repair action UI and agent-bus repair receipts
+- [x] Add a Machine readiness proof/repair runbook and agent-bus repair receipt view so stale Mac setup can be diagnosed from the app
+- [ ] Next pass: prove the repair runbook on the Mac mini after `youmd@0.8.12` is published and compare synced inventory/proof rows
 - [ ] Prove the full goal on a second Mac: curl setup, automatic inventory, Convex + GitHub persistence, API/MCP visibility, and zero unexpected drift without secret exposure
 - [ ] Next pass: design the You.md skill catalog expansion model for canonical/shared/science/gstack/plugin skills without exposing private or opt-in-only content incorrectly
 

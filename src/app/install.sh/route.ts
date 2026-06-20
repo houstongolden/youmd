@@ -299,7 +299,7 @@ Agent preamble:
       "$HOME/.you/bin/youmd-auto-upgrade" --quiet || true
     fi
 
-Use the curl installer as the product surface. The youmd binary is the helper under the hood.
+Use the curl installer as the product surface. The you command is the primary local interface; youmd remains the npm package and compatibility alias.
 RUNTIME
 
 echo "Installing native You.md skills..."

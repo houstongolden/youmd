@@ -114,6 +114,13 @@ function BooleanCell({ label, value }: { label: string; value: boolean }) {
 }
 
 function AgentBusPanel({ agentBus }: { agentBus: LocalMachineReadiness["agentBus"] }) {
+  const repairReceipts = agentBus.messages.filter((message) => {
+    const channel = message.channel.toLowerCase();
+    const kind = message.kind.toLowerCase();
+    const body = message.body.toLowerCase();
+    return channel.includes("machine-sync") || kind === "status" || kind === "task" || body.includes("sync") || body.includes("repair") || body.includes("vault");
+  });
+
   return (
     <div id="agent-bus" className="mt-4 border-l border-[hsl(var(--success))]/70 bg-[hsl(var(--bg))]/30 px-4 py-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -151,6 +158,20 @@ function AgentBusPanel({ agentBus }: { agentBus: LocalMachineReadiness["agentBus
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {repairReceipts.length > 0 && (
+        <div className="mt-3 border-t border-[hsl(var(--border))]/50 pt-3">
+          <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-60">
+            latest repair receipts
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {repairReceipts.slice(-3).map((message) => (
+              <div key={`receipt-${message.messageId}`} className="font-mono text-[9.5px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
+                {formatTime(message.createdAt)} / {message.sourceAgent}{message.sourceHost ? ` @ ${message.sourceHost}` : ""}: {message.body}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -395,6 +416,30 @@ function MachineSyncMeshPanel({
           ))}
         </div>
       </div>
+
+      {report && (
+        <div className="mt-4 border-t border-[hsl(var(--border))]/55 pt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(var(--accent))] opacity-65">
+              proof + repair runbook
+            </span>
+            <span className="ml-auto font-mono text-[9px] text-[hsl(var(--text-secondary))] opacity-40">
+              canonical local commands
+            </span>
+          </div>
+          <p className="mt-2 max-w-4xl font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-52">
+            Use these when a trusted Mac looks stale, has legacy daemons loaded, is missing inventory, or needs a fresh proof pushed back to the machine dashboard.
+          </p>
+          <div className="mt-3 grid gap-2 lg:grid-cols-2">
+            <CopyableCommand command={report.commands.migrateHome} dimmed />
+            <CopyableCommand command={report.commands.syncNow} />
+            <CopyableCommand command={report.commands.inventoryRefresh} dimmed />
+            <CopyableCommand command={report.commands.daemonInstall} dimmed />
+            <CopyableCommand command={report.commands.vaultShare} dimmed />
+            <CopyableCommand command={report.commands.verifyCurrent} dimmed />
+          </div>
+        </div>
+      )}
 
       {latestProof && (
         <div className="mt-4 grid gap-3 border-t border-[hsl(var(--border))]/55 pt-3 lg:grid-cols-[0.8fr_1fr]">
@@ -1042,10 +1087,15 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
                 <CopyableCommand command={freshComputerShellCommand} />
                 <CopyableCommand command={freshComputerPromptCommand} />
                 <CopyableCommand command={sourceEnvVaultBackupCommand} dimmed />
+                <CopyableCommand command={report.commands.migrateHome} dimmed />
+                <CopyableCommand command={report.commands.syncNow} />
+                <CopyableCommand command={report.commands.inventoryRefresh} dimmed />
                 <CopyableCommand command={report.commands.verifyCurrent} />
                 <CopyableCommand command={report.commands.verifyFresh} dimmed />
                 <CopyableCommand command={report.commands.verifyFreshFull} dimmed />
+                <CopyableCommand command={report.commands.daemonInstall} dimmed />
                 <CopyableCommand command={report.commands.daemonStatus} dimmed />
+                <CopyableCommand command={report.commands.vaultShare} dimmed />
                 <CopyableCommand command={report.commands.envBackup} dimmed />
                 <CopyableCommand command={report.commands.envRestore} dimmed />
                 {report.envVault.accountPullCommand && <CopyableCommand command={report.envVault.accountPullCommand} dimmed />}

@@ -42,7 +42,7 @@ export default function SyncAcrossMachines() {
               </p>
               <p className="font-mono text-[13px] leading-[1.9] text-muted-foreground/80">
                 <span className="text-accent/70">$</span>{" "}
-                youmd machine setup
+                you machine setup
               </p>
               <p className="mt-3 font-mono text-[11px] text-muted-foreground/42">
                 &gt; syncing skills... stacks... vault... done.

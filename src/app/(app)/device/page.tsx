@@ -3,7 +3,7 @@
 /**
  * /device — device-flow approval page (U7, RFC 8628-shaped).
  *
- * `youmd login` shows the user an 8-char code and sends them here. The page
+ * `you login` shows the user an 8-char code and sends them here. The page
  * requires a signed-in web session (it routes through /sign-in and back),
  * validates the code via api.auth.lookupDeviceAuth, shows what is asking for
  * access, and lets the user approve or deny. The API key itself is never
@@ -379,7 +379,7 @@ function DeviceSuccessView({
             Return to your terminal; the CLI will finish the handoff in a few seconds.
           </p>
           <p className="mt-3 font-mono text-[12px] text-[hsl(var(--text-secondary))] opacity-60">
-            First time on this machine? Run `youmd pull`, then `youmd sync`, then `you`.
+            First time on this machine? Run `you pull`, then `you sync`, then `you`.
           </p>
 
           <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">

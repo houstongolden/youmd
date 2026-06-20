@@ -26,7 +26,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
 ## Default Flow
 
 1. Confirm whether this looks like a fresh machine:
-   - `youmd status`
+   - `you status`
    - `test -d ~/Desktop/CODE_YOU && find ~/Desktop/CODE_YOU -maxdepth 1 -type d | wc -l`
    - `git config user.name && git config user.email`
    - `gh auth status`
@@ -34,16 +34,17 @@ You.md is the brain. The new machine should become a runnable local agent workst
    for Claude Code or Codex on the new machine, generate it first:
 
    ```bash
-   youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault
+   you machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault
    ```
 
    If the web dashboard minted a scoped bootstrap key, the generated prompt may
-   include `YOUMD_API_KEY`. Treat that prompt as secret-bearing local setup
+   include `YOU_API_KEY` (legacy `YOUMD_API_KEY` still works). Treat that prompt as secret-bearing local setup
    material and do not paste it into public chats, tickets, or docs.
    Fresh-machine bootstrap keys must include the `vault` scope so the trusted
    device can pull encrypted Secret Vault snapshots after login.
    For bounded proof runs on a clean local root, add
-   `--max-clone-projects 2` or set `YOUMD_MAX_CLONE_PROJECTS=2`; omit that cap
+   `--max-clone-projects 2` or set `YOU_MAX_CLONE_PROJECTS=2`; legacy
+   `YOUMD_MAX_CLONE_PROJECTS=2` still works. Omit that cap
    on the real new machine.
 
 3. If You.md is not installed on the new machine, install it:
@@ -55,19 +56,19 @@ You.md is the brain. The new machine should become a runnable local agent workst
 4. Authenticate and hydrate the local brain:
 
    ```bash
-   youmd login --key "$YOUMD_API_KEY"  # or: youmd login
-   youmd pull
-   youmd sync
+   you login --key "$YOU_API_KEY"  # or: you login
+   you pull
+   you sync
    ```
 
 5. Restore shared agent skills, stack config, and host adapters:
 
    ```bash
-   youmd machine setup
-   youmd skill install all
-   youmd skill sync
-   youmd skill link codex
-   youmd skill link claude
+   you machine setup
+   you skill install all
+   you skill sync
+   you skill link codex
+   you skill link claude
    ```
 
 6. Hydrate the portfolio graph from You.md/GitHub records before cloning, then
@@ -75,18 +76,18 @@ You.md is the brain. The new machine should become a runnable local agent workst
    and syncing truly active 30-day projects first:
 
    ```bash
-   youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 30 --limit 80
-   youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only --dry-run
-   youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only
+   you project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 30 --limit 80
+   you machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only --dry-run
+   you machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only
    ```
 
 7. Ask whether Houston wants to expand the workspace to all active projects
    from the last 90 days before calling the full project clone set complete:
 
    ```bash
-   youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 90 --limit 80
-   youmd machine projects --root ~/Desktop/CODE_YOU --days 90 --recent-only --dry-run
-   youmd machine projects --root ~/Desktop/CODE_YOU --days 90 --recent-only
+   you project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 90 --limit 80
+   you machine projects --root ~/Desktop/CODE_YOU --days 90 --recent-only --dry-run
+   you machine projects --root ~/Desktop/CODE_YOU --days 90 --recent-only
    ```
 
 8. If GitHub auth is missing, help the user log in and rerun only the project
@@ -94,7 +95,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
 
    ```bash
    gh auth login
-   youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only
+   you machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only
    ```
 
 9. After projects are cloned and any encrypted env vault is restored, hydrate the
@@ -102,19 +103,20 @@ You.md is the brain. The new machine should become a runnable local agent workst
    evidence becomes visible to future agents:
 
    ```bash
-   youmd project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 30 --limit 80
+   you project portfolio-hydrate --root ~/Desktop/CODE_YOU --days 30 --limit 80
    ```
 
 10. Run the secret-safe readiness audit and sync the proof summary:
 
    ```bash
-   youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report --sync-report
+   you machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report --sync-report
    ```
 
    This checks cloned directories, git remotes, package managers, standard
    scripts, `.env.local` presence, `.env.example` presence, root agent docs, and
    `project-context/` presence. It writes a secret-safe JSON proof artifact to
-   `~/.youmd/machine-reports/latest.json` and syncs only the compact proof
+   `~/.you/machine-reports/latest.json` with legacy `~/.youmd` fallback during
+   migration, and syncs only the compact proof
    summary to the You.md machine dashboard. It does not read secret values,
    upload raw logs, or launch every dev server.
 
@@ -122,7 +124,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
     enough time/CPU, run bounded package checks and dev-server probes:
 
    ```bash
-   youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --install-deps --run-checks --probe-servers --write-report --sync-report
+   you machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --install-deps --run-checks --probe-servers --write-report --sync-report
    ```
 
    The default check scripts are `typecheck`, `lint`, `test`, and `build`.
@@ -134,11 +136,11 @@ You.md is the brain. The new machine should become a runnable local agent workst
 
 - Use the You.md CLI and You Agent yourself before asking Houston to do manual
   work. Prefer deterministic commands for setup and proof:
-  `youmd status`, `youmd whoami`, `youmd pull`, `youmd sync`,
-  `youmd machine prompt`, `youmd machine setup`,
-  `youmd skill install all`, `youmd skill sync`,
-  `youmd env vault list`, `youmd env vault pull`,
-  `youmd project portfolio-hydrate`, `youmd machine verify`,
+  `you status`, `you whoami`, `you pull`, `you sync`,
+  `you machine prompt`, `you machine setup`,
+  `you skill install all`, `you skill sync`,
+  `you env vault list`, `you env vault pull`,
+  `you project portfolio-hydrate`, `you machine verify`,
   `youmd agent status`, and `youmd agent inbox`.
 - Report setup milestones to Houston's other trusted Macs with the realtime
   agent bus instead of relying on clipboard/manual status relays:
@@ -148,7 +150,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
   ```
 
   This writes through Convex realtime and the receiving daemon materializes it
-  into `~/.youmd/agent-bus/inbox.json` without reading or exposing `.env.local`
+  into `~/.you/agent-bus/inbox.json` without reading or exposing `.env.local`
   values.
 - Use `you` / `youmd chat` when you need the You Agent to synthesize context,
   route a natural-language request, or produce the setup artifact, then turn the
@@ -157,8 +159,8 @@ You.md is the brain. The new machine should become a runnable local agent workst
   command, verify the result, and report concise proof.
 - Interrupt Houston only for true human-gated steps: GitHub browser auth,
   source-Mac Secret Vault share if no trusted-device envelope exists yet, local
-  vault passphrase/Keychain only when `YOUMD_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1`
-  or `YOUMD_ENV_VAULT` is explicitly provided, npm OTP, OS permissions, or the
+  vault passphrase/Keychain only when `YOU_ALLOW_LOCAL_ENV_VAULT_FALLBACK=1`
+  or `YOU_ENV_VAULT` is explicitly provided, npm OTP, OS permissions, or the
   explicit 90-day project expansion choice.
 - If the installed CLI is stale, run the curl installer/update path first, then
   retry the You.md command. Tell Houston when npm publish is needed for
@@ -175,7 +177,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
 - Use the You.md Portfolio Graph as the strategic source of truth, then merge
   authenticated GitHub recent-repo data and local bundle project records so repo
   names and URLs stay cloneable.
-- `youmd machine projects` should fetch the persisted owner graph through the
+- `you machine projects` should fetch the persisted owner graph through the
   You.md API when authenticated. If that graph is unavailable, fall back to the
   local bundle plus authenticated GitHub scan and say so.
 - Clone with `gh repo clone owner/repo <target>` when `gh` is authenticated; otherwise fall back to `git clone`.
@@ -183,7 +185,7 @@ You.md is the brain. The new machine should become a runnable local agent workst
 - Never print secrets. If `.env.local` files are needed, use You.md Secret Vault
   or the shared encrypted env backup/restore path. Never paste raw env values
   into chat.
-- After cloning, initialize missing per-repo agent context with `youmd skill init-project` from inside that repo.
+- After cloning, initialize missing per-repo agent context with `you skill init-project` from inside that repo.
 
 ## Secret-Safe Env Transfer
 
@@ -192,22 +194,22 @@ Audit local project env coverage before backup:
 ```bash
 ~/.agent-shared/bin/env-key-audit.py --root ~/Desktop/CODE_2025
 ~/.agent-shared/bin/env-secure-backup.sh --preflight
-youmd env backup --root ~/Desktop/CODE_2025 --preflight
+you env backup --root ~/Desktop/CODE_2025 --preflight
 ```
 
 Primary path: from the old/source machine, create an encrypted archive and push
 only the ciphertext plus safe manifest metadata to You.md Secret Vault:
 
 ```bash
-youmd env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault
-youmd env vault list
+you env vault push --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault
+you env vault list
 ```
 
 On the new machine, register its local Secret Vault device key. The private key
-stays under `~/.youmd/secret-vault/devices/`; only the public key is synced:
+stays under `~/.you/secret-vault/devices/`; only the public key is synced:
 
 ```bash
-youmd env vault device-register
+you env vault device-register
 ```
 
 Back on the old/source machine, share local decrypt access to trusted devices.
@@ -215,19 +217,19 @@ This stores per-device encrypted passphrase envelopes; it does not upload raw en
 values:
 
 ```bash
-youmd env vault share
+you env vault share
 ```
 
 On the new machine, pull the latest encrypted account snapshot and restore into
 already-cloned project directories without clobbering local agent auth:
 
 ```bash
-youmd env vault pull --restore --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
+you env vault pull --restore --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
 ```
 
 If `pull --restore` says no trusted-device envelope exists for this Mac, do not
 ask Houston for raw secrets. Confirm `device-register` ran on the new Mac, run
-`youmd env vault share` on the source Mac, then rerun `pull --restore`.
+`you env vault share` on the source Mac, then rerun `pull --restore`.
 
 Fallback path: create an encrypted archive from the old machine in an
 interactive macOS terminal and transfer the encrypted file by iCloud, AirDrop,
@@ -235,15 +237,15 @@ USB, or private password-manager attachment:
 
 ```bash
 open ~/.agent-shared/bin/env-backup-interactive.command
-youmd env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault
+you env backup --root ~/Desktop/CODE_2025 --out ~/Desktop/youmd-env-vault
 ```
 
 On the new machine, list the encrypted archive by path only before restore:
 
 ```bash
 ~/.agent-shared/bin/env-secure-restore.sh --archive ~/Desktop/env-local-backup.tar.gz.gpg --list
-youmd env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU --list --map-existing --existing-only --skip-agent-auth
-youmd env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
+you env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU --list --map-existing --existing-only --skip-agent-auth
+you env restore ~/Desktop/env-local-backup.tar.gz.gpg --root ~/Desktop/CODE_YOU --map-existing --existing-only --skip-agent-auth
 ```
 
 If a headless agent still cannot decrypt after device sharing, then and only then
@@ -261,55 +263,55 @@ unset PW && echo "stored in Keychain"
 Dry-run the project layout:
 
 ```bash
-youmd machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only --dry-run
+you machine projects --root ~/Desktop/CODE_YOU --days 30 --recent-only --dry-run
 ```
 
 Create directories only, without cloning:
 
 ```bash
-youmd machine projects --root ~/Desktop/CODE_YOU --no-clone
+you machine projects --root ~/Desktop/CODE_YOU --no-clone
 ```
 
 Audit cloned readiness:
 
 ```bash
-youmd machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report --sync-report
+you machine verify --root ~/Desktop/CODE_YOU --max-projects 80 --write-report --sync-report
 ```
 
 Run bounded package checks:
 
 ```bash
-youmd machine verify --root ~/Desktop/CODE_YOU --run-checks --max-check-projects 8 --check-timeout-ms 120000
+you machine verify --root ~/Desktop/CODE_YOU --run-checks --max-check-projects 8 --check-timeout-ms 120000
 ```
 
 Run clean-host dependency installs and localhost dev-server probes:
 
 ```bash
-youmd machine verify --root ~/Desktop/CODE_YOU --install-deps --probe-servers --write-report --sync-report
+you machine verify --root ~/Desktop/CODE_YOU --install-deps --probe-servers --write-report --sync-report
 ```
 
 Include older projects without prompts:
 
 ```bash
-youmd machine projects --root ~/Desktop/CODE_YOU --yes
+you machine projects --root ~/Desktop/CODE_YOU --yes
 ```
 
 Generate the copy/paste prompt for a new Claude Code or Codex terminal:
 
 ```bash
-youmd machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault
+you machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault
 ```
 
 Generate the same prompt but cap clones for a clean-host proof run:
 
 ```bash
-youmd machine prompt --root /tmp/youmd-clean-host-CODE_YOU --days 30 --limit 80 --max-clone-projects 2 --require-env-vault
+you machine prompt --root /tmp/you-clean-host-CODE_YOU --days 30 --limit 80 --max-clone-projects 2 --require-env-vault
 ```
 
 Fetch the secret-safe project graph directly:
 
 ```bash
-curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfolio/graph
+curl -H "Authorization: Bearer $YOU_API_KEY" https://you.md/api/v1/me/portfolio/graph
 ```
 
 ## Done Means
@@ -321,9 +323,9 @@ curl -H "Authorization: Bearer $YOUMD_API_KEY" https://you.md/api/v1/me/portfoli
 - Active GitHub-backed project repos are cloned into matching repo-name directories.
 - The clone plan visibly used the persisted portfolio graph, authenticated
   GitHub recent repos, and local bundle records with source counts.
-- `youmd machine verify` reports git/package/env/agent-doc/project-context
+- `you machine verify` reports git/package/env/agent-doc/project-context
   readiness for the cloned workspace without reading `.env.local` values and
-  writes `~/.youmd/machine-reports/latest.json`.
+  writes `~/.you/machine-reports/latest.json`.
 - `--sync-report` creates or updates an owner-gated You.md machine proof row
   that the dashboard can show across computers.
 - If `--run-checks` was requested, bounded package checks ran with project and

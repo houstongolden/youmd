@@ -202,10 +202,15 @@ export type LocalMachineReadiness = {
   };
   latestProof?: LocalMachineProofSummary;
   commands: {
+    migrateHome: string;
+    syncNow: string;
+    inventoryRefresh: string;
     verifyCurrent: string;
     verifyFresh: string;
     verifyFreshFull: string;
+    daemonInstall: string;
     daemonStatus: string;
+    vaultShare: string;
     envBackup: string;
     envRestore: string;
   };
@@ -905,10 +910,15 @@ export function buildLocalMachineReadiness(rootDir: string): LocalMachineReadine
     projects,
     latestProof: latestMachineProof(),
     commands: {
+      migrateHome: "you machine migrate-home --yes",
+      syncNow: `you machine sync-now --root "${rootDir}" --max-projects 80`,
+      inventoryRefresh: "you skill inventory --out-dir ~/.you/agent-stack-inventory --sync",
       verifyCurrent: `you machine verify --root "${rootDir}"`,
       verifyFresh: `you machine verify --root "${freshMachineRoot}" --write-report`,
       verifyFreshFull: `you machine verify --root "${freshMachineRoot}" --install-deps --run-checks --probe-servers --write-report`,
+      daemonInstall: "you stack daemon install",
       daemonStatus: "you stack daemon status",
+      vaultShare: "you env vault share",
       envBackup: "~/.agent-shared/bin/env-secure-backup.sh --root ~/Desktop/CODE_2025",
       envRestore: `you env restore <vault> --root "${freshMachineRoot}"`,
     },
