@@ -61,7 +61,7 @@ DAYS="\${YOU_ACTIVE_DAYS:-\${YOUMD_ACTIVE_DAYS:-30}}"
 EXPAND_DAYS="\${YOU_EXPAND_ACTIVE_DAYS:-\${YOUMD_EXPAND_ACTIVE_DAYS:-90}}"
 LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
 HYDRATE_TIMEOUT="\${YOU_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-\${YOUMD_PORTFOLIO_HYDRATE_TIMEOUT_SECONDS:-180}}"
-MIN_YOUMD_VERSION="\${YOU_MIN_VERSION:-\${YOUMD_MIN_VERSION:-0.8.11}}"
+MIN_YOUMD_VERSION="\${YOU_MIN_VERSION:-\${YOUMD_MIN_VERSION:-0.8.12}}"
 mkdir -p "$ROOT"
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
@@ -203,6 +203,8 @@ if ! command_exists you; then
   exit 1
 fi
 ensure_youmd_min_version
+echo "[you.md] proving canonical ~/.you home migration"
+you machine migrate-home --yes || true
 
 YOU_BOOTSTRAP_API_KEY="\${YOU_API_KEY:-\${YOUMD_API_KEY:-}}"
 if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
@@ -475,6 +477,7 @@ export function buildFreshMachineBootstrapPrompt(options: FreshMachineBootstrapO
     "What it will do:",
     "- check/install the local prerequisites first: Homebrew, Node 22/npm, git, GitHub CLI, bun, and pnpm/corepack",
     "- install You.md from the curl runtime and force the You.md/Homebrew/Node 22 paths into this setup shell",
+    "- prove the canonical `~/.you` home migration while preserving legacy `~/.youmd` fallback",
     "- authenticate and pull/sync your identity bundle",
     "- install resident realtime sync daemons early so identity/skill/project-context sync is not deferred until the end",
     "- require GitHub CLI auth before private shared-skill/project repos clone; if browser auth fails inside Claude/Codex, it prints the exact Terminal command to run and stops cleanly",

@@ -32,9 +32,11 @@ describe("fresh machine bootstrap prompt", () => {
     expect(command).toContain("brew install gh");
     expect(command).toContain("brew install bun");
     expect(command).toContain("YOU_INSTALL_CHANNEL=source YOU_SOURCE_REF=main bash");
-    expect(command).toContain('MIN_YOUMD_VERSION="${YOU_MIN_VERSION:-${YOUMD_MIN_VERSION:-0.8.11}}"');
+    expect(command).toContain('MIN_YOUMD_VERSION="${YOU_MIN_VERSION:-${YOUMD_MIN_VERSION:-0.8.12}}"');
     expect(command).toContain("ensure_youmd_min_version");
     expect(command).toContain("you ${MIN_YOUMD_VERSION}+ is required for Secret Vault, agent bus, agent stack inventory, and fresh-machine restore");
+    expect(command).toContain("proving canonical ~/.you home migration");
+    expect(command).toContain("you machine migrate-home --yes || true");
     expect(command).toContain("run_agent_stack_inventory()");
     expect(command).toContain('INVENTORY_DIR="${YOU_AGENT_STACK_INVENTORY_DIR:-${YOUMD_AGENT_STACK_INVENTORY_DIR:-$HOME/.you/agent-stack-inventory}}"');
     expect(command).toContain('you skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync');
@@ -138,6 +140,7 @@ describe("fresh machine bootstrap prompt", () => {
     expect(prompt).toContain("~/.you/agent-stack-inventory");
     expect(prompt).toContain("check/install the local prerequisites first");
     expect(prompt).toContain("installing runtime from GitHub main");
+    expect(prompt).toContain("canonical ~/.you home migration");
     expect(prompt).toContain("require GitHub CLI auth before private shared-skill/project repos clone");
     expect(prompt).toContain("you mcp --install claude --auto");
     expect(prompt).toContain("you mcp --install codex --auto");

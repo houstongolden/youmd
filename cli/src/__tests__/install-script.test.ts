@@ -28,6 +28,9 @@ describe("install.sh route", () => {
     expect(script).toContain("Creating secret-safe local agent stack inventory");
     expect(script).toContain('you skill inventory --out-dir "$INVENTORY_DIR" --register-catalog --sync');
     expect(script).toContain('YOU_INSTALL_INVENTORY:-${YOUMD_INSTALL_INVENTORY:-1}');
+    expect(script).toContain('YOU_INSTALL_MIGRATE_HOME:-${YOUMD_INSTALL_MIGRATE_HOME:-1}');
+    expect(script).toContain('you machine migrate-home --yes');
+    expect(script).toContain('run `you machine migrate-home --yes` after install');
     expect(script).toContain('YOU_INSTALL_MACHINE_SYNC:-${YOUMD_INSTALL_MACHINE_SYNC:-0}');
     expect(script).toContain('YOU_BOOTSTRAP_API_KEY="${YOU_API_KEY:-${YOUMD_API_KEY:-}}"');
     expect(script).toContain('you login --key "$YOU_BOOTSTRAP_API_KEY"');

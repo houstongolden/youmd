@@ -204,16 +204,16 @@ fi
 link_runtime_bins
 persist_user_path_hint
 
-if ! command -v youmd >/dev/null 2>&1; then
+if ! command -v you >/dev/null 2>&1; then
   echo ""
-  echo "youmd installed, but the binary is not on your PATH yet."
+  echo "you installed, but the binary is not on your PATH yet."
   echo "Open a new shell and run:"
-  echo "  youmd --version"
+  echo "  you --version"
   echo ""
   exit 0
 fi
 
-INSTALLED_VERSION="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+INSTALLED_VERSION="$(you --version 2>/dev/null | tr -d '[:space:]' || true)"
 if [ -z "$INSTALLED_VERSION" ] || ! version_at_least "$INSTALLED_VERSION" "$CLI_VERSION"; then
   echo ""
   echo "Installed You.md runtime is too old: \${INSTALLED_VERSION:-unknown}"
@@ -222,6 +222,17 @@ if [ -z "$INSTALLED_VERSION" ] || ! version_at_least "$INSTALLED_VERSION" "$CLI_
   echo "  curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL=source YOU_SOURCE_REF=main bash"
   echo ""
   exit 1
+fi
+
+if [ "\${YOU_INSTALL_MIGRATE_HOME:-\${YOUMD_INSTALL_MIGRATE_HOME:-1}}" = "1" ]; then
+  if [ -d "$LEGACY_YOUMD_HOME_DIR" ] || [ -d "$YOU_HOME_DIR" ]; then
+    echo "Migrating runtime home to canonical ~/.you..."
+    if you machine migrate-home --yes >/dev/null 2>&1; then
+      echo "  - home: $YOU_HOME_DIR"
+    else
+      echo "  - home migration skipped; run \`you machine migrate-home --yes\` after install"
+    fi
+  fi
 fi
 
 mkdir -p "$YOUMD_BIN_DIR"
@@ -252,7 +263,7 @@ if [ "\${1:-}" != "--quiet" ]; then
 fi
 
 LOG_FILE="/tmp/youmd-auto-upgrade.log"
-PREV_VERSION="$(youmd --version 2>/dev/null | tr -d '[:space:]' || true)"
+PREV_VERSION="$(you --version 2>/dev/null | tr -d '[:space:]' || true)"
 
 curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL="\${YOU_INSTALL_CHANNEL:-\${YOUMD_INSTALL_CHANNEL:-source}}" bash >"$LOG_FILE" 2>&1 || {
   if [ "\${1:-}" != "--quiet" ]; then
@@ -262,8 +273,8 @@ curl -fsSL https://you.md/install.sh | YOU_INSTALL_CHANNEL="\${YOU_INSTALL_CHANN
 }
 
 # Post-upgrade health check: if the new binary is broken, roll back.
-if ! youmd --version >/dev/null 2>&1; then
-  echo "youmd upgrade failed health check, rolling back to \${PREV_VERSION:-unknown}" >> "$LOG_FILE"
+if ! you --version >/dev/null 2>&1; then
+  echo "you upgrade failed health check, rolling back to \${PREV_VERSION:-unknown}" >> "$LOG_FILE"
   if [ -n "$PREV_VERSION" ]; then
     npm install -g "youmd@$PREV_VERSION" >>"$LOG_FILE" 2>&1 || true
   fi
@@ -350,7 +361,7 @@ if [ "\${YOU_INSTALL_DAEMON:-\${YOUMD_INSTALL_DAEMON:-0}}" = "1" ]; then
 fi
 
 echo ""
-echo "Installed You.md runtime: $(youmd --version)"
+echo "Installed You.md runtime: $(you --version)"
 if [ "$USING_USER_NPM_PREFIX" = "1" ]; then
   echo "Runtime installed without sudo under: $YOUMD_NPM_PREFIX"
 fi

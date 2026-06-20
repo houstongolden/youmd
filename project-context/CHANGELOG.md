@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(install): run home migration during curl setup
+- The curl installer now verifies the canonical `you` binary, runs `you machine migrate-home --yes` by default when legacy or canonical home state exists, and keeps `YOU_INSTALL_MIGRATE_HOME=0` / `YOUMD_INSTALL_MIGRATE_HOME=0` as an escape hatch.
+- Fresh-machine bootstrap now requires `you`/`youmd` `0.8.12+` and proves the canonical `~/.you` migration immediately after source install before login, inventory, Secret Vault, project clone, and machine proof work.
+- Verified with focused install/bootstrap tests, CLI TypeScript build, and production Next build.
+
 ### feat(machine): proof legacy home migration to `~/.you`
 - Hardened `you machine migrate-home --yes` so it copies missing legacy `~/.youmd` runtime files into canonical `~/.you`, preserves conflicting canonical files, keeps legacy fallback intact, and writes a secret-safe hash proof under `~/.you/migration-reports/`.
 - Switched Secret Vault device-key storage, onboarding config reads, and portfolio audit fingerprint salt paths onto the central canonical home helpers instead of raw `~/.youmd` paths.
