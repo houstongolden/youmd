@@ -6320,6 +6320,133 @@ const SUPPORTED_MCP_PROTOCOL_VERSIONS = [
   "2024-11-05",
 ];
 const MCP_SERVER_INFO = { name: "you.md", version: "1.0.0" };
+const AGENT_STACK_REPO_RESOURCE_FILES = [
+  {
+    uri: "agent-stack://repo/README.md",
+    path: "agent-stack/README.md",
+    name: "agent-stack/README.md",
+    description: "Markdown overview of the synced Skill Mesh inventory in the user's GitHub identity repo.",
+    mimeType: "text/markdown",
+  },
+  {
+    uri: "agent-stack://repo/inventory.md",
+    path: "agent-stack/inventory.md",
+    name: "agent-stack/inventory.md",
+    description: "Human-readable synced Skill Mesh report with counts, ownership rollups, gaps, mirrors, and DRY queues.",
+    mimeType: "text/markdown",
+  },
+  {
+    uri: "agent-stack://repo/inventory.json",
+    path: "agent-stack/inventory.json",
+    name: "agent-stack/inventory.json",
+    description: "Machine-readable synced Skill Mesh report JSON with safe counts and report metadata.",
+    mimeType: "application/json",
+  },
+] as const;
+
+function hostedAgentStackResources(): Array<{
+  uri: string;
+  name: string;
+  description: string;
+  mimeType: string;
+}> {
+  return [
+    {
+      uri: "agent-stack://inventory/summary",
+      name: "agent-stack/inventory/summary",
+      description: "Authenticated Skill Mesh summary: synced machine inventories, drift baseline, and safe repo snapshot paths.",
+      mimeType: "application/json",
+    },
+    ...AGENT_STACK_REPO_RESOURCE_FILES.map(({ uri, name, description, mimeType }) => ({
+      uri,
+      name,
+      description,
+      mimeType,
+    })),
+  ];
+}
+
+async function authenticateHostedAgentStackResource(
+  ctx: ActionCtx,
+  request: Request,
+): Promise<AuthContext | Response> {
+  const auth = await authenticateRequest(ctx, request);
+  if (auth instanceof Response) return auth;
+  const denied = await requireScope(ctx, request, auth, "read:private", "stacks");
+  return denied ?? auth;
+}
+
+async function readHostedAgentStackResource(
+  ctx: ActionCtx,
+  request: Request,
+  id: unknown,
+  uri: string,
+): Promise<Response | null> {
+  if (!uri.startsWith("agent-stack://")) return null;
+
+  const auth = await authenticateHostedAgentStackResource(ctx, request);
+  if (auth instanceof Response) {
+    return mcpError(id, auth.status === 403 ? -32003 : -32001, "authentication required for agent-stack resources");
+  }
+
+  if (uri === "agent-stack://inventory/summary") {
+    const limit = 12;
+    const [inventories, drift, mirror] = await Promise.all([
+      ctx.runQuery(api.portfolio.listAgentStackInventories, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        limit,
+      }),
+      ctx.runQuery(api.portfolio.getAgentStackInventoryDrift, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        limit,
+      }),
+      ctx.runQuery(internal.github.internalGetMirrorByClerkId, {
+        clerkId: auth.userId,
+      }),
+    ]);
+    const repoPaths = AGENT_STACK_REPO_RESOURCE_FILES.map((file) => file.path);
+    const presentPaths = new Set((mirror?.files ?? []).map((file: { path: string }) => file.path));
+    return mcpOk(id, {
+      contents: [{
+        uri,
+        mimeType: "application/json",
+        text: JSON.stringify({
+          schemaVersion: "you-md/agent-stack-resource-summary/v1",
+          generatedAt: Date.now(),
+          inventories,
+          drift,
+          repoSnapshot: {
+            repo: mirror?.repoFullName ?? null,
+            expectedPaths: repoPaths,
+            missingPaths: repoPaths.filter((path) => !presentPaths.has(path)),
+            resourceUris: AGENT_STACK_REPO_RESOURCE_FILES.map(({ uri, path, mimeType }) => ({ uri, path, mimeType })),
+          },
+          secretValuesExposed: false,
+        }, null, 2),
+      }],
+    });
+  }
+
+  const repoResource = AGENT_STACK_REPO_RESOURCE_FILES.find((file) => file.uri === uri);
+  if (!repoResource) {
+    return mcpError(id, -32602, "unrecognised agent-stack URI — use agent-stack://inventory/summary or agent-stack://repo/{README.md|inventory.md|inventory.json}");
+  }
+  const mirror = await ctx.runQuery(internal.github.internalGetMirrorByClerkId, {
+    clerkId: auth.userId,
+  });
+  if (!mirror) return mcpError(id, -32004, "No repo mirror yet. Link a repo and sync in settings.");
+  const file = mirror.files.find((entry: { path: string }) => entry.path === repoResource.path);
+  if (!file) return mcpError(id, -32004, `File not found in mirror: ${repoResource.path}`);
+  return mcpOk(id, {
+    contents: [{
+      uri,
+      mimeType: repoResource.mimeType,
+      text: file.content,
+    }],
+  });
+}
 
 // ─── Discovery ────────────────────────────────────────────────────────────────
 
@@ -6485,10 +6612,9 @@ http.route({
 
         // ── Resources ──────────────────────────────────────────────────────────
         case "resources/list": {
-          // No fixed concrete resources — identities are parameterized by
-          // username and exposed via the identity://{username} URI template
-          // (see resources/templates/list).
-          return mcpOk(id, { resources: [] });
+          const authResult = await authenticateRequest(ctx, request);
+          const resources = authResult instanceof Response ? [] : hostedAgentStackResources();
+          return mcpOk(id, { resources });
         }
 
         case "resources/templates/list": {
@@ -6500,6 +6626,18 @@ http.route({
                 description: "Public you.md identity bundle for a username. resources/read also accepts https://you.md/{username} URIs.",
                 mimeType: "application/vnd.you-md.v1+json",
               },
+              {
+                uriTemplate: "agent-stack://inventory/summary",
+                name: "agent stack inventory summary",
+                description: "Authenticated Skill Mesh inventory/drift summary for the current user.",
+                mimeType: "application/json",
+              },
+              {
+                uriTemplate: "agent-stack://repo/{path}",
+                name: "agent stack repo snapshot file",
+                description: "Authenticated safe Skill Mesh report file from the user's mirrored identity repo. Supported paths: README.md, inventory.md, inventory.json.",
+                mimeType: "text/plain",
+              },
             ],
           });
         }
@@ -6509,6 +6647,9 @@ http.route({
           if (!uri || typeof uri !== "string") {
             return mcpError(id, -32602, "uri parameter required");
           }
+
+          const agentStackResource = await readHostedAgentStackResource(ctx, request, id, uri);
+          if (agentStackResource) return agentStackResource;
 
           // Parse identity://{username} or https://you.md/{username}
           let username: string | null = null;

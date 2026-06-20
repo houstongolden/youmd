@@ -34,6 +34,7 @@ import * as path from "path";
 import {
   getGlobalConfigDir,
   getHomeBundleDir,
+  getLegacyHomeBundleDir,
   getLocalBundleDir,
   bundleLooksInitialized,
   readGlobalConfig,
@@ -97,6 +98,55 @@ function readJsonOr(filePath: string, fallback: unknown): unknown {
   } catch {
     return fallback;
   }
+}
+
+function sortByMtimeDesc(files: string[]): string[] {
+  return files.sort((a, b) => {
+    try {
+      const delta = fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs;
+      if (delta !== 0) return delta;
+    } catch {
+      // fall through to deterministic basename order
+    }
+    return path.basename(b).localeCompare(path.basename(a));
+  });
+}
+
+function findLatestAgentStackInventoryJson(): string | null {
+  const dirs = [
+    path.join(getHomeBundleDir(), "agent-stack-inventory"),
+    path.join(getLegacyHomeBundleDir(), "agent-stack-inventory"),
+  ];
+  const files: string[] = [];
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir)) continue;
+    try {
+      for (const file of fs.readdirSync(dir)) {
+        if (/^local-agent-stack-inventory-.*\.json$/.test(file)) {
+          files.push(path.join(dir, file));
+        }
+      }
+    } catch {
+      // skip unreadable inventory dirs
+    }
+  }
+  return sortByMtimeDesc(files)[0] ?? null;
+}
+
+function latestAgentStackInventoryResource(): {
+  jsonPath: string;
+  htmlPath: string;
+  snapshot: Record<string, unknown>;
+} | null {
+  const jsonPath = findLatestAgentStackInventoryJson();
+  if (!jsonPath) return null;
+  const snapshot = readJsonOr(jsonPath, {}) as Record<string, unknown>;
+  if (!snapshot || typeof snapshot !== "object") return null;
+  return {
+    jsonPath,
+    htmlPath: jsonPath.replace(/\.json$/, ".html"),
+    snapshot,
+  };
 }
 
 function getBundleDir(): string {
@@ -1181,6 +1231,30 @@ export async function startMcpServer(): Promise<void> {
       mimeType: "application/json",
     });
 
+    const latestAgentStackInventory = latestAgentStackInventoryResource();
+    resources.push({
+      uri: "youmd://agent-stack/inventory",
+      name: "agent-stack/inventory",
+      description: "Skill Mesh inventory summary: latest local report paths plus synced machine inventory/drift status when authenticated",
+      mimeType: "application/json",
+    });
+    if (latestAgentStackInventory) {
+      resources.push({
+        uri: "youmd://agent-stack/report.json",
+        name: "agent-stack/report.json",
+        description: `Latest local Skill Mesh JSON report (${latestAgentStackInventory.jsonPath})`,
+        mimeType: "application/json",
+      });
+      if (fs.existsSync(latestAgentStackInventory.htmlPath)) {
+        resources.push({
+          uri: "youmd://agent-stack/report.html",
+          name: "agent-stack/report.html",
+          description: `Latest local Skill Mesh HTML report (${latestAgentStackInventory.htmlPath})`,
+          mimeType: "text/html",
+        });
+      }
+    }
+
     const currentStack = tryLoadCurrentYouStack();
     if (currentStack) {
       resources.push({
@@ -1368,6 +1442,62 @@ export async function startMcpServer(): Promise<void> {
           uri,
           mimeType: "application/json",
           text: JSON.stringify(persistedPortfolioGraph ?? PORTFOLIO_GRAPH_BRIEF, null, 2),
+        }],
+      };
+    }
+
+    if (uri === "youmd://agent-stack/inventory") {
+      void logMcpActivity("read", "agent-stack/inventory");
+      const latest = latestAgentStackInventoryResource();
+      let synced: unknown = null;
+      let drift: unknown = null;
+      if (isAuthenticated()) {
+        try {
+          [synced, drift] = await Promise.all([
+            apiRequest("/api/v1/me/agent-stack/inventories?limit=12"),
+            apiRequest("/api/v1/me/agent-stack/drift?limit=12"),
+          ]);
+        } catch {
+          // Keep local report usable even when the network/API is unavailable.
+        }
+      }
+      return {
+        contents: [{
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify({
+            schemaVersion: "you-md/local-agent-stack-resource/v1",
+            generatedAt: Date.now(),
+            local: latest
+              ? {
+                  jsonPath: latest.jsonPath,
+                  htmlPath: fs.existsSync(latest.htmlPath) ? latest.htmlPath : null,
+                  generatedAt: latest.snapshot.generatedAt ?? null,
+                  hostName: latest.snapshot.hostName ?? latest.snapshot.hostname ?? null,
+                  rootDir: (latest.snapshot.roots as { workspace?: unknown } | undefined)?.workspace ?? latest.snapshot.repoRoot ?? null,
+                  totals: latest.snapshot.totals ?? null,
+                  secretValuesExposed: latest.snapshot.secretValuesExposed === true,
+                }
+              : null,
+            synced,
+            drift,
+            secretValuesExposed: false,
+          }, null, 2),
+        }],
+      };
+    }
+
+    if (uri === "youmd://agent-stack/report.json" || uri === "youmd://agent-stack/report.html") {
+      const latest = latestAgentStackInventoryResource();
+      if (!latest) throw new Error("no local agent-stack inventory report found; run `you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync`");
+      const filePath = uri.endsWith(".html") ? latest.htmlPath : latest.jsonPath;
+      if (!fs.existsSync(filePath)) throw new Error(`agent-stack report file missing: ${filePath}`);
+      void logMcpActivity("read", uri.endsWith(".html") ? "agent-stack/report.html" : "agent-stack/report.json");
+      return {
+        contents: [{
+          uri,
+          mimeType: uri.endsWith(".html") ? "text/html" : "application/json",
+          text: readFileOr(filePath, ""),
         }],
       };
     }

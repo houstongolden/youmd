@@ -2,6 +2,11 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(mcp): expose Skill Mesh reports as resources
+- Hosted JSON-RPC MCP now exposes authenticated `agent-stack://inventory/summary` plus safe mirrored repo report files under `agent-stack://repo/...`.
+- Local stdio MCP now exposes `youmd://agent-stack/inventory`, `youmd://agent-stack/report.json`, and `youmd://agent-stack/report.html` from the latest local inventory proof.
+- Verified with focused MCP/Convex tests, CLI TypeScript build, production Next build, and `git diff --check`.
+
 ### fix(skill-mesh): lead repair surfaces with `you`
 - Updated Skill Mesh repair guidance across Convex drift summaries, local MCP, the Skills pane, installer regression tests, and CLI inventory status so copyable commands lead with the canonical `you` binary while retaining `youmd` only as compatibility/internal provenance.
 - `YOU_AGENT_STACK_INVENTORY_SCRIPT` is now the canonical override for the bundled/local scanner, with `YOUMD_AGENT_STACK_INVENTORY_SCRIPT` kept as a legacy fallback.
