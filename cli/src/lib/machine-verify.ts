@@ -4,6 +4,7 @@ import * as childProcess from "child_process";
 import * as http from "http";
 import * as os from "os";
 import { getHomeBundleDir, getWritableHomeBundleDir } from "./config";
+import { getDaemonHealth } from "./daemon";
 
 export const DEFAULT_MACHINE_CHECK_SCRIPTS = ["typecheck", "lint", "test", "build"];
 export const DEFAULT_MACHINE_SERVER_START_PORT = 4310;
@@ -142,6 +143,26 @@ export interface MachineAgentStackInventoryProof {
   };
 }
 
+export interface MachineDaemonProof {
+  status: "ready" | "warn";
+  loaded: number;
+  total: number;
+  legacyLoaded: number;
+  warnings: string[];
+  labels: Array<{
+    label: string;
+    legacyLabel?: string;
+    name: string;
+    loaded: boolean;
+    legacyLoaded: boolean;
+    lastActivityAt?: string;
+    warning?: string;
+  }>;
+  security: {
+    secretValuesExposed: false;
+  };
+}
+
 export interface MachineVerificationProof {
   schemaVersion: 1;
   generatedAt: string;
@@ -154,6 +175,7 @@ export interface MachineVerificationProof {
   checks?: MachineRunChecksReport;
   servers?: MachineServerProbeReport;
   agentStackInventory?: MachineAgentStackInventoryProof;
+  daemons: MachineDaemonProof;
   summary: {
     status: "ready" | "warn" | "failed";
     scanned: number;
@@ -163,6 +185,9 @@ export interface MachineVerificationProof {
     installPassed: number;
     checksPassed: number;
     serversPassed: number;
+    daemonsLoaded: number;
+    daemonsTotal: number;
+    legacyDaemonsLoaded: number;
     failures: number;
     warnings: string[];
   };
@@ -337,6 +362,37 @@ function classifyMachineFailure(output: string, fallback?: string): string | und
 
 function sanitizeForProof<T>(value: T): T {
   return JSON.parse(redactSensitive(JSON.stringify(value))) as T;
+}
+
+export function buildMachineDaemonProof(): MachineDaemonProof {
+  const labels = getDaemonHealth().map((daemon) => ({
+    label: daemon.label,
+    legacyLabel: daemon.legacyLabel,
+    name: daemon.name,
+    loaded: daemon.loaded,
+    legacyLoaded: daemon.legacyLoaded === true,
+    lastActivityAt: daemon.lastActivityAt,
+    warning: daemon.warning,
+  }));
+  const loaded = labels.filter((daemon) => daemon.loaded).length;
+  const legacyLoaded = labels.filter((daemon) => daemon.legacyLoaded).length;
+  const warnings = [
+    loaded < labels.length ? `${loaded}/${labels.length} canonical com.you daemons loaded` : "",
+    legacyLoaded > 0 ? `${legacyLoaded} legacy com.youmd daemons still loaded` : "",
+    ...labels.map((daemon) => daemon.warning ? `${daemon.name}: ${daemon.warning}` : "").filter(Boolean),
+  ].filter(Boolean);
+
+  return {
+    status: warnings.length > 0 ? "warn" : "ready",
+    loaded,
+    total: labels.length,
+    legacyLoaded,
+    warnings: warnings.slice(0, 12),
+    labels,
+    security: {
+      secretValuesExposed: false,
+    },
+  };
 }
 
 function inventoryHostName(snapshot: Record<string, unknown>): string | undefined {
@@ -919,6 +975,7 @@ export function buildMachineVerificationProof(options: {
   const checkFailures = (options.checks?.totals.failed ?? 0) + (options.checks?.totals.timeout ?? 0);
   const serverFailures = (options.servers?.totals.failed ?? 0) + (options.servers?.totals.timeout ?? 0);
   const failures = installFailures + checkFailures + serverFailures;
+  const daemons = buildMachineDaemonProof();
   const warnings = [
     options.readiness.totals.needsEnv > 0 ? `${options.readiness.totals.needsEnv} projects need env restore` : "",
     options.readiness.totals.partial > 0 ? `${options.readiness.totals.partial} projects are partial` : "",
@@ -926,6 +983,7 @@ export function buildMachineVerificationProof(options: {
     options.checks && options.checks.results.length === 0 ? "no package projects had requested check scripts" : "",
     options.servers && options.servers.results.length === 0 ? "no package projects had dev servers to probe" : "",
     options.agentStackInventory === null ? "agent stack inventory proof missing; run youmd skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync" : "",
+    ...daemons.warnings,
     ...(options.servers?.results ?? [])
       .filter((result) => result.status === "failed" || result.status === "timeout")
       .map((result) => result.reason ? `${result.dirName}: ${result.reason}` : "")
@@ -944,6 +1002,7 @@ export function buildMachineVerificationProof(options: {
     checks: options.checks ? sanitizeForProof(options.checks) : undefined,
     servers: options.servers ? sanitizeForProof(options.servers) : undefined,
     agentStackInventory: options.agentStackInventory ? sanitizeForProof(options.agentStackInventory) : undefined,
+    daemons: sanitizeForProof(daemons),
     summary: {
       status: failures > 0 ? "failed" : warnings.length > 0 ? "warn" : "ready",
       scanned: options.readiness.scanned,
@@ -953,6 +1012,9 @@ export function buildMachineVerificationProof(options: {
       installPassed: options.installs?.totals.passed ?? 0,
       checksPassed: options.checks?.totals.passed ?? 0,
       serversPassed: options.servers?.totals.passed ?? 0,
+      daemonsLoaded: daemons.loaded,
+      daemonsTotal: daemons.total,
+      legacyDaemonsLoaded: daemons.legacyLoaded,
       failures,
       warnings: warnings.slice(0, 8),
     },

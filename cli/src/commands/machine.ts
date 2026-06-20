@@ -70,6 +70,8 @@ function machineProofSyncPayload(
     source: "cli",
     agentName: "youmd machine verify",
     summary: proof.summary,
+    daemonWarnings: proof.daemons.warnings,
+    daemonLabels: proof.daemons.labels.map((daemon) => daemon.label),
   };
 }
 
@@ -421,6 +423,7 @@ async function machineSyncNowCommand(opts: {
     "--register-catalog",
     "--sync",
   ], required);
+  runYoumdMachineStep("install resident daemons", ["stack", "daemon", "install"]);
 
   const verifyArgs = [
     "machine",
@@ -443,7 +446,7 @@ async function machineSyncNowCommand(opts: {
   }
   runYoumdMachineStep("write/sync machine proof", verifyArgs, required);
   runYoumdMachineStep("show synced Skill Mesh status", ["skill", "inventory", "status", "--limit", "10"]);
-  runYoumdMachineStep("install resident daemons", ["stack", "daemon", "install"]);
+  runYoumdMachineStep("show resident daemon status", ["stack", "daemon", "status"]);
 
   console.log("");
   console.log(chalk.green("  machine sync pass complete."));

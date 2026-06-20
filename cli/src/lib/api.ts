@@ -986,9 +986,14 @@ export interface MachineProofSyncPayload {
     installPassed: number;
     checksPassed: number;
     serversPassed: number;
+    daemonsLoaded?: number;
+    daemonsTotal?: number;
+    legacyDaemonsLoaded?: number;
     failures: number;
     warnings: string[];
   };
+  daemonWarnings?: string[];
+  daemonLabels?: string[];
 }
 
 export interface MachineProofSyncResult {
@@ -1013,6 +1018,11 @@ export interface SyncedMachineProof {
   installPassed: number;
   checksPassed: number;
   serversPassed: number;
+  daemonsLoaded?: number;
+  daemonsTotal?: number;
+  legacyDaemonsLoaded?: number;
+  daemonWarnings?: string[];
+  daemonLabels?: string[];
   failures: number;
   warnings: string[];
   secretValuesExposed: boolean;

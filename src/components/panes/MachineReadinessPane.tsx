@@ -47,6 +47,11 @@ type SyncedMachineProof = {
   installPassed: number;
   checksPassed: number;
   serversPassed: number;
+  daemonsLoaded?: number;
+  daemonsTotal?: number;
+  legacyDaemonsLoaded?: number;
+  daemonWarnings?: string[];
+  daemonLabels?: string[];
   failures: number;
   warnings: string[];
 };
@@ -409,6 +414,10 @@ function MachineSyncMeshPanel({
           </div>
           <div className="font-mono text-[10px] leading-relaxed text-[hsl(var(--text-secondary))] opacity-55">
             scanned {latestProof.scanned} / ready {latestProof.ready} / env {latestProof.needsEnv} / partial {latestProof.partial} / failures {latestProof.failures}
+            <span className="ml-2 opacity-45">
+              daemons {latestProof.daemonsLoaded ?? 0}/{latestProof.daemonsTotal ?? 0}
+              {(latestProof.legacyDaemonsLoaded ?? 0) > 0 ? ` / legacy ${latestProof.legacyDaemonsLoaded}` : ""}
+            </span>
             <span className="ml-2 opacity-45">secret values exposed: {String(latestProof.secretValuesExposed)}</span>
           </div>
         </div>
@@ -698,6 +707,13 @@ export function MachineReadinessPane({ clerkId }: MachineReadinessPaneProps) {
               <div className="mt-1 opacity-45">
                 installs {proof.installPassed} / checks {proof.checksPassed} / servers {proof.serversPassed} / failures {proof.failures}
               </div>
+              <div className={(proof.legacyDaemonsLoaded ?? 0) > 0 ? "mt-1 text-[hsl(var(--accent))] opacity-70" : "mt-1 opacity-45"}>
+                daemons {proof.daemonsLoaded ?? 0}/{proof.daemonsTotal ?? 0}
+                {(proof.legacyDaemonsLoaded ?? 0) > 0 ? ` / legacy ${proof.legacyDaemonsLoaded}` : ""}
+              </div>
+              {(proof.daemonWarnings?.length ?? 0) > 0 && (
+                <div className="mt-1 text-[hsl(var(--accent))] opacity-70">{proof.daemonWarnings?.slice(0, 2).join(" / ")}</div>
+              )}
               {proof.warnings.length > 0 && (
                 <div className="mt-1 text-[hsl(var(--accent))] opacity-70">{proof.warnings.slice(0, 2).join(" / ")}</div>
               )}
