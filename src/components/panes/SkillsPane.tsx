@@ -17,6 +17,7 @@ import {
   type SyncedBrainGraphNode,
   type SyncedBrainGraphSignal,
 } from "@/components/sync/SyncedBrainGraph";
+import { LiveBrainLog, type LiveLogEntry } from "@/components/terminal/LiveBrainLog";
 
 interface SkillEntry {
   name: string;
@@ -34,6 +35,22 @@ type InstalledSkillSummary = {
 
 type AgentStackInventory = Doc<"agentStackInventories">;
 type MachineProofReport = Doc<"machineProofReports">;
+type BrainActivityEntry = {
+  activityId: string;
+  source: string;
+  channel?: string | null;
+  kind?: string;
+  title: string;
+  detail?: string | null;
+  status?: "live" | "ok" | "warn" | "error" | "info";
+  projectSlug?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  sourceHost?: string | null;
+  sourceAgent?: string | null;
+  sourceRuntime?: string | null;
+  occurredAt: number;
+};
 type AgentStackDrift = {
   baseline: null | {
     hostName: string;
@@ -479,6 +496,50 @@ function machineProofForInventory(
   return proofIndexes.byHost.get(machineHostKey(inventory));
 }
 
+function isSkillMeshActivity(activity: BrainActivityEntry) {
+  const haystack = [
+    activity.source,
+    activity.channel,
+    activity.kind,
+    activity.title,
+    activity.detail,
+    activity.entityType,
+    activity.sourceHost,
+    activity.sourceAgent,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return [
+    "agent-stack",
+    "skill",
+    "inventory",
+    "machine",
+    "daemon",
+    "vault",
+    "sync",
+  ].some((term) => haystack.includes(term));
+}
+
+function toLiveLogEntry(activity: BrainActivityEntry): LiveLogEntry {
+  return {
+    id: `skill-mesh-${activity.activityId}`,
+    at: activity.occurredAt,
+    source: activity.source === "agent-bus" ? "bus" : activity.source,
+    channel: activity.channel ?? undefined,
+    kind: activity.kind,
+    title: activity.title,
+    detail: activity.detail ?? undefined,
+    status: activity.status,
+    projectSlug: activity.projectSlug ?? undefined,
+    entityType: activity.entityType ?? undefined,
+    entityId: activity.entityId ?? undefined,
+    sourceHost: activity.sourceHost ?? undefined,
+    sourceAgent: activity.sourceAgent ?? undefined,
+    sourceRuntime: activity.sourceRuntime ?? undefined,
+  };
+}
+
 function isMachineProofStale(proof: MachineProofReport | undefined) {
   if (!proof) return true;
   return Date.now() - proof.updatedAt > 6 * 60 * 60 * 1000;
@@ -697,12 +758,14 @@ function SkillMeshView({
   drift,
   machineProofs,
   graphDto,
+  brainActivities,
   isLoading,
 }: {
   inventories: AgentStackInventory[] | undefined;
   drift: AgentStackDrift | undefined;
   machineProofs: MachineProofReport[] | undefined;
   graphDto?: SyncedBrainGraphDto;
+  brainActivities?: BrainActivityEntry[];
   isLoading: boolean;
 }) {
   const latest = inventories?.[0];
@@ -859,6 +922,7 @@ function SkillMeshView({
               machineCount={machineCount}
               drift={drift}
               attentionCount={attentionCount}
+              brainActivities={brainActivities}
             />
           )}
 
@@ -1048,6 +1112,7 @@ function SkillMeshReportPanel({
   machineCount,
   drift,
   attentionCount,
+  brainActivities,
 }: {
   latest: AgentStackInventory;
   sourceGroups: ReturnType<typeof buildSourceGroups>;
@@ -1055,6 +1120,7 @@ function SkillMeshReportPanel({
   machineCount: number;
   drift?: AgentStackDrift;
   attentionCount: number;
+  brainActivities?: BrainActivityEntry[];
 }) {
   const houstonManaged = sourceGroups.find((group) => group.label === "Houston managed");
   const references = sourceGroups
@@ -1086,6 +1152,9 @@ function SkillMeshReportPanel({
             command: "you sync --live --daemon",
             description: "keep identity, skills, stacks, inventory, and machine proof reconciled",
           };
+  const activityEntries = (brainActivities ?? [])
+    .filter(isSkillMeshActivity)
+    .map(toLiveLogEntry);
 
   return (
     <section className="border-l border-[hsl(var(--accent))]/70 bg-[hsl(var(--bg))]/35 px-4 py-4">
@@ -1131,6 +1200,17 @@ function SkillMeshReportPanel({
           detail={`${latest.sameRealpathMirrors.toLocaleString()} healthy mirror clusters are preserved; duplicate-name cases need owner-aware review, not deletion.`}
           tone={latest.duplicateNameDifferentRealpaths > 0 ? "warn" : "ok"}
           samples={latest.duplicateNameSamples.slice(0, 3)}
+        />
+      </div>
+
+      <div className="mt-4 border-t border-[hsl(var(--border))]/45 pt-3">
+        <PaneSectionLabel>recent mesh activity</PaneSectionLabel>
+        <LiveBrainLog
+          entries={activityEntries}
+          compact
+          maxEntries={8}
+          showIntro={false}
+          emptyText="no recent skill, machine, vault, or sync events in the brain stream"
         />
       </div>
 
@@ -1432,6 +1512,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
   const agentStackInventories = useQuery(api.portfolio.listAgentStackInventories, clerkId ? { clerkId, limit: 12 } : "skip");
   const agentStackDrift = useQuery(api.portfolio.getAgentStackInventoryDrift, clerkId ? { clerkId, limit: 12 } : "skip");
   const machineProofs = useQuery(api.portfolio.listMachineProofs, clerkId ? { clerkId, limit: 12 } : "skip");
+  const brainActivities = useQuery(api.brainActivity.listRecent, clerkId ? { clerkId, limit: 40 } : "skip") as BrainActivityEntry[] | undefined;
   const syncedBrainGraph = useQuery(
     api.portfolio.getSyncedBrainGraph,
     clerkId ? { clerkId, limit: 12, includePortfolioSignals: true } : "skip",
@@ -1606,6 +1687,7 @@ export function SkillsPane({ userId }: SkillsPaneProps) {
           drift={agentStackDrift as AgentStackDrift | undefined}
           machineProofs={machineProofs}
           graphDto={syncedBrainGraph}
+          brainActivities={brainActivities}
           isLoading={meshLoading}
         />
       ) : (

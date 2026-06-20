@@ -51,6 +51,7 @@ PRD Version: 2.3
 - [x] Add `npm run sync:agent-stack:smoke` to prove agent-stack REST summaries, hosted MCP tool/resources, generated HTML report, and repo snapshots
 - [x] Add browser-visible access to the newest generated local Skill Mesh HTML report from the Skills pane
 - [x] Add a dynamic in-app Skill Mesh report mode for source-of-truth, sync health, catalog coverage, DRY pressure, and next command
+- [x] Add recent skill/inventory/machine/vault activity drilldown to the dynamic Skill Mesh report
 - [ ] Build the full web/Tauri Skill Mesh surface for report/diagram/ownership/DRY/catalog/machine drift views beyond the first Skills-pane view
 - [x] Add resident realtime reconciliation for safe Skill Mesh inventory summaries through `youmd sync --live --daemon`
 - [x] Broaden resident reconciliation beyond inventory summaries into safe repair actions for stale/divergent local Skill Mesh drift

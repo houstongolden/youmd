@@ -2,6 +2,12 @@
 
 ## 2026-06-20 — Machine proof skill mesh
 
+### feat(sync): show recent mesh activity in Skill Mesh
+- Skill Mesh report mode now queries the canonical `brainActivities` stream and filters it to skill, inventory, machine, daemon, vault, and sync events.
+- Added a compact embedded Live Brain Log so the report shows real recent sync/proof activity with the same project/entity/host/agent click targets as the main Live Log.
+- Kept the activity drilldown bounded to eight rows and safe metadata only, preserving the no raw skill bodies, prompt logs, `.env.local`, token, or vault secret contract.
+- Verified with root TypeScript, production Next build, and clean-reference agent-docs CI.
+
 ### feat(activity): link brain log events to proof surfaces
 - Live Brain Log entries now preserve safe `projectSlug`, `entityType`, `entityId`, source host, source agent, and runtime metadata from `brainActivities`.
 - Added compact click targets on log rows so project events open project detail pages, skill/inventory events open Skill Mesh, machine/vault events open Machine proof, task events open Tasks, and agent events open Activity.
