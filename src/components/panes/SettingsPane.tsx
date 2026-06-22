@@ -9,6 +9,7 @@ import { useUser, useSessionAuth } from "@/lib/you-auth";
 import { useRouter } from "next/navigation";
 import { PaneSectionLabel as SectionLabel, PaneDivider as Divider, PaneHeader, PaneCard, PaneButton } from "./shared";
 import { GithubRepoSection } from "./GithubRepoSection";
+import { createBrowserApiKey } from "@/lib/api-key-client";
 
 interface SettingsPaneProps {
   clerkId: string;
@@ -66,7 +67,6 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
 
   // API keys
   const keys = useQuery(api.apiKeys.listKeys, clerkId ? { clerkId } : "skip");
-  const createKey = useMutation(api.apiKeys.createKey);
   const revokeKey = useMutation(api.apiKeys.revokeKey);
   const revokeAllKeys = useMutation(api.apiKeys.revokeAllKeys);
   const revealKey = useMutation(api.apiKeys.revealKey);
@@ -159,8 +159,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
     setRevokedAllKeysCount(null);
     setCopiedNewKey(false);
     try {
-      const result = await createKey({
-        clerkId,
+      const result = await createBrowserApiKey({
         label: "CLI key",
         scopes: selectedScopes,
       });
@@ -183,8 +182,7 @@ export function SettingsPane({ clerkId, username, plan, profileId }: SettingsPan
     setCopiedNewKey(false);
     setRevokedAllKeysCount(null);
     try {
-      const result = await createKey({
-        clerkId,
+      const result = await createBrowserApiKey({
         label: "CLI key",
         scopes: selectedScopes,
         revokeExisting: true,

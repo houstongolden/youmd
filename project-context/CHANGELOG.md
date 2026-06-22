@@ -1,5 +1,13 @@
 # You.md — Changelog
 
+## 2026-06-22 — API key creation hotfix
+
+### fix(auth): route web key creation through the signed-in session
+- Added a session-backed `POST /api/auth/api-keys` route that validates the HTTP-only web session server-side and calls the Convex key issuer with the trusted internal token.
+- Updated Settings and Machine setup copy actions to use that route instead of direct browser Convex mutations, avoiding vague client-side Convex auth failures during key creation.
+- Kept the raw API key reveal behavior unchanged: the key is returned only to the requesting browser action and is not logged.
+- Verified with production Next build.
+
 ## 2026-06-22 — Curl-first machine bootstrap
 
 ### feat(install): make curl install auto-run machine sync

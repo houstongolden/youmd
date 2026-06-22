@@ -2027,6 +2027,40 @@ export const openApiSpec = {
         }
       }
     },
+    "/api/auth/api-keys": {
+      "post": {
+        "operationId": "post_api_auth_api_keys",
+        "summary": "Next.js route",
+        "tags": [
+          "Auth"
+        ],
+        "x-youmd-auth": "HTTP-only session flow",
+        "x-youmd-source": "next",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/github/app/setup": {
       "get": {
         "operationId": "get_api_auth_github_app_setup",

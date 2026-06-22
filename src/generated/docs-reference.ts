@@ -41,18 +41,18 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "f655b9ab88274f4c621c532811e8ce002b1a6a48cfa6c6566fa9b81c8fad46e8",
+  "sourceHash": "0f694c2f0339d9b12e8e98a0506d3179edbda7fe4db21d419deb2d19e4a4ac6b",
   "cli": {
     "version": "0.8.12"
   },
   "counts": {
-    "endpoints": 107,
+    "endpoints": 108,
     "internalRoutes": 11,
     "mcpTools": 6,
     "hostedMcpTools": 12,
     "cliCommands": 31,
     "convexRoutes": 88,
-    "nextRoutes": 27
+    "nextRoutes": 28
   },
   "endpoints": [
     {
@@ -623,6 +623,17 @@ export const docsReference = {
       "auth": "Public or rate-limited",
       "source": "next",
       "summary": "Public JWKS used to verify first-party session JWTs",
+      "sources": [
+        "next"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/api-keys",
+      "category": "Auth",
+      "auth": "HTTP-only session flow",
+      "source": "next",
+      "summary": "Next.js route",
       "sources": [
         "next"
       ]

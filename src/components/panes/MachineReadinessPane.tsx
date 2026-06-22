@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Copy, RefreshCw } from "lucide-react";
+import { createBrowserApiKey } from "@/lib/api-key-client";
 import type {
   LocalMachineReadiness,
   LocalReadinessStatus,
@@ -429,7 +430,6 @@ function MachineSetupHero({
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }) {
-  const createApiKey = useMutation(api.apiKeys.createKey);
   const [copyState, setCopyState] = useState<"idle" | "minting" | "copied" | "fallback" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -453,8 +453,7 @@ function MachineSetupHero({
 
     setCopyState("minting");
     try {
-      const result = await createApiKey({
-        clerkId,
+      const result = await createBrowserApiKey({
         label: "fresh-machine bootstrap",
         scopes: FRESH_MACHINE_BOOTSTRAP_SCOPES,
         expiresInDays: 7,
