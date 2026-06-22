@@ -17,7 +17,8 @@ export type ViewId =
   | "agents"
   | "loops"
   | "terminal"
-  | "provision";
+  | "provision"
+  | "sync";
 
 export type NavItem = {
   id: ViewId;
@@ -89,6 +90,7 @@ export const DESTINATIONS: Destination[] = [
     icon: "sync",
     group: "system",
     segments: [
+      { id: "sync", label: "Sync" },
       { id: "agents", label: "Agents" },
       { id: "loops", label: "Loops" },
       { id: "apps", label: "Connections" },
@@ -342,18 +344,21 @@ export type AppConn = {
   category: string;
   status: "connected" | "syncing" | "available";
   detail: string;
-  icon: IconName;
+  domain: string; // for the favicon (google s2 favicons)
+  account?: string;
+  scopes?: string[];
+  lastSync?: string;
 };
 
 export const APPS: AppConn[] = [
-  { id: "github", name: "GitHub", category: "Code", status: "connected", detail: "55 repos · synced just now", icon: "github" },
-  { id: "slack", name: "Slack", category: "Comms", status: "connected", detail: "Capture → inbox", icon: "slack" },
-  { id: "linear", name: "Linear", category: "Tasks", status: "syncing", detail: "Importing issues…", icon: "check" },
-  { id: "notion", name: "Notion", category: "Notes", status: "connected", detail: "2 workspaces", icon: "file" },
-  { id: "x", name: "X", category: "Social", status: "connected", detail: "Enriched via Grok", icon: "at" },
-  { id: "linkedin", name: "LinkedIn", category: "Social", status: "connected", detail: "Profile + posts", icon: "at" },
-  { id: "gmail", name: "Gmail", category: "Comms", status: "available", detail: "Connect to capture threads", icon: "mail" },
-  { id: "figma", name: "Figma", category: "Design", status: "available", detail: "Connect for design context", icon: "plug" },
+  { id: "github", name: "GitHub", category: "Code", status: "connected", detail: "55 repos · synced just now", domain: "github.com", account: "@houstongolden", scopes: ["repo", "read:org", "workflow"], lastSync: "just now" },
+  { id: "slack", name: "Slack", category: "Comms", status: "connected", detail: "Capture → inbox", domain: "slack.com", account: "BAMF workspace", scopes: ["channels:history", "chat:write"], lastSync: "2m ago" },
+  { id: "linear", name: "Linear", category: "Tasks", status: "syncing", detail: "Importing issues…", domain: "linear.app", account: "you.md team", scopes: ["read", "write"], lastSync: "syncing" },
+  { id: "notion", name: "Notion", category: "Notes", status: "connected", detail: "2 workspaces", domain: "notion.so", account: "Houston Golden", scopes: ["read content"], lastSync: "1h ago" },
+  { id: "x", name: "X", category: "Social", status: "connected", detail: "Enriched via Grok", domain: "x.com", account: "@houstongolden", scopes: ["read profile", "read posts"], lastSync: "4h ago" },
+  { id: "linkedin", name: "LinkedIn", category: "Social", status: "connected", detail: "Profile + posts", domain: "linkedin.com", account: "Houston Golden", scopes: ["r_liteprofile", "posts"], lastSync: "1d ago" },
+  { id: "gmail", name: "Gmail", category: "Comms", status: "available", detail: "Connect to capture threads", domain: "gmail.com" },
+  { id: "figma", name: "Figma", category: "Design", status: "available", detail: "Connect for design context", domain: "figma.com" },
 ];
 
 // ── Sub-agents ("YOU sub-agents") ──────────────────────────────────────────
@@ -633,9 +638,10 @@ export type ActivityEvent = {
 // "cloud" is your own other computers.
 // The CLI agents / models a session can run — shown in a compact dropdown with
 // per-agent marks (faux favicons) so it never eats horizontal space.
-export type ModelId = "claude-code" | "codex" | "cursor" | "pi" | "openclaw" | "hermes" | "shell";
+export type ModelId = "you" | "claude-code" | "codex" | "cursor" | "pi" | "openclaw" | "hermes" | "shell";
 export type ModelDef = { id: ModelId; label: string; mark: string; color: string };
 export const MODELS: ModelDef[] = [
+  { id: "you", label: "You", mark: "Y", color: "#C46A3A" },
   { id: "claude-code", label: "Claude Code", mark: "✻", color: "#C46A3A" },
   { id: "codex", label: "Codex", mark: "◇", color: "#10A37F" },
   { id: "cursor", label: "Cursor", mark: "▸", color: "#8B8B8B" },
@@ -660,18 +666,19 @@ export type AgentSession = {
   summary: string; // what it's doing — shown when watching a remote session
   task?: string; // the tracked task this session is working on
   needsYou?: string; // if set, this session is blocked on you — surfaced loudly
+  subAgents?: number; // sub-agents this agent spawned itself (you don't manage these)
 };
 
 export const SESSIONS: AgentSession[] = [
   // you.md — three agents on different slices
-  { id: "ss1", title: "Lock desktop UI/UX", kind: "chat", agent: "you-agent", model: "claude-code", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Designing the unified shell with you.", task: "Lock desktop app UI/UX" },
-  { id: "ss2", title: "Build session rail", kind: "terminal", agent: "coding-you", model: "claude-code", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Editing DesktopShell.tsx, running lint.", task: "Unified sessions shell" },
+  { id: "ss1", title: "Lock desktop UI/UX", kind: "chat", agent: "you-agent", model: "you", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Designing the unified shell with you.", task: "Lock desktop app UI/UX" },
+  { id: "ss2", title: "Build session rail", kind: "terminal", agent: "coding-you", model: "claude-code", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Editing DesktopShell.tsx, running lint.", task: "Unified sessions shell", subAgents: 2 },
   { id: "ss3", title: "Graph data model", kind: "terminal", agent: "codex", model: "codex", project: "you.md", machine: "Houstons-MBP", local: true, status: "idle", summary: "Scaffolding the brain graph model.", task: "Obsidian-style graph view" },
   // bamfsite — one working, one blocked on you
   { id: "ss4", title: "Restore env + build", kind: "terminal", agent: "ops-you", model: "codex", project: "bamfsite", machine: "Houstons-MBP", local: true, status: "blocked", summary: "Build is red — needs the Supabase anon key.", task: "bamfsite green build", needsYou: "Paste VITE_SUPABASE_ANON_KEY to unblock the build" },
   { id: "ss5", title: "Triage Slack captures", kind: "chat", agent: "ops-you", model: "claude-code", project: "bamfsite", machine: "Houstons-MBP", local: true, status: "active", summary: "Routing captures into tasks.", task: "Inbox triage" },
   // bigbounce — remote, watchable
-  { id: "ss6", title: "Draft section 3", kind: "chat", agent: "research-you", model: "pi", project: "bigbounce", machine: "Houstons-Mini", local: false, status: "active", summary: "Reading 3 sources; drafting the bounce-entropy argument.", task: "Big-bounce paper §3" },
+  { id: "ss6", title: "Draft section 3", kind: "chat", agent: "research-you", model: "pi", project: "bigbounce", machine: "Houstons-Mini", local: false, status: "active", summary: "Reading 3 sources; drafting the bounce-entropy argument.", task: "Big-bounce paper §3", subAgents: 1 },
   // creator.new — remote, waiting on you to choose
   { id: "ss7", title: "Creator post", kind: "chat", agent: "writing-you", model: "hermes", project: "creator.new", machine: "cloud-vps", local: false, status: "waiting", summary: "Drafted a post in your voice; 2 hooks proposed.", task: "Weekly creator post", needsYou: "Pick one of the 2 hooks it proposed" },
 ];

@@ -50,7 +50,7 @@ export function SessionShell({
   onSelect: (s: AgentSession) => void;
   onNew: (project: string) => void;
   full?: boolean;
-  showRail?: boolean;
+  showRail?: boolean; // controlled by the top-bar « » toggle; no empty column when off
   scope: ChatScope;
   onAction: (a: AgentAction, scope?: ChatScope) => void;
   chatId: string;

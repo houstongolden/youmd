@@ -23,6 +23,10 @@ export function TitleBar({
   onToggleInspector,
   chatSide = "left",
   onFlipSide,
+  shellOpen = true,
+  onToggleShell,
+  railCollapsed = false,
+  onToggleRail,
 }: {
   title: string;
   isMobile: boolean;
@@ -37,6 +41,10 @@ export function TitleBar({
   onToggleInspector?: () => void;
   chatSide?: "left" | "right";
   onFlipSide?: () => void;
+  shellOpen?: boolean;
+  onToggleShell?: () => void;
+  railCollapsed?: boolean;
+  onToggleRail?: () => void;
 }) {
   const machines = DEVICES.length;
   const agents = SUB_AGENTS.filter((a) => a.status === "active").length;
@@ -70,6 +78,18 @@ export function TitleBar({
         <span className="truncate text-[hsl(var(--text-primary))]">{title}</span>
       </div>
 
+      {/* sessions rail collapse/expand — minimal « », up top by the title */}
+      {onToggleRail && (
+        <button
+          onClick={onToggleRail}
+          title={railCollapsed ? "Show sessions" : "Hide sessions"}
+          aria-label="Toggle sessions list"
+          className="hidden rounded-sm p-0.5 text-[hsl(var(--text-secondary))]/70 transition-colors hover:text-[hsl(var(--text-primary))] lg:block"
+        >
+          <Icon name={railCollapsed ? "chevronsRight" : "chevronsLeft"} size={16} strokeWidth={1.5} />
+        </button>
+      )}
+
       {/* center command bar — desktop only */}
       <button
         onClick={onOpenCommand}
@@ -101,6 +121,21 @@ export function TitleBar({
           <Dot tone="green" pulse size={5} /> synced
         </span>
       </div>
+
+      {/* show/hide the sessions shell — prominent, the clearest control */}
+      {onToggleShell && (
+        <button
+          onClick={onToggleShell}
+          title={shellOpen ? "Hide sessions shell" : "Show sessions shell"}
+          aria-label="Toggle sessions shell"
+          className={cn(
+            "hidden rounded-sm p-1 transition-colors lg:block",
+            shellOpen ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]",
+          )}
+        >
+          <Icon name="chat" size={16} strokeWidth={1.5} />
+        </button>
+      )}
 
       {/* consolidated layout popover — desktop only */}
       <div className="relative hidden lg:block">

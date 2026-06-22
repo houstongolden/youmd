@@ -24,9 +24,9 @@ export function SessionRail({
 
   return (
     <div className="flex h-full w-full flex-col bg-[hsl(var(--bg))]">
-      <div className="flex items-center justify-between px-3 py-2.5">
+      <div className="flex items-center gap-1.5 px-3 py-2.5">
         <SectionLabel>Sessions</SectionLabel>
-        <span className="font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/40">
+        <span className="ml-auto font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/40">
           {SESSIONS.length}
         </span>
       </div>

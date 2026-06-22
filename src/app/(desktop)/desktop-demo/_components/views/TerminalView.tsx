@@ -8,6 +8,7 @@ import { cn } from "../../_lib/cn";
 type Line = { kind: "in" | "out" | "sys"; text: string };
 
 const PROMPT: Record<ModelId, string> = {
+  you: "you",
   "claude-code": "claude",
   codex: "codex",
   cursor: "cursor",
@@ -19,9 +20,14 @@ const PROMPT: Record<ModelId, string> = {
 
 function banner(model: ModelId): Line[] {
   const label = MODELS.find((m) => m.id === model)?.label ?? model;
-  if (model === "shell") return [{ kind: "sys", text: "● zsh — youmd runtime active (sync daemon: live)" }];
+  if (model === "shell") return [{ kind: "sys", text: "● zsh — plain terminal · youmd runtime on PATH (no agent)" }];
+  if (model === "you")
+    return [
+      { kind: "sys", text: "● You — your you.md agent · full brain context" },
+      { kind: "sys", text: "  knows your identity, projects, skills, memories" },
+    ];
   return [
-    { kind: "sys", text: `● ${label} — you.md context injected (whoami: @houstongolden)` },
+    { kind: "sys", text: `● ${label} — external CLI agent · you.md context injected via MCP / AGENTS.md` },
     { kind: "sys", text: "  identity loaded · 12 skills · 6 active projects" },
   ];
 }

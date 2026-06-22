@@ -14,7 +14,6 @@ import { ResizeHandle } from "./ResizeHandle";
 import { type AgentAction, type ChatScope } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
-import { SystemStatus } from "./SystemStatus";
 import { Inspector } from "./Inspector";
 import { SegmentedHeader } from "./primitives";
 import { useToast } from "./Toast";
@@ -29,6 +28,7 @@ import { AgentsView } from "./views/AgentsView";
 import { LoopsView } from "./views/LoopsView";
 import { TerminalView } from "./views/TerminalView";
 import { ProvisionView } from "./views/ProvisionView";
+import { SyncView } from "./views/SyncView";
 
 function MainView({
   view,
@@ -76,6 +76,8 @@ function MainView({
       return <TerminalView />;
     case "provision":
       return <ProvisionView />;
+    case "sync":
+      return <SyncView />;
   }
 }
 
@@ -91,13 +93,14 @@ export function DesktopShell() {
   const [editorFile, setEditorFile] = useState("identity/you.md");
   const [selectedProject, setSelectedProject] = useState(PROJECTS[0].slug);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [statusOpen, setStatusOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   // Unified shell: which agent session is active (persists = "last used"), and
   // whether the shell docks on the left or right.
   const [activeSessionId, setActiveSessionId] = useState(SESSIONS[0].id);
   const [chatSide, setChatSide] = useState<"left" | "right">("left");
+  const [shellOpen, setShellOpen] = useState(true); // show/hide the whole sessions/shell pane
+  const [railCollapsed, setRailCollapsed] = useState(false); // collapse just the session list
   const [shellWidth, setShellWidth] = useState(468);
   const [inspectorWidth, setInspectorWidth] = useState(304);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
@@ -371,6 +374,10 @@ export function DesktopShell() {
         onToggleInspector={chatFull ? undefined : () => setInspectorOpen((o) => !o)}
         chatSide={chatSide}
         onFlipSide={() => setChatSide((s) => (s === "left" ? "right" : "left"))}
+        shellOpen={shellOpen}
+        onToggleShell={() => setShellOpen((o) => !o)}
+        railCollapsed={railCollapsed}
+        onToggleRail={shellOpen && !chatFull ? () => setRailCollapsed((c) => !c) : undefined}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -397,7 +404,7 @@ export function DesktopShell() {
                 onNavigate={navigate}
                 theme={theme}
                 onToggleTheme={toggleTheme}
-                onOpenStatus={() => setStatusOpen(true)}
+                onOpenStatus={() => navigate("sync")}
                 chats={chats}
                 activeChat={activeChat}
                 onSelectChat={selectChat}
@@ -414,6 +421,7 @@ export function DesktopShell() {
                     activeId={activeSessionId}
                     onSelect={selectSession}
                     onNew={newSession}
+                    showRail={!railCollapsed}
                     scope={chatScope}
                     onAction={onAgentAction}
                     chatId={activeChat}
@@ -433,7 +441,7 @@ export function DesktopShell() {
               onNavigate={navigate}
               theme={theme}
               onToggleTheme={toggleTheme}
-              onOpenStatus={() => setStatusOpen(true)}
+              onOpenStatus={() => navigate("sync")}
               chats={chats}
               activeChat={activeChat}
               onSelectChat={selectChat}
@@ -462,13 +470,14 @@ export function DesktopShell() {
             ) : (
               // Split: chat 1/3 left, main view 2/3 right.
               <div className="flex min-w-0 flex-1">
-                {chatSide === "left" && (
+                {shellOpen && chatSide === "left" && (
                   <>
                     <div style={{ width: shellWidth }} className="flex shrink-0 flex-col">
                       <SessionShell
                         activeId={activeSessionId}
                         onSelect={selectSession}
                         onNew={newSession}
+                        showRail={!railCollapsed}
                         scope={chatScope}
                         onAction={onAgentAction}
                         chatId={activeChat}
@@ -481,7 +490,7 @@ export function DesktopShell() {
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
                   {renderWorkspace(true)}
                 </main>
-                {chatSide === "right" && (
+                {shellOpen && chatSide === "right" && (
                   <>
                     <ResizeHandle width={shellWidth} setWidth={setShellWidth} min={360} max={760} side="left" />
                     <div style={{ width: shellWidth }} className="flex shrink-0 flex-col">
@@ -489,6 +498,7 @@ export function DesktopShell() {
                         activeId={activeSessionId}
                         onSelect={selectSession}
                         onNew={newSession}
+                        showRail={!railCollapsed}
                         scope={chatScope}
                         onAction={onAgentAction}
                         chatId={activeChat}
@@ -508,7 +518,6 @@ export function DesktopShell() {
         commands={commands}
         onClose={() => setPaletteOpen(false)}
       />
-      <SystemStatus open={statusOpen} onClose={() => setStatusOpen(false)} />
     </div>
   );
 }
