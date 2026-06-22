@@ -2,14 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, CHATS, destinationForView, type Task, type ChatThread, type ViewId } from "../_data/mock";
+import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, CHATS, SESSIONS, destinationForView, type Task, type ChatThread, type ViewId, type AgentSession } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
 import { useSwipe } from "../_lib/useSwipe";
 import { useTheme } from "../_lib/useTheme";
 import { cn } from "../_lib/cn";
 import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
-import { ChatPanel, type AgentAction, type ChatScope } from "./ChatPanel";
+import { SessionShell } from "./SessionShell";
+import { type AgentAction, type ChatScope } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
 import { SystemStatus } from "./SystemStatus";
@@ -92,6 +93,10 @@ export function DesktopShell() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  // Unified shell: which agent session is active (persists = "last used"), and
+  // whether the shell docks on the left or right.
+  const [activeSessionId, setActiveSessionId] = useState(SESSIONS[0].id);
+  const [chatSide, setChatSide] = useState<"left" | "right">("left");
   const [tasks, setTasks] = useState<Task[]>(TASKS);
   const [chats, setChats] = useState<ChatThread[]>(CHATS);
   const [activeChat, setActiveChat] = useState(CHATS[0].id);
@@ -115,6 +120,13 @@ export function DesktopShell() {
     focusChatPane();
   };
   const activeChatTitle = chats.find((c) => c.id === activeChat)?.title;
+
+  // Switch the unified shell to a session (local chat/terminal or remote watch).
+  const selectSession = (s: AgentSession) => {
+    setActiveSessionId(s.id);
+    focusChatPane();
+  };
+  const newSession = () => toast("New session — pick an agent to spawn…", "agent");
 
   const addTask = (title: string, project: string, owner: Task["owner"] = "you") =>
     setTasks((t) => [
@@ -349,6 +361,8 @@ export function DesktopShell() {
         onGoToChat={() => setMobilePane("chat")}
         inspectorOpen={inspectorOpen}
         onToggleInspector={chatFull ? undefined : () => setInspectorOpen((o) => !o)}
+        chatSide={chatSide}
+        onFlipSide={() => setChatSide((s) => (s === "left" ? "right" : "left"))}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -387,7 +401,16 @@ export function DesktopShell() {
             <div {...workspaceSwipe} className="flex min-w-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-hidden">
                 {mobilePane === "chat" ? (
-                  <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
+                  <SessionShell
+                    full
+                    activeId={activeSessionId}
+                    onSelect={selectSession}
+                    onNew={newSession}
+                    scope={chatScope}
+                    onAction={onAgentAction}
+                    chatId={activeChat}
+                    chatTitle={activeChatTitle}
+                  />
                 ) : (
                   renderWorkspace(false)
                 )}
@@ -412,7 +435,16 @@ export function DesktopShell() {
             {chatFull ? (
               // Full-chat: chat fills the workspace, summary widget floats.
               <div className="relative min-w-0 flex-1">
-                <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
+                <SessionShell
+                  full
+                  activeId={activeSessionId}
+                  onSelect={selectSession}
+                  onNew={newSession}
+                  scope={chatScope}
+                  onAction={onAgentAction}
+                  chatId={activeChat}
+                  chatTitle={activeChatTitle}
+                />
                 <div className="pointer-events-none absolute right-5 top-4">
                   <div className="pointer-events-auto">
                     <SummaryWidget />
@@ -422,12 +454,35 @@ export function DesktopShell() {
             ) : (
               // Split: chat 1/3 left, main view 2/3 right.
               <div className="flex min-w-0 flex-1">
-                <div className="flex w-[33%] min-w-[320px] max-w-[460px] flex-col border-r border-[hsl(var(--border))]">
-                  <ChatPanel scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
-                </div>
+                {chatSide === "left" && (
+                  <div className="flex w-[40%] min-w-[380px] max-w-[560px] flex-col border-r border-[hsl(var(--border))]">
+                    <SessionShell
+                      activeId={activeSessionId}
+                      onSelect={selectSession}
+                      onNew={newSession}
+                      scope={chatScope}
+                      onAction={onAgentAction}
+                      chatId={activeChat}
+                      chatTitle={activeChatTitle}
+                    />
+                  </div>
+                )}
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
                   {renderWorkspace(true)}
                 </main>
+                {chatSide === "right" && (
+                  <div className="flex w-[40%] min-w-[380px] max-w-[560px] flex-col border-l border-[hsl(var(--border))]">
+                    <SessionShell
+                      activeId={activeSessionId}
+                      onSelect={selectSession}
+                      onNew={newSession}
+                      scope={chatScope}
+                      onAction={onAgentAction}
+                      chatId={activeChat}
+                      chatTitle={activeChatTitle}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </>

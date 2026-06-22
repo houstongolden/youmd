@@ -91,7 +91,6 @@ export const DESTINATIONS: Destination[] = [
     segments: [
       { id: "agents", label: "Agents" },
       { id: "loops", label: "Loops" },
-      { id: "terminal", label: "Terminal" },
       { id: "apps", label: "Connections" },
       { id: "provision", label: "Provision" },
     ],
@@ -625,6 +624,49 @@ export type ActivityEvent = {
   status: "active" | "ready" | "idle";
   text: string;
   at: string;
+};
+
+// ── Agent sessions (the unified shell: chat + terminals, local + remote) ────
+// The conductor surface: every live agent session you can switch between,
+// grouped by project. Remote sessions run on OTHER you.md-synced machines and
+// can be watched in real time (peekaboo) — like local-vs-cloud agents, but the
+// "cloud" is your own other computers.
+export type SessionKind = "chat" | "terminal";
+export type SessionStatus = "active" | "idle" | "waiting";
+export type AgentSession = {
+  id: string;
+  title: string;
+  kind: SessionKind;
+  agent: string; // pixel-character seed + display
+  project: string;
+  machine: string;
+  local: boolean; // this machine vs another synced computer (watch)
+  status: SessionStatus;
+  summary: string; // what it's doing — shown when watching a remote session
+};
+
+export const SESSIONS: AgentSession[] = [
+  { id: "ss1", title: "Lock desktop UI/UX", kind: "chat", agent: "you-agent", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Designing the unified shell with you." },
+  { id: "ss2", title: "coding-you · shell IA", kind: "terminal", agent: "coding-you", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Editing DesktopShell.tsx, running lint." },
+  { id: "ss3", title: "bamfsite · env wiring", kind: "terminal", agent: "codex", project: "bamfsite", machine: "Houstons-MBP", local: true, status: "idle", summary: "Restored .env.local — awaiting next command." },
+  { id: "ss4", title: "research-you · section 3", kind: "chat", agent: "research-you", project: "bigbounce", machine: "Houstons-Mini", local: false, status: "active", summary: "Reading 3 sources; drafting the bounce-entropy argument for section 3." },
+  { id: "ss5", title: "writing-you · creator post", kind: "chat", agent: "writing-you", project: "creator.new", machine: "cloud-vps", local: false, status: "active", summary: "Drafting a LinkedIn post in your voice; 2 hooks proposed." },
+];
+
+// A remote session's streaming summary lines (for the watch / peekaboo view).
+export const WATCH_FEED: Record<string, string[]> = {
+  ss4: [
+    "opened bigbounce/paper/section-3.md",
+    "pulled 3 sources from the brain (semantic-scholar, NASA ADS)",
+    "drafting: entropy across the bounce — paragraph 2/5",
+    "flagged 1 claim for your review",
+  ],
+  ss5: [
+    "loaded your voice profile + last 20 posts",
+    "topic: shipping the you.md desktop app",
+    "proposed 2 hooks — waiting to pick one",
+    "draft 1 ready for review",
+  ],
 };
 
 export const ACTIVITY: ActivityEvent[] = [

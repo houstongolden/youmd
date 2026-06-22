@@ -22,6 +22,8 @@ export function TitleBar({
   onGoToChat,
   inspectorOpen = false,
   onToggleInspector,
+  chatSide = "left",
+  onFlipSide,
 }: {
   title: string;
   isMobile: boolean;
@@ -34,6 +36,8 @@ export function TitleBar({
   onGoToChat?: () => void;
   inspectorOpen?: boolean;
   onToggleInspector?: () => void;
+  chatSide?: "left" | "right";
+  onFlipSide?: () => void;
 }) {
   const machines = DEVICES.length;
   const agents = SUB_AGENTS.filter((a) => a.status === "active").length;
@@ -98,6 +102,17 @@ export function TitleBar({
       </div>
 
       <div className="mx-1 hidden h-4 w-px bg-[hsl(var(--border))] lg:block" />
+
+      {/* dock shell left/right — desktop only */}
+      {onFlipSide && !chatFull && (
+        <button
+          onClick={onFlipSide}
+          title={`Dock shell ${chatSide === "left" ? "right" : "left"}`}
+          className="hidden rounded-sm border border-[hsl(var(--border))] p-1 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))] lg:block"
+        >
+          <Icon name={chatSide === "left" ? "panelClose" : "panelOpen"} size={14} />
+        </button>
+      )}
 
       {/* inspector toggle — desktop only */}
       {onToggleInspector && (

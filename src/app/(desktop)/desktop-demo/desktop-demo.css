@@ -29,6 +29,15 @@
   border-radius: 2px;
 }
 
+/* Text inputs (terminal + chat) are fields, not buttons — no focus ring. */
+.youmd-desktop input:focus,
+.youmd-desktop input:focus-visible,
+.youmd-desktop textarea:focus,
+.youmd-desktop textarea:focus-visible {
+  outline: none;
+  border-radius: 0;
+}
+
 /* Honor reduced-motion: neutralize the demo's entrance animations. */
 @media (prefers-reduced-motion: reduce) {
   .youmd-desktop * {
