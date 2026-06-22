@@ -1,6 +1,8 @@
 "use client";
 
 import { Icon } from "./icons";
+import { Dot } from "./primitives";
+import { DEVICES, SUB_AGENTS } from "../_data/mock";
 import { cn } from "../_lib/cn";
 
 // macOS-style title bar: traffic lights, current view title, and the
@@ -18,6 +20,8 @@ export function TitleBar({
   onOpenCommand,
   mobileOnView = false,
   onGoToChat,
+  inspectorOpen = false,
+  onToggleInspector,
 }: {
   title: string;
   isMobile: boolean;
@@ -28,7 +32,11 @@ export function TitleBar({
   onOpenCommand: () => void;
   mobileOnView?: boolean;
   onGoToChat?: () => void;
+  inspectorOpen?: boolean;
+  onToggleInspector?: () => void;
 }) {
+  const machines = DEVICES.length;
+  const agents = SUB_AGENTS.filter((a) => a.status === "active").length;
   return (
     <div className="flex min-h-[44px] shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--bg))] px-3 pt-[env(safe-area-inset-top)] lg:h-10 lg:min-h-0 lg:gap-3 lg:pt-0">
       {/* traffic lights — desktop only */}
@@ -75,6 +83,37 @@ export function TitleBar({
       >
         <Icon name={mobileOnView ? "chat" : "search"} size={17} />
       </button>
+
+      {/* ambient presence strip — desktop only */}
+      <div className="hidden items-center gap-3 lg:flex">
+        <span className="flex items-center gap-1.5 font-mono text-[10px] text-[hsl(var(--text-secondary))]/70">
+          <Icon name="device" size={12} /> {machines} machines
+        </span>
+        <span className="flex items-center gap-1.5 font-mono text-[10px] text-[hsl(var(--text-secondary))]/70">
+          <Icon name="agent" size={12} /> {agents} agents
+        </span>
+        <span className="flex items-center gap-1.5 font-mono text-[10px] text-[hsl(var(--text-secondary))]/70">
+          <Dot tone="green" pulse size={5} /> synced
+        </span>
+      </div>
+
+      <div className="mx-1 hidden h-4 w-px bg-[hsl(var(--border))] lg:block" />
+
+      {/* inspector toggle — desktop only */}
+      {onToggleInspector && (
+        <button
+          onClick={onToggleInspector}
+          title="Toggle inspector"
+          className={cn(
+            "hidden rounded-sm border border-[hsl(var(--border))] p-1 transition-colors lg:block",
+            inspectorOpen
+              ? "bg-[hsl(var(--accent))] text-white"
+              : "text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]",
+          )}
+        >
+          <Icon name="panelClose" size={14} className="rotate-180" />
+        </button>
+      )}
 
       {/* chat layout toggle — desktop only */}
       <div className="hidden items-center overflow-hidden rounded-sm border border-[hsl(var(--border))] lg:flex">

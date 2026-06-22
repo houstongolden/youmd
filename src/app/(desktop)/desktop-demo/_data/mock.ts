@@ -16,7 +16,8 @@ export type ViewId =
   | "apps"
   | "agents"
   | "loops"
-  | "terminal";
+  | "terminal"
+  | "provision";
 
 export type NavItem = {
   id: ViewId;
@@ -24,42 +25,90 @@ export type NavItem = {
   icon: IconName;
 };
 
-// Sectioned navigation, mapped to the MECE product model:
-//   CONTEXT (who you are + what you know) · STACKS (what agents can do) ·
-//   RUNTIME (where work happens). Home sits above; Chat + Terminal are modes.
-export const NAV_SECTIONS: { title: string | null; items: NavItem[] }[] = [
+// ── Information architecture: 6 destinations, not 16 panes ──────────────────
+// A *destination* is one entry in the left rail. Some destinations hold several
+// *segments* (sub-views) shown as a segmented control in the workspace header.
+// This is the core IA move: collapse the old 16-pane / 4-nav-group / 2-tab-row
+// sprawl into 6 clear places + progressive disclosure (segments + inspector).
+export type Segment = { id: ViewId; label: string };
+export type Destination = {
+  id: string;
+  label: string;
+  icon: IconName;
+  group: "top" | "workspace" | "system";
+  segments: Segment[];
+};
+
+export const DESTINATIONS: Destination[] = [
   {
-    title: null,
-    items: [{ id: "home", label: "Home", icon: "home" }],
+    id: "home",
+    label: "Home",
+    icon: "home",
+    group: "top",
+    segments: [{ id: "home", label: "Home" }],
   },
   {
-    title: "Context",
-    items: [
-      { id: "editor", label: "Brain", icon: "brain" },
-      { id: "projects", label: "Projects", icon: "branch" },
-      { id: "tasks", label: "Tasks", icon: "check" },
-      { id: "graph", label: "Graph", icon: "graph" },
+    // Brain = the second brain: a vault of markdown AND the Obsidian-style graph
+    // of how everything interrelates — two modes of the same thing.
+    id: "brain",
+    label: "Brain",
+    icon: "brain",
+    group: "workspace",
+    segments: [
+      { id: "editor", label: "Vault" },
+      { id: "graph", label: "Graph" },
     ],
   },
   {
-    title: "Stacks",
-    items: [
-      { id: "skills", label: "Skills", icon: "layers" },
-      { id: "apps", label: "Connections", icon: "plug" },
-    ],
+    id: "projects",
+    label: "Projects",
+    icon: "branch",
+    group: "workspace",
+    segments: [{ id: "projects", label: "Projects" }],
   },
   {
-    title: "Runtime",
-    items: [
-      { id: "agents", label: "Agents", icon: "agent" },
-      { id: "loops", label: "Loops", icon: "loop" },
-      { id: "terminal", label: "Terminal", icon: "terminal" },
+    id: "tasks",
+    label: "Tasks",
+    icon: "check",
+    group: "workspace",
+    segments: [{ id: "tasks", label: "Tasks" }],
+  },
+  {
+    id: "stacks",
+    label: "Skills & Stacks",
+    icon: "stack",
+    group: "workspace",
+    segments: [{ id: "skills", label: "Skills & Stacks" }],
+  },
+  {
+    // Runtime = where work happens + ops, consolidated. The old machine / agents
+    // / github / apis / vault / analytics panes fold in here, plus the hero
+    // "Provision" flow for spinning up a new Mac / VPS / container.
+    id: "runtime",
+    label: "Runtime",
+    icon: "sync",
+    group: "system",
+    segments: [
+      { id: "agents", label: "Agents" },
+      { id: "loops", label: "Loops" },
+      { id: "terminal", label: "Terminal" },
+      { id: "apps", label: "Connections" },
+      { id: "provision", label: "Provision" },
     ],
   },
 ];
 
 // Flat list for title lookups, the command palette, and mobile tab labels.
-export const PRIMARY_NAV: NavItem[] = NAV_SECTIONS.flatMap((s) => s.items);
+export const PRIMARY_NAV: NavItem[] = DESTINATIONS.flatMap((d) =>
+  d.segments.map((s) => ({ id: s.id, label: s.label, icon: d.icon })),
+);
+
+// Which destination owns a given segment/view (drives rail highlight + header).
+export function destinationForView(view: ViewId): Destination {
+  return (
+    DESTINATIONS.find((d) => d.segments.some((s) => s.id === view)) ?? DESTINATIONS[0]
+  );
+}
 
 // ── Workspace identity ────────────────────────────────────────────────────
 export const WORKSPACE = {
@@ -83,11 +132,11 @@ export type Project = {
 
 export const PROJECTS: Project[] = [
   { slug: "youmd", name: "you.md", focus: "focusing", shipped7d: 41, blurb: "Identity context protocol for the agent internet.", stack: "YouStack" },
-  { slug: "bamfsite", name: "bamfsite", focus: "active", shipped7d: 18, blurb: "BAMF Media growth marketing site + OS.", stack: "BAMFStack" },
-  { slug: "bigbounce", name: "bigbounce", focus: "active", shipped7d: 9, blurb: "Cosmology research — big bounce model.", stack: "ResearchStack" },
-  { slug: "fantasyis", name: "fantasy.is", focus: "idle", shipped7d: 3, blurb: "Generative fantasy worldbuilding.", stack: "—" },
-  { slug: "creator-new", name: "creator.new", focus: "active", shipped7d: 12, blurb: "Creator content engine.", stack: "ContentStack" },
-  { slug: "foldermd", name: "folder.md", focus: "idle", shipped7d: 1, blurb: "Local-first markdown workspace.", stack: "—" },
+  { slug: "bamfsite", name: "bamfsite", focus: "active", shipped7d: 18, blurb: "BAMF Media growth site + admin OS.", stack: "BAMFStack" },
+  { slug: "myo", name: "myo", focus: "active", shipped7d: 12, blurb: "Agentic personal-automation platform.", stack: "MyoStack" },
+  { slug: "bigbounce", name: "bigbounce", focus: "active", shipped7d: 9, blurb: "Cyclic-universe cosmology research.", stack: "ResearchStack" },
+  { slug: "hubify", name: "hubify", focus: "idle", shipped7d: 4, blurb: "Creator hub + lab sites monorepo.", stack: "HubStack" },
+  { slug: "tipnes-ai", name: "tipnes.ai", focus: "idle", shipped7d: 3, blurb: "Realtime voice AI tutor.", stack: "YouStack" },
 ];
 
 // ── File / notes tree ──────────────────────────────────────────────────────
@@ -429,8 +478,8 @@ export type Device = {
 
 export const DEVICES: Device[] = [
   { name: "Houstons-MBP", os: "macOS · M3 Max", status: "active", lastSync: "just now", agents: ["coding-you", "ops-you"], current: true },
-  { name: "Mac-mini", os: "macOS · M2", status: "synced", lastSync: "30s ago", agents: ["research-you"], current: false },
-  { name: "studio-vm", os: "Linux · agent host", status: "idle", lastSync: "4m ago", agents: ["writing-you"], current: false },
+  { name: "Houstons-Mini", os: "macOS · M2", status: "synced", lastSync: "30s ago", agents: ["research-you"], current: false },
+  { name: "cloud-vps", os: "Linux · agent host", status: "idle", lastSync: "4m ago", agents: ["writing-you"], current: false },
 ];
 
 // ── Agent bus (cross-machine, cross-agent realtime messages) ───────────────
@@ -444,9 +493,9 @@ export type BusMessage = {
 };
 
 export const AGENT_BUS: BusMessage[] = [
-  { id: "b1", from: "coding-you", device: "Houstons-MBP", channel: "you.md", text: "Pushed desktop-demo skills view, tests green.", at: "just now" },
-  { id: "b2", from: "research-you", device: "Mac-mini", channel: "bigbounce", text: "Synced 3 new sources, drafting section 3.", at: "1m ago" },
-  { id: "b3", from: "ops-you", device: "Houstons-MBP", channel: "machine-sync", text: "studio-vm online, identity + skills pulled.", at: "4m ago" },
+  { id: "b1", from: "ops-you", device: "Houstons-Mini", channel: "machine-sync", text: "Fresh machine restored env vault through trusted-device Secret Vault.", at: "just now" },
+  { id: "b2", from: "coding-you", device: "Houstons-MBP", channel: "you.md", text: "Promoted desktop shell to the 6-destination layout, lint green.", at: "2m ago" },
+  { id: "b3", from: "research-you", device: "Houstons-Mini", channel: "bigbounce", text: "Synced 3 new sources, drafting section 3.", at: "6m ago" },
 ];
 
 // ── Background daemons (the "it just works" layer — awareness, never config) ─
@@ -505,4 +554,84 @@ export const CHATS: ChatThread[] = [
   { id: "c5", title: "Audit Lempod ownership across repos", at: "1d" },
   { id: "c6", title: "Weekly portfolio review", at: "2d" },
   { id: "c7", title: "New computer setup for the Mac mini", at: "3d" },
+];
+
+// ── Provision (the hero "set up a whole synced environment" flow) ───────────
+// The single biggest differentiator: spin up a new Mac / VPS / container with
+// your entire synced agentic working environment in one guided flow. This is
+// the visual front-end of the machine-bootstrap CLI.
+export type ProvisionTarget = {
+  id: string;
+  label: string;
+  detail: string;
+  icon: IconName;
+};
+
+export const PROVISION_TARGETS: ProvisionTarget[] = [
+  { id: "mac", label: "New Mac", detail: "macOS · Apple Silicon", icon: "device" },
+  { id: "vps", label: "Cloud VPS", detail: "Linux · headless agent host", icon: "sync" },
+  { id: "container", label: "Dev container", detail: "Ephemeral sandbox", icon: "stack" },
+];
+
+export type ProvisionStep = {
+  id: string;
+  label: string;
+  detail: string;
+  state: "done" | "active" | "pending";
+};
+
+export const PROVISION_STEPS: ProvisionStep[] = [
+  { id: "prereq", label: "Prerequisites", detail: "Homebrew · Node 22 · git · gh · bun", state: "done" },
+  { id: "runtime", label: "Install you.md runtime", detail: "curl install.sh → youmd 0.8.12", state: "done" },
+  { id: "identity", label: "Pull identity + sync brain", detail: "profile · preferences · voice · memories", state: "done" },
+  { id: "skills", label: "Install skills + stacks", detail: "12 shared skills · mesh-synced", state: "active" },
+  { id: "mcp", label: "Wire MCP across agents", detail: "shared AGENTS.md → Claude · Codex · Cursor", state: "pending" },
+  { id: "repos", label: "Clone active projects", detail: "30-day ACTIVE + Top Priority/Focusing", state: "pending" },
+  { id: "vault", label: "Restore env vault", detail: "trusted-device envelope · secrets stay local", state: "pending" },
+  { id: "proof", label: "Sync machine proof", detail: "readiness report → you.md", state: "pending" },
+];
+
+// ── Legibility: what this is + how it actually helps you ────────────────────
+// The single sentence a first-time user should read and immediately get it.
+export const VALUE_PROP =
+  "Your second brain for AI agents. you.md gives every agent — on every machine — full context on who you are, what you're building, and how you work, then keeps it all in sync as you and your agents get things done.";
+
+export type HowStep = { icon: IconName; title: string; body: string };
+export const HOW_IT_WORKS: HowStep[] = [
+  {
+    icon: "brain",
+    title: "Your brain stays current",
+    body: "Identity, projects, skills, and memories live in one place — edited by you, enriched by your agents.",
+  },
+  {
+    icon: "agent",
+    title: "Your agents work with it",
+    body: "Spawn scoped clones of you. Each starts with full context — no re-explaining who you are or what matters.",
+  },
+  {
+    icon: "sync",
+    title: "Everything stays in sync",
+    body: "Open any machine, any agent (Claude · Codex · Cursor) — same brain, same skills, same projects, live.",
+  },
+];
+
+// ── Live activity (the "it's working for you" feed) ─────────────────────────
+// Pixel-character actors make agents + machines feel alive and legible.
+export type ActivityActor = "agent" | "machine";
+export type ActivityEvent = {
+  id: string;
+  actor: string;
+  kind: ActivityActor;
+  status: "active" | "ready" | "idle";
+  text: string;
+  at: string;
+};
+
+export const ACTIVITY: ActivityEvent[] = [
+  { id: "e1", actor: "ops-you", kind: "agent", status: "active", text: "Routed a Slack capture into bamfsite · proposed 2 tasks", at: "now" },
+  { id: "e2", actor: "Houstons-Mini", kind: "machine", status: "ready", text: "Restored env vault · 8 projects ready to run", at: "1m" },
+  { id: "e3", actor: "coding-you", kind: "agent", status: "active", text: "Pushed the 6-destination desktop shell · lint green", at: "2m" },
+  { id: "e4", actor: "research-you", kind: "agent", status: "active", text: "Synced 3 new sources into the bigbounce brain", at: "6m" },
+  { id: "e5", actor: "skill-mesh", kind: "machine", status: "ready", text: "12 shared skills synced across 3 machines", at: "8m" },
+  { id: "e6", actor: "writing-you", kind: "agent", status: "idle", text: "Drafted a creator post in your voice · awaiting review", at: "14m" },
 ];

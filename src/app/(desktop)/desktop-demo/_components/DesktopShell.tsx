@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, CHATS, type Task, type ChatThread, type ViewId } from "../_data/mock";
+import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, CHATS, destinationForView, type Task, type ChatThread, type ViewId } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
 import { useSwipe } from "../_lib/useSwipe";
 import { useTheme } from "../_lib/useTheme";
@@ -13,8 +13,9 @@ import { ChatPanel, type AgentAction, type ChatScope } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
 import { SystemStatus } from "./SystemStatus";
+import { Inspector } from "./Inspector";
+import { SegmentedHeader } from "./primitives";
 import { useToast } from "./Toast";
-import { Icon } from "./icons";
 import { HomeView } from "./views/HomeView";
 import { EditorView } from "./views/EditorView";
 import { ProjectsView } from "./views/ProjectsView";
@@ -25,6 +26,7 @@ import { AppsView } from "./views/AppsView";
 import { AgentsView } from "./views/AgentsView";
 import { LoopsView } from "./views/LoopsView";
 import { TerminalView } from "./views/TerminalView";
+import { ProvisionView } from "./views/ProvisionView";
 
 function MainView({
   view,
@@ -35,6 +37,8 @@ function MainView({
   onProjectSelect,
   tasks,
   onAdvanceTask,
+  selectedNode,
+  onSelectNode,
 }: {
   view: ViewId;
   onNavigate: (v: ViewId) => void;
@@ -44,6 +48,8 @@ function MainView({
   onProjectSelect: (slug: string) => void;
   tasks: Task[];
   onAdvanceTask: (id: string) => void;
+  selectedNode: string | null;
+  onSelectNode: (id: string) => void;
 }) {
   switch (view) {
     case "home":
@@ -53,7 +59,7 @@ function MainView({
     case "projects":
       return <ProjectsView selected={selectedProject} onSelect={onProjectSelect} onNavigate={onNavigate} tasks={tasks} />;
     case "graph":
-      return <GraphView />;
+      return <GraphView selectedNode={selectedNode} onSelectNode={onSelectNode} />;
     case "tasks":
       return <TasksView tasks={tasks} onAdvance={onAdvanceTask} />;
     case "skills":
@@ -66,6 +72,8 @@ function MainView({
       return <LoopsView />;
     case "terminal":
       return <TerminalView />;
+    case "provision":
+      return <ProvisionView />;
   }
 }
 
@@ -82,6 +90,8 @@ export function DesktopShell() {
   const [selectedProject, setSelectedProject] = useState(PROJECTS[0].slug);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
   const [chats, setChats] = useState<ChatThread[]>(CHATS);
   const [activeChat, setActiveChat] = useState(CHATS[0].id);
@@ -164,6 +174,62 @@ export function DesktopShell() {
     setSelectedProject(slug);
     navigate("projects");
   };
+
+  // Clicking a graph node opens the inspector on that entity (and syncs the
+  // selected project when the node is a project we know).
+  const selectNode = (id: string) => {
+    setSelectedNode(id);
+    const asProject = PROJECTS.find((p) => p.slug === id);
+    if (asProject) setSelectedProject(asProject.slug);
+    setInspectorOpen(true);
+  };
+
+  // The destination (rail entry) that owns the active segment, + its segments.
+  const activeDestination = destinationForView(activeView);
+
+  // Workspace = optional segmented header + scrollable view + optional inspector.
+  const renderWorkspace = (withInspector: boolean) => (
+    <div className="flex h-full min-w-0 flex-col">
+      {activeDestination.segments.length > 1 && (
+        <SegmentedHeader
+          segments={activeDestination.segments}
+          active={activeView}
+          onSelect={(id) => navigate(id as ViewId)}
+        />
+      )}
+      <div className="flex min-h-0 flex-1">
+        <motion.div
+          key={activeView}
+          className="h-full min-w-0 flex-1 overflow-y-auto bg-[hsl(var(--bg))]"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+        >
+          <MainView
+            view={activeView}
+            onNavigate={navigate}
+            editorFile={editorFile}
+            onEditorSelect={setEditorFile}
+            selectedProject={selectedProject}
+            onProjectSelect={setSelectedProject}
+            tasks={tasks}
+            onAdvanceTask={advanceTask}
+            selectedNode={selectedNode}
+            onSelectNode={selectNode}
+          />
+        </motion.div>
+        {withInspector && inspectorOpen && (
+          <Inspector
+            view={activeView}
+            selectedProject={selectedProject}
+            selectedNode={selectedNode}
+            onClose={() => setInspectorOpen(false)}
+            onNavigate={navigate}
+          />
+        )}
+      </div>
+    </div>
+  );
 
   // What the chat agent is "looking at" with you — the active context scope.
   const chatScope = useMemo(() => {
@@ -281,6 +347,8 @@ export function DesktopShell() {
         onOpenCommand={() => setPaletteOpen(true)}
         mobileOnView={isMobile && mobilePane === "view"}
         onGoToChat={() => setMobilePane("chat")}
+        inspectorOpen={inspectorOpen}
+        onToggleInspector={chatFull ? undefined : () => setInspectorOpen((o) => !o)}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -321,24 +389,7 @@ export function DesktopShell() {
                 {mobilePane === "chat" ? (
                   <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
                 ) : (
-                  <motion.div
-                    key={activeView}
-                    className="h-full overflow-y-auto bg-[hsl(var(--bg))]"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                  >
-                    <MainView
-                      view={activeView}
-                      onNavigate={navigate}
-                      editorFile={editorFile}
-                      onEditorSelect={setEditorFile}
-                      selectedProject={selectedProject}
-                      onProjectSelect={setSelectedProject}
-                      tasks={tasks}
-                      onAdvanceTask={advanceTask}
-                    />
-                  </motion.div>
+                  renderWorkspace(false)
                 )}
               </div>
             </div>
@@ -375,24 +426,7 @@ export function DesktopShell() {
                   <ChatPanel scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
                 </div>
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
-                  <motion.div
-                    key={activeView}
-                    className="h-full overflow-y-auto"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                  >
-                    <MainView
-                      view={activeView}
-                      onNavigate={navigate}
-                      editorFile={editorFile}
-                      onEditorSelect={setEditorFile}
-                      selectedProject={selectedProject}
-                      onProjectSelect={setSelectedProject}
-                      tasks={tasks}
-                      onAdvanceTask={advanceTask}
-                    />
-                  </motion.div>
+                  {renderWorkspace(true)}
                 </main>
               </div>
             )}

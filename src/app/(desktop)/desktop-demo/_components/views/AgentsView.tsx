@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { PixelCharacter } from "@/components/ui/PixelCharacter";
 import { SUB_AGENTS, DEVICES, AGENT_BUS, type SubAgent } from "../../_data/mock";
 import { Icon } from "../icons";
 import { Dot, Chip, SectionLabel, ViewHeader } from "../primitives";
@@ -82,9 +83,12 @@ export function AgentsView() {
             key={a.id}
             className="flex items-center gap-3 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-4"
           >
-            <span className="grid h-10 w-10 place-items-center rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] text-[hsl(var(--accent))]">
-              <Icon name="agent" size={18} />
-            </span>
+            <PixelCharacter
+              kind="agent"
+              seed={a.name}
+              status={a.status === "active" ? "active" : a.status === "spawning" ? "warn" : "idle"}
+              size="lg"
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-sm">{a.name}</span>
@@ -128,7 +132,12 @@ export function AgentsView() {
       <div className="mb-7 space-y-2">
         {DEVICES.map((d) => (
           <div key={d.name} className="flex items-center gap-3 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-3.5 py-3">
-            <Icon name="device" size={16} className="text-[hsl(var(--text-secondary))]" />
+            <PixelCharacter
+              kind="machine"
+              seed={d.name}
+              status={d.status === "active" || d.status === "synced" ? "ready" : "idle"}
+              size="md"
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-[13px]">{d.name}</span>

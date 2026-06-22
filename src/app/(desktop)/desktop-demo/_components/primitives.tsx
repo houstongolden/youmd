@@ -131,6 +131,43 @@ export function ViewBar({
   );
 }
 
+// Segmented control shown in the workspace header for destinations that hold
+// more than one sub-view (Brain: Vault/Graph · Runtime: Agents/…/Provision).
+// This is what replaces the old shell's second tab row + query-param maze.
+export function SegmentedHeader<T extends string>({
+  segments,
+  active,
+  onSelect,
+  right,
+}: {
+  segments: { id: T; label: string }[];
+  active: T;
+  onSelect: (id: T) => void;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--border))] px-3 py-2 md:px-4">
+      <div className="flex items-center gap-0.5 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-0.5">
+        {segments.map((s) => (
+          <button
+            key={s.id}
+            onClick={() => onSelect(s.id)}
+            className={cn(
+              "rounded-sm px-2.5 py-1 font-mono text-[11.5px] transition-colors",
+              active === s.id
+                ? "bg-[hsl(var(--accent))] text-white"
+                : "text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]",
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+      {right}
+    </div>
+  );
+}
+
 export function Chip({
   children,
   tone = "default",

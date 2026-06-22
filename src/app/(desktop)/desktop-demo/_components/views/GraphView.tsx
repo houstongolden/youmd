@@ -13,7 +13,13 @@ const KIND_STYLE: Record<GraphNode["kind"], { fill: string; ring: string; label:
   app: { fill: "hsl(var(--bg-raised))", ring: "hsl(var(--text-secondary))", label: "App" },
 };
 
-export function GraphView() {
+export function GraphView({
+  onSelectNode,
+  selectedNode,
+}: {
+  onSelectNode?: (id: string) => void;
+  selectedNode?: string | null;
+} = {}) {
   const [hover, setHover] = useState<string | null>(null);
 
   // Precompute adjacency for hover-dimming.
@@ -91,6 +97,7 @@ export function GraphView() {
               style={{ left: `${n.x}%`, top: `${n.y}%`, opacity: lit ? 1 : 0.25 }}
               onMouseEnter={() => setHover(n.id)}
               onMouseLeave={() => setHover(null)}
+              onClick={() => onSelectNode?.(n.id)}
             >
               <div className="flex cursor-pointer flex-col items-center gap-1.5">
                 <span
@@ -102,9 +109,11 @@ export function GraphView() {
                     background: s.fill,
                     border: `1.5px solid ${s.ring}`,
                     boxShadow:
-                      isCenter && lit
-                        ? "0 0 0 4px hsl(var(--accent) / 0.15)"
-                        : undefined,
+                      selectedNode === n.id
+                        ? "0 0 0 4px hsl(var(--accent) / 0.3)"
+                        : isCenter && lit
+                          ? "0 0 0 4px hsl(var(--accent) / 0.15)"
+                          : undefined,
                   }}
                   aria-hidden
                 />
@@ -122,7 +131,7 @@ export function GraphView() {
         })}
 
         <div className="pointer-events-none absolute bottom-4 left-5 font-mono text-[11px] text-[hsl(var(--text-secondary))]/60">
-          {GRAPH_NODES.length} nodes · {GRAPH_EDGES.length} connections · hover to trace
+          {GRAPH_NODES.length} nodes · {GRAPH_EDGES.length} connections · hover to trace · click to inspect
         </div>
       </div>
     </div>
