@@ -10,6 +10,7 @@ import { cn } from "../_lib/cn";
 import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
 import { SessionShell } from "./SessionShell";
+import { ResizeHandle } from "./ResizeHandle";
 import { type AgentAction, type ChatScope } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
@@ -97,6 +98,8 @@ export function DesktopShell() {
   // whether the shell docks on the left or right.
   const [activeSessionId, setActiveSessionId] = useState(SESSIONS[0].id);
   const [chatSide, setChatSide] = useState<"left" | "right">("left");
+  const [shellWidth, setShellWidth] = useState(468);
+  const [inspectorWidth, setInspectorWidth] = useState(304);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
   const [chats, setChats] = useState<ChatThread[]>(CHATS);
   const [activeChat, setActiveChat] = useState(CHATS[0].id);
@@ -126,7 +129,7 @@ export function DesktopShell() {
     setActiveSessionId(s.id);
     focusChatPane();
   };
-  const newSession = () => toast("New session — pick an agent to spawn…", "agent");
+  const newSession = (project: string) => toast(`New agent on ${project} — pick a model to spawn…`, "agent");
 
   const addTask = (title: string, project: string, owner: Task["owner"] = "you") =>
     setTasks((t) => [
@@ -231,13 +234,18 @@ export function DesktopShell() {
           />
         </motion.div>
         {withInspector && inspectorOpen && (
-          <Inspector
-            view={activeView}
-            selectedProject={selectedProject}
-            selectedNode={selectedNode}
-            onClose={() => setInspectorOpen(false)}
-            onNavigate={navigate}
-          />
+          <>
+            <ResizeHandle width={inspectorWidth} setWidth={setInspectorWidth} min={248} max={480} side="left" />
+            <div style={{ width: inspectorWidth }} className="shrink-0">
+              <Inspector
+                view={activeView}
+                selectedProject={selectedProject}
+                selectedNode={selectedNode}
+                onClose={() => setInspectorOpen(false)}
+                onNavigate={navigate}
+              />
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -455,33 +463,39 @@ export function DesktopShell() {
               // Split: chat 1/3 left, main view 2/3 right.
               <div className="flex min-w-0 flex-1">
                 {chatSide === "left" && (
-                  <div className="flex w-[40%] min-w-[380px] max-w-[560px] flex-col border-r border-[hsl(var(--border))]">
-                    <SessionShell
-                      activeId={activeSessionId}
-                      onSelect={selectSession}
-                      onNew={newSession}
-                      scope={chatScope}
-                      onAction={onAgentAction}
-                      chatId={activeChat}
-                      chatTitle={activeChatTitle}
-                    />
-                  </div>
+                  <>
+                    <div style={{ width: shellWidth }} className="flex shrink-0 flex-col">
+                      <SessionShell
+                        activeId={activeSessionId}
+                        onSelect={selectSession}
+                        onNew={newSession}
+                        scope={chatScope}
+                        onAction={onAgentAction}
+                        chatId={activeChat}
+                        chatTitle={activeChatTitle}
+                      />
+                    </div>
+                    <ResizeHandle width={shellWidth} setWidth={setShellWidth} min={360} max={760} side="right" />
+                  </>
                 )}
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
                   {renderWorkspace(true)}
                 </main>
                 {chatSide === "right" && (
-                  <div className="flex w-[40%] min-w-[380px] max-w-[560px] flex-col border-l border-[hsl(var(--border))]">
-                    <SessionShell
-                      activeId={activeSessionId}
-                      onSelect={selectSession}
-                      onNew={newSession}
-                      scope={chatScope}
-                      onAction={onAgentAction}
-                      chatId={activeChat}
-                      chatTitle={activeChatTitle}
-                    />
-                  </div>
+                  <>
+                    <ResizeHandle width={shellWidth} setWidth={setShellWidth} min={360} max={760} side="left" />
+                    <div style={{ width: shellWidth }} className="flex shrink-0 flex-col">
+                      <SessionShell
+                        activeId={activeSessionId}
+                        onSelect={selectSession}
+                        onNew={newSession}
+                        scope={chatScope}
+                        onAction={onAgentAction}
+                        chatId={activeChat}
+                        chatTitle={activeChatTitle}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             )}

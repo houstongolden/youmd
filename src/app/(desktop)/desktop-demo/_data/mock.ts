@@ -631,40 +631,63 @@ export type ActivityEvent = {
 // grouped by project. Remote sessions run on OTHER you.md-synced machines and
 // can be watched in real time (peekaboo) — like local-vs-cloud agents, but the
 // "cloud" is your own other computers.
+// The CLI agents / models a session can run — shown in a compact dropdown with
+// per-agent marks (faux favicons) so it never eats horizontal space.
+export type ModelId = "claude-code" | "codex" | "cursor" | "pi" | "openclaw" | "hermes" | "shell";
+export type ModelDef = { id: ModelId; label: string; mark: string; color: string };
+export const MODELS: ModelDef[] = [
+  { id: "claude-code", label: "Claude Code", mark: "✻", color: "#C46A3A" },
+  { id: "codex", label: "Codex", mark: "◇", color: "#10A37F" },
+  { id: "cursor", label: "Cursor", mark: "▸", color: "#8B8B8B" },
+  { id: "pi", label: "Pi.dev", mark: "π", color: "#6E56CF" },
+  { id: "openclaw", label: "OpenClaw", mark: "⌗", color: "#D9A441" },
+  { id: "hermes", label: "Hermes", mark: "✦", color: "#3B82F6" },
+  { id: "shell", label: "Shell", mark: "❯", color: "#8B8B8B" },
+];
+
 export type SessionKind = "chat" | "terminal";
-export type SessionStatus = "active" | "idle" | "waiting";
+export type SessionStatus = "active" | "idle" | "waiting" | "blocked";
 export type AgentSession = {
   id: string;
   title: string;
   kind: SessionKind;
   agent: string; // pixel-character seed + display
+  model: ModelId;
   project: string;
   machine: string;
   local: boolean; // this machine vs another synced computer (watch)
   status: SessionStatus;
   summary: string; // what it's doing — shown when watching a remote session
+  task?: string; // the tracked task this session is working on
+  needsYou?: string; // if set, this session is blocked on you — surfaced loudly
 };
 
 export const SESSIONS: AgentSession[] = [
-  { id: "ss1", title: "Lock desktop UI/UX", kind: "chat", agent: "you-agent", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Designing the unified shell with you." },
-  { id: "ss2", title: "coding-you · shell IA", kind: "terminal", agent: "coding-you", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Editing DesktopShell.tsx, running lint." },
-  { id: "ss3", title: "bamfsite · env wiring", kind: "terminal", agent: "codex", project: "bamfsite", machine: "Houstons-MBP", local: true, status: "idle", summary: "Restored .env.local — awaiting next command." },
-  { id: "ss4", title: "research-you · section 3", kind: "chat", agent: "research-you", project: "bigbounce", machine: "Houstons-Mini", local: false, status: "active", summary: "Reading 3 sources; drafting the bounce-entropy argument for section 3." },
-  { id: "ss5", title: "writing-you · creator post", kind: "chat", agent: "writing-you", project: "creator.new", machine: "cloud-vps", local: false, status: "active", summary: "Drafting a LinkedIn post in your voice; 2 hooks proposed." },
+  // you.md — three agents on different slices
+  { id: "ss1", title: "Lock desktop UI/UX", kind: "chat", agent: "you-agent", model: "claude-code", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Designing the unified shell with you.", task: "Lock desktop app UI/UX" },
+  { id: "ss2", title: "Build session rail", kind: "terminal", agent: "coding-you", model: "claude-code", project: "you.md", machine: "Houstons-MBP", local: true, status: "active", summary: "Editing DesktopShell.tsx, running lint.", task: "Unified sessions shell" },
+  { id: "ss3", title: "Graph data model", kind: "terminal", agent: "codex", model: "codex", project: "you.md", machine: "Houstons-MBP", local: true, status: "idle", summary: "Scaffolding the brain graph model.", task: "Obsidian-style graph view" },
+  // bamfsite — one working, one blocked on you
+  { id: "ss4", title: "Restore env + build", kind: "terminal", agent: "ops-you", model: "codex", project: "bamfsite", machine: "Houstons-MBP", local: true, status: "blocked", summary: "Build is red — needs the Supabase anon key.", task: "bamfsite green build", needsYou: "Paste VITE_SUPABASE_ANON_KEY to unblock the build" },
+  { id: "ss5", title: "Triage Slack captures", kind: "chat", agent: "ops-you", model: "claude-code", project: "bamfsite", machine: "Houstons-MBP", local: true, status: "active", summary: "Routing captures into tasks.", task: "Inbox triage" },
+  // bigbounce — remote, watchable
+  { id: "ss6", title: "Draft section 3", kind: "chat", agent: "research-you", model: "pi", project: "bigbounce", machine: "Houstons-Mini", local: false, status: "active", summary: "Reading 3 sources; drafting the bounce-entropy argument.", task: "Big-bounce paper §3" },
+  // creator.new — remote, waiting on you to choose
+  { id: "ss7", title: "Creator post", kind: "chat", agent: "writing-you", model: "hermes", project: "creator.new", machine: "cloud-vps", local: false, status: "waiting", summary: "Drafted a post in your voice; 2 hooks proposed.", task: "Weekly creator post", needsYou: "Pick one of the 2 hooks it proposed" },
 ];
 
 // A remote session's streaming summary lines (for the watch / peekaboo view).
 export const WATCH_FEED: Record<string, string[]> = {
-  ss4: [
+  ss6: [
     "opened bigbounce/paper/section-3.md",
     "pulled 3 sources from the brain (semantic-scholar, NASA ADS)",
     "drafting: entropy across the bounce — paragraph 2/5",
     "flagged 1 claim for your review",
   ],
-  ss5: [
+  ss7: [
     "loaded your voice profile + last 20 posts",
     "topic: shipping the you.md desktop app",
-    "proposed 2 hooks — waiting to pick one",
+    "proposed 2 hooks — waiting for you to pick one",
     "draft 1 ready for review",
   ],
 };

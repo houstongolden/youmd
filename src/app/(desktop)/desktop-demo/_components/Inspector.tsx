@@ -34,7 +34,7 @@ export function Inspector({
       : null;
 
   return (
-    <aside className="flex h-full w-[300px] shrink-0 flex-col border-l border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
+    <aside className="flex h-full w-full flex-col border-l border-[hsl(var(--border))] bg-[hsl(var(--bg))]">
       <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-3.5 py-2.5">
         <SectionLabel>Inspector</SectionLabel>
         <button
