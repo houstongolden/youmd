@@ -18,7 +18,8 @@ export type ViewId =
   | "loops"
   | "terminal"
   | "provision"
-  | "sync";
+  | "sync"
+  | "livelog";
 
 export type NavItem = {
   id: ViewId;
@@ -58,6 +59,7 @@ export const DESTINATIONS: Destination[] = [
     segments: [
       { id: "editor", label: "Vault" },
       { id: "graph", label: "Graph" },
+      { id: "livelog", label: "Live Log" },
     ],
   },
   {

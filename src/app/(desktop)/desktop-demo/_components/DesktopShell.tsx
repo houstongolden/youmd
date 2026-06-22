@@ -29,6 +29,7 @@ import { LoopsView } from "./views/LoopsView";
 import { TerminalView } from "./views/TerminalView";
 import { ProvisionView } from "./views/ProvisionView";
 import { SyncView } from "./views/SyncView";
+import { LiveLogView } from "./views/LiveLogView";
 
 function MainView({
   view,
@@ -78,6 +79,8 @@ function MainView({
       return <ProvisionView />;
     case "sync":
       return <SyncView />;
+    case "livelog":
+      return <LiveLogView />;
   }
 }
 
