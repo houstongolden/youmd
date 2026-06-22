@@ -31,11 +31,14 @@ describe("install.sh route", () => {
     expect(script).toContain('YOU_INSTALL_MIGRATE_HOME:-${YOUMD_INSTALL_MIGRATE_HOME:-1}');
     expect(script).toContain('you machine migrate-home --yes');
     expect(script).toContain('run `you machine migrate-home --yes` after install');
-    expect(script).toContain('YOU_INSTALL_MACHINE_SYNC:-${YOUMD_INSTALL_MACHINE_SYNC:-0}');
+    expect(script).toContain('YOU_INSTALL_MACHINE_SYNC:-${YOUMD_INSTALL_MACHINE_SYNC:-auto}');
+    expect(script).toContain('YOU_INSTALL_LOGIN:-${YOUMD_INSTALL_LOGIN:-auto}');
     expect(script).toContain('YOU_BOOTSTRAP_API_KEY="${YOU_API_KEY:-${YOUMD_API_KEY:-}}"');
     expect(script).toContain('you login --key "$YOU_BOOTSTRAP_API_KEY"');
+    expect(script).toContain('you login </dev/tty');
     expect(script).toContain('you machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"');
-    expect(script).toContain("you machine sync-now --root ~/Desktop/CODE_YOU");
+    expect(script).toContain("installs, authenticates when possible, syncs brain/skills/stacks/MCP/proof/daemons");
+    expect(script).toContain("YOU_INSTALL_MACHINE_SYNC=0");
     expect(script).not.toContain("NPM_GLOBAL_FLAGS");
     expect(script).not.toContain('"${NPM_GLOBAL_FLAGS[@]}"');
   });

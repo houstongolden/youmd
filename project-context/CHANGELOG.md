@@ -1,5 +1,14 @@
 # You.md — Changelog
 
+## 2026-06-22 — Curl-first machine bootstrap
+
+### feat(install): make curl install auto-run machine sync
+- Changed the generated `you.md/install.sh` flow so machine sync defaults to `auto` instead of requiring `YOU_INSTALL_MACHINE_SYNC=1`.
+- The installer now tries API-key auth, existing local auth, or browser device login through `/dev/tty`, then runs `you machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"` to reconcile identity, shared skills/stacks, MCP, inventory, proof, and daemons.
+- Added `YOU_INSTALL_LOGIN=0` and `YOU_INSTALL_MACHINE_SYNC=0` escape hatches for local-only or non-interactive installs.
+- Updated installer end-copy so the one curl command is presented as the primary setup path rather than a prelude to manual follow-up commands.
+- Verified with focused install-script Vitest, CLI TypeScript build, and production Next build.
+
 ## 2026-06-20 — Machine proof skill mesh
 
 ### feat(sync): show recent mesh activity in Skill Mesh

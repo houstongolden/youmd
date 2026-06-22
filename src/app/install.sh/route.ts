@@ -337,17 +337,88 @@ if [ "$MCP_CONFIGURED" = "0" ]; then
 fi
 
 YOU_BOOTSTRAP_API_KEY="\${YOU_API_KEY:-\${YOUMD_API_KEY:-}}"
-if [ "\${YOU_INSTALL_MACHINE_SYNC:-\${YOUMD_INSTALL_MACHINE_SYNC:-0}}" = "1" ] || [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
-  SYNC_ROOT="\${YOU_CODE_ROOT:-\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}}"
-  SYNC_LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
-  echo "Reconciling this machine with You.md skill mesh..."
+SYNC_MODE="\${YOU_INSTALL_MACHINE_SYNC:-\${YOUMD_INSTALL_MACHINE_SYNC:-auto}}"
+LOGIN_MODE="\${YOU_INSTALL_LOGIN:-\${YOUMD_INSTALL_LOGIN:-auto}}"
+SYNC_ROOT="\${YOU_CODE_ROOT:-\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}}"
+SYNC_LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
+
+machine_sync_enabled() {
+  case "$SYNC_MODE" in
+    0|false|FALSE|off|OFF|no|NO) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+login_enabled() {
+  case "$LOGIN_MODE" in
+    0|false|FALSE|off|OFF|no|NO) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+you_has_local_auth() {
   if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
-    you login --key "$YOU_BOOTSTRAP_API_KEY" >/dev/null 2>&1 || true
+    return 0
   fi
-  if you machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"; then
+  if [ -s "$YOU_HOME_DIR/config.json" ] && grep -Eq '"token"[[:space:]]*:' "$YOU_HOME_DIR/config.json"; then
+    return 0
+  fi
+  if [ -s "$LEGACY_YOUMD_HOME_DIR/config.json" ] && grep -Eq '"token"[[:space:]]*:' "$LEGACY_YOUMD_HOME_DIR/config.json"; then
+    return 0
+  fi
+  return 1
+}
+
+run_you_login_auto() {
+  if ! login_enabled; then
+    return 1
+  fi
+  if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
+    echo "Authenticating this machine with YOU_API_KEY..."
+    you login --key "$YOU_BOOTSTRAP_API_KEY" >/dev/null 2>&1
+    return $?
+  fi
+  if [ -r /dev/tty ]; then
+    echo "Authenticating this machine in the browser..."
+    echo "  - approve the code, then the installer will finish sync automatically"
+    you login </dev/tty
+    return $?
+  fi
+  return 1
+}
+
+run_machine_sync_now() {
+  you machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"
+}
+
+if machine_sync_enabled; then
+  echo "Reconciling this machine with You.md skill mesh..."
+  MACHINE_SYNC_DONE=0
+
+  if [ -n "$YOU_BOOTSTRAP_API_KEY" ]; then
+    run_you_login_auto || true
+  fi
+
+  if you_has_local_auth; then
+    if run_machine_sync_now; then
+      MACHINE_SYNC_DONE=1
+    fi
+  fi
+
+  if [ "$MACHINE_SYNC_DONE" = "0" ]; then
+    if run_you_login_auto; then
+      echo "Running full machine sync after authentication..."
+      if run_machine_sync_now; then
+        MACHINE_SYNC_DONE=1
+      fi
+    fi
+  fi
+
+  if [ "$MACHINE_SYNC_DONE" = "1" ]; then
     echo "  - machine sync proof complete"
   else
-    echo "  - machine sync needs follow-up; run: you machine sync-now --root \\"$SYNC_ROOT\\""
+    echo "  - account sync is waiting on authentication"
+    echo "  - rerun the same curl command, or run: you login && you machine sync-now --root \\"$SYNC_ROOT\\""
   fi
 fi
 
@@ -367,19 +438,18 @@ if [ "$USING_USER_NPM_PREFIX" = "1" ]; then
 fi
 echo ""
 echo "Next:"
-echo "  you login            # press Enter to authenticate this machine in the browser"
-echo "  you machine sync-now --root ~/Desktop/CODE_YOU"
-echo "                       # sync your brain, skills, stacks, MCP, inventory, proof, and daemons"
+echo "  curl -fsSL https://you.md/install.sh | bash"
+echo "                       # installs, authenticates when possible, syncs brain/skills/stacks/MCP/proof/daemons"
 echo "  you                  # meet U; it will guide onboarding, stacks, and next moves"
 echo ""
 echo "Auto-update helper:"
 echo "  ~/.you/bin/youmd-auto-upgrade --quiet"
 echo ""
-echo "Install with resident sync enabled:"
-echo "  curl -fsSL https://you.md/install.sh | YOU_INSTALL_DAEMON=1 bash"
+echo "Skip account sync for local-only installs:"
+echo "  curl -fsSL https://you.md/install.sh | YOU_INSTALL_MACHINE_SYNC=0 bash"
 echo ""
-echo "Install and immediately sync this machine when you already have an API key:"
-echo "  curl -fsSL https://you.md/install.sh | YOU_API_KEY=... YOU_INSTALL_MACHINE_SYNC=1 bash"
+echo "Unattended install with an API key:"
+echo "  curl -fsSL https://you.md/install.sh | YOU_API_KEY=... bash"
 echo ""
 `;
 }

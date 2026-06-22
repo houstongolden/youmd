@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-20
+Last Updated: 2026-06-22
 PRD Version: 2.3
 
 ---
@@ -23,6 +23,7 @@ PRD Version: 2.3
 - [x] Bundle the agent stack inventory scanner inside the CLI package so fresh installs can run inventory before shared skills are restored
 - [x] Add a curl install hook that writes a best-effort secret-safe inventory to `~/.youmd/agent-stack-inventory`
 - [x] Add a curl install handoff that runs `youmd machine sync-now` automatically when `YOUMD_API_KEY` or `YOUMD_INSTALL_MACHINE_SYNC=1` is present
+- [x] Make the curl installer itself the machine bootstrap orchestrator: install/migrate/inventory/MCP by default, authenticate when possible, then run machine sync/proof/daemon reconciliation automatically unless explicitly disabled
 - [x] Add fresh-machine bootstrap inventory proof after shared skills/MCP restore and again near final readiness proof
 - [x] Add `youmd machine sync-now` / `youmd machine full-sync` so the Mac Mini setup runbook is a first-class CLI command instead of a long manual checklist
 - [x] Add Convex persistence for safe machine inventory snapshots, sync events, drift summaries, and DRY review counts
@@ -44,7 +45,7 @@ PRD Version: 2.3
 - [x] Add `npm run sync:graph:smoke` so the synced-brain graph REST/MCP proof is repeatable without printing secrets
 - [x] Make the shared synced brain graph selectable with real active-link pulses and collapse Machine repair/diagnostic clutter behind focused disclosure
 - [ ] Next pass: remove remaining non-canonical fallback liveness paths after production API/MCP graph smoke proves parity
-- [ ] Next pass: publish `youmd@0.8.11` to npm, then update/install it on the Mac mini
+- [ ] Next pass: publish the current CLI package to npm when CLI code changes require npm fallback parity, then update/install it on the Mac mini
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison
 - [x] Add hosted MCP resources for agent stack topology/report files, including generated safe HTML and repo-backed markdown/JSON snapshots
