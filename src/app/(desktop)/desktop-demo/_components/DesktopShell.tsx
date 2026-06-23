@@ -196,6 +196,7 @@ export function DesktopShell() {
   };
   // Cross-pillar: open a project's repo overview in the Vault from a session.
   const openInVault = (project: string) => openNote(`project:${project}`);
+  const connectProvider = (provider: string) => toast(`Connecting ${provider} cloud — authorize to run + watch cloud agents…`, "sync");
 
   const openProject = (slug: string) => {
     setSelectedProject(slug);
@@ -431,6 +432,7 @@ export function DesktopShell() {
                     onSelect={selectSession}
                     onNew={newSession}
                     onOpenInVault={openInVault}
+                    onConnect={connectProvider}
                     showRail={false}
                     scope={chatScope}
                     onAction={onAgentAction}
@@ -468,6 +470,7 @@ export function DesktopShell() {
                   onSelect={selectSession}
                   onNew={newSession}
                   onOpenInVault={openInVault}
+                  onConnect={connectProvider}
                   scope={chatScope}
                   onAction={onAgentAction}
                   chatId={activeChat}
@@ -491,6 +494,7 @@ export function DesktopShell() {
                         onSelect={selectSession}
                         onNew={newSession}
                         onOpenInVault={openInVault}
+                        onConnect={connectProvider}
                         showRail={!railCollapsed}
                         onToggleRail={() => setRailCollapsed((c) => !c)}
                         scope={chatScope}
@@ -515,6 +519,7 @@ export function DesktopShell() {
                         onSelect={selectSession}
                         onNew={newSession}
                         onOpenInVault={openInVault}
+                        onConnect={connectProvider}
                         showRail={!railCollapsed}
                         onToggleRail={() => setRailCollapsed((c) => !c)}
                         scope={chatScope}

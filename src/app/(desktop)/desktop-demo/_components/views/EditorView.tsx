@@ -71,8 +71,29 @@ function FileTree({
   );
 }
 
+// Live preview: edit source on the left, see it rendered on the right as you
+// type (Obsidian's source/live-preview split). Keyed by file so it resets.
+function LiveEditor({ source, onWikiLink }: { source: string; onWikiLink?: (n: string) => void }) {
+  const [draft, setDraft] = useState(source);
+  return (
+    <div className="flex h-full">
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        spellCheck={false}
+        className="h-full w-1/2 resize-none border-r border-[hsl(var(--border))] bg-transparent px-4 py-5 font-mono text-[13px] leading-relaxed text-[hsl(var(--text-secondary))] outline-none"
+      />
+      <div className="h-full w-1/2 overflow-y-auto px-5 py-5">
+        <div className="mx-auto max-w-2xl">
+          <Markdown source={draft} onWikiLink={onWikiLink} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function EditorView({ activeId, onSelect }: { activeId: string; onSelect: (id: string) => void }) {
-  const [mode, setMode] = useState<"read" | "edit">("read");
+  const [mode, setMode] = useState<"read" | "live" | "source">("read");
   const real = useRealData();
 
   // Build the tree + a content map from REAL data when available, else mock.
@@ -204,7 +225,7 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
             <span className="truncate">{title}</span>
           </div>
           <div className="flex overflow-hidden rounded-sm border border-[hsl(var(--border))]">
-            {(["read", "edit"] as const).map((m) => (
+            {(["read", "live", "source"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
@@ -219,11 +240,15 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-hidden">
           {mode === "read" ? (
-            <div className="mx-auto max-w-2xl px-5 py-6 sm:px-8 sm:py-8">
-              <Markdown source={source} onWikiLink={openWiki} />
+            <div className="h-full overflow-y-auto">
+              <div className="mx-auto max-w-2xl px-5 py-6 sm:px-8 sm:py-8">
+                <Markdown source={source} onWikiLink={openWiki} />
+              </div>
             </div>
+          ) : mode === "live" ? (
+            <LiveEditor key={activeId} source={source} onWikiLink={openWiki} />
           ) : (
             <textarea
               key={activeId}
@@ -236,7 +261,7 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
       </div>
 
       {/* Obsidian-style metadata: outline · tags · links · backlinks */}
-      {hasMeta && mode === "read" && (
+      {hasMeta && mode !== "source" && (
         <aside className="hidden w-56 shrink-0 flex-col gap-5 overflow-y-auto border-l border-[hsl(var(--border))] px-3.5 py-4 xl:flex">
           {headings.length > 0 && (
             <div>
