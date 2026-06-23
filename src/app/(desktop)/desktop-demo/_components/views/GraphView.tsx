@@ -131,19 +131,19 @@ export function GraphView({
           let dx = a.x - b.x, dy = a.y - b.y;
           let d2 = dx * dx + dy * dy;
           if (d2 < 0.01) { dx = Math.cos(i + j); dy = Math.sin(i + j); d2 = 1; }
-          const f = (3200 / d2) * alpha;
+          const f = (2400 / d2) * alpha;
           const d = Math.sqrt(d2);
           const fx = (dx / d) * f, fy = (dy / d) * f;
           a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
         }
       }
-      // springs
+      // springs — stronger + shorter rest so linked nodes cluster tightly
       for (const e of edges) {
         const a = s[e.from], b = s[e.to];
         if (!a || !b) continue;
         const dx = b.x - a.x, dy = b.y - a.y;
         const d = Math.sqrt(dx * dx + dy * dy) || 1;
-        const f = ((d - 64) * 0.04) * alpha;
+        const f = ((d - 48) * 0.06) * alpha;
         const fx = (dx / d) * f, fy = (dy / d) * f;
         a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
       }
@@ -152,8 +152,8 @@ export function GraphView({
         const n = s[id];
         if (!n) continue;
         if (id === "you") { n.x = 0; n.y = 0; n.vx = 0; n.vy = 0; continue; }
-        n.vx += -n.x * 0.008 * alpha;
-        n.vy += -n.y * 0.008 * alpha;
+        n.vx += -n.x * 0.012 * alpha;
+        n.vy += -n.y * 0.012 * alpha;
         n.vx *= 0.82; n.vy *= 0.82;
         n.x += n.vx; n.y += n.vy;
       }
