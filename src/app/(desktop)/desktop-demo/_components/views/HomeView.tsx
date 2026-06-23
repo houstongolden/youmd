@@ -14,6 +14,7 @@ import {
 import { Dot, Chip, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
 import { ActivityStream } from "../ActivityStream";
+import { useRealData } from "../../_lib/RealDataContext";
 
 function greeting() {
   const h = new Date().getHours();
@@ -22,13 +23,50 @@ function greeting() {
   return "Good evening";
 }
 
+type HomeProject = { name: string; blurb: string; focus: "focusing" | "active" | "idle"; metric: number; badge?: string };
+
 export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => void; tasks: Task[] }) {
-  const shipped7d = PROJECTS.reduce((a, p) => a + p.shipped7d, 0);
+  const real = useRealData();
   const openTasks = tasks.filter((t) => t.status !== "done").length;
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
-  const needsAttention = tasks
-    .filter((t) => t.status !== "done" && (t.priority === "high" || t.owner === "you"))
-    .slice(0, 3);
+
+  // Real-aware: counts, projects, and a generated summary + "needs you".
+  const live = Boolean(real?.available);
+  const projects: HomeProject[] = live
+    ? real!.projects.map((p) => ({
+        name: p.name,
+        blurb: p.blurb ?? (p.remote ?? ""),
+        focus: p.isBrainRepo ? "focusing" : p.hasEnvLocal ? "active" : "idle",
+        metric: p.files.length,
+        badge: p.label,
+      }))
+    : PROJECTS.map((p) => ({ name: p.name, blurb: p.blurb, focus: p.focus, metric: p.shipped7d }));
+  const skillCount = live ? real!.skills.length : 0;
+  const machineCount = live ? Math.max(1, [real!.machine?.host, "Houstons-MBP", "cloud-vps"].filter(Boolean).length) : 3;
+
+  // "Needs you" — derived from real project gaps when live, else mock tasks.
+  const realNeeds = live
+    ? real!.projects.filter((p) => !p.hasEnvLocal).slice(0, 3).map((p) => ({ id: p.name, title: `${p.name}: restore .env.local to run locally`, project: p.name, high: true }))
+    : [];
+  const needsAttention = live
+    ? realNeeds
+    : tasks
+        .filter((t) => t.status !== "done" && (t.priority === "high" || t.owner === "you"))
+        .slice(0, 3)
+        .map((t) => ({ id: t.id, title: t.title, project: t.project, high: t.priority === "high" }));
+
+  const brief = live
+    ? `${projects.length} projects and ${skillCount} skills synced across ${machineCount} machines. ${needsAttention.length} need you; the rest are tracked by your agents.`
+    : DAILY_BRIEF;
+
+  const readyCount = live ? real!.projects.filter((p) => p.hasEnvLocal).length : 0;
+  const insights = live
+    ? [
+        `${readyCount} of ${projects.length} projects are ready to run locally`,
+        `${skillCount} skills synced across ${machineCount} machines · 0 duplicated`,
+        real!.projects.some((p) => p.isBrainRepo) ? "Brain repo (source of truth) is current" : "No brain repo detected",
+      ]
+    : [];
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
@@ -58,16 +96,23 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
       {/* your agent's read on the day */}
       <div className="mb-7 flex items-start gap-2.5 rounded-sm border-l-2 border-[hsl(var(--accent))]/60 bg-[hsl(var(--bg-raised))] px-3.5 py-3">
         <Icon name="sparkles" size={14} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" />
-        <p className="text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]">{DAILY_BRIEF}</p>
+        <p className="text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]">{brief}</p>
       </div>
 
       {/* metric row */}
       <div className="mb-7 grid grid-cols-3 gap-2 sm:gap-3">
-        {[
-          { label: "Shipped · 7d", value: shipped7d, sub: "across your projects" },
-          { label: "Open tasks", value: openTasks, sub: `${needsAttention.length} need you` },
-          { label: "Agents", value: `${activeAgents} active`, sub: `${SUB_AGENTS.length} total` },
-        ].map((m) => (
+        {(live
+          ? [
+              { label: "Projects", value: projects.length, sub: `${needsAttention.length} need env` },
+              { label: "Skills", value: skillCount, sub: "synced + shared" },
+              { label: "Machines", value: machineCount, sub: "in sync" },
+            ]
+          : [
+              { label: "Open tasks", value: openTasks, sub: `${needsAttention.length} need you` },
+              { label: "Agents", value: `${activeAgents} active`, sub: `${SUB_AGENTS.length} total` },
+              { label: "Machines", value: machineCount, sub: "in sync" },
+            ]
+        ).map((m) => (
           <div key={m.label} className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 sm:p-4">
             <SectionLabel>{m.label}</SectionLabel>
             <div className="mt-2 font-mono text-xl font-semibold tracking-tight sm:text-2xl">{m.value}</div>
@@ -75,6 +120,20 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
           </div>
         ))}
       </div>
+
+      {/* generated report — AI summary from real state */}
+      {live && (
+        <div className="mb-7">
+          <SectionLabel className="mb-2">Report · generated</SectionLabel>
+          <div className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3.5">
+            {insights.map((t, i) => (
+              <div key={i} className="flex items-start gap-2 py-1 text-[12.5px] text-[hsl(var(--text-secondary))]/85">
+                <Icon name="sparkles" size={12} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" /> {t}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* your agents — clones of you, alive */}
       <div className="mb-2.5 flex items-center justify-between">
@@ -123,7 +182,7 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
                   (i !== needsAttention.length - 1 ? " border-b border-[hsl(var(--border))]" : "")
                 }
               >
-                <Dot tone={t.priority === "high" ? "orange" : "dim"} size={6} />
+                <Dot tone={t.high ? "orange" : "dim"} size={6} />
                 <span className="min-w-0 flex-1 truncate text-[13px] text-[hsl(var(--text-primary))]">{t.title}</span>
                 <Chip>{t.project}</Chip>
               </button>
@@ -140,9 +199,9 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
         </button>
       </div>
       <div className="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {PROJECTS.filter((p) => p.focus !== "idle").map((p) => (
+        {projects.filter((p) => p.focus !== "idle").slice(0, 6).map((p) => (
           <button
-            key={p.slug}
+            key={p.name}
             onClick={() => onNavigate("projects")}
             className="flex items-start gap-2.5 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 text-left transition-colors hover:border-[hsl(var(--accent))]/40"
           >
@@ -150,11 +209,11 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="truncate font-mono text-[13px] text-[hsl(var(--text-primary))]">{p.name}</span>
-                <Chip tone={p.focus === "focusing" ? "accent" : "green"}>{p.focus}</Chip>
+                {p.badge ? <Chip tone="accent">{p.badge}</Chip> : <Chip tone={p.focus === "focusing" ? "accent" : "green"}>{p.focus}</Chip>}
               </div>
               <div className="mt-0.5 truncate text-[11.5px] text-[hsl(var(--text-secondary))]/70">{p.blurb}</div>
             </div>
-            <span className="shrink-0 font-mono text-[10px] text-[hsl(var(--text-secondary))]/50">{p.shipped7d}↑</span>
+            <span className="shrink-0 font-mono text-[10px] text-[hsl(var(--text-secondary))]/50">{p.metric}</span>
           </button>
         ))}
       </div>

@@ -73,6 +73,39 @@ export function SyncView() {
         ))}
       </div>
 
+      {/* vault sync path — managed default + optional Syncthing real-time */}
+      <SectionLabel className="mb-2.5">Vault sync</SectionLabel>
+      <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="rounded-sm border border-[hsl(var(--accent))]/50 bg-[hsl(var(--bg-raised))] p-3">
+          <div className="mb-1 flex items-center gap-2">
+            <Icon name="sync" size={14} className="text-[hsl(var(--accent))]" />
+            <span className="text-[13px] text-[hsl(var(--text-primary))]">you.md managed</span>
+            <Chip tone="green">active</Chip>
+          </div>
+          <p className="text-[11.5px] leading-relaxed text-[hsl(var(--text-secondary))]/70">
+            Git-backed identity, skills, stacks + trusted-device env vault. Resident daemons keep every machine current.
+          </p>
+        </div>
+        <div className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3">
+          <div className="mb-1 flex items-center gap-2">
+            <Icon name="device" size={14} className="text-[hsl(var(--text-secondary))]" />
+            <span className="text-[13px] text-[hsl(var(--text-primary))]">Syncthing</span>
+            <Chip>optional</Chip>
+          </div>
+          <p className="text-[11.5px] leading-relaxed text-[hsl(var(--text-secondary))]/70">
+            Add peer-to-peer, real-time file sync for the raw vault folder across machines (no central server). Enable for live note sync.
+          </p>
+        </div>
+      </div>
+
+      {/* self-organizing vault (curator) */}
+      <div className="mb-6 flex items-start gap-2.5 rounded-sm border-l-2 border-[hsl(var(--accent))]/50 bg-[hsl(var(--bg-raised))] px-3.5 py-2.5">
+        <Icon name="sparkles" size={14} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" />
+        <p className="text-[12px] leading-relaxed text-[hsl(var(--text-secondary))]">
+          <span className="text-[hsl(var(--text-primary))]">Self-organizing vault.</span> A curator agent files raw captures into the right notes, links, and projects by your vault rules — you dump, it organizes.
+        </p>
+      </div>
+
       {/* background daemons */}
       <SectionLabel className="mb-2.5">Background sync</SectionLabel>
       <div className="rounded-sm border border-[hsl(var(--border))]">

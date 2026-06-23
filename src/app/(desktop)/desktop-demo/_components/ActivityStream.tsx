@@ -1,14 +1,20 @@
 "use client";
 
 import { PixelCharacter } from "@/components/ui/PixelCharacter";
-import { ACTIVITY } from "../_data/mock";
+import { ACTIVITY, type ActivityEvent } from "../_data/mock";
+import { useRealData } from "../_lib/RealDataContext";
 import { Dot } from "./primitives";
 
 // The "your second brain is working for you" feed — agents + machines doing
-// real things, each with a pixel-character so it reads at a glance. This is the
-// demo's lightweight take on the shell's LiveBrainLog.
+// real things, each with a pixel-character so it reads at a glance. Reads real
+// agent-bus activity when available, else the mock feed.
 export function ActivityStream({ limit }: { limit?: number }) {
-  const events = limit ? ACTIVITY.slice(0, limit) : ACTIVITY;
+  const real = useRealData();
+  const source: ActivityEvent[] =
+    real?.available && real.activity.length
+      ? real.activity.map((a) => ({ id: a.id, actor: a.actor, kind: a.kind, status: "active", text: a.text, at: a.at }))
+      : ACTIVITY;
+  const events = limit ? source.slice(0, limit) : source;
   return (
     <div className="overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
       <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-3.5 py-2.5">
