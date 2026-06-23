@@ -108,17 +108,21 @@ export function ProvisionView() {
       </div>
 
       {/* one-command card */}
-      <div className="mb-5 space-y-2">
+      <div className="mb-5">
         <CmdCard
-          label="1 · install the runtime"
+          label="one command — new or existing machine"
           cmd="curl -fsSL https://you.md/install.sh | bash"
-          note="installs the you.md CLI, then: you login"
+          note="installs the runtime if missing · authenticates · then syncs everything: identity, skills, category/project skill-stacks, MCP, repos, and your encrypted env vault. Detects what's already there and reconciles; safe to re-run anytime. The installed skills decide what to do from here and keep themselves updated on every run — no second step."
         />
-        <CmdCard
-          label="2 · full machine setup (mints a 7-day key)"
-          cmd="you machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault"
-          note="prints the one-paste setup command: identity · skills · MCP · repos · env vault · proof"
-        />
+        <div className="mt-2.5 flex items-start gap-2 rounded-sm border border-[hsl(var(--accent))]/30 bg-[hsl(var(--accent))]/5 px-3 py-2">
+          <Icon name="cloud" size={13} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" />
+          <p className="text-[11px] leading-relaxed text-[hsl(var(--text-secondary))]/75">
+            <span className="text-[hsl(var(--text-primary))]">Always-on sync (no expiry):</span> the bare command uses
+            device login (re-auth ~yearly). For a permanent key that never expires, copy the generated command
+            below (or run <span className="font-mono">you keys create --permanent --scopes machine:sync</span> and{" "}
+            <span className="font-mono">you login --key &lt;key&gt;</span>).
+          </p>
+        </div>
       </div>
 
       {/* run + progress */}
