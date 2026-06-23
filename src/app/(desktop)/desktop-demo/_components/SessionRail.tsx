@@ -14,10 +14,12 @@ export function SessionRail({
   activeId,
   onSelect,
   onNew,
+  onCollapse,
 }: {
   activeId: string;
   onSelect: (s: AgentSession) => void;
   onNew: (project: string) => void;
+  onCollapse?: () => void;
 }) {
   const projects = Array.from(new Set(SESSIONS.map((s) => s.project)));
   const needsYou = SESSIONS.filter((s) => s.needsYou);
@@ -29,6 +31,15 @@ export function SessionRail({
         <span className="ml-auto font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/40">
           {SESSIONS.length}
         </span>
+        {onCollapse && (
+          <button
+            onClick={onCollapse}
+            title="Collapse sessions"
+            className="text-[hsl(var(--text-secondary))]/60 transition-colors hover:text-[hsl(var(--accent))]"
+          >
+            <Icon name="chevronsLeft" size={14} strokeWidth={1.5} />
+          </button>
+        )}
       </div>
 
       {/* needs-you banner — the blocked work that wants Houston */}

@@ -41,6 +41,7 @@ export function SessionShell({
   onNew,
   full = false,
   showRail = true,
+  onToggleRail,
   scope,
   onAction,
   chatId,
@@ -50,7 +51,8 @@ export function SessionShell({
   onSelect: (s: AgentSession) => void;
   onNew: (project: string) => void;
   full?: boolean;
-  showRail?: boolean; // controlled by the top-bar « » toggle; no empty column when off
+  showRail?: boolean; // collapse/expand the session list (toggle lives on the panel)
+  onToggleRail?: () => void;
   scope: ChatScope;
   onAction: (a: AgentAction, scope?: ChatScope) => void;
   chatId: string;
@@ -64,12 +66,21 @@ export function SessionShell({
       {showRail && (
         <>
           <div style={{ width: railWidth }} className="shrink-0">
-            <SessionRail activeId={session.id} onSelect={onSelect} onNew={onNew} />
+            <SessionRail activeId={session.id} onSelect={onSelect} onNew={onNew} onCollapse={onToggleRail} />
           </div>
           <ResizeHandle width={railWidth} setWidth={setRailWidth} min={132} max={300} side="right" />
         </>
       )}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        {!showRail && onToggleRail && (
+          <button
+            onClick={onToggleRail}
+            title="Show sessions"
+            className="absolute left-1.5 top-1.5 z-10 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-0.5 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]"
+          >
+            <Icon name="chevronsRight" size={14} strokeWidth={1.5} />
+          </button>
+        )}
         {session.local && <SessionTaskBar session={session} />}
         <div className="min-h-0 flex-1">
           {!session.local ? (

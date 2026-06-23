@@ -379,8 +379,6 @@ export function DesktopShell() {
         onFlipSide={() => setChatSide((s) => (s === "left" ? "right" : "left"))}
         shellOpen={shellOpen}
         onToggleShell={() => setShellOpen((o) => !o)}
-        railCollapsed={railCollapsed}
-        onToggleRail={shellOpen && !chatFull ? () => setRailCollapsed((c) => !c) : undefined}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -425,6 +423,7 @@ export function DesktopShell() {
                     onSelect={selectSession}
                     onNew={newSession}
                     showRail={!railCollapsed}
+                    onToggleRail={() => setRailCollapsed((c) => !c)}
                     scope={chatScope}
                     onAction={onAgentAction}
                     chatId={activeChat}
@@ -481,6 +480,7 @@ export function DesktopShell() {
                         onSelect={selectSession}
                         onNew={newSession}
                         showRail={!railCollapsed}
+                        onToggleRail={() => setRailCollapsed((c) => !c)}
                         scope={chatScope}
                         onAction={onAgentAction}
                         chatId={activeChat}
@@ -502,6 +502,7 @@ export function DesktopShell() {
                         onSelect={selectSession}
                         onNew={newSession}
                         showRail={!railCollapsed}
+                        onToggleRail={() => setRailCollapsed((c) => !c)}
                         scope={chatScope}
                         onAction={onAgentAction}
                         chatId={activeChat}

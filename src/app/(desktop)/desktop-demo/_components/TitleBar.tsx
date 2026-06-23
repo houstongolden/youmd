@@ -25,8 +25,6 @@ export function TitleBar({
   onFlipSide,
   shellOpen = true,
   onToggleShell,
-  railCollapsed = false,
-  onToggleRail,
 }: {
   title: string;
   isMobile: boolean;
@@ -43,8 +41,6 @@ export function TitleBar({
   onFlipSide?: () => void;
   shellOpen?: boolean;
   onToggleShell?: () => void;
-  railCollapsed?: boolean;
-  onToggleRail?: () => void;
 }) {
   const machines = DEVICES.length;
   const agents = SUB_AGENTS.filter((a) => a.status === "active").length;
@@ -77,18 +73,6 @@ export function TitleBar({
         <Icon name="chevronRight" size={11} className="hidden opacity-40 sm:block" />
         <span className="truncate text-[hsl(var(--text-primary))]">{title}</span>
       </div>
-
-      {/* sessions rail collapse/expand — minimal « », up top by the title */}
-      {onToggleRail && (
-        <button
-          onClick={onToggleRail}
-          title={railCollapsed ? "Show sessions" : "Hide sessions"}
-          aria-label="Toggle sessions list"
-          className="hidden rounded-sm p-0.5 text-[hsl(var(--text-secondary))]/70 transition-colors hover:text-[hsl(var(--text-primary))] lg:block"
-        >
-          <Icon name={railCollapsed ? "chevronsRight" : "chevronsLeft"} size={16} strokeWidth={1.5} />
-        </button>
-      )}
 
       {/* center command bar — desktop only */}
       <button
