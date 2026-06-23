@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { PixelCharacter } from "@/components/ui/PixelCharacter";
 import { MODELS, type AgentSession } from "../_data/mock";
 import { Dot, Chip } from "./primitives";
@@ -19,17 +20,38 @@ const PROVIDER_DOCS: Record<string, { name: string; api: string; does: string }>
 export function ConnectView({ session, onConnect }: { session: AgentSession; onConnect?: (provider: string) => void }) {
   const model = MODELS.find((m) => m.id === session.model);
   const p = PROVIDER_DOCS[session.model] ?? { name: model?.label ?? session.agent, api: "provider API", does: "run + watch cloud agents" };
+  // Provider id for the integration endpoint (claude-code → claude).
+  const providerId = session.model === "claude-code" ? "claude" : session.model;
+
+  // Live connection state from the gated /api/cloud/[provider] endpoint.
+  const [connected, setConnected] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/cloud/${providerId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => alive && setConnected(Boolean(d?.connected)))
+      .catch(() => alive && setConnected(false));
+    return () => {
+      alive = false;
+    };
+  }, [providerId]);
 
   return (
     <div className="flex h-full flex-col bg-[hsl(var(--bg))]">
       <div className="flex items-center gap-2.5 border-b border-[hsl(var(--border))] px-4 py-2.5">
-        <PixelCharacter kind="machine" seed={session.agent} status="idle" size="sm" />
+        <PixelCharacter kind="machine" seed={session.agent} status={connected ? "active" : "idle"} size="sm" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="truncate font-mono text-[12.5px] text-[hsl(var(--text-primary))]">{p.name} cloud</span>
-            <Chip>
-              <Icon name="cloud" size={9} /> not connected
-            </Chip>
+            {connected ? (
+              <Chip tone="green">
+                <Icon name="cloud" size={9} /> connected
+              </Chip>
+            ) : (
+              <Chip>
+                <Icon name="cloud" size={9} /> {connected === null ? "checking…" : "not connected"}
+              </Chip>
+            )}
           </div>
           <div className="truncate font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">{session.machine}</div>
         </div>
