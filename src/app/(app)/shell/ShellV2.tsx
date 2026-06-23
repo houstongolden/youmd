@@ -13,7 +13,10 @@ export function ShellV2({ data }: { data: RealData | null }) {
   return (
     <ConvexRealDataProvider fallback={data}>
       <ToastProvider>
-        <div className="youmd-desktop h-[100dvh] w-full overflow-hidden bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
+        {/* Full-viewport app surface: fixed overlay so the shell owns the whole
+            screen (its TitleBar is the chrome) and the site's SiteNav can't
+            cause a double-scroll or eat height. */}
+        <div className="youmd-desktop fixed inset-0 z-50 overflow-hidden bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
           <DesktopShell />
         </div>
       </ToastProvider>
