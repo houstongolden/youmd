@@ -15,24 +15,24 @@ export const metadata: Metadata = {
   },
 };
 
-// The new 6-destination IA is available behind ?ui=v2 (and YOUMD_SHELL_V2=1)
-// while it's wired to real Convex data; the existing shell stays the default so
-// production is never disrupted.
+// The new 6-destination IA (ShellV2) is now the DEFAULT. The previous Convex
+// shell remains available at /shell?ui=classic (or YOUMD_SHELL_LEGACY=1) as a
+// one-flag rollback.
 export default async function ShellPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
-  const v2 = sp.ui === "v2" || process.env.YOUMD_SHELL_V2 === "1";
-  if (v2) {
-    let data = null;
-    try {
-      data = loadRealData();
-    } catch {
-      data = null;
-    }
-    return <ShellV2 data={data} />;
+  const legacy = sp.ui === "classic" || sp.ui === "legacy" || process.env.YOUMD_SHELL_LEGACY === "1";
+  if (legacy) {
+    return <DashboardContent />;
   }
-  return <DashboardContent />;
+  let data = null;
+  try {
+    data = loadRealData();
+  } catch {
+    data = null;
+  }
+  return <ShellV2 data={data} />;
 }
