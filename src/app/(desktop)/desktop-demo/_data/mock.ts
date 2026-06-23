@@ -148,6 +148,7 @@ export type FileNode = {
   name: string;
   type: "folder" | "file";
   children?: FileNode[];
+  badge?: string; // small label, e.g. "source of truth"
 };
 
 export const FILE_TREE: FileNode[] = [

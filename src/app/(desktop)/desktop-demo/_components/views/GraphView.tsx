@@ -1,68 +1,66 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { GRAPH_NODES, GRAPH_EDGES, type GraphNode, type GraphEdge } from "../../_data/mock";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GRAPH_NODES, GRAPH_EDGES } from "../../_data/mock";
 import { useRealData } from "../../_lib/RealDataContext";
-import { ViewBar } from "../primitives";
+import { Icon } from "../icons";
 import { cn } from "../../_lib/cn";
 
-const KIND_STYLE: Record<GraphNode["kind"], { fill: string; ring: string; label: string }> = {
-  agent: { fill: "hsl(var(--accent))", ring: "hsl(var(--accent))", label: "You / machine" },
-  project: { fill: "hsl(var(--bg-raised))", ring: "hsl(var(--accent-mid))", label: "Project" },
-  skill: { fill: "hsl(var(--bg-raised))", ring: "hsl(var(--success))", label: "Skill" },
-  note: { fill: "hsl(var(--bg-raised))", ring: "hsl(var(--text-secondary))", label: "Brain" },
-  app: { fill: "hsl(var(--bg-raised))", ring: "hsl(var(--text-secondary))", label: "Stack" },
+type Kind = "you" | "project" | "skill" | "stack" | "note" | "machine" | "file";
+type GNode = { id: string; label: string; kind: Kind };
+type GEdge = { from: string; to: string };
+type Sim = { x: number; y: number; vx: number; vy: number };
+
+const COLOR: Record<Kind, string> = {
+  you: "hsl(var(--accent))",
+  project: "hsl(var(--accent-mid))",
+  skill: "hsl(var(--success))",
+  stack: "hsl(var(--accent-light))",
+  note: "hsl(var(--text-secondary))",
+  machine: "hsl(var(--accent))",
+  file: "hsl(var(--text-secondary) / 0.6)",
 };
+const SIZE: Record<Kind, number> = { you: 11, project: 7, machine: 6, stack: 6, note: 5, skill: 3.5, file: 2.6 };
 
-// Build a radial graph from REAL data: you at center, projects inner ring,
-// skills outer ring, machines + brain notes around. Falls back to mock.
-function buildRealGraph(
-  projects: { name: string }[],
-  skills: { name: string }[],
-  stacks: string[],
-  brain: { id: string; name: string }[],
-  machines: string[],
-): { nodes: GraphNode[]; edges: GraphEdge[] } {
-  const nodes: GraphNode[] = [{ id: "you", label: "YOU", kind: "agent", x: 50, y: 50 }];
-  const edges: GraphEdge[] = [];
-  const ring = (i: number, n: number, r: number) => ({
-    x: 50 + r * Math.cos((i / Math.max(1, n)) * 2 * Math.PI - Math.PI / 2),
-    y: 50 + r * Math.sin((i / Math.max(1, n)) * 2 * Math.PI - Math.PI / 2),
-  });
-
-  const projN = projects.slice(0, 14);
-  projN.forEach((p, i) => {
-    const { x, y } = ring(i, projN.length, 24);
-    nodes.push({ id: `p:${p.name}`, label: p.name, kind: "project", x, y });
-    edges.push({ from: "you", to: `p:${p.name}` });
-  });
-
-  const skillN = skills.slice(0, 18);
-  skillN.forEach((s, i) => {
-    const { x, y } = ring(i + 0.5, skillN.length, 42);
-    nodes.push({ id: `s:${s.name}`, label: s.name, kind: "skill", x, y });
-    // attach each skill to a project round-robin so edges read as "used by"
-    if (projN.length) edges.push({ from: `p:${projN[i % projN.length].name}`, to: `s:${s.name}` });
-  });
-
-  machines.slice(0, 4).forEach((m, i) => {
-    const { x, y } = ring(i, 4, 11);
-    nodes.push({ id: `m:${m}`, label: m, kind: "agent", x, y });
+function buildGraph(real: ReturnType<typeof useRealData>): { nodes: GNode[]; edges: GEdge[] } {
+  if (!real?.available) {
+    return {
+      nodes: GRAPH_NODES.map((n) => ({ id: n.id, label: n.label, kind: (n.kind === "agent" ? "you" : n.kind === "app" ? "stack" : n.kind) as Kind })),
+      edges: GRAPH_EDGES,
+    };
+  }
+  const nodes: GNode[] = [{ id: "you", label: "YOU", kind: "you" }];
+  const edges: GEdge[] = [];
+  for (const m of [real.machine?.host, "Houstons-MBP", "cloud-vps"].filter(Boolean).slice(0, 3) as string[]) {
+    nodes.push({ id: `m:${m}`, label: m, kind: "machine" });
     edges.push({ from: "you", to: `m:${m}` });
-  });
-
-  brain.slice(0, 4).forEach((b, i) => {
-    const { x, y } = ring(i + 0.25, 4, 15);
-    nodes.push({ id: `b:${b.id}`, label: b.name, kind: "note", x, y });
+  }
+  for (const b of real.brain.slice(0, 8)) {
+    nodes.push({ id: `b:${b.id}`, label: b.name, kind: "note" });
     edges.push({ from: "you", to: `b:${b.id}` });
-  });
-
-  stacks.slice(0, 5).forEach((st, i) => {
-    const { x, y } = ring(i + 0.7, 5, 33);
-    nodes.push({ id: `st:${st}`, label: st, kind: "app", x, y });
+  }
+  for (const st of real.stacks.slice(0, 6)) {
+    nodes.push({ id: `st:${st}`, label: st, kind: "stack" });
     edges.push({ from: "you", to: `st:${st}` });
+  }
+  real.projects.forEach((p) => {
+    nodes.push({ id: `p:${p.name}`, label: p.name, kind: "project" });
+    edges.push({ from: "you", to: `p:${p.name}` });
+    // a few real files per project so clusters form like an Obsidian vault
+    p.files.filter((f) => !f.endsWith("/")).slice(0, 4).forEach((f) => {
+      const id = `f:${p.name}/${f}`;
+      nodes.push({ id, label: f, kind: "file" });
+      edges.push({ from: `p:${p.name}`, to: id });
+    });
   });
-
+  // skills attach to stacks/projects round-robin → organic clusters
+  const anchors = nodes.filter((n) => n.kind === "stack" || n.kind === "project");
+  real.skills.slice(0, 110).forEach((s, i) => {
+    const id = `s:${s.name}`;
+    nodes.push({ id, label: s.name, kind: "skill" });
+    const a = anchors[i % Math.max(1, anchors.length)];
+    edges.push({ from: a ? a.id : "you", to: id });
+  });
   return { nodes, edges };
 }
 
@@ -73,111 +71,187 @@ export function GraphView({
   onSelectNode?: (id: string) => void;
   selectedNode?: string | null;
 } = {}) {
-  const [hover, setHover] = useState<string | null>(null);
   const real = useRealData();
+  const { nodes, edges } = useMemo(() => buildGraph(real), [real]);
 
-  const { nodes, edges } = useMemo(() => {
-    if (real?.available) {
-      return buildRealGraph(real.projects, real.skills, real.stacks, real.brain, real.machine?.host ? [real.machine.host, "Houstons-MBP", "cloud-vps"] : ["Houstons-MBP", "Houstons-Mini", "cloud-vps"]);
-    }
-    return { nodes: GRAPH_NODES, edges: GRAPH_EDGES };
-  }, [real]);
+  const sim = useRef<Record<string, Sim>>({});
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [view, setView] = useState({ k: 1, tx: 0, ty: 0 });
+  const [hover, setHover] = useState<string | null>(null);
+  const dragging = useRef<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 800, h: 600 });
 
-  const neighbors = useMemo(() => {
-    const map: Record<string, Set<string>> = {};
-    for (const n of nodes) map[n.id] = new Set([n.id]);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    setSize({ w: el.clientWidth, h: el.clientHeight });
+    return () => ro.disconnect();
+  }, []);
+
+  const adj = useMemo(() => {
+    const m: Record<string, Set<string>> = {};
+    for (const n of nodes) m[n.id] = new Set([n.id]);
     for (const e of edges) {
-      map[e.from]?.add(e.to);
-      map[e.to]?.add(e.from);
+      m[e.from]?.add(e.to);
+      m[e.to]?.add(e.from);
     }
-    return map;
+    return m;
   }, [nodes, edges]);
 
-  const isLit = (id: string) => !hover || neighbors[hover]?.has(id);
-  const nodeById = (id: string) => nodes.find((n) => n.id === id);
+  // init positions on a circle (deterministic by index)
+  useEffect(() => {
+    const next: Record<string, Sim> = {};
+    nodes.forEach((n, i) => {
+      const a = (i / nodes.length) * Math.PI * 2;
+      const r = n.id === "you" ? 0 : 120 + (i % 7) * 30;
+      next[n.id] = sim.current[n.id] ?? { x: Math.cos(a) * r, y: Math.sin(a) * r, vx: 0, vy: 0 };
+    });
+    sim.current = next;
+  }, [nodes]);
+
+  // force simulation with cool-down
+  useEffect(() => {
+    let alpha = 1;
+    let raf = 0;
+    const idx = nodes.map((n) => n.id);
+    const step = () => {
+      const s = sim.current;
+      // repulsion (all pairs; node counts kept modest for smoothness)
+      for (let i = 0; i < idx.length; i++) {
+        const a = s[idx[i]];
+        if (!a) continue;
+        for (let j = i + 1; j < idx.length; j++) {
+          const b = s[idx[j]];
+          if (!b) continue;
+          let dx = a.x - b.x, dy = a.y - b.y;
+          let d2 = dx * dx + dy * dy;
+          if (d2 < 0.01) { dx = Math.cos(i + j); dy = Math.sin(i + j); d2 = 1; }
+          const f = (3200 / d2) * alpha;
+          const d = Math.sqrt(d2);
+          const fx = (dx / d) * f, fy = (dy / d) * f;
+          a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+        }
+      }
+      // springs
+      for (const e of edges) {
+        const a = s[e.from], b = s[e.to];
+        if (!a || !b) continue;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.sqrt(dx * dx + dy * dy) || 1;
+        const f = ((d - 64) * 0.04) * alpha;
+        const fx = (dx / d) * f, fy = (dy / d) * f;
+        a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+      }
+      // gravity to center + integrate
+      for (const id of idx) {
+        const n = s[id];
+        if (!n) continue;
+        if (id === "you") { n.x = 0; n.y = 0; n.vx = 0; n.vy = 0; continue; }
+        n.vx += -n.x * 0.008 * alpha;
+        n.vy += -n.y * 0.008 * alpha;
+        n.vx *= 0.82; n.vy *= 0.82;
+        n.x += n.vx; n.y += n.vy;
+      }
+      alpha *= 0.985;
+      const snap: Record<string, { x: number; y: number }> = {};
+      for (const id of idx) if (s[id]) snap[id] = { x: s[id].x, y: s[id].y };
+      setPositions(snap);
+      if (alpha > 0.02) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [nodes, edges]);
+
+  const lit = (id: string) => !hover || adj[hover]?.has(id);
+
+  const zoom = (factor: number) => setView((v) => ({ ...v, k: Math.max(0.3, Math.min(4, v.k * factor)) }));
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    zoom(e.deltaY < 0 ? 1.12 : 0.89);
+  };
+  const onPointerDown = (e: React.PointerEvent) => {
+    dragging.current = { x: e.clientX - view.tx, y: e.clientY - view.ty };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const d = dragging.current;
+    setView((v) => ({ ...v, tx: e.clientX - d.x, ty: e.clientY - d.y }));
+  };
+  const endDrag = () => {
+    dragging.current = null;
+  };
+
+  const { k, tx, ty } = view;
+  const s = positions;
 
   return (
     <div className="flex h-full flex-col">
-      <ViewBar
-        title={real?.available ? `Graph · ${nodes.length - 1} nodes (live)` : "Graph"}
-        right={
-          <div className="flex items-center gap-2 overflow-x-auto md:gap-3">
-            {Object.entries(KIND_STYLE).map(([k, s]) => (
-              <span key={k} className="flex shrink-0 items-center gap-1.5">
-                <span style={{ background: s.ring, width: 8, height: 8, borderRadius: "50%" }} aria-hidden />
-                <span className="hidden font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/70 sm:inline">{s.label}</span>
+      <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-4 py-2.5">
+        <span className="font-mono text-[13px] text-[hsl(var(--text-primary))]">
+          Graph {real?.available && <span className="text-[hsl(var(--text-secondary))]/50">· {nodes.length} nodes (live)</span>}
+        </span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {(["you", "project", "skill", "stack", "note"] as Kind[]).map((kk) => (
+              <span key={kk} className="hidden items-center gap-1 sm:flex">
+                <span style={{ background: COLOR[kk], width: 7, height: 7, borderRadius: "50%" }} aria-hidden />
+                <span className="font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/60">{kk}</span>
               </span>
             ))}
           </div>
-        }
-      />
+          <div className="flex items-center overflow-hidden rounded-sm border border-[hsl(var(--border))]">
+            <button onClick={() => zoom(0.83)} className="px-1.5 py-0.5 text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]" title="Zoom out"><Icon name="chevronDown" size={13} /></button>
+            <button onClick={() => setView({ k: 1, tx: 0, ty: 0 })} className="border-x border-[hsl(var(--border))] px-1.5 py-0.5 font-mono text-[10px] text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]" title="Reset">{Math.round(k * 100)}%</button>
+            <button onClick={() => zoom(1.2)} className="px-1.5 py-0.5 text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]" title="Zoom in"><Icon name="plus" size={13} /></button>
+          </div>
+        </div>
+      </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.5]"
-          style={{ backgroundImage: "radial-gradient(hsl(var(--border)) 1px, transparent 1px)", backgroundSize: "26px 26px" }}
-        />
-        <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none">
-          {edges.map((e, i) => {
-            const a = nodeById(e.from);
-            const b = nodeById(e.to);
-            if (!a || !b) return null;
-            const lit = isLit(e.from) && isLit(e.to);
-            return (
-              <line
-                key={i}
-                x1={`${a.x}%`}
-                y1={`${a.y}%`}
-                x2={`${b.x}%`}
-                y2={`${b.y}%`}
-                stroke={lit ? "hsl(var(--accent))" : "hsl(var(--border))"}
-                strokeOpacity={lit ? (hover ? 0.5 : 0.22) : 0.1}
-                strokeWidth={lit && hover ? 1.4 : 1}
-              />
-            );
-          })}
+      <div
+        ref={containerRef}
+        className="relative min-h-0 flex-1 cursor-grab overflow-hidden active:cursor-grabbing"
+        onWheel={onWheel}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+        style={{ backgroundImage: "radial-gradient(hsl(var(--border)) 1px, transparent 1px)", backgroundSize: "28px 28px" }}
+      >
+        <svg className="absolute inset-0 h-full w-full">
+          <g transform={`translate(${size.w / 2 + tx}, ${size.h / 2 + ty}) scale(${k})`}>
+            {edges.map((e, i) => {
+                const a = s[e.from], b = s[e.to];
+                if (!a || !b) return null;
+                const on = lit(e.from) && lit(e.to);
+                return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="hsl(var(--accent))" strokeOpacity={on ? (hover ? 0.4 : 0.14) : 0.05} strokeWidth={hover && on ? 1 : 0.6} />;
+              })}
+              {nodes.map((n) => {
+                const p = s[n.id];
+                if (!p) return null;
+                const on = lit(n.id);
+                const r = SIZE[n.kind];
+                const showLabel = n.kind === "you" || n.kind === "project" || n.kind === "stack" || hover === n.id || selectedNode === n.id;
+                return (
+                  <g key={n.id} transform={`translate(${p.x}, ${p.y})`} style={{ opacity: on ? 1 : 0.2, cursor: "pointer" }}
+                    onPointerEnter={() => setHover(n.id)} onPointerLeave={() => setHover(null)}
+                    onClick={(ev) => { ev.stopPropagation(); onSelectNode?.(n.id); }}>
+                    <circle r={r} fill={COLOR[n.kind]} stroke={selectedNode === n.id ? "hsl(var(--accent))" : "transparent"} strokeWidth={selectedNode === n.id ? 2 : 0} />
+                    {showLabel && (
+                      <text x={0} y={r + 8} textAnchor="middle" fontSize={n.kind === "you" ? 9 : 7} fill="hsl(var(--text-secondary))" style={{ fontFamily: "var(--font-mono, monospace)", pointerEvents: "none" }}>
+                        {n.label.length > 18 ? n.label.slice(0, 17) + "…" : n.label}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+          </g>
         </svg>
 
-        {nodes.map((n) => {
-          const s = KIND_STYLE[n.kind];
-          const lit = isLit(n.id);
-          const isCenter = n.id === "you";
-          const dim = 11 + (isCenter ? 9 : n.kind === "project" ? 4 : 0);
-          return (
-            <div
-              key={n.id}
-              className="absolute -translate-x-1/2 -translate-y-1/2 transition-opacity"
-              style={{ left: `${n.x}%`, top: `${n.y}%`, opacity: lit ? 1 : 0.22 }}
-              onMouseEnter={() => setHover(n.id)}
-              onMouseLeave={() => setHover(null)}
-              onClick={() => onSelectNode?.(n.id)}
-            >
-              <div className="flex cursor-pointer flex-col items-center gap-1">
-                <span
-                  className="transition-transform hover:scale-110"
-                  style={{
-                    width: dim,
-                    height: dim,
-                    borderRadius: "50%",
-                    background: s.fill,
-                    border: `1.5px solid ${s.ring}`,
-                    boxShadow:
-                      selectedNode === n.id ? "0 0 0 4px hsl(var(--accent) / 0.3)" : isCenter && lit ? "0 0 0 4px hsl(var(--accent) / 0.15)" : undefined,
-                  }}
-                  aria-hidden
-                />
-                {(isCenter || n.kind === "project" || hover === n.id) && (
-                  <span className={cn("max-w-[80px] truncate whitespace-nowrap font-mono text-[9px] tracking-wide", isCenter ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))]")}>
-                    {n.label}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-
-        <div className="pointer-events-none absolute bottom-4 left-5 font-mono text-[11px] text-[hsl(var(--text-secondary))]/60">
-          {nodes.length} nodes · {edges.length} connections · hover to trace · click to inspect
+        <div className={cn("pointer-events-none absolute bottom-4 left-5 font-mono text-[11px] text-[hsl(var(--text-secondary))]/55")}>
+          {nodes.length} nodes · {edges.length} links · scroll to zoom · drag to pan · click to inspect
         </div>
       </div>
     </div>

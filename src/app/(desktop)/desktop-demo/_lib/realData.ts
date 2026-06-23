@@ -18,6 +18,9 @@ export type RealProject = {
   hasAgentDocs: boolean;
   hasProjectContext: boolean;
   blurb?: string;
+  files: string[]; // top-level entries (dirs suffixed with "/")
+  isBrainRepo?: boolean; // the *-you-md source-of-truth repo
+  label?: string;
 };
 export type RealFile = { id: string; name: string; group: string; content?: string };
 export type RealSkill = { name: string; source: "agent-shared" | "you.md" };
@@ -78,6 +81,18 @@ export function loadRealData(): RealData {
   const projects: RealProject[] = projectNames.map((name) => {
     const dir = path.join(CODE_ROOT, name);
     const readme = readText(path.join(dir, "README.md"), 2000);
+    let files: string[] = [];
+    try {
+      files = fs
+        .readdirSync(dir, { withFileTypes: true })
+        .filter((d) => !d.name.startsWith(".") || d.name === ".env.local")
+        .sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name))
+        .slice(0, 40)
+        .map((d) => (d.isDirectory() ? `${d.name}/` : d.name));
+    } catch {
+      /* unreadable */
+    }
+    const isBrainRepo = /you-md$/.test(name) || name.includes("-you-md");
     return {
       name,
       remote: gitRemote(dir),
@@ -85,8 +100,13 @@ export function loadRealData(): RealData {
       hasAgentDocs: exists(path.join(dir, "CLAUDE.md")) || exists(path.join(dir, "AGENTS.md")),
       hasProjectContext: exists(path.join(dir, "project-context")),
       blurb: firstHeading(readme),
+      files,
+      isBrainRepo,
+      label: isBrainRepo ? "source of truth" : undefined,
     };
   });
+  // Pin the *-you-md brain repo to the very top.
+  projects.sort((a, b) => Number(Boolean(b.isBrainRepo)) - Number(Boolean(a.isBrainRepo)));
 
   const sharedSkills = readDirs(path.join(AGENT_SHARED, "claude-skills")).map(
     (name): RealSkill => ({ name, source: "agent-shared" }),
