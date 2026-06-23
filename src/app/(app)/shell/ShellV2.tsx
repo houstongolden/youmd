@@ -6,17 +6,17 @@
 import "../../(desktop)/desktop-demo/desktop-demo.css";
 import { DesktopShell } from "../../(desktop)/desktop-demo/_components/DesktopShell";
 import { ToastProvider } from "../../(desktop)/desktop-demo/_components/Toast";
-import { RealDataProvider } from "../../(desktop)/desktop-demo/_lib/RealDataContext";
+import { ConvexRealDataProvider } from "./ConvexRealDataProvider";
 import type { RealData } from "../../(desktop)/desktop-demo/_lib/realData";
 
 export function ShellV2({ data }: { data: RealData | null }) {
   return (
-    <RealDataProvider value={data}>
+    <ConvexRealDataProvider fallback={data}>
       <ToastProvider>
         <div className="youmd-desktop h-[100dvh] w-full overflow-hidden bg-[hsl(var(--bg))] text-[hsl(var(--text-primary))]">
           <DesktopShell />
         </div>
       </ToastProvider>
-    </RealDataProvider>
+    </ConvexRealDataProvider>
   );
 }
