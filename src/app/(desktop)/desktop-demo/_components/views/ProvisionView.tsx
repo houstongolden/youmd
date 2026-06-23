@@ -118,9 +118,10 @@ export function ProvisionView() {
           <Icon name="cloud" size={13} className="mt-0.5 shrink-0 text-[hsl(var(--accent))]" />
           <p className="text-[11px] leading-relaxed text-[hsl(var(--text-secondary))]/75">
             <span className="text-[hsl(var(--text-primary))]">Always-on sync (no expiry):</span> the bare command uses
-            device login (re-auth ~yearly). For a permanent key that never expires, copy the generated command
-            below (or run <span className="font-mono">you keys create --permanent --scopes machine:sync</span> and{" "}
-            <span className="font-mono">you login --key &lt;key&gt;</span>).
+            device login (re-auth ~yearly). For a permanent key that never expires, copy the generated command from
+            Settings → Machine (recommended — sets the right scopes), or run{" "}
+            <span className="font-mono">you keys create --permanent --scopes read:private,write:bundle,write:memories,vault</span>{" "}
+            then <span className="font-mono">you login --key &lt;key&gt;</span>.
           </p>
         </div>
       </div>
