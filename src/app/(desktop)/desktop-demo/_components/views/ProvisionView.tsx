@@ -6,6 +6,37 @@ import { ViewHeader, Chip, Dot } from "../primitives";
 import { Icon } from "../icons";
 import { cn } from "../../_lib/cn";
 
+// A copyable command card (real install/setup commands).
+function CmdCard({ label, cmd, note }: { label: string; cmd: string; note?: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
+      <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-3.5 py-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))]/70">{label}</span>
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(cmd);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1200);
+          }}
+          className="font-mono text-[10px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]"
+        >
+          {copied ? "copied ✓" : "copy"}
+        </button>
+      </div>
+      <pre className="overflow-x-auto px-3.5 py-3 font-mono text-[11.5px] leading-relaxed text-[hsl(var(--text-primary))]">
+        {cmd}
+        {note && (
+          <>
+            {"\n"}
+            <span className="text-[hsl(var(--text-secondary))]/50"># {note}</span>
+          </>
+        )}
+      </pre>
+    </div>
+  );
+}
+
 // The hero "spin up a whole synced agentic environment" flow — the visual
 // front-end of machine-bootstrap. Pick a target → stream the setup → every
 // step (identity, skills, MCP, repos, env vault, proof) lands, secrets local.
@@ -77,19 +108,17 @@ export function ProvisionView() {
       </div>
 
       {/* one-command card */}
-      <div className="mb-5 overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
-        <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-3.5 py-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))]/70">
-            one command
-          </span>
-          <button className="font-mono text-[10px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]">
-            copy
-          </button>
-        </div>
-        <pre className="overflow-x-auto px-3.5 py-3 font-mono text-[11.5px] leading-relaxed text-[hsl(var(--text-secondary))]">
-          <span className="text-[hsl(var(--accent))]">curl</span> -fsSL https://you.md/install.sh | bash
-          {"\n"}<span className="text-[hsl(var(--text-secondary))]/50"># authenticates · pulls identity · installs skills + MCP · clones repos · restores vault</span>
-        </pre>
+      <div className="mb-5 space-y-2">
+        <CmdCard
+          label="1 · install the runtime"
+          cmd="curl -fsSL https://you.md/install.sh | bash"
+          note="installs the you.md CLI, then: you login"
+        />
+        <CmdCard
+          label="2 · full machine setup (mints a 7-day key)"
+          cmd="you machine prompt --root ~/Desktop/CODE_YOU --days 30 --limit 80 --require-env-vault"
+          note="prints the one-paste setup command: identity · skills · MCP · repos · env vault · proof"
+        />
       </div>
 
       {/* run + progress */}
