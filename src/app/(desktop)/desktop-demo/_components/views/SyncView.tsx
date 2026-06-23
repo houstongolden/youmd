@@ -73,29 +73,19 @@ export function SyncView() {
         ))}
       </div>
 
-      {/* vault sync path — managed default + optional Syncthing real-time */}
+      {/* vault sync — built in; no external tool to install */}
       <SectionLabel className="mb-2.5">Vault sync</SectionLabel>
-      <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="rounded-sm border border-[hsl(var(--accent))]/50 bg-[hsl(var(--bg-raised))] p-3">
-          <div className="mb-1 flex items-center gap-2">
-            <Icon name="sync" size={14} className="text-[hsl(var(--accent))]" />
-            <span className="text-[13px] text-[hsl(var(--text-primary))]">you.md managed</span>
-            <Chip tone="green">active</Chip>
-          </div>
-          <p className="text-[11.5px] leading-relaxed text-[hsl(var(--text-secondary))]/70">
-            Git-backed identity, skills, stacks + trusted-device env vault. Resident daemons keep every machine current.
-          </p>
+      <div className="mb-6 rounded-sm border border-[hsl(var(--accent))]/50 bg-[hsl(var(--bg-raised))] p-3.5">
+        <div className="mb-1 flex items-center gap-2">
+          <Icon name="sync" size={14} className="text-[hsl(var(--accent))]" />
+          <span className="text-[13px] text-[hsl(var(--text-primary))]">Continuous sync · built in</span>
+          <Chip tone="green">live</Chip>
         </div>
-        <div className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3">
-          <div className="mb-1 flex items-center gap-2">
-            <Icon name="device" size={14} className="text-[hsl(var(--text-secondary))]" />
-            <span className="text-[13px] text-[hsl(var(--text-primary))]">Syncthing</span>
-            <Chip>optional</Chip>
-          </div>
-          <p className="text-[11.5px] leading-relaxed text-[hsl(var(--text-secondary))]/70">
-            Add peer-to-peer, real-time file sync for the raw vault folder across machines (no central server). Enable for live note sync.
-          </p>
-        </div>
+        <p className="text-[11.5px] leading-relaxed text-[hsl(var(--text-secondary))]/70">
+          you.md keeps your vault, identity, skills, stacks, and encrypted env secrets continuously
+          in sync across every machine — git-backed with resident realtime daemons and a trusted-device
+          envelope. Nothing else to install or connect.
+        </p>
       </div>
 
       {/* self-organizing vault (curator) */}
