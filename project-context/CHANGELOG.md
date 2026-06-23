@@ -1,5 +1,26 @@
 # You.md — Changelog
 
+## 2026-06-23 — Desktop shell converged onto the new 6-destination IA
+
+### feat(shell): new second-brain shell is now the default `/shell`
+- Converged the production `/shell` onto the new 6-destination IA (the `/desktop-demo` architecture): unified sessions shell (chat + CLI terminals + watched remote + cloud), Vault, force-directed graph, Live Log, Connections, Provision, Sync. New IA is the default; the previous Convex shell is one flag away at `/shell?ui=classic` (or `YOUMD_SHELL_LEGACY=1`).
+- `ShellV2` mounts the shell under the authed app below the sticky SiteNav (`calc(100dvh-2.25rem)`), wrapped in an `ErrorBoundary` that degrades to the classic shell rather than a blank render.
+- `ConvexRealDataProvider` maps real account data (portfolio projects, skill installs, profile/brain, brainActivity) into the shell, defensively, with local-fs + mock fallback.
+
+### feat(shell): Obsidian-grade vault editor
+- Markdown renderer gained italic, `[[wikilinks]]`, `#tags`, tables, heading anchors, task checkboxes, clickable links.
+- Vault editor: Read · Live · Source modes (Live = source + rendered preview split); right panel with Outline, Tags, outgoing Links, and Backlinks computed across the live vault; wikilink click-navigation.
+- Projects/skills/stacks now wikilink `[[you]]` + carry `#tags` so backlinks/graph are real. Cross-pillar actions: open a project in the Vault from the Inspector or a session; graph node → inspector → vault.
+
+### feat(cloud): cloud-agent session dimension + integration endpoint
+- Sessions span local · your machines · cloud (Cursor/Codex/Claude cloud), with a ConnectView for unconnected providers.
+- Added gated `GET /api/cloud/[provider]` (connection state + live cloud sessions once each vendor contract is confirmed; never throws). ConnectView reflects live state from it.
+
+### fix(shell): prod `/shell` crash + Syncthing removed
+- Dropped the `activity.agentSummary` query that threw "Called by client" and crashed the v2 render; remote sessions derive from `brainActivity` instead.
+- Provision view surfaces the real install + `you machine prompt` commands (copyable).
+- Removed user-facing Syncthing; reframed Sync as built-in continuous sync (nothing else to install).
+
 ## 2026-06-22 — API key creation hotfix
 
 ### fix(auth): route web key creation through the signed-in session

@@ -1,12 +1,19 @@
 # You.md — Current State
 
-Last Updated: 2026-06-18
+Last Updated: 2026-06-23
 Latest Verified Production Web Commit: 052507c fix(web): install youmd without sudo
 Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
 
 ---
 
 ## What's Deployed and Working
+
+### Desktop shell — new 6-destination IA (default at `/shell`)
+- `/shell` now renders the converged second-brain shell (`ShellV2`): unified sessions (chat/CLI/remote/cloud), Obsidian-grade Vault (Read/Live/Source, outline/backlinks/tags/wikilinks), force-directed graph, Live Log, Connections, Provision, Sync.
+- Classic Convex shell remains at `/shell?ui=classic` (or `YOUMD_SHELL_LEGACY=1`); `ShellV2` falls back to it via an ErrorBoundary if the data layer errors.
+- Real data via `ConvexRealDataProvider` (portfolio/skills/profile/brainActivity), defensive with mock fallback.
+- Cloud-agent integration endpoint `GET /api/cloud/[provider]` is live (gated; returns connection state, live sessions once vendor contracts confirmed).
+- KNOWN: authed `/shell` render not yet eyeball-verified in prod by Houston; live cloud-agent fetches are stubbed (return `[]`) pending each vendor contract; vault edit persistence is in-memory (no save-to-backend yet).
 
 ### Trusted-Device Secret Vault
 - Account-backed encrypted `.env.local` snapshots now have a trusted-device layer instead of relying on snapshot presence alone.
