@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SESSIONS, type AgentSession } from "../_data/mock";
+import { type AgentSession } from "../_data/mock";
 import { SessionRail } from "./SessionRail";
 import { ResizeHandle } from "./ResizeHandle";
 import { ModelMark } from "./ModelSelector";
@@ -36,6 +36,7 @@ function SessionTaskBar({ session }: { session: AgentSession }) {
 // The unified shell: one surface for every agent session — your chat, local CLI
 // terminals, and watched remote sessions. The rail switches between them.
 export function SessionShell({
+  sessions,
   activeId,
   onSelect,
   onNew,
@@ -47,6 +48,7 @@ export function SessionShell({
   chatId,
   chatTitle,
 }: {
+  sessions: AgentSession[];
   activeId: string;
   onSelect: (s: AgentSession) => void;
   onNew: (project: string) => void;
@@ -59,14 +61,14 @@ export function SessionShell({
   chatTitle?: string;
 }) {
   const [railWidth, setRailWidth] = useState(172);
-  const session = SESSIONS.find((s) => s.id === activeId) ?? SESSIONS[0];
+  const session = sessions.find((s) => s.id === activeId) ?? sessions[0];
 
   return (
     <div className="flex h-full min-w-0">
       {showRail && (
         <>
           <div style={{ width: railWidth }} className="shrink-0">
-            <SessionRail activeId={session.id} onSelect={onSelect} onNew={onNew} onCollapse={onToggleRail} />
+            <SessionRail sessions={sessions} activeId={session.id} onSelect={onSelect} onNew={onNew} onCollapse={onToggleRail} />
           </div>
           <ResizeHandle width={railWidth} setWidth={setRailWidth} min={132} max={300} side="right" />
         </>

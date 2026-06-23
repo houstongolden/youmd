@@ -1,7 +1,7 @@
 "use client";
 
 import { PixelCharacter } from "@/components/ui/PixelCharacter";
-import { SESSIONS, type AgentSession } from "../_data/mock";
+import { type AgentSession } from "../_data/mock";
 import { ModelMark } from "./ModelSelector";
 import { Dot, SectionLabel } from "./primitives";
 import { Icon } from "./icons";
@@ -11,25 +11,27 @@ import { cn } from "../_lib/cn";
 // Per-project + adds a session to that project. Sessions blocked on you are
 // surfaced loudly (orange) and bubble to a "Needs you" banner up top.
 export function SessionRail({
+  sessions,
   activeId,
   onSelect,
   onNew,
   onCollapse,
 }: {
+  sessions: AgentSession[];
   activeId: string;
   onSelect: (s: AgentSession) => void;
   onNew: (project: string) => void;
   onCollapse?: () => void;
 }) {
-  const projects = Array.from(new Set(SESSIONS.map((s) => s.project)));
-  const needsYou = SESSIONS.filter((s) => s.needsYou);
+  const projects = Array.from(new Set(sessions.map((s) => s.project)));
+  const needsYou = sessions.filter((s) => s.needsYou);
 
   return (
     <div className="flex h-full w-full flex-col bg-[hsl(var(--bg))]">
       <div className="flex items-center gap-1.5 px-3 py-2.5">
         <SectionLabel>Sessions</SectionLabel>
         <span className="ml-auto font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/40">
-          {SESSIONS.length}
+          {sessions.length}
         </span>
         {onCollapse && (
           <button
@@ -57,7 +59,7 @@ export function SessionRail({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2">
         {projects.map((proj) => {
-          const items = SESSIONS.filter((s) => s.project === proj);
+          const items = sessions.filter((s) => s.project === proj);
           return (
             <div key={proj} className="mb-2">
               <div className="group/p flex items-center justify-between px-1.5 pb-1">
@@ -122,7 +124,7 @@ export function SessionRail({
       </div>
 
       <div className="border-t border-[hsl(var(--border))] px-3 py-2 font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/40">
-        {SESSIONS.filter((s) => !s.local).length} remote · watchable
+        {sessions.filter((s) => !s.local).length} remote · watchable
       </div>
     </div>
   );

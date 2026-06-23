@@ -1,7 +1,8 @@
 "use client";
 
 import { PixelCharacter } from "@/components/ui/PixelCharacter";
-import { SESSIONS, DEVICES } from "../../_data/mock";
+import { SESSIONS, DEVICES, type AgentSession } from "../../_data/mock";
+import { useRealData } from "../../_lib/RealDataContext";
 import { ModelMark } from "../ModelSelector";
 import { Icon } from "../icons";
 import { Dot, Chip, SectionLabel, ViewHeader } from "../primitives";
@@ -10,8 +11,10 @@ import { Dot, Chip, SectionLabel, ViewHeader } from "../primitives";
 // grouped exactly like the sessions rail (consistency). You don't micro-manage
 // sub-agents here; you get visibility into what's running, where, on what.
 export function AgentsView() {
-  const projects = Array.from(new Set(SESSIONS.map((s) => s.project)));
-  const machines = Array.from(new Set(SESSIONS.map((s) => s.machine)));
+  const real = useRealData();
+  const sessions: AgentSession[] = real?.sessions?.length ? (real.sessions as AgentSession[]) : SESSIONS;
+  const projects = Array.from(new Set(sessions.map((s) => s.project)));
+  const machines = Array.from(new Set(sessions.map((s) => s.machine)));
 
   return (
     <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
@@ -25,7 +28,7 @@ export function AgentsView() {
       />
 
       <div className="mb-6 flex items-center gap-3 rounded-sm border-l-2 border-[hsl(var(--accent))]/50 bg-[hsl(var(--bg-raised))] px-4 py-2.5 font-mono text-[11px] text-[hsl(var(--text-secondary))]">
-        <span>{SESSIONS.length} agents</span>
+        <span>{sessions.length} agents</span>
         <span className="opacity-40">·</span>
         <span>{projects.length} projects</span>
         <span className="opacity-40">·</span>
@@ -33,7 +36,7 @@ export function AgentsView() {
       </div>
 
       {projects.map((proj) => {
-        const items = SESSIONS.filter((s) => s.project === proj);
+        const items = sessions.filter((s) => s.project === proj);
         return (
           <div key={proj} className="mb-5">
             <SectionLabel className="mb-2">{proj}</SectionLabel>

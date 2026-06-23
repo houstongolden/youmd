@@ -11,6 +11,7 @@ import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
 import { SessionShell } from "./SessionShell";
 import { ResizeHandle } from "./ResizeHandle";
+import { useRealData } from "../_lib/RealDataContext";
 import { type AgentAction, type ChatScope } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
@@ -88,6 +89,9 @@ function MainView({
 // workspace view (the desktop split is collapsed into a single column).
 export function DesktopShell() {
   const isMobile = useIsMobile();
+  // Live sessions from the real SessionSource (agent bus + local) when available.
+  const real = useRealData();
+  const sessions = real?.sessions?.length ? (real.sessions as AgentSession[]) : SESSIONS;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop rail
   const [drawerOpen, setDrawerOpen] = useState(false); // mobile off-canvas
   const [chatFull, setChatFull] = useState(false);
@@ -100,7 +104,7 @@ export function DesktopShell() {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   // Unified shell: which agent session is active (persists = "last used"), and
   // whether the shell docks on the left or right.
-  const [activeSessionId, setActiveSessionId] = useState(SESSIONS[0].id);
+  const [activeSessionId, setActiveSessionId] = useState(sessions[0].id);
   const [chatSide, setChatSide] = useState<"left" | "right">("left");
   const [shellOpen, setShellOpen] = useState(true); // show/hide the whole sessions/shell pane
   const [railCollapsed, setRailCollapsed] = useState(false); // collapse just the session list
@@ -419,6 +423,7 @@ export function DesktopShell() {
                 {mobilePane === "chat" ? (
                   <SessionShell
                     full
+                    sessions={sessions}
                     activeId={activeSessionId}
                     onSelect={selectSession}
                     onNew={newSession}
@@ -455,6 +460,7 @@ export function DesktopShell() {
               <div className="relative min-w-0 flex-1">
                 <SessionShell
                   full
+                  sessions={sessions}
                   activeId={activeSessionId}
                   onSelect={selectSession}
                   onNew={newSession}
@@ -476,6 +482,7 @@ export function DesktopShell() {
                   <>
                     <div style={{ width: shellWidth }} className="flex shrink-0 flex-col">
                       <SessionShell
+                        sessions={sessions}
                         activeId={activeSessionId}
                         onSelect={selectSession}
                         onNew={newSession}
@@ -498,6 +505,7 @@ export function DesktopShell() {
                     <ResizeHandle width={shellWidth} setWidth={setShellWidth} min={360} max={760} side="left" />
                     <div style={{ width: shellWidth }} className="flex shrink-0 flex-col">
                       <SessionShell
+                        sessions={sessions}
                         activeId={activeSessionId}
                         onSelect={selectSession}
                         onNew={newSession}
