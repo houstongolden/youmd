@@ -1364,6 +1364,8 @@ export interface CreateKeyResult {
 export async function createApiKey(opts: {
   label?: string;
   scopes?: string[];
+  // null (or 0) → never-expiring key. undefined → server default (365 days).
+  expiresInDays?: number | null;
 }): Promise<ApiResponse<CreateKeyResult>> {
   return apiRequest<CreateKeyResult>("/api/v1/me/api-keys", {
     method: "POST",
@@ -1371,6 +1373,7 @@ export async function createApiKey(opts: {
     body: {
       label: opts.label,
       scopes: opts.scopes || ["read:public"],
+      ...(opts.expiresInDays !== undefined ? { expiresInDays: opts.expiresInDays } : {}),
     },
   });
 }
