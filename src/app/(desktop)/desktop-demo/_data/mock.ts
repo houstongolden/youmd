@@ -670,6 +670,7 @@ export type AgentSession = {
   task?: string; // the tracked task this session is working on
   needsYou?: string; // if set, this session is blocked on you — surfaced loudly
   subAgents?: number; // sub-agents this agent spawned itself (you don't manage these)
+  cloud?: boolean; // runs in a vendor cloud sandbox (Cursor/Claude/Codex cloud) vs your own machines
 };
 
 export const SESSIONS: AgentSession[] = [
@@ -684,6 +685,9 @@ export const SESSIONS: AgentSession[] = [
   { id: "ss6", title: "Draft section 3", kind: "chat", agent: "research-you", model: "pi", project: "bigbounce", machine: "Houstons-Mini", local: false, status: "active", summary: "Reading 3 sources; drafting the bounce-entropy argument.", task: "Big-bounce paper §3", subAgents: 1 },
   // creator.new — remote, waiting on you to choose
   { id: "ss7", title: "Creator post", kind: "chat", agent: "writing-you", model: "hermes", project: "creator.new", machine: "cloud-vps", local: false, status: "waiting", summary: "Drafted a post in your voice; 2 hooks proposed.", task: "Weekly creator post", needsYou: "Pick one of the 2 hooks it proposed" },
+  // vendor cloud sandboxes — launched/run/watched via provider APIs, not your machines
+  { id: "ss8", title: "Migrate auth flow", kind: "terminal", agent: "cursor-cloud", model: "cursor", project: "hubify", machine: "Cursor cloud", local: false, cloud: true, status: "active", summary: "Background agent refactoring the Clerk → first-party auth migration.", task: "Auth migration" },
+  { id: "ss9", title: "Batch deps bump", kind: "terminal", agent: "codex-cloud", model: "codex", project: "myo", machine: "Codex cloud", local: false, cloud: true, status: "active", summary: "Cloud sandbox bumping + testing dependency upgrades.", task: "Dependency upgrades" },
 ];
 
 // A remote session's streaming summary lines (for the watch / peekaboo view).

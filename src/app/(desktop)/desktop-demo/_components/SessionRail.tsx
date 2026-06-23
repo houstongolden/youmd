@@ -101,6 +101,10 @@ export function SessionRail({
                       <div className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider">
                         {needs ? (
                           <span className="text-[hsl(var(--accent))]">needs you</span>
+                        ) : s.cloud ? (
+                          <span className="flex items-center gap-0.5 text-[hsl(var(--accent))]/70">
+                            <Icon name="cloud" size={9} /> {s.machine}
+                          </span>
                         ) : s.local ? (
                           <span className="text-[hsl(var(--text-secondary))]/45">{s.agent} · local</span>
                         ) : (

@@ -65,7 +65,9 @@ export function AgentsView() {
                       </div>
                       <div className="truncate text-[12px] text-[hsl(var(--text-secondary))]/75">↳ {s.task ?? s.title}</div>
                       <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/50">
-                        {s.local ? (
+                        {s.cloud ? (
+                          <span className="flex items-center gap-1 text-[hsl(var(--accent))]/70"><Icon name="cloud" size={9} /> {s.machine} · cloud</span>
+                        ) : s.local ? (
                           <span className="flex items-center gap-1"><Icon name="device" size={9} /> {s.machine}</span>
                         ) : (
                           <span className="flex items-center gap-1 text-[hsl(var(--accent))]/70"><Icon name="expand" size={9} /> {s.machine} · remote</span>

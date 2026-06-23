@@ -32,7 +32,7 @@ export function WatchView({ session }: { session: AgentSession }) {
           <div className="flex items-center gap-2">
             <span className="truncate font-mono text-[12.5px] text-[hsl(var(--text-primary))]">{session.agent}</span>
             <Chip tone="accent">
-              <Icon name="device" size={9} /> {session.machine}
+              <Icon name={session.cloud ? "cloud" : "device"} size={9} /> {session.machine}
             </Chip>
           </div>
           <div className="truncate font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">
