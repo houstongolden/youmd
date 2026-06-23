@@ -8,6 +8,7 @@ import { ModelMark } from "./ModelSelector";
 import { ChatPanel, type AgentAction, type ChatScope } from "./ChatPanel";
 import { TerminalView } from "./views/TerminalView";
 import { WatchView } from "./WatchView";
+import { ConnectView } from "./ConnectView";
 import { Icon } from "./icons";
 
 // A thin intelligence bar above local sessions: what task it's on, and — loudly
@@ -53,6 +54,7 @@ export function SessionShell({
   showRail = true,
   onToggleRail,
   onOpenInVault,
+  onConnect,
   scope,
   onAction,
   chatId,
@@ -66,6 +68,7 @@ export function SessionShell({
   showRail?: boolean; // collapse/expand the session list (toggle lives on the panel)
   onToggleRail?: () => void;
   onOpenInVault?: (project: string) => void;
+  onConnect?: (provider: string) => void;
   scope: ChatScope;
   onAction: (a: AgentAction, scope?: ChatScope) => void;
   chatId: string;
@@ -97,7 +100,11 @@ export function SessionShell({
         {session.local && <SessionTaskBar session={session} onOpenInVault={onOpenInVault} />}
         <div className="min-h-0 flex-1">
           {!session.local ? (
-            <WatchView key={session.id} session={session} />
+            session.cloud && session.status === "idle" ? (
+              <ConnectView key={session.id} session={session} onConnect={onConnect} />
+            ) : (
+              <WatchView key={session.id} session={session} />
+            )
           ) : session.kind === "terminal" ? (
             <TerminalView />
           ) : (
