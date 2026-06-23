@@ -1,72 +1,115 @@
 "use client";
 
-import { APPS } from "../../_data/mock";
+import { useState } from "react";
+import { APPS, type AppConn } from "../../_data/mock";
 import { Icon } from "../icons";
-import { Dot, SectionLabel, ViewHeader } from "../primitives";
+import { Dot, Chip, SectionLabel, ViewHeader } from "../primitives";
 import { cn } from "../../_lib/cn";
 
-const STATUS_TONE = {
-  connected: { tone: "green" as const, label: "connected" },
-  syncing: { tone: "orange" as const, label: "syncing" },
-  available: { tone: "dim" as const, label: "connect" },
-};
+function Favicon({ domain, dim = false }: { domain: string; dim?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))]",
+        dim && "opacity-50",
+      )}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://www.google.com/s2/favicons?sz=64&domain=${domain}`}
+        alt=""
+        width={16}
+        height={16}
+        className="h-4 w-4"
+      />
+    </span>
+  );
+}
+
+function Row({ app }: { app: AppConn }) {
+  const [open, setOpen] = useState(false);
+  const available = app.status === "available";
+  return (
+    <div className="border-b border-[hsl(var(--border))] last:border-b-0">
+      <button
+        onClick={() => !available && setOpen((o) => !o)}
+        className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-[hsl(var(--bg-raised))]"
+      >
+        <Favicon domain={app.domain} dim={available} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className={cn("text-[13px]", available ? "text-[hsl(var(--text-secondary))]" : "text-[hsl(var(--text-primary))]")}>{app.name}</span>
+            <span className="font-mono text-[9.5px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/45">{app.category}</span>
+          </div>
+          <div className="truncate text-[12px] text-[hsl(var(--text-secondary))]/65">{app.detail}</div>
+        </div>
+        {available ? (
+          <span className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--accent))]">
+            <Icon name="plus" size={12} /> connect
+          </span>
+        ) : (
+          <>
+            <Dot tone={app.status === "syncing" ? "orange" : "green"} pulse={app.status === "syncing"} size={6} />
+            <Icon name="chevronDown" size={14} className={cn("text-[hsl(var(--text-secondary))]/50 transition-transform", open && "rotate-180")} />
+          </>
+        )}
+      </button>
+      {open && !available && (
+        <div className="space-y-1 px-3.5 pb-3 pl-[58px]">
+          {app.account && (
+            <div className="flex items-baseline justify-between gap-3 py-0.5">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">account</span>
+              <span className="text-[12px] text-[hsl(var(--text-primary))]">{app.account}</span>
+            </div>
+          )}
+          {app.lastSync && (
+            <div className="flex items-baseline justify-between gap-3 py-0.5">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">last sync</span>
+              <span className="text-[12px] text-[hsl(var(--text-primary))]">{app.lastSync}</span>
+            </div>
+          )}
+          {app.scopes && (
+            <div className="flex flex-wrap items-center gap-1 pt-1">
+              {app.scopes.map((s) => (
+                <Chip key={s}>{s}</Chip>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 pt-2">
+            <button className="rounded-sm border border-[hsl(var(--border))] px-2.5 py-1 font-mono text-[10px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))]">
+              sync now
+            </button>
+            <button className="rounded-sm border border-[hsl(var(--border))] px-2.5 py-1 font-mono text-[10px] text-[hsl(var(--text-secondary))]/70 transition-colors hover:text-[hsl(var(--destructive))]">
+              disconnect
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AppsView() {
+  const active = APPS.filter((a) => a.status !== "available");
+  const available = APPS.filter((a) => a.status === "available");
   return (
     <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
       <ViewHeader
         title="Connections"
-        description="Every app feeds your brain. Crawlers, capture, and your own MCP/API pull context in — agents act on it."
+        description="Every connected app feeds your brain — agents read the context and act on it. Click a connection for details."
       />
 
-      <SectionLabel className="mb-2">Active</SectionLabel>
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {APPS.filter((a) => a.status !== "available").map((a) => {
-          const st = STATUS_TONE[a.status];
-          return (
-            <div
-              key={a.id}
-              className="flex items-center gap-3 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3.5"
-            >
-              <span className="grid h-9 w-9 place-items-center rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg))] text-[hsl(var(--text-secondary))]">
-                <Icon name={a.icon} size={16} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{a.name}</span>
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/50">
-                    {a.category}
-                  </span>
-                </div>
-                <div className="truncate text-[12px] text-[hsl(var(--text-secondary))]/70">{a.detail}</div>
-              </div>
-              <span className="flex items-center gap-1.5">
-                <Dot tone={st.tone} pulse={a.status === "syncing"} size={6} />
-              </span>
-            </div>
-          );
-        })}
+      <SectionLabel className="mb-2">Connected · {active.length}</SectionLabel>
+      <div className="mb-6 rounded-sm border border-[hsl(var(--border))]">
+        {active.map((a) => (
+          <Row key={a.id} app={a} />
+        ))}
       </div>
 
       <SectionLabel className="mb-2">Available</SectionLabel>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {APPS.filter((a) => a.status === "available").map((a) => (
-          <button
-            key={a.id}
-            className={cn(
-              "flex items-center gap-3 rounded-sm border border-dashed border-[hsl(var(--border))] p-3.5 text-left",
-              "transition-colors hover:border-[hsl(var(--accent))]/40 hover:bg-[hsl(var(--bg-raised))]",
-            )}
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-sm border border-[hsl(var(--border))] text-[hsl(var(--text-secondary))]/60">
-              <Icon name={a.icon} size={16} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm text-[hsl(var(--text-secondary))]">{a.name}</div>
-              <div className="truncate text-[12px] text-[hsl(var(--text-secondary))]/60">{a.detail}</div>
-            </div>
-            <Icon name="plus" size={14} className="text-[hsl(var(--accent))]" />
-          </button>
+      <div className="rounded-sm border border-[hsl(var(--border))]">
+        {available.map((a) => (
+          <Row key={a.id} app={a} />
         ))}
       </div>
     </div>

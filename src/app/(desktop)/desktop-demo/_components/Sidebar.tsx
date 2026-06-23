@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { NAV_SECTIONS, WORKSPACE, type ChatThread, type ViewId } from "../_data/mock";
+import { DESTINATIONS, destinationForView, WORKSPACE, type ChatThread, type ViewId } from "../_data/mock";
 import { Icon } from "./icons";
 import { Dot, SectionLabel } from "./primitives";
 import { cn } from "../_lib/cn";
@@ -63,44 +63,53 @@ export function Sidebar({
         )}
       </button>
 
-      {/* sectioned primary nav (Context / Stacks / Runtime) */}
+      {/* 6-destination rail. Some destinations hold multiple segments, shown as
+          a segmented control in the workspace header — not a second tab row. */}
       <nav className="shrink-0 px-2 pt-1">
-        {NAV_SECTIONS.map((section, si) => (
-          <div key={section.title ?? `s${si}`} className={cn(section.title && "mt-4")}>
-            {section.title && !collapsed && (
-              <SectionLabel className="px-2.5 pb-1.5">{section.title}</SectionLabel>
-            )}
-            {section.title && collapsed && (
-              <div className="mx-auto mb-1.5 h-px w-5 bg-[hsl(var(--border))]" aria-hidden />
-            )}
-            {section.items.map((item) => {
-              const active = activeView === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onNavigate(item.id)}
-                  title={collapsed ? item.label : undefined}
-                  className={cn(
-                    "relative mb-0.5 flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] transition-colors active:scale-[0.98]",
-                    collapsed && "justify-center px-0",
-                    active
-                      ? "bg-[hsl(var(--bg-raised))] text-[hsl(var(--accent))]"
-                      : "text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]",
-                  )}
-                >
-                  {active && !collapsed && (
-                    <span
-                      aria-hidden
-                      className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 bg-[hsl(var(--accent))]"
-                    />
-                  )}
-                  <Icon name={item.icon} size={16} className={active ? "text-[hsl(var(--accent))]" : ""} />
-                  {!collapsed && <span>{item.label}</span>}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        {(["top", "workspace", "system"] as const).map((group) => {
+          const items = DESTINATIONS.filter((d) => d.group === group);
+          if (items.length === 0) return null;
+          const heading = group === "workspace" ? "Workspace" : group === "system" ? "System" : null;
+          return (
+            <div key={group} className={cn(group !== "top" && "mt-4")}>
+              {heading && !collapsed && <SectionLabel className="px-2.5 pb-1.5">{heading}</SectionLabel>}
+              {heading && collapsed && (
+                <div className="mx-auto mb-1.5 h-px w-5 bg-[hsl(var(--border))]" aria-hidden />
+              )}
+              {items.map((dest) => {
+                const active = destinationForView(activeView).id === dest.id;
+                return (
+                  <button
+                    key={dest.id}
+                    onClick={() => onNavigate(dest.segments[0].id)}
+                    title={collapsed ? dest.label : undefined}
+                    className={cn(
+                      "relative mb-0.5 flex w-full items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-[13px] transition-colors active:scale-[0.98]",
+                      collapsed && "justify-center px-0",
+                      active
+                        ? "bg-[hsl(var(--bg-raised))] text-[hsl(var(--accent))]"
+                        : "text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--bg-raised))] hover:text-[hsl(var(--text-primary))]",
+                    )}
+                  >
+                    {active && !collapsed && (
+                      <span
+                        aria-hidden
+                        className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 bg-[hsl(var(--accent))]"
+                      />
+                    )}
+                    <Icon name={dest.icon} size={16} className={active ? "text-[hsl(var(--accent))]" : ""} />
+                    {!collapsed && <span>{dest.label}</span>}
+                    {!collapsed && dest.segments.length > 1 && (
+                      <span className="ml-auto font-mono text-[9px] text-[hsl(var(--text-secondary))]/40">
+                        {dest.segments.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       {/* Chats — reserved scrollable history (Claude/ChatGPT style) */}

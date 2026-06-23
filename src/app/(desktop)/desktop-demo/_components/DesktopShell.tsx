@@ -2,19 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, CHATS, type Task, type ChatThread, type ViewId } from "../_data/mock";
+import { PRIMARY_NAV, PROJECTS, FILE_CONTENT, TASKS, CHATS, SESSIONS, destinationForView, type Task, type ChatThread, type ViewId, type AgentSession } from "../_data/mock";
 import { useIsMobile } from "../_lib/useIsMobile";
 import { useSwipe } from "../_lib/useSwipe";
 import { useTheme } from "../_lib/useTheme";
 import { cn } from "../_lib/cn";
 import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
-import { ChatPanel, type AgentAction, type ChatScope } from "./ChatPanel";
+import { SessionShell } from "./SessionShell";
+import { ResizeHandle } from "./ResizeHandle";
+import { useRealData } from "../_lib/RealDataContext";
+import { type AgentAction, type ChatScope } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
-import { SystemStatus } from "./SystemStatus";
+import { Inspector } from "./Inspector";
+import { SegmentedHeader } from "./primitives";
 import { useToast } from "./Toast";
-import { Icon } from "./icons";
 import { HomeView } from "./views/HomeView";
 import { EditorView } from "./views/EditorView";
 import { ProjectsView } from "./views/ProjectsView";
@@ -25,6 +28,9 @@ import { AppsView } from "./views/AppsView";
 import { AgentsView } from "./views/AgentsView";
 import { LoopsView } from "./views/LoopsView";
 import { TerminalView } from "./views/TerminalView";
+import { ProvisionView } from "./views/ProvisionView";
+import { SyncView } from "./views/SyncView";
+import { LiveLogView } from "./views/LiveLogView";
 
 function MainView({
   view,
@@ -35,6 +41,8 @@ function MainView({
   onProjectSelect,
   tasks,
   onAdvanceTask,
+  selectedNode,
+  onSelectNode,
 }: {
   view: ViewId;
   onNavigate: (v: ViewId) => void;
@@ -44,6 +52,8 @@ function MainView({
   onProjectSelect: (slug: string) => void;
   tasks: Task[];
   onAdvanceTask: (id: string) => void;
+  selectedNode: string | null;
+  onSelectNode: (id: string) => void;
 }) {
   switch (view) {
     case "home":
@@ -53,7 +63,7 @@ function MainView({
     case "projects":
       return <ProjectsView selected={selectedProject} onSelect={onProjectSelect} onNavigate={onNavigate} tasks={tasks} />;
     case "graph":
-      return <GraphView />;
+      return <GraphView selectedNode={selectedNode} onSelectNode={onSelectNode} />;
     case "tasks":
       return <TasksView tasks={tasks} onAdvance={onAdvanceTask} />;
     case "skills":
@@ -66,6 +76,12 @@ function MainView({
       return <LoopsView />;
     case "terminal":
       return <TerminalView />;
+    case "provision":
+      return <ProvisionView />;
+    case "sync":
+      return <SyncView />;
+    case "livelog":
+      return <LiveLogView />;
   }
 }
 
@@ -73,6 +89,9 @@ function MainView({
 // workspace view (the desktop split is collapsed into a single column).
 export function DesktopShell() {
   const isMobile = useIsMobile();
+  // Live sessions from the real SessionSource (agent bus + local) when available.
+  const real = useRealData();
+  const sessions = real?.sessions?.length ? (real.sessions as AgentSession[]) : SESSIONS;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop rail
   const [drawerOpen, setDrawerOpen] = useState(false); // mobile off-canvas
   const [chatFull, setChatFull] = useState(false);
@@ -81,7 +100,16 @@ export function DesktopShell() {
   const [editorFile, setEditorFile] = useState("identity/you.md");
   const [selectedProject, setSelectedProject] = useState(PROJECTS[0].slug);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [statusOpen, setStatusOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  // Unified shell: which agent session is active (persists = "last used"), and
+  // whether the shell docks on the left or right.
+  const [activeSessionId, setActiveSessionId] = useState(sessions[0].id);
+  const [chatSide, setChatSide] = useState<"left" | "right">("left");
+  const [shellOpen, setShellOpen] = useState(true); // show/hide the whole sessions/shell pane
+  const [railCollapsed, setRailCollapsed] = useState(false); // collapse just the session list
+  const [shellWidth, setShellWidth] = useState(468);
+  const [inspectorWidth, setInspectorWidth] = useState(304);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
   const [chats, setChats] = useState<ChatThread[]>(CHATS);
   const [activeChat, setActiveChat] = useState(CHATS[0].id);
@@ -105,6 +133,13 @@ export function DesktopShell() {
     focusChatPane();
   };
   const activeChatTitle = chats.find((c) => c.id === activeChat)?.title;
+
+  // Switch the unified shell to a session (local chat/terminal or remote watch).
+  const selectSession = (s: AgentSession) => {
+    setActiveSessionId(s.id);
+    focusChatPane();
+  };
+  const newSession = (project: string) => toast(`New agent on ${project} — pick a model to spawn…`, "agent");
 
   const addTask = (title: string, project: string, owner: Task["owner"] = "you") =>
     setTasks((t) => [
@@ -164,6 +199,67 @@ export function DesktopShell() {
     setSelectedProject(slug);
     navigate("projects");
   };
+
+  // Clicking a graph node opens the inspector on that entity (and syncs the
+  // selected project when the node is a project we know).
+  const selectNode = (id: string) => {
+    setSelectedNode(id);
+    const asProject = PROJECTS.find((p) => p.slug === id);
+    if (asProject) setSelectedProject(asProject.slug);
+    setInspectorOpen(true);
+  };
+
+  // The destination (rail entry) that owns the active segment, + its segments.
+  const activeDestination = destinationForView(activeView);
+
+  // Workspace = optional segmented header + scrollable view + optional inspector.
+  const renderWorkspace = (withInspector: boolean) => (
+    <div className="flex h-full min-w-0 flex-col">
+      {activeDestination.segments.length > 1 && (
+        <SegmentedHeader
+          segments={activeDestination.segments}
+          active={activeView}
+          onSelect={(id) => navigate(id as ViewId)}
+        />
+      )}
+      <div className="flex min-h-0 flex-1">
+        <motion.div
+          key={activeView}
+          className="h-full min-w-0 flex-1 overflow-y-auto bg-[hsl(var(--bg))]"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+        >
+          <MainView
+            view={activeView}
+            onNavigate={navigate}
+            editorFile={editorFile}
+            onEditorSelect={setEditorFile}
+            selectedProject={selectedProject}
+            onProjectSelect={setSelectedProject}
+            tasks={tasks}
+            onAdvanceTask={advanceTask}
+            selectedNode={selectedNode}
+            onSelectNode={selectNode}
+          />
+        </motion.div>
+        {withInspector && inspectorOpen && (
+          <>
+            <ResizeHandle width={inspectorWidth} setWidth={setInspectorWidth} min={248} max={480} side="left" />
+            <div style={{ width: inspectorWidth }} className="shrink-0">
+              <Inspector
+                view={activeView}
+                selectedProject={selectedProject}
+                selectedNode={selectedNode}
+                onClose={() => setInspectorOpen(false)}
+                onNavigate={navigate}
+              />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 
   // What the chat agent is "looking at" with you — the active context scope.
   const chatScope = useMemo(() => {
@@ -281,6 +377,12 @@ export function DesktopShell() {
         onOpenCommand={() => setPaletteOpen(true)}
         mobileOnView={isMobile && mobilePane === "view"}
         onGoToChat={() => setMobilePane("chat")}
+        inspectorOpen={inspectorOpen}
+        onToggleInspector={chatFull ? undefined : () => setInspectorOpen((o) => !o)}
+        chatSide={chatSide}
+        onFlipSide={() => setChatSide((s) => (s === "left" ? "right" : "left"))}
+        shellOpen={shellOpen}
+        onToggleShell={() => setShellOpen((o) => !o)}
       />
 
       <div className="relative flex min-h-0 flex-1">
@@ -307,7 +409,7 @@ export function DesktopShell() {
                 onNavigate={navigate}
                 theme={theme}
                 onToggleTheme={toggleTheme}
-                onOpenStatus={() => setStatusOpen(true)}
+                onOpenStatus={() => navigate("sync")}
                 chats={chats}
                 activeChat={activeChat}
                 onSelectChat={selectChat}
@@ -319,26 +421,20 @@ export function DesktopShell() {
             <div {...workspaceSwipe} className="flex min-w-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 overflow-hidden">
                 {mobilePane === "chat" ? (
-                  <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
+                  <SessionShell
+                    full
+                    sessions={sessions}
+                    activeId={activeSessionId}
+                    onSelect={selectSession}
+                    onNew={newSession}
+                    showRail={false}
+                    scope={chatScope}
+                    onAction={onAgentAction}
+                    chatId={activeChat}
+                    chatTitle={activeChatTitle}
+                  />
                 ) : (
-                  <motion.div
-                    key={activeView}
-                    className="h-full overflow-y-auto bg-[hsl(var(--bg))]"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                  >
-                    <MainView
-                      view={activeView}
-                      onNavigate={navigate}
-                      editorFile={editorFile}
-                      onEditorSelect={setEditorFile}
-                      selectedProject={selectedProject}
-                      onProjectSelect={setSelectedProject}
-                      tasks={tasks}
-                      onAdvanceTask={advanceTask}
-                    />
-                  </motion.div>
+                  renderWorkspace(false)
                 )}
               </div>
             </div>
@@ -351,7 +447,7 @@ export function DesktopShell() {
               onNavigate={navigate}
               theme={theme}
               onToggleTheme={toggleTheme}
-              onOpenStatus={() => setStatusOpen(true)}
+              onOpenStatus={() => navigate("sync")}
               chats={chats}
               activeChat={activeChat}
               onSelectChat={selectChat}
@@ -361,7 +457,17 @@ export function DesktopShell() {
             {chatFull ? (
               // Full-chat: chat fills the workspace, summary widget floats.
               <div className="relative min-w-0 flex-1">
-                <ChatPanel full scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
+                <SessionShell
+                  full
+                  sessions={sessions}
+                  activeId={activeSessionId}
+                  onSelect={selectSession}
+                  onNew={newSession}
+                  scope={chatScope}
+                  onAction={onAgentAction}
+                  chatId={activeChat}
+                  chatTitle={activeChatTitle}
+                />
                 <div className="pointer-events-none absolute right-5 top-4">
                   <div className="pointer-events-auto">
                     <SummaryWidget />
@@ -371,29 +477,47 @@ export function DesktopShell() {
             ) : (
               // Split: chat 1/3 left, main view 2/3 right.
               <div className="flex min-w-0 flex-1">
-                <div className="flex w-[33%] min-w-[320px] max-w-[460px] flex-col border-r border-[hsl(var(--border))]">
-                  <ChatPanel scope={chatScope} onAction={onAgentAction} chatId={activeChat} chatTitle={activeChatTitle} />
-                </div>
+                {shellOpen && chatSide === "left" && (
+                  <>
+                    <div style={{ width: shellWidth }} className="flex shrink-0 flex-col">
+                      <SessionShell
+                        sessions={sessions}
+                        activeId={activeSessionId}
+                        onSelect={selectSession}
+                        onNew={newSession}
+                        showRail={!railCollapsed}
+                        onToggleRail={() => setRailCollapsed((c) => !c)}
+                        scope={chatScope}
+                        onAction={onAgentAction}
+                        chatId={activeChat}
+                        chatTitle={activeChatTitle}
+                      />
+                    </div>
+                    <ResizeHandle width={shellWidth} setWidth={setShellWidth} min={360} max={760} side="right" />
+                  </>
+                )}
                 <main className="min-w-0 flex-1 overflow-hidden bg-[hsl(var(--bg))]">
-                  <motion.div
-                    key={activeView}
-                    className="h-full overflow-y-auto"
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                  >
-                    <MainView
-                      view={activeView}
-                      onNavigate={navigate}
-                      editorFile={editorFile}
-                      onEditorSelect={setEditorFile}
-                      selectedProject={selectedProject}
-                      onProjectSelect={setSelectedProject}
-                      tasks={tasks}
-                      onAdvanceTask={advanceTask}
-                    />
-                  </motion.div>
+                  {renderWorkspace(true)}
                 </main>
+                {shellOpen && chatSide === "right" && (
+                  <>
+                    <ResizeHandle width={shellWidth} setWidth={setShellWidth} min={360} max={760} side="left" />
+                    <div style={{ width: shellWidth }} className="flex shrink-0 flex-col">
+                      <SessionShell
+                        sessions={sessions}
+                        activeId={activeSessionId}
+                        onSelect={selectSession}
+                        onNew={newSession}
+                        showRail={!railCollapsed}
+                        onToggleRail={() => setRailCollapsed((c) => !c)}
+                        scope={chatScope}
+                        onAction={onAgentAction}
+                        chatId={activeChat}
+                        chatTitle={activeChatTitle}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </>
@@ -405,7 +529,6 @@ export function DesktopShell() {
         commands={commands}
         onClose={() => setPaletteOpen(false)}
       />
-      <SystemStatus open={statusOpen} onClose={() => setStatusOpen(false)} />
     </div>
   );
 }

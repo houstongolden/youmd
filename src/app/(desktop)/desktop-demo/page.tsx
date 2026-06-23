@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { DesktopShell } from "./_components/DesktopShell";
 import { ToastProvider } from "./_components/Toast";
+import { RealDataProvider } from "./_lib/RealDataContext";
+import { loadRealData } from "./_lib/realData";
+
+// Read real local you.md state on each request (dev tool) so the demo shows
+// actual projects/skills/brain/activity. Recomputed live; cheap fs reads.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "you.md — desktop (private demo)",
@@ -22,9 +28,17 @@ export const viewport: Viewport = {
 // here talks to Convex or the real API. The goal is to lock the UI/UX of the
 // upcoming native desktop app (Tauri/RN target) before building it for real.
 export default function DesktopDemoPage() {
+  let real = null;
+  try {
+    real = loadRealData();
+  } catch {
+    real = null; // fall back to mock if local state isn't readable
+  }
   return (
-    <ToastProvider>
-      <DesktopShell />
-    </ToastProvider>
+    <RealDataProvider value={real}>
+      <ToastProvider>
+        <DesktopShell />
+      </ToastProvider>
+    </RealDataProvider>
   );
 }
