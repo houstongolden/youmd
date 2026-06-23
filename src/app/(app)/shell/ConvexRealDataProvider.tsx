@@ -44,12 +44,9 @@ export function ConvexRealDataProvider({
   const installs = useQuery(api.skills.listInstalls, clerkId && userId ? { clerkId, userId } : "skip") as unknown;
   const profile = useQuery(api.profiles.getByOwnerId, userId ? { ownerId: userId } : "skip") as Row | null | undefined;
   const activity = useQuery(api.brainActivity.listRecent, clerkId ? { clerkId, limit: 30 } : "skip") as unknown;
-  // agentSummary isn't always in generated types — access defensively.
-  const apiAny = api as unknown as Record<string, Record<string, unknown>>;
-  const agents = useQuery(
-    (apiAny.activity?.agentSummary ?? api.brainActivity.listRecent) as Parameters<typeof useQuery>[0],
-    clerkId ? { clerkId } : "skip",
-  ) as unknown;
+  // NOTE: activity.agentSummary errored server-side ("Called by client") and
+  // crashed the shell render — dropped. Remote agent sessions are derived from
+  // brainActivity (already loaded above), keeping this adapter crash-proof.
 
   const data = useMemo<RealData | null>(() => {
     if (!clerkId) return fallback;
@@ -117,24 +114,30 @@ export function ConvexRealDataProvider({
         summary: "Your you.md agent — full brain context.",
         task: "Ask your brain anything",
       },
-      ...arr(agents)
-        .slice(0, 12)
-        .map((g, i): RealSession => {
-          const agent = str(g.agent) ?? str(g.name) ?? str(g.sourceAgent) ?? `agent-${i}`;
-          const host = (str(g.host) ?? str(g.sourceHost) ?? "").replace(/\.lan$/, "");
-          return {
-            id: `agent:${agent}:${i}`,
-            title: agent,
-            kind: "terminal",
-            agent,
-            model: "claude-code",
-            project: str(g.projectSlug) ?? projects[0]?.name ?? "you.md",
-            machine: host || "synced",
-            local: false,
-            status: "active",
-            summary: str(g.lastActivity) ?? str(g.summary) ?? "agent activity",
-          };
-        }),
+      ...Array.from(
+        new Map(
+          arr(activity).map((a) => {
+            const agent = str(a.sourceAgent) ?? str(a.agent) ?? "agent";
+            const host = (str(a.sourceHost) ?? "").replace(/\.lan$/, "");
+            const meta = (a.metadata ?? {}) as Row;
+            return [`${agent}|${host}`, { agent, host, project: str(meta.projectSlug) ?? str(a.channel), summary: str(a.body) ?? str(a.text) }] as const;
+          }),
+        ).values(),
+      )
+        .filter((g) => g.host)
+        .slice(0, 10)
+        .map((g, i): RealSession => ({
+          id: `agent:${g.agent}:${i}`,
+          title: g.agent,
+          kind: "terminal",
+          agent: g.agent,
+          model: "claude-code",
+          project: g.project ?? projects[0]?.name ?? "you.md",
+          machine: g.host,
+          local: false,
+          status: "active",
+          summary: g.summary ?? "agent activity",
+        })),
     ];
 
     return {
@@ -149,7 +152,7 @@ export function ConvexRealDataProvider({
       machine: { host: str(convexUser?.hostName), envLocal: projects.filter((p) => p.hasEnvLocal).length },
       counts: { projects: projects.length, skills: skills.length, brain: brain.length, sessions: sessions.length },
     };
-  }, [clerkId, portfolio, installs, profile, activity, agents, convexUser, fallback]);
+  }, [clerkId, portfolio, installs, profile, activity, convexUser, fallback]);
 
   return <RealDataProvider value={data ?? fallback}>{children}</RealDataProvider>;
 }
