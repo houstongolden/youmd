@@ -454,9 +454,12 @@ function MachineSetupHero({
     setCopyState("minting");
     try {
       const result = await createBrowserApiKey({
-        label: "fresh-machine bootstrap",
+        label: "machine sync (permanent)",
         scopes: FRESH_MACHINE_BOOTSTRAP_SCOPES,
-        expiresInDays: 7,
+        // Permanent key (no expiry) so machine sync never silently breaks. Scopes
+        // are limited to machine bootstrap/sync (not full access); revoke from
+        // Settings → API keys if a machine is lost.
+        expiresInDays: null,
       });
       const prompt = buildFreshMachineBootstrapMessage(result.key);
       await copyText(prompt, "copied Claude/Codex prompt");

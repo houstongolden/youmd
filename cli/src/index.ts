@@ -591,6 +591,8 @@ const keysCmd = program
   .description("Manage API keys (list, create, revoke)")
   .option("--label <label>", "Label for new key")
   .option("--scopes <scopes>", "Comma-separated scopes (e.g. read:public)", "read:public")
+  .option("--permanent", "Mint a permanent key with no expiration (for persistent machine sync)")
+  .option("--expires-in-days <n>", "Key lifetime in days (omit for server default; --permanent for no expiry)")
   .option("--id <id>", "Key ID (for revoke)");
 
 keysCmd.action((subcommand, options) => {

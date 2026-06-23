@@ -135,17 +135,24 @@ async function keysList(): Promise<void> {
   }
 }
 
-async function keysCreate(options: { label?: string; scopes?: string }): Promise<void> {
+async function keysCreate(options: { label?: string; scopes?: string; permanent?: boolean; expiresInDays?: string }): Promise<void> {
   const label = options.label;
   const scopes = options.scopes
     ? options.scopes.split(",").map((s) => s.trim())
     : ["read:public"];
+  // --permanent mints a never-expiring key (machine-sync use); otherwise honor
+  // an explicit --expires-in-days, else server default.
+  const expiresInDays = options.permanent
+    ? null
+    : options.expiresInDays !== undefined
+      ? Number(options.expiresInDays)
+      : undefined;
 
   const spinner = new BrailleSpinner("creating API key");
   spinner.start();
 
   try {
-    const res = await createApiKey({ label, scopes });
+    const res = await createApiKey({ label, scopes, expiresInDays });
 
     if (!res.ok) {
       spinner.fail(apiErrorMessage(res.data) || `HTTP ${res.status}`);

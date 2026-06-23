@@ -4595,10 +4595,16 @@ http.route({
         }
       }
 
+      // Forward optional expiry. `null` or `0` mints a never-expiring key (used
+      // for permanent machine-sync keys so sync never silently breaks).
+      const expiresInDays =
+        body.expiresInDays === null || typeof body.expiresInDays === "number" ? body.expiresInDays : undefined;
+
       const result = await ctx.runMutation(api.apiKeys.createKey, {
         clerkId: auth.userId,        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
         label: body.label,
         scopes: requestedScopes,
+        expiresInDays,
       });
       return guard.finish(json(result));
     } catch (err) {
