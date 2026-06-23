@@ -17,6 +17,7 @@ export function Sidebar({
   activeChat,
   onSelectChat,
   onNewChat,
+  onSignOut,
 }: {
   collapsed: boolean;
   activeView: ViewId;
@@ -28,6 +29,7 @@ export function Sidebar({
   activeChat: string;
   onSelectChat: (id: string) => void;
   onNewChat: () => void;
+  onSignOut?: () => void;
 }) {
   const [accountOpen, setAccountOpen] = useState(false);
 
@@ -169,10 +171,22 @@ export function Sidebar({
                 <Icon name={theme === "light" ? "moon" : "sun"} size={15} />
                 {theme === "light" ? "Dark mode" : "Light mode"}
               </button>
-              <button className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))]">
+              <button
+                onClick={() => {
+                  onNavigate("sync");
+                  setAccountOpen(false);
+                }}
+                className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))]"
+              >
                 <Icon name="settings" size={15} /> Settings
               </button>
-              <button className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))]">
+              <button
+                onClick={() => {
+                  onSignOut?.();
+                  setAccountOpen(false);
+                }}
+                className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))]"
+              >
                 <Icon name="logout" size={15} /> Sign out
               </button>
             </div>

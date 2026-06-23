@@ -32,6 +32,43 @@ export function SyncView() {
         </div>
       </div>
 
+      {/* two-track auto-update: you.md core (team-maintained) vs your own library */}
+      <SectionLabel className="mb-2.5">Auto-update</SectionLabel>
+      <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3.5">
+          <div className="mb-1.5 flex items-center gap-2">
+            <Icon name="sync" size={14} className="text-[hsl(var(--accent))]" />
+            <span className="text-[12.5px] text-[hsl(var(--text-primary))]">you.md core</span>
+            <Chip tone="green">auto · v0.8.13</Chip>
+          </div>
+          <p className="mb-2 text-[11px] leading-relaxed text-[hsl(var(--text-secondary))]/65">
+            Runtime, CLI, API, MCP, and YStack — maintained by the you.md team. Self-upgrades on every run
+            (like gstack), tracked separately from your content so it never touches your stuff.
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {["runtime", "CLI", "API", "MCP", "YStack"].map((x) => (
+              <Chip key={x}>{x}</Chip>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3.5">
+          <div className="mb-1.5 flex items-center gap-2">
+            <Icon name="brain" size={14} className="text-[hsl(var(--accent))]" />
+            <span className="text-[12.5px] text-[hsl(var(--text-primary))]">Your library</span>
+            <Chip tone="green">synced</Chip>
+          </div>
+          <p className="mb-2 text-[11px] leading-relaxed text-[hsl(var(--text-secondary))]/65">
+            Your skills, skill-stacks, projects, identity, and memories — versioned + synced across machines.
+            Updated only by you and your agents; core upgrades never overwrite them.
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {["skills", "stacks", "projects", "identity", "memories"].map((x) => (
+              <Chip key={x}>{x}</Chip>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* machines */}
       <SectionLabel className="mb-2.5">Machines</SectionLabel>
       <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-3">
