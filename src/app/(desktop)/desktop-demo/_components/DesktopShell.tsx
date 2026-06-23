@@ -194,6 +194,8 @@ export function DesktopShell() {
     setEditorFile(id);
     navigate("editor");
   };
+  // Cross-pillar: open a project's repo overview in the Vault from a session.
+  const openInVault = (project: string) => openNote(`project:${project}`);
 
   const openProject = (slug: string) => {
     setSelectedProject(slug);
@@ -253,6 +255,7 @@ export function DesktopShell() {
                 selectedNode={selectedNode}
                 onClose={() => setInspectorOpen(false)}
                 onNavigate={navigate}
+                onOpenNote={openNote}
               />
             </div>
           </>
@@ -427,6 +430,7 @@ export function DesktopShell() {
                     activeId={activeSessionId}
                     onSelect={selectSession}
                     onNew={newSession}
+                    onOpenInVault={openInVault}
                     showRail={false}
                     scope={chatScope}
                     onAction={onAgentAction}
@@ -463,6 +467,7 @@ export function DesktopShell() {
                   activeId={activeSessionId}
                   onSelect={selectSession}
                   onNew={newSession}
+                  onOpenInVault={openInVault}
                   scope={chatScope}
                   onAction={onAgentAction}
                   chatId={activeChat}
@@ -485,6 +490,7 @@ export function DesktopShell() {
                         activeId={activeSessionId}
                         onSelect={selectSession}
                         onNew={newSession}
+                        onOpenInVault={openInVault}
                         showRail={!railCollapsed}
                         onToggleRail={() => setRailCollapsed((c) => !c)}
                         scope={chatScope}
@@ -508,6 +514,7 @@ export function DesktopShell() {
                         activeId={activeSessionId}
                         onSelect={selectSession}
                         onNew={newSession}
+                        onOpenInVault={openInVault}
                         showRail={!railCollapsed}
                         onToggleRail={() => setRailCollapsed((c) => !c)}
                         scope={chatScope}

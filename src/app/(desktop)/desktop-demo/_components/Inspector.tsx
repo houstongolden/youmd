@@ -20,12 +20,14 @@ export function Inspector({
   selectedNode,
   onClose,
   onNavigate,
+  onOpenNote,
 }: {
   view: ViewId;
   selectedProject: string;
   selectedNode: string | null;
   onClose: () => void;
   onNavigate: (v: ViewId) => void;
+  onOpenNote?: (id: string) => void;
 }) {
   const node = selectedNode ? GRAPH_NODES.find((n) => n.id === selectedNode) : null;
   const project =
@@ -50,7 +52,7 @@ export function Inspector({
         {node && node.kind !== "project" ? (
           <NodeDetail nodeId={node.id} label={node.label} kind={node.kind} />
         ) : project ? (
-          <ProjectDetail slug={project.slug} onNavigate={onNavigate} />
+          <ProjectDetail slug={project.slug} onNavigate={onNavigate} onOpenNote={onOpenNote} />
         ) : (
           <WorkspaceDetail />
         )}
@@ -68,7 +70,7 @@ function Row({ k, v }: { k: string; v: ReactNode }) {
   );
 }
 
-function ProjectDetail({ slug, onNavigate }: { slug: string; onNavigate: (v: ViewId) => void }) {
+function ProjectDetail({ slug, onNavigate, onOpenNote }: { slug: string; onNavigate: (v: ViewId) => void; onOpenNote?: (id: string) => void }) {
   const p = PROJECTS.find((x) => x.slug === slug) ?? PROJECTS[0];
   const tasks = TASKS.filter((t) => t.project === p.name);
   const stack = STACKS.find((s) => s.projects.includes(p.name));
@@ -100,12 +102,20 @@ function ProjectDetail({ slug, onNavigate }: { slug: string; onNavigate: (v: Vie
           ))}
         </div>
       )}
-      <button
-        onClick={() => onNavigate("graph")}
-        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-sm border border-[hsl(var(--border))] py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--accent))]/40 hover:text-[hsl(var(--accent))]"
-      >
-        <Icon name="graph" size={13} /> view in graph
-      </button>
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={() => onOpenNote?.(`project:${slug}`)}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-sm border border-[hsl(var(--border))] py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--accent))]/40 hover:text-[hsl(var(--accent))]"
+        >
+          <Icon name="brain" size={13} /> open in Vault
+        </button>
+        <button
+          onClick={() => onNavigate("graph")}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-sm border border-[hsl(var(--border))] py-1.5 font-mono text-[11px] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--accent))]/40 hover:text-[hsl(var(--accent))]"
+        >
+          <Icon name="graph" size={13} /> in graph
+        </button>
+      </div>
     </div>
   );
 }
