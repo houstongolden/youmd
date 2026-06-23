@@ -41,13 +41,13 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "0f694c2f0339d9b12e8e98a0506d3179edbda7fe4db21d419deb2d19e4a4ac6b",
+  "sourceHash": "7b94d51e6146990b7c04f0a38d538406c0ac4ac05e5c92aed5b6a1d19b56a811",
   "cli": {
-    "version": "0.8.12"
+    "version": "0.8.13"
   },
   "counts": {
     "endpoints": 108,
-    "internalRoutes": 11,
+    "internalRoutes": 12,
     "mcpTools": 6,
     "hostedMcpTools": 12,
     "cliCommands": 31,
@@ -1277,6 +1277,11 @@ export const docsReference = {
       "method": "POST",
       "path": "/api/v1/auth/register",
       "reason": "retired 410 stub after the first-party passwordless migration"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cloud/{provider}",
+      "reason": "gated cloud-agent provider integration endpoint (connection state + live sessions)"
     },
     {
       "method": "POST",
