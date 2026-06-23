@@ -102,6 +102,8 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
         `- agent docs: ${p.hasAgentDocs ? "✓" : "—"}`,
         `- project-context: ${p.hasProjectContext ? "✓" : "—"}`,
         `- files synced: ${p.files.length}`,
+        "",
+        `#project · part of your [[you]] workspace`,
       ].join("\n");
       const fileLeaves: FileNode[] = p.files.map((f) => {
         const id = `pfile:${p.name}/${f}`;
@@ -118,14 +120,14 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
     });
 
     const stackNodes: FileNode[] = real.stacks.map((s) => {
-      content[`stack:${s}`] = `# ${s}\n\nA YouStack — a grouped, shareable set of skills your agents use across projects.`;
+      content[`stack:${s}`] = `# ${s}\n\nA YouStack — a grouped, shareable set of skills your agents use across projects.\n\n#stack · a [[you]] stack`;
       return { id: `stack:${s}`, name: s, type: "file" };
     });
 
     // Skills auto-organized into folders by prefix (agent-*, bamf-*, google-*…).
     const groups: Record<string, FileNode[]> = {};
     for (const sk of real.skills) {
-      content[`skill:${sk.name}`] = `# ${sk.name}\n\nShared agent skill · source: **${sk.source}**\n\nSynced across your machines via the skill mesh.`;
+      content[`skill:${sk.name}`] = `# ${sk.name}\n\nShared agent skill · source: **${sk.source}**\n\nSynced across your machines via the skill mesh.\n\n#skill · shared in your [[you]] stacks`;
       const key = sk.name.includes("-") ? sk.name.split("-")[0] : "misc";
       (groups[key] ??= []).push({ id: `skill:${sk.name}`, name: sk.name, type: "file" });
     }
@@ -173,8 +175,9 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
     baseName.length > 1
       ? Object.entries(content)
           .filter(([id, c]) => id !== activeId && new RegExp(`\\[\\[${esc(baseName)}\\]\\]`, "i").test(c))
-          .map(([id]) => ({ id, name: (id.split("/").pop() ?? id).replace(/\.md$/, "") }))
+          .map(([id]) => ({ id, name: (id.split("/").pop() ?? id).replace(/\.md$/, "").replace(/^(project|skill|stack|pfile):/, "") }))
       : [];
+  const backlinksShown = backlinks.slice(0, 15);
   const openWiki = (name: string) => {
     const id = nameIndex.get(name.toLowerCase());
     if (id) onSelect(id);
@@ -278,7 +281,7 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
             <div>
               <SectionLabel className="mb-1.5">Backlinks · {backlinks.length}</SectionLabel>
               <div className="space-y-0.5">
-                {backlinks.map((b) => (
+                {backlinksShown.map((b) => (
                   <button key={b.id} onClick={() => onSelect(b.id)} className="flex w-full items-center gap-1.5 truncate text-left text-[12px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]">
                     <Icon name="file" size={10} className="shrink-0 opacity-50" /> {b.name}
                   </button>

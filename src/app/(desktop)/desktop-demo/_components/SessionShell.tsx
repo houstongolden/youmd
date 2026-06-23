@@ -12,7 +12,7 @@ import { Icon } from "./icons";
 
 // A thin intelligence bar above local sessions: what task it's on, and — loudly
 // — if it's blocked on you. (Watched remote sessions carry their own header.)
-function SessionTaskBar({ session }: { session: AgentSession }) {
+function SessionTaskBar({ session, onOpenInVault }: { session: AgentSession; onOpenInVault?: (project: string) => void }) {
   if (!session.task && !session.needsYou) return null;
   return (
     <div className="shrink-0 border-b border-[hsl(var(--border))]">
@@ -21,6 +21,15 @@ function SessionTaskBar({ session }: { session: AgentSession }) {
         <span className="font-mono text-[11px] text-[hsl(var(--text-primary))]">{session.agent}</span>
         {session.task && (
           <span className="truncate font-mono text-[10px] text-[hsl(var(--text-secondary))]/60">↳ {session.task}</span>
+        )}
+        {onOpenInVault && session.project && (
+          <button
+            onClick={() => onOpenInVault(session.project)}
+            title={`Open ${session.project} in Vault`}
+            className="ml-auto flex shrink-0 items-center gap-1 font-mono text-[10px] text-[hsl(var(--text-secondary))]/60 transition-colors hover:text-[hsl(var(--accent))]"
+          >
+            <Icon name="brain" size={11} /> vault
+          </button>
         )}
       </div>
       {session.needsYou && (
@@ -43,6 +52,7 @@ export function SessionShell({
   full = false,
   showRail = true,
   onToggleRail,
+  onOpenInVault,
   scope,
   onAction,
   chatId,
@@ -55,6 +65,7 @@ export function SessionShell({
   full?: boolean;
   showRail?: boolean; // collapse/expand the session list (toggle lives on the panel)
   onToggleRail?: () => void;
+  onOpenInVault?: (project: string) => void;
   scope: ChatScope;
   onAction: (a: AgentAction, scope?: ChatScope) => void;
   chatId: string;
@@ -83,7 +94,7 @@ export function SessionShell({
             <Icon name="chevronsRight" size={14} strokeWidth={1.5} />
           </button>
         )}
-        {session.local && <SessionTaskBar session={session} />}
+        {session.local && <SessionTaskBar session={session} onOpenInVault={onOpenInVault} />}
         <div className="min-h-0 flex-1">
           {!session.local ? (
             <WatchView key={session.id} session={session} />

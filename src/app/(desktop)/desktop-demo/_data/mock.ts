@@ -604,21 +604,22 @@ export const VALUE_PROP =
   "Your second brain for AI agents. you.md gives every agent — on every machine — full context on who you are, what you're building, and how you work, then keeps it all in sync as you and your agents get things done.";
 
 export type HowStep = { icon: IconName; title: string; body: string };
+// The three pillars that combine into the workspace: terminals × projects × brain.
 export const HOW_IT_WORKS: HowStep[] = [
   {
+    icon: "terminal",
+    title: "Terminals & agents",
+    body: "Chat + CLI agents (Claude Code · Codex · Cursor · Pi · …) running local, on your machines, or in the cloud — all in one shell.",
+  },
+  {
+    icon: "branch",
+    title: "Your GitHub projects",
+    body: "Connected repos with their real files, env, and tasks — agents work directly on what you're building.",
+  },
+  {
     icon: "brain",
-    title: "Your brain stays current",
-    body: "Identity, projects, skills, and memories live in one place — edited by you, enriched by your agents.",
-  },
-  {
-    icon: "agent",
-    title: "Your agents work with it",
-    body: "Spawn scoped clones of you. Each starts with full context — no re-explaining who you are or what matters.",
-  },
-  {
-    icon: "sync",
-    title: "Everything stays in sync",
-    body: "Open any machine, any agent (Claude · Codex · Cursor) — same brain, same skills, same projects, live.",
+    title: "Your second brain",
+    body: "An Obsidian-style vault + graph of your notes, skills, and stacks that every agent reads and keeps in sync.",
   },
 ];
 
