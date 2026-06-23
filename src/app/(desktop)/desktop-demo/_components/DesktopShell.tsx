@@ -427,8 +427,7 @@ export function DesktopShell() {
                     activeId={activeSessionId}
                     onSelect={selectSession}
                     onNew={newSession}
-                    showRail={!railCollapsed}
-                    onToggleRail={() => setRailCollapsed((c) => !c)}
+                    showRail={false}
                     scope={chatScope}
                     onAction={onAgentAction}
                     chatId={activeChat}
