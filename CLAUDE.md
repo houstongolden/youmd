@@ -26,6 +26,39 @@ Founder of You.md and BAMF Media (8-figure growth marketing agency). Based in Mi
 
 ---
 
+## Product Principle: Autonomous-First — NEVER Add Work for the User
+
+**This is the highest-order product principle. It overrides feature ideas.**
+
+You.md exists to orchestrate, self-improve, self-update, and manage itself. The
+human should never be turned into an operator. Before shipping ANY feature, ask:
+*does this create work for the user — a command to run, a prompt to approve, a
+migration to perform, a setting to maintain, a step to remember?* If yes,
+**seriously reconsider it** and redesign so it happens **automatically** via the
+agents, ystack skills, and the you CLI/API/MCP.
+
+Rules:
+- **No user homework.** Convention changes, scaffolding upgrades, core-stack
+  updates, migrations, and re-syncs must be applied **autonomously** by agents
+  during normal sync (`you machine sync-now`) — not handed to the user as steps.
+- **No "approve this" gates** for routine, safe, reversible work. Act, commit,
+  report. Reserve confirmation only for genuinely destructive/irreversible or
+  user-customization-conflicting changes.
+- **Don't build platform bloat for one-off/personal fixes.** If something only
+  affects Houston's own dev machines (or a handful), handle it as a **local
+  one-off** — do NOT add a permanent platform feature that future users will
+  never need. (Example: the `youmd→you` / `.youmd→.you` rename is a local dev
+  one-off; future users start fresh on `you`/`.you`, so it must NOT become a
+  shipped migration feature.)
+- **Build the general capability only when it's genuinely reusable AND
+  autonomous.** A real "core update changes conventions → upgrade existing
+  installs" system is worth it only if it runs itself silently via the stack —
+  never if it adds user steps.
+- **Default disposition: it should just work.** The win condition is the user
+  doing nothing and everything staying current, synced, and correct.
+
+See `project-context/PRINCIPLES.md` for the durable statement.
+
 ## The Quality Bar
 
 ### What "Done" Means
@@ -309,6 +342,7 @@ Read these before significant work:
 
 | File | What It Contains |
 |---|---|
+| `project-context/PRINCIPLES.md` | **Read first.** Autonomous-first / never-add-user-work; no bloat for one-offs |
 | `project-context/PRD.md` | Full product requirements, vision, user journeys |
 | `project-context/ARCHITECTURE.md` | System diagram, all tables, all API endpoints |
 | `project-context/CURRENT_STATE.md` | What's deployed, what's broken, next priorities |
