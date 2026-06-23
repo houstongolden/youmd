@@ -55,7 +55,7 @@ function buildGraph(real: ReturnType<typeof useRealData>): { nodes: GNode[]; edg
   });
   // skills attach to stacks/projects round-robin → organic clusters
   const anchors = nodes.filter((n) => n.kind === "stack" || n.kind === "project");
-  real.skills.slice(0, 110).forEach((s, i) => {
+  real.skills.slice(0, 72).forEach((s, i) => {
     const id = `s:${s.name}`;
     nodes.push({ id, label: s.name, kind: "skill" });
     const a = anchors[i % Math.max(1, anchors.length)];
@@ -116,8 +116,10 @@ export function GraphView({
   useEffect(() => {
     let alpha = 1;
     let raf = 0;
+    let frame = 0;
     const idx = nodes.map((n) => n.id);
     const step = () => {
+      frame++;
       const s = sim.current;
       // repulsion (all pairs; node counts kept modest for smoothness)
       for (let i = 0; i < idx.length; i++) {
@@ -156,9 +158,12 @@ export function GraphView({
         n.x += n.vx; n.y += n.vy;
       }
       alpha *= 0.985;
-      const snap: Record<string, { x: number; y: number }> = {};
-      for (const id of idx) if (s[id]) snap[id] = { x: s[id].x, y: s[id].y };
-      setPositions(snap);
+      // throttle React commits to ~30fps; always publish the final settled frame
+      if (frame % 2 === 0 || alpha <= 0.02) {
+        const snap: Record<string, { x: number; y: number }> = {};
+        for (const id of idx) if (s[id]) snap[id] = { x: s[id].x, y: s[id].y };
+        setPositions(snap);
+      }
       if (alpha > 0.02) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -232,15 +237,37 @@ export function GraphView({
                 const p = s[n.id];
                 if (!p) return null;
                 const on = lit(n.id);
-                const r = SIZE[n.kind];
-                const showLabel = n.kind === "you" || n.kind === "project" || n.kind === "stack" || hover === n.id || selectedNode === n.id;
+                const isCenter = n.id === "you";
+                const isHover = hover === n.id;
+                const isSel = selectedNode === n.id;
+                const r = SIZE[n.kind] * (isHover ? 1.55 : 1);
+                const showLabel = isCenter || n.kind === "project" || n.kind === "stack" || isHover || isSel;
                 return (
-                  <g key={n.id} transform={`translate(${p.x}, ${p.y})`} style={{ opacity: on ? 1 : 0.2, cursor: "pointer" }}
+                  <g key={n.id} transform={`translate(${p.x}, ${p.y})`} style={{ opacity: on ? 1 : 0.18, cursor: "pointer", transition: "opacity 160ms" }}
                     onPointerEnter={() => setHover(n.id)} onPointerLeave={() => setHover(null)}
                     onClick={(ev) => { ev.stopPropagation(); onSelectNode?.(n.id); }}>
-                    <circle r={r} fill={COLOR[n.kind]} stroke={selectedNode === n.id ? "hsl(var(--accent))" : "transparent"} strokeWidth={selectedNode === n.id ? 2 : 0} />
+                    {isCenter && (
+                      <circle r={20} fill="hsl(var(--accent))" opacity={0.12}>
+                        <animate attributeName="r" values="18;27;18" dur="3.6s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.16;0.05;0.16" dur="3.6s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                    {(isHover || isSel) && <circle r={r * 2.4} fill={COLOR[n.kind]} opacity={0.16} />}
+                    <circle
+                      r={r}
+                      fill={COLOR[n.kind]}
+                      stroke={isSel ? "hsl(var(--accent))" : isCenter ? "hsl(var(--accent))" : "transparent"}
+                      strokeWidth={isSel ? 2 : 0}
+                    />
                     {showLabel && (
-                      <text x={0} y={r + 8} textAnchor="middle" fontSize={n.kind === "you" ? 9 : 7} fill="hsl(var(--text-secondary))" style={{ fontFamily: "var(--font-mono, monospace)", pointerEvents: "none" }}>
+                      <text
+                        x={0}
+                        y={r + 9}
+                        textAnchor="middle"
+                        fontSize={isCenter ? 9.5 : isHover ? 8 : 7}
+                        fill={isCenter || isHover ? "hsl(var(--text-primary))" : "hsl(var(--text-secondary))"}
+                        style={{ fontFamily: "var(--font-mono, monospace)", pointerEvents: "none", paintOrder: "stroke", stroke: "hsl(var(--bg))", strokeWidth: 3, strokeLinejoin: "round" }}
+                      >
                         {n.label.length > 18 ? n.label.slice(0, 17) + "…" : n.label}
                       </text>
                     )}
