@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FILE_TREE, FILE_CONTENT, type FileNode } from "../../_data/mock";
 import { useRealData } from "../../_lib/RealDataContext";
-import { Markdown } from "../Markdown";
+import { Markdown, slugify } from "../Markdown";
 import { Icon } from "../icons";
 import { SectionLabel } from "../primitives";
 import { cn } from "../../_lib/cn";
@@ -154,6 +154,36 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
         ? `skills/${activeId.slice(6)}`
         : activeId;
 
+  // ── Obsidian-style intelligence computed from the live vault content ──
+  const baseName = (title.split("/").pop() ?? "").replace(/\.md$/, "");
+  const headings = source
+    .split("\n")
+    .map((l) => /^(#{1,4})\s+(.*)$/.exec(l))
+    .filter((m): m is RegExpExecArray => Boolean(m))
+    .map((m) => ({ level: m[1].length, text: m[2], id: `h-${slugify(m[2])}` }));
+  const tags = Array.from(new Set((source.match(/(?:^|\s)(#[A-Za-z][\w/-]*)/g) ?? []).map((t) => t.trim())));
+  const outLinks = Array.from(new Set((source.match(/\[\[[^\]]+\]\]/g) ?? []).map((w) => w.slice(2, -2))));
+  const nameIndex = new Map<string, string>();
+  for (const id of Object.keys(content)) {
+    const bn = (id.split("/").pop() ?? id).replace(/\.md$/, "").replace(/^(project|skill|stack|pfile):/, "").toLowerCase();
+    if (!nameIndex.has(bn)) nameIndex.set(bn, id);
+  }
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const backlinks =
+    baseName.length > 1
+      ? Object.entries(content)
+          .filter(([id, c]) => id !== activeId && new RegExp(`\\[\\[${esc(baseName)}\\]\\]`, "i").test(c))
+          .map(([id]) => ({ id, name: (id.split("/").pop() ?? id).replace(/\.md$/, "") }))
+      : [];
+  const openWiki = (name: string) => {
+    const id = nameIndex.get(name.toLowerCase());
+    if (id) onSelect(id);
+  };
+  const scrollToHeading = (id: string) => {
+    if (typeof document !== "undefined") document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const hasMeta = headings.length > 0 || tags.length > 0 || outLinks.length > 0 || backlinks.length > 0;
+
   return (
     <div className="flex h-full flex-col lg:flex-row">
       <aside className="max-h-40 w-full shrink-0 overflow-y-auto border-b border-[hsl(var(--border))] py-3 lg:max-h-none lg:w-56 lg:border-b-0 lg:border-r">
@@ -189,7 +219,7 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
         <div className="min-h-0 flex-1 overflow-y-auto">
           {mode === "read" ? (
             <div className="mx-auto max-w-2xl px-5 py-6 sm:px-8 sm:py-8">
-              <Markdown source={source} />
+              <Markdown source={source} onWikiLink={openWiki} />
             </div>
           ) : (
             <textarea
@@ -201,6 +231,63 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
           )}
         </div>
       </div>
+
+      {/* Obsidian-style metadata: outline · tags · links · backlinks */}
+      {hasMeta && mode === "read" && (
+        <aside className="hidden w-56 shrink-0 flex-col gap-5 overflow-y-auto border-l border-[hsl(var(--border))] px-3.5 py-4 xl:flex">
+          {headings.length > 0 && (
+            <div>
+              <SectionLabel className="mb-1.5">Outline</SectionLabel>
+              <div className="space-y-0.5">
+                {headings.map((h, i) => (
+                  <button
+                    key={i}
+                    onClick={() => scrollToHeading(h.id)}
+                    style={{ paddingLeft: (h.level - 1) * 10 }}
+                    className="block w-full truncate text-left text-[12px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]"
+                  >
+                    {h.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {tags.length > 0 && (
+            <div>
+              <SectionLabel className="mb-1.5">Tags</SectionLabel>
+              <div className="flex flex-wrap gap-1">
+                {tags.map((t) => (
+                  <span key={t} className="rounded-sm bg-[hsl(var(--accent))]/10 px-1.5 py-0.5 font-mono text-[10px] text-[hsl(var(--accent))]">{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          {outLinks.length > 0 && (
+            <div>
+              <SectionLabel className="mb-1.5">Links</SectionLabel>
+              <div className="space-y-0.5">
+                {outLinks.map((n) => (
+                  <button key={n} onClick={() => openWiki(n)} className="flex w-full items-center gap-1.5 truncate text-left text-[12px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]">
+                    <Icon name="branch" size={10} className="shrink-0 opacity-50" /> {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {backlinks.length > 0 && (
+            <div>
+              <SectionLabel className="mb-1.5">Backlinks · {backlinks.length}</SectionLabel>
+              <div className="space-y-0.5">
+                {backlinks.map((b) => (
+                  <button key={b.id} onClick={() => onSelect(b.id)} className="flex w-full items-center gap-1.5 truncate text-left text-[12px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]">
+                    <Icon name="file" size={10} className="shrink-0 opacity-50" /> {b.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
+      )}
     </div>
   );
 }
