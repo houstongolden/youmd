@@ -47,6 +47,7 @@ import {
   Repeat,
   Workflow,
   LogOut,
+  Pencil,
   type LucideIcon,
 } from "lucide-react";
 
@@ -95,6 +96,7 @@ const MAP = {
   loop: Repeat,
   workflow: Workflow,
   logout: LogOut,
+  pencil: Pencil,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof MAP;
