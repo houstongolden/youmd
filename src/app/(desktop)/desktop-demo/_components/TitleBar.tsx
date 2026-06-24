@@ -121,6 +121,21 @@ export function TitleBar({
         </button>
       )}
 
+      {/* show/hide the right inspector pane — direct toggle next to the shell toggle */}
+      {onToggleInspector && (
+        <button
+          onClick={onToggleInspector}
+          title={inspectorOpen ? "Hide inspector" : "Show inspector"}
+          aria-label="Toggle inspector"
+          className={cn(
+            "hidden rounded-sm p-1 transition-colors lg:block",
+            inspectorOpen ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]",
+          )}
+        >
+          <Icon name="panelRight" size={16} strokeWidth={1.5} />
+        </button>
+      )}
+
       {/* consolidated layout popover — desktop only */}
       <div className="relative hidden lg:block">
         <button
