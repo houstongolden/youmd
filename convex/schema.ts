@@ -998,6 +998,34 @@ export default defineSchema({
     .index("by_userId_channel_createdAt", ["userId", "channel", "createdAt"])
     .index("by_userId_messageId", ["userId", "messageId"]),
 
+  // ── Cross-machine remote commands (CROSS-MACHINE-AGENTS.md §4, Phase 2) ──
+  // Durable command tracking on top of the agent-bus dispatch convention.
+  // Phase 1 ships bus-only; this table is additive — dispatch writes a queued
+  // row AND posts the bus message, the daemon best-effort PATCHes status, and
+  // issuers prefer this for clean idempotent status polling. Everything stays
+  // backward-compatible: if these rows/routes are absent, Phase 1 bus polling
+  // still works.
+  remoteCommands: defineTable({
+    userId: v.id("users"),
+    requestId: v.string(), // ULID — idempotency + correlation key
+    targetHost: v.string(),
+    sourceHost: v.string(),
+    sourceAgent: v.string(),
+    action: v.string(), // whitelisted action id
+    args: v.optional(v.any()),
+    status: v.string(), // queued|acked|running|done|error|expired|rejected
+    ok: v.optional(v.boolean()),
+    output: v.optional(v.string()),
+    exitCode: v.optional(v.number()),
+    gitState: v.optional(v.any()),
+    issuedAt: v.number(),
+    expiresAt: v.number(),
+    completedAt: v.optional(v.number()),
+    secretValuesExposed: v.boolean(),
+  })
+    .index("by_userId_requestId", ["userId", "requestId"])
+    .index("by_userId_target_status", ["userId", "targetHost", "status"]),
+
   brainActivities: defineTable({
     userId: v.id("users"),
     activityId: v.string(),
