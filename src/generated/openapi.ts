@@ -5,7 +5,7 @@ export const openApiSpec = {
   "openapi": "3.1.0",
   "info": {
     "title": "You.md API",
-    "version": "0.8.13",
+    "version": "0.8.17",
     "description": "Generated source-of-truth API inventory for the You.md identity context protocol."
   },
   "servers": [
@@ -1229,6 +1229,123 @@ export const openApiSpec = {
       "post": {
         "operationId": "post_api_v1_me_realtime_sync_session",
         "summary": "Mint a short-lived websocket credential for trusted local daemons.",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/remote-commands": {
+      "get": {
+        "operationId": "get_api_v1_me_remote_commands",
+        "summary": "issuer status poll (requestId) or daemon work pull (targetHost+status).",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/remote-commands/dispatch": {
+      "post": {
+        "operationId": "post_api_v1_me_remote_commands_dispatch",
+        "summary": "write a queued row AND post the existing remote-command bus message. Requires the opt-in remote:command scope (same gate as posting a remote-command on the agent bus).",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/remote-commands/status": {
+      "post": {
+        "operationId": "post_api_v1_me_remote_commands_status",
+        "summary": "daemon best-effort status update (acked→running→done/error). No-op if the requestId has no queued row.",
         "tags": [
           "Account"
         ],

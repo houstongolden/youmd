@@ -107,6 +107,9 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
   const [mode, setMode] = useState<"read" | "live" | "source">("read");
   const [drafts, setDrafts] = useState<{ id: string; name: string; content: string }[]>([]);
   const [tplOpen, setTplOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameVal, setRenameVal] = useState("");
+  const [activeTag, setActiveTag] = useState<string | null>(null);
   const real = useRealData();
   const toast = useToast();
 
@@ -198,6 +201,12 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
     setMode("live");
   };
 
+  const renameDraft = (id: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (trimmed) setDrafts((d) => d.map((x) => (x.id === id ? { ...x, name: trimmed } : x)));
+    setRenamingId(null);
+  };
+
   const source = content[activeId] ?? real?.brain[0]?.content ?? "# Vault\n\nSelect a file.";
   const title = activeId.startsWith("project:")
     ? activeId.slice(8)
@@ -208,6 +217,8 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
         : activeId;
 
   // ── Obsidian-style intelligence computed from the live vault content ──
+  const isDraft = activeId.startsWith("draft:");
+  const draftName = isDraft ? drafts.find((d) => d.id === activeId)?.name ?? title : null;
   const baseName = (title.split("/").pop() ?? "").replace(/\.md$/, "");
   const headings = source
     .split("\n")
@@ -237,6 +248,16 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
     if (typeof document !== "undefined") document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const hasMeta = headings.length > 0 || tags.length > 0 || outLinks.length > 0 || backlinks.length > 0;
+
+  // Tag index: for each tag in the right panel, find all vault notes containing it
+  const tagIndex = (tag: string): { id: string; name: string }[] =>
+    Object.entries(content)
+      .filter(([, c]) => new RegExp(`(?:^|\\s)${tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:\\s|$)`, "m").test(c))
+      .map(([id]) => ({
+        id,
+        name: (id.split("/").pop() ?? id).replace(/\.md$/, "").replace(/^(project|skill|stack|pfile|draft):/, ""),
+      }))
+      .slice(0, 30);
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
@@ -276,9 +297,36 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--border))] px-4 py-2.5 lg:px-5">
-          <div className="flex min-w-0 items-center gap-2 font-mono text-[12px] text-[hsl(var(--text-secondary))]">
+          <div className="group flex min-w-0 items-center gap-2 font-mono text-[12px] text-[hsl(var(--text-secondary))]">
             <Icon name="file" size={13} className="shrink-0 opacity-60" />
-            <span className="truncate">{title}</span>
+            {isDraft && renamingId === activeId ? (
+              <input
+                autoFocus
+                value={renameVal}
+                onChange={(e) => setRenameVal(e.target.value)}
+                onBlur={() => renameDraft(activeId, renameVal)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") renameDraft(activeId, renameVal);
+                  if (e.key === "Escape") setRenamingId(null);
+                }}
+                className="min-w-0 rounded-sm border border-[hsl(var(--accent))]/50 bg-transparent px-1 font-mono text-[12px] text-[hsl(var(--text-primary))] outline-none focus:border-[hsl(var(--accent))]"
+                style={{ borderRadius: 2 }}
+              />
+            ) : (
+              <>
+                <span className="truncate">{isDraft ? (draftName ?? title) : title}</span>
+                {isDraft && (
+                  <button
+                    title="Rename note"
+                    aria-label="Rename note"
+                    onClick={() => { setRenamingId(activeId); setRenameVal(draftName ?? title); }}
+                    className="shrink-0 opacity-0 transition-opacity group-hover:opacity-60 hover:!opacity-100 text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))]"
+                  >
+                    <Icon name="pencil" size={11} />
+                  </button>
+                )}
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
           <button
@@ -350,9 +398,56 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
               <SectionLabel className="mb-1.5">Tags</SectionLabel>
               <div className="flex flex-wrap gap-1">
                 {tags.map((t) => (
-                  <span key={t} className="rounded-sm bg-[hsl(var(--accent))]/10 px-1.5 py-0.5 font-mono text-[10px] text-[hsl(var(--accent))]">{t}</span>
+                  <button
+                    key={t}
+                    onClick={() => setActiveTag(activeTag === t ? null : t)}
+                    className={cn(
+                      "rounded-sm px-1.5 py-0.5 font-mono text-[10px] transition-colors",
+                      activeTag === t
+                        ? "bg-[hsl(var(--accent))] text-white"
+                        : "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))]/25",
+                    )}
+                    style={{ borderRadius: 2 }}
+                  >
+                    {t}
+                  </button>
                 ))}
               </div>
+              {activeTag && (() => {
+                const hits = tagIndex(activeTag);
+                return (
+                  <div className="mt-2">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[hsl(var(--text-secondary))]/50">
+                        {hits.length} note{hits.length !== 1 ? "s" : ""}
+                      </span>
+                      <button
+                        onClick={() => setActiveTag(null)}
+                        aria-label="Close tag filter"
+                        className="font-mono text-[9px] text-[hsl(var(--text-secondary))]/40 hover:text-[hsl(var(--accent))]"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="space-y-0.5">
+                      {hits.length === 0 ? (
+                        <span className="text-[11px] text-[hsl(var(--text-secondary))]/40">no matches</span>
+                      ) : (
+                        hits.map((h) => (
+                          <button
+                            key={h.id}
+                            onClick={() => { onSelect(h.id); setActiveTag(null); }}
+                            className="flex w-full items-center gap-1.5 truncate text-left text-[12px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]"
+                          >
+                            <Icon name="file" size={10} className="shrink-0 opacity-50" />
+                            {h.name}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
           {outLinks.length > 0 && (

@@ -152,6 +152,7 @@ const HELP_GROUPS: Array<{
     title: "MACHINE & SYNC",
     commands: [
       { name: "machine", summary: "bootstrap a fresh Mac with your synced skills, stacks, and context" },
+      { name: "remote", summary: "check + trigger work on your other synced machines" },
     ],
   },
 ];

@@ -12,6 +12,9 @@ import {
   sendAgentBusMessage,
   listAgentBusMessages,
   recordBrainActivity,
+  dispatchRemoteCommandDurable,
+  updateRemoteCommandStatus,
+  getRemoteCommand,
   type AgentBusMessage,
 } from "./api";
 import { generateRequestId } from "./request-id";
@@ -91,10 +94,18 @@ export function buildCommandMetadata(
   };
 }
 
-/** Dispatch a whitelisted command to a target machine over the agent bus. */
+/**
+ * Dispatch a whitelisted command to a target machine.
+ *
+ * Phase 2: prefer the durable `/me/remote-commands/dispatch` endpoint, which
+ * writes a queued row AND posts the Phase 1 bus message server-side in one
+ * call. If that endpoint is unavailable (older deployment → 404, or any
+ * error), fall back to posting the bus message directly so Phase 1 behavior is
+ * preserved. Either way the requestId is the correlation key.
+ */
 export async function dispatchRemoteCommand(
   opts: DispatchOptions
-): Promise<{ ok: true; data: DispatchedCommand } | { ok: false; error: string }> {
+): Promise<{ ok: true; data: DispatchedCommand & { durable: boolean } } | { ok: false; error: string }> {
   if (!isAllowedRemoteAction(opts.action)) {
     return { ok: false, error: `action not in whitelist: ${opts.action}` };
   }
@@ -107,6 +118,42 @@ export async function dispatchRemoteCommand(
     opts.message?.trim() ||
     `${opts.action}${opts.args?.project ? ` ${opts.args.project}` : ""}`;
 
+  // 1. Preferred path — durable dispatch (queued row + bus message).
+  try {
+    const durable = await dispatchRemoteCommandDurable({
+      requestId: meta.requestId,
+      action: opts.action,
+      args: opts.args,
+      targetHost: opts.machine,
+      sourceHost: os.hostname(),
+      sourceAgent: opts.sourceAgent ?? "youmd remote",
+      body,
+      issuedAt: meta.issuedAt,
+      expiresAt: meta.expiresAt,
+    });
+    if (durable.ok) {
+      return {
+        ok: true,
+        data: {
+          requestId: meta.requestId,
+          expiresAt: meta.expiresAt,
+          targetHost: opts.machine,
+          durable: true,
+        },
+      };
+    }
+    // A scope/403 is a real authorization error, not a "route missing" — surface
+    // it instead of silently falling back (the bus path would 403 too).
+    if (durable.status === 403) {
+      const errBody = durable.data as unknown as { error?: { message?: string } } | undefined;
+      return { ok: false, error: errBody?.error?.message || "missing remote:command scope" };
+    }
+    // 404 / other → fall through to bus-only.
+  } catch {
+    // network/parse error → fall through to bus-only.
+  }
+
+  // 2. Fallback path — Phase 1 bus-only dispatch.
   const res = await sendAgentBusMessage({
     channel: REMOTE_COMMAND_CHANNEL,
     kind: "command",
@@ -126,7 +173,12 @@ export async function dispatchRemoteCommand(
 
   return {
     ok: true,
-    data: { requestId: meta.requestId, expiresAt: meta.expiresAt, targetHost: opts.machine },
+    data: {
+      requestId: meta.requestId,
+      expiresAt: meta.expiresAt,
+      targetHost: opts.machine,
+      durable: false,
+    },
   };
 }
 
@@ -138,21 +190,82 @@ export interface PollOptions {
   timeoutMs?: number;
 }
 
-/** Bounded poll of the result channel for a matching requestId. */
+/** Terminal statuses on a durable remote-command row. */
+const TERMINAL_STATUSES = new Set(["done", "error", "expired", "rejected"]);
+
+/** Map a durable remoteCommands row → the bus-style result metadata shape. */
+function durableRowToResult(row: {
+  requestId: string;
+  action: string;
+  ok: boolean | null;
+  output: string | null;
+  exitCode: number | null;
+  gitState: unknown;
+  status: string;
+  completedAt: number | null;
+}): RemoteResultMetadata {
+  const status: RemoteResultMetadata["status"] =
+    row.status === "rejected" ? "rejected" : row.ok ? "ok" : "error";
+  return {
+    requestId: row.requestId,
+    ok: Boolean(row.ok),
+    action: row.action,
+    exitCode: row.exitCode,
+    output: row.output ?? "",
+    gitState: row.gitState,
+    status,
+    error: row.ok ? undefined : `command ${row.status}`,
+    completedAt: row.completedAt ?? Date.now(),
+    secretValuesExposed: false,
+  };
+}
+
+/**
+ * Bounded poll for a command result.
+ *
+ * Phase 2: prefer the durable status endpoint (`GET /me/remote-commands?
+ * requestId=`) — a single authoritative row, no message-stream scan. If that
+ * endpoint is unavailable (404/error) on a given tick, fall back to scanning
+ * the Phase 1 result bus channel for the matching requestId. Returns on the
+ * first terminal status from either source.
+ */
 export async function pollForResult(
   opts: PollOptions
 ): Promise<RemoteResultMetadata | null> {
   const interval = opts.intervalMs ?? 2000;
   const timeout = opts.timeoutMs ?? 60_000;
   const deadline = Date.now() + timeout;
+  let durableAvailable = true;
 
   while (Date.now() < deadline) {
-    const res = await listAgentBusMessages({
+    // 1. Preferred — durable status row.
+    if (durableAvailable) {
+      try {
+        const res = await getRemoteCommand(opts.requestId);
+        if (res.ok && res.data?.command) {
+          const row = res.data.command;
+          if (TERMINAL_STATUSES.has(row.status)) {
+            return durableRowToResult(row);
+          }
+        } else if (res.status === 404 || res.status === 0) {
+          // Row not found yet — keep trying durable; the dispatch may not have
+          // used the durable path. We still also check the bus below.
+        } else if (res.status >= 400 && res.status !== 404) {
+          // Route genuinely unavailable on this deployment → stop hitting it.
+          durableAvailable = false;
+        }
+      } catch {
+        durableAvailable = false;
+      }
+    }
+
+    // 2. Fallback — Phase 1 result bus channel.
+    const busRes = await listAgentBusMessages({
       channel: REMOTE_RESULT_CHANNEL,
       limit: 50,
     });
-    if (res.ok) {
-      const match = (res.data?.messages || []).find((m) => {
+    if (busRes.ok) {
+      const match = (busRes.data?.messages || []).find((m) => {
         const meta = asMetadata(m.metadata);
         return meta.requestId === opts.requestId;
       });
@@ -161,6 +274,7 @@ export async function pollForResult(
         return meta as unknown as RemoteResultMetadata;
       }
     }
+
     await new Promise((r) => setTimeout(r, interval));
   }
   return null;
@@ -223,6 +337,45 @@ export function shouldHandleCommand(
 }
 
 /**
+ * Best-effort durable status transition for a command row (Phase 2). NEVER
+ * throws and never blocks — if the `remoteCommands` route/table isn't deployed
+ * (404), or the row was a bus-only command (server returns command: null), or
+ * the network fails, we log at debug level and continue. This is what keeps the
+ * daemon backward-compatible with Phase 1.
+ */
+async function patchRemoteStatus(
+  requestId: string,
+  status: "acked" | "running" | "done" | "error" | "rejected" | "expired",
+  log?: (line: string) => void,
+  extra?: {
+    ok?: boolean;
+    output?: string;
+    exitCode?: number | null;
+    gitState?: unknown;
+    completedAt?: number;
+  }
+): Promise<void> {
+  try {
+    const res = await updateRemoteCommandStatus({
+      requestId,
+      status,
+      ok: extra?.ok,
+      output: extra?.output,
+      exitCode: extra?.exitCode,
+      gitState: extra?.gitState,
+      completedAt: extra?.completedAt,
+    });
+    if (!res.ok && res.status && res.status !== 404) {
+      log?.(`remote-command status patch (${status}) returned HTTP ${res.status}`);
+    }
+  } catch (err) {
+    log?.(
+      `remote-command status patch (${status}) failed: ${err instanceof Error ? err.message : err}`
+    );
+  }
+}
+
+/**
  * Process one inbound command message end-to-end: validate, execute via the
  * whitelisted executor, post a result message, and write a brainActivity audit
  * row. Marks the requestId seen BEFORE execution so a concurrent replay is a
@@ -249,6 +402,12 @@ export async function handleRemoteCommand(
   seen.add(requestId);
 
   log?.(`remote-command ${action} (${requestId}) from ${issuerHost ?? "?"}`);
+
+  // Best-effort durable status transitions (Phase 2). Each call is wrapped so a
+  // missing table/route or any network error never blocks execution — the
+  // daemon stays fully backward-compatible with bus-only Phase 1.
+  await patchRemoteStatus(requestId, "acked", log);
+  await patchRemoteStatus(requestId, "running", log);
 
   let result: RemoteExecResult;
   try {
@@ -281,6 +440,18 @@ export async function handleRemoteCommand(
   const summary = result.ok
     ? `${result.action} ok`
     : `${result.action} ${result.status}: ${result.error ?? "failed"}`;
+
+  // Best-effort durable terminal status (Phase 2). "rejected" maps to the
+  // rejected status; any other failure is "error"; success is "done".
+  const terminalStatus =
+    result.status === "rejected" ? "rejected" : result.ok ? "done" : "error";
+  await patchRemoteStatus(requestId, terminalStatus, log, {
+    ok: result.ok,
+    output: result.output,
+    exitCode: result.exitCode,
+    gitState: result.gitState,
+    completedAt: resultMeta.completedAt,
+  });
 
   // Post the result back to the issuer.
   try {
