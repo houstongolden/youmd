@@ -85,6 +85,7 @@ function looksLikeProject(files: string[]): boolean {
   return files.includes("package.json") ||
     files.includes("AGENTS.md") ||
     files.includes("CLAUDE.md") ||
+    files.includes(".you-project") ||
     files.includes(".youmd-project") ||
     files.includes("next.config.ts") ||
     files.includes("vite.config.ts");

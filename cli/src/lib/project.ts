@@ -108,7 +108,8 @@ const PROJECT_MARKER_FILES = [
   "deno.json",
   "bun.lock",
   "pnpm-lock.yaml",
-  ".youmd-project",
+  ".you-project", // canonical marker
+  ".youmd-project", // legacy marker (still detected for backward-compat)
 ];
 
 const PROJECT_MARKER_DIRS = [
@@ -575,7 +576,7 @@ function buildWorkspaceSignals(projectDir: string): string[] {
   const hasAgents = fs.existsSync(path.join(projectDir, "AGENTS.md"));
   const hasClaude = fs.existsSync(path.join(projectDir, "CLAUDE.md"));
   const hasCodeMarker = getProjectMarkerSignals(projectDir).some((marker) =>
-    !["AGENTS.md", "CLAUDE.md", "project-context", ".youmd-project", ".agents", ".claude", ".claw"].includes(marker),
+    !["AGENTS.md", "CLAUDE.md", "project-context", ".you-project", ".youmd-project", ".agents", ".claude", ".claw"].includes(marker),
   );
   const contextDir = path.join(projectDir, "project-context");
   const contextFiles = countMarkdownFiles(contextDir);
