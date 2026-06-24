@@ -2886,6 +2886,229 @@ http.route({
   }),
 });
 
+// ── Cross-machine remote commands (CROSS-MACHINE-AGENTS.md §4, Phase 2) ──
+// Durable command tracking over the Phase 1 agent-bus dispatch convention.
+// All routes are owner-scoped under /me/*. Backward-compatible: Phase 1 still
+// works bus-only if a client/daemon never touches these routes.
+
+// POST /api/v1/me/remote-commands/dispatch — write a queued row AND post the
+// existing remote-command bus message. Requires the opt-in remote:command scope
+// (same gate as posting a remote-command on the agent bus).
+http.route({
+  path: "/api/v1/me/remote-commands/dispatch",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "remote:command", "activity");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    let body: {
+      requestId?: string;
+      action?: string;
+      args?: unknown;
+      targetHost?: string;
+      sourceHost?: string;
+      sourceAgent?: string;
+      body?: string;
+      issuedAt?: number;
+      expiresAt?: number;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
+    }
+
+    if (!body.requestId || typeof body.requestId !== "string") {
+      return errorResponse("invalid_request", "requestId is required", 400);
+    }
+    if (!body.action || typeof body.action !== "string") {
+      return errorResponse("invalid_request", "action is required", 400);
+    }
+    if (!body.targetHost || typeof body.targetHost !== "string") {
+      return errorResponse("invalid_request", "targetHost is required", 400);
+    }
+
+    const now = Date.now();
+    const issuedAt = Number.isFinite(body.issuedAt) ? (body.issuedAt as number) : now;
+    const expiresAt = Number.isFinite(body.expiresAt)
+      ? (body.expiresAt as number)
+      : now + 5 * 60 * 1000;
+    const args =
+      body.args && typeof body.args === "object" && !Array.isArray(body.args)
+        ? (body.args as Record<string, unknown>)
+        : undefined;
+
+    try {
+      // 1. Durable queued row (idempotent on requestId).
+      const command = await ctx.runMutation(api.remoteCommands.enqueue, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        requestId: body.requestId,
+        targetHost: body.targetHost,
+        sourceHost: body.sourceHost || "",
+        sourceAgent: body.sourceAgent || "youmd remote",
+        action: body.action,
+        args,
+        issuedAt,
+        expiresAt,
+      });
+
+      // 2. Post the Phase 1 bus message so existing daemons still receive it.
+      const message = await ctx.runMutation(api.agentBus.sendMessage, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        channel: "remote-command",
+        kind: "command",
+        body:
+          (typeof body.body === "string" && body.body.trim()) ||
+          `${body.action}${args?.project ? ` ${args.project}` : ""}`,
+        sourceHost: body.sourceHost,
+        sourceAgent: body.sourceAgent || "youmd remote",
+        targetHost: body.targetHost,
+        metadata: {
+          requestId: body.requestId,
+          action: body.action,
+          args,
+          issuedAt,
+          expiresAt,
+          secretValuesExposed: false,
+        },
+      });
+
+      return guard.finish(json({
+        success: true,
+        schemaVersion: "you-md/remote-command/v1",
+        command,
+        message,
+        secretValuesExposed: false,
+      }, 201));
+    } catch (err) {
+      return serverErrorResponse("me/remote-commands/dispatch", err, "Failed to dispatch remote command");
+    }
+  }),
+});
+
+// PATCH /api/v1/me/remote-commands/status — daemon best-effort status update
+// (acked→running→done/error). No-op if the requestId has no queued row.
+http.route({
+  path: "/api/v1/me/remote-commands/status",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "remote:command", "activity");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    let body: {
+      requestId?: string;
+      status?: string;
+      ok?: boolean;
+      output?: string;
+      exitCode?: number;
+      gitState?: unknown;
+      completedAt?: number;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("invalid_request", "Invalid JSON body", 400);
+    }
+
+    if (!body.requestId || typeof body.requestId !== "string") {
+      return errorResponse("invalid_request", "requestId is required", 400);
+    }
+    if (!body.status || typeof body.status !== "string") {
+      return errorResponse("invalid_request", "status is required", 400);
+    }
+
+    try {
+      const command = await ctx.runMutation(api.remoteCommands.updateStatus, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        requestId: body.requestId,
+        status: body.status,
+        ok: body.ok,
+        output: body.output,
+        exitCode: body.exitCode,
+        gitState: body.gitState,
+        completedAt: body.completedAt,
+      });
+      return guard.finish(json({
+        success: true,
+        schemaVersion: "you-md/remote-command/v1",
+        command, // null when no queued row existed (bus-only command)
+        secretValuesExposed: false,
+      }));
+    } catch (err) {
+      return serverErrorResponse("me/remote-commands/status", err, "Failed to update remote command status");
+    }
+  }),
+});
+
+// GET /api/v1/me/remote-commands?requestId=&targetHost=&status= — issuer status
+// poll (requestId) or daemon work pull (targetHost+status).
+http.route({
+  path: "/api/v1/me/remote-commands",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private", "activity");
+    if (denied) return denied;
+
+    const url = new URL(request.url);
+    const requestId = url.searchParams.get("requestId") || undefined;
+    const targetHost = url.searchParams.get("targetHost") || undefined;
+    const status = url.searchParams.get("status") || undefined;
+    const limitRaw = url.searchParams.get("limit");
+    const limit = limitRaw ? Number(limitRaw) : undefined;
+
+    try {
+      // Single-command status lookup.
+      if (requestId) {
+        const command = await ctx.runQuery(api.remoteCommands.getByRequestId, {
+          clerkId: auth.userId,
+          _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+          requestId,
+        });
+        if (!command) {
+          return errorResponse("not_found", "remote command not found", 404);
+        }
+        return json({
+          success: true,
+          schemaVersion: "you-md/remote-command/v1",
+          command,
+          secretValuesExposed: false,
+        });
+      }
+
+      // List / work-pull.
+      const commands = await ctx.runQuery(api.remoteCommands.list, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        targetHost,
+        status,
+        limit: Number.isFinite(limit) ? limit : undefined,
+      });
+      return json({
+        success: true,
+        schemaVersion: "you-md/remote-commands/v1",
+        commands,
+        count: commands.length,
+        secretValuesExposed: false,
+      });
+    } catch (err) {
+      return serverErrorResponse("me/remote-commands", err, "Failed to load remote commands");
+    }
+  }),
+});
+
 // POST /api/v1/me/brain-activities — record a redacted, owner-scoped live brain activity event.
 http.route({
   path: "/api/v1/me/brain-activities",
@@ -5144,6 +5367,9 @@ http.route({ path: "/api/v1/me/portfolio/brain-dumps", method: "OPTIONS", handle
 http.route({ path: "/api/v1/me/synced-brain/graph", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/realtime-sync/session", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/agent-bus/messages", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/remote-commands", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/remote-commands/dispatch", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/remote-commands/status", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/brain-activities", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/secret-vault/devices", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/secret-vault/envelopes", method: "OPTIONS", handler: corsPreflight });
