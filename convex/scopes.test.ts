@@ -28,6 +28,7 @@ describe("isKnownScope", () => {
       "write:bundle",
       "write:memories",
       "vault",
+      "remote:command",
     ]);
     for (const scope of API_SCOPES) {
       expect(isKnownScope(scope)).toBe(true);
@@ -155,7 +156,7 @@ describe("scope defaults (P36)", () => {
     expect(OWNER_SESSION_SCOPES).toEqual([...API_SCOPES]);
   });
 
-  it("DEFAULT_OWNER_KEY_SCOPES is everything except vault (vault is opt-in)", () => {
+  it("DEFAULT_OWNER_KEY_SCOPES excludes opt-in scopes (vault, remote:command)", () => {
     expect(DEFAULT_OWNER_KEY_SCOPES).toEqual([
       "read:public",
       "read:private",
@@ -163,5 +164,10 @@ describe("scope defaults (P36)", () => {
       "write:memories",
     ]);
     expect(DEFAULT_OWNER_KEY_SCOPES).not.toContain("vault");
+    expect(DEFAULT_OWNER_KEY_SCOPES).not.toContain("remote:command");
+  });
+
+  it("OWNER_SESSION_SCOPES includes remote:command (owner login keys can dispatch)", () => {
+    expect(OWNER_SESSION_SCOPES).toContain("remote:command");
   });
 });
