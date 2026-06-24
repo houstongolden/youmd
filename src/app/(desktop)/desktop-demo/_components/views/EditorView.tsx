@@ -5,6 +5,7 @@ import { FILE_TREE, FILE_CONTENT, type FileNode } from "../../_data/mock";
 import { useRealData } from "../../_lib/RealDataContext";
 import { Markdown, slugify } from "../Markdown";
 import { Icon, type IconName } from "../icons";
+import { useToast } from "../Toast";
 import { SectionLabel } from "../primitives";
 import { cn } from "../../_lib/cn";
 
@@ -107,6 +108,7 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
   const [drafts, setDrafts] = useState<{ id: string; name: string; content: string }[]>([]);
   const [tplOpen, setTplOpen] = useState(false);
   const real = useRealData();
+  const toast = useToast();
 
   // Build the tree + a content map from REAL data when available, else mock.
   let tree: FileNode[] = FILE_TREE;
@@ -278,6 +280,14 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
             <Icon name="file" size={13} className="shrink-0 opacity-60" />
             <span className="truncate">{title}</span>
           </div>
+          <div className="flex items-center gap-2">
+          <button
+            onClick={() => toast(`you-agent is drafting "${baseName || title}" from your brain context…`, "sparkles")}
+            title="Draft / expand this note with your agent"
+            className="flex items-center gap-1 rounded-sm border border-[hsl(var(--border))] px-2 py-1 font-mono text-[11px] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--accent))]/40 hover:text-[hsl(var(--accent))]"
+          >
+            <Icon name="sparkles" size={12} /> agent
+          </button>
           <div className="flex overflow-hidden rounded-sm border border-[hsl(var(--border))]">
             {(["read", "live", "source"] as const).map((m) => (
               <button
@@ -291,6 +301,7 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
                 {m}
               </button>
             ))}
+          </div>
           </div>
         </div>
 
