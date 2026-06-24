@@ -23,6 +23,12 @@ import { decompileToFilesystem } from "../lib/decompile";
 import { mergeSections, decisionLabel } from "../lib/merge";
 import { BrailleSpinner } from "../lib/render";
 import {
+  SeenRequestSet,
+  handleRemoteCommand,
+  REMOTE_COMMAND_CHANNEL,
+} from "../lib/remote-command";
+import type { AgentBusMessage } from "../lib/api";
+import {
   DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS,
   DEFAULT_AGENT_STACK_REPAIR_INTERVAL_SECONDS,
   describeRealtimeAgentBus,
@@ -350,6 +356,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   let lastInventoryRunAt = 0;
   let lastRepairRunAt = 0;
   let lastAgentMessageAt = 0;
+  const seenRemoteCommands = new SeenRequestSet();
   let materializing = false;
   let pendingReason: string | null = null;
   let latestHead: RealtimeSyncHead | null = null;
@@ -416,6 +423,21 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
                 console.log(`     ${chalk.dim(when)} ${chalk.cyan(from || "agent")}${target}: ${message.body}`);
               }
               console.log(chalk.dim(`     inbox: ${agentBus.inboxPath}`));
+
+              // Cross-machine command handler (CROSS-MACHINE-AGENTS.md §5).
+              // Filter to remote-command messages addressed to this host, then
+              // validate + execute via the whitelisted executor. Idempotency,
+              // expiry, and host-targeting all live in handleRemoteCommand.
+              const remoteCommands = unseenMessages.filter(
+                (message) => message.channel === REMOTE_COMMAND_CHANNEL,
+              );
+              for (const command of remoteCommands) {
+                await handleRemoteCommand(
+                  command as unknown as AgentBusMessage,
+                  seenRemoteCommands,
+                  (line) => console.log(chalk.dim("  -- remote-command: ") + line),
+                );
+              }
             }
             const vaultStatus = describeRealtimeSecretVault(latestHead);
             console.log(chalk.dim("  -- secret vault: ") + (vaultStatus.state === "ready" ? chalk.green(vaultStatus.summary) : chalk.yellow(vaultStatus.summary)));
