@@ -81,6 +81,16 @@ function defaultSkills(): SkillEntry[] {
       installed: false,
     },
     {
+      name: "remote-machine",
+      description: "Check a synced machine's work status and trigger it to commit/push so you can resume elsewhere",
+      version: "1.0.0",
+      source: "bundled:remote-machine.md",
+      scope: "shared",
+      identity_fields: ["profile.about", "preferences.agent"],
+      requires: ["youstack-start"],
+      installed: false,
+    },
+    {
       name: "portfolio-graph-auditor",
       description: "Audit active projects, API/MCP dependencies, env providers, service accounts, and reusable patterns",
       version: "1.0.0",
