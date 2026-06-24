@@ -2,6 +2,11 @@ name: Publish CLI to npm
 
 on:
   workflow_dispatch:
+  # Autonomous publish: a version bump landing on main publishes itself.
+  push:
+    branches: [main]
+    paths:
+      - "cli/package.json"
 
 permissions:
   contents: read
@@ -38,6 +43,20 @@ jobs:
         working-directory: cli
         run: npm run build
 
+      - name: Skip if this version is already published
+        id: published
+        working-directory: cli
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "youmd@$VERSION" version >/dev/null 2>&1; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+            echo "youmd@$VERSION already on npm — nothing to publish"
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+            echo "youmd@$VERSION not yet published — will publish"
+          fi
+
       - name: Publish CLI
+        if: steps.published.outputs.already == 'false'
         working-directory: cli
         run: npm publish --provenance --access public
