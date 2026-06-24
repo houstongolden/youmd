@@ -1,5 +1,31 @@
 # You.md — Changelog
 
+## 2026-06-24 — Cross-machine agents + autonomous publishing + vault authoring
+
+### feat(cross-machine): agent-to-agent collaboration over the synced bus
+- From any machine/agent: `you remote status/list` + `remote_machine_status` MCP
+  tool check a synced machine's git/proof/activity; `you remote run` +
+  `remote_machine_run` + the `remote-machine` YStack skill trigger whitelisted
+  git actions (status/commit_push/pull) on a target machine via the Convex-relayed
+  agent bus + resident daemon handler. Security: opt-in `remote:command` scope,
+  execFile+argv (no shell), symlink-resolved path containment, secret redaction,
+  reversible-only mutations, audit. Verified: executor against a real repo, scope
+  gate rejection, path-escape + non-whitelist rejection, 612 tests. Design:
+  `project-context/CROSS-MACHINE-AGENTS.md`. Published youmd 0.8.15→0.8.17.
+
+### chore(release): autonomous npm publishing (no OTP)
+- `publish-cli.yml` uses npm OIDC trusted publishing + auto-fires on a
+  `cli/package.json` version bump landing on main (skip-if-already-published
+  guard). A version bump pushed from any machine self-publishes. Proven live.
+
+### feat(keys): permanent (no-expiry) machine keys; youmd→you home migration
+- Web mint + CLI `keys create --permanent` issue never-expiring keys so sync never
+  silently breaks. `you machine migrate-home` migrated `~/.youmd → ~/.you`.
+
+### feat(vault): manual + agent doc authoring
+- Template-based note creation (blank/daily/research/meeting), frontmatter→
+  properties panel, agent-draft affordance.
+
 ## 2026-06-23 — Desktop shell converged onto the new 6-destination IA
 
 ### feat(shell): new second-brain shell is now the default `/shell`
