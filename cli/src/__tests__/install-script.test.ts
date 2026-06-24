@@ -21,7 +21,7 @@ describe("install.sh route", () => {
     expect(script).toContain('$LEGACY_YOUMD_HOME_DIR/bin:$LEGACY_YOUMD_HOME_DIR/npm-global/bin');
     expect(script).toContain('PACKAGE="youmd@$CLI_VERSION"');
     expect(script).toContain("npm_install_global()");
-    expect(script).toContain('npm install -g --prefix "$NPM_GLOBAL_PREFIX" "$@"');
+    expect(script).toContain('npm install -g --prefer-online --prefix "$NPM_GLOBAL_PREFIX" "$@"');
     expect(script).toContain('PATH_WITHOUT_YOUMD=""');
     expect(script).toContain('[ "$BIN_PATH" != "$YOUMD_BIN_DIR/$BIN_NAME" ]');
     expect(script).toContain("hash -r");
