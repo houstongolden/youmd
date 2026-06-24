@@ -7,6 +7,15 @@ import {
   type AgentBusMessage,
 } from "../lib/api";
 import { isAuthenticated } from "../lib/config";
+import {
+  dispatchRemoteCommand,
+  pollForResult,
+  describeWhitelist,
+} from "../lib/remote-command";
+import {
+  ALLOWED_REMOTE_ACTIONS,
+  isAllowedRemoteAction,
+} from "../lib/remote-executor";
 
 const DIM = chalk.dim;
 const ACCENT = chalk.hex("#C46A3A");
@@ -14,6 +23,9 @@ const ACCENT = chalk.hex("#C46A3A");
 export type RemoteCommandOptions = {
   limit?: string;
   json?: boolean;
+  message?: string;
+  project?: string;
+  timeout?: string;
 };
 
 function relativeTime(ts: number): string {
@@ -240,18 +252,146 @@ async function machineStatus(
   }
 }
 
+/**
+ * Phase 1: dispatch a whitelisted command to another machine and wait
+ * (bounded) for the result. The hard security boundary is on the target
+ * daemon's executor — this side only addresses + polls.
+ */
+async function runRemoteCommand(
+  machine: string | undefined,
+  action: string | undefined,
+  options: RemoteCommandOptions
+): Promise<void> {
+  if (!isAuthenticated()) return notAuthed();
+
+  if (!machine || !action) {
+    console.log("");
+    console.log(chalk.yellow("  usage: ") + chalk.cyan("youmd remote run <machine> <action> [--project <p>] [--message <m>]"));
+    console.log("");
+    console.log("  " + DIM("actions:"));
+    for (const line of describeWhitelist()) {
+      console.log("    " + DIM(line));
+    }
+    console.log("");
+    return;
+  }
+
+  if (!isAllowedRemoteAction(action)) {
+    console.log("");
+    console.log(chalk.yellow(`  unknown action "${action}"`));
+    console.log("  " + DIM("allowed: ") + ALLOWED_REMOTE_ACTIONS.join(", "));
+    console.log("");
+    return;
+  }
+
+  const args: Record<string, unknown> = {};
+  if (options.project) args.project = options.project;
+  if (options.message) args.message = options.message;
+
+  const timeoutMs = Math.min(
+    Math.max(Number(options.timeout) * 1000 || 60_000, 5_000),
+    180_000
+  );
+
+  console.log("");
+  const spinner = new (await import("../lib/render")).BrailleSpinner(
+    `dispatching ${action} to ${machine}...`
+  );
+  spinner.start();
+
+  const dispatched = await dispatchRemoteCommand({
+    machine,
+    action,
+    args,
+    message: options.message,
+    sourceAgent: "youmd remote cli",
+  });
+
+  if (!dispatched.ok) {
+    spinner.fail(dispatched.error);
+    if (/scope/i.test(dispatched.error)) {
+      console.log("  " + DIM("this key needs the ") + chalk.cyan("remote:command") + DIM(" scope (opt-in, like vault)."));
+    }
+    console.log("");
+    process.exitCode = 1;
+    return;
+  }
+
+  spinner.stop(`dispatched ${chalk.dim(dispatched.data.requestId)}`);
+
+  const waitSpinner = new (await import("../lib/render")).BrailleSpinner(
+    `waiting for ${machine} to respond...`
+  );
+  waitSpinner.start();
+
+  const result = await pollForResult({
+    requestId: dispatched.data.requestId,
+    timeoutMs,
+  });
+
+  if (!result) {
+    waitSpinner.fail("no response before timeout");
+    console.log(
+      "  " + DIM("the target daemon may be offline. check ") +
+        chalk.cyan(`youmd remote status ${machine}`)
+    );
+    console.log("");
+    process.exitCode = 1;
+    return;
+  }
+
+  if (options.json) {
+    waitSpinner.stop("");
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  if (result.ok) {
+    waitSpinner.stop(chalk.green(`${result.action} ok`));
+  } else {
+    waitSpinner.fail(`${result.action} ${result.status}: ${result.error ?? "failed"}`);
+  }
+
+  const gitState = result.gitState as
+    | { branch?: string; dirty?: boolean; ahead?: number; behind?: number; lastCommit?: string }
+    | undefined;
+  if (gitState) {
+    console.log(
+      "  " + DIM("git   ") +
+        chalk.cyan(gitState.branch ?? "?") +
+        DIM(`  ${gitState.dirty ? "dirty" : "clean"}, ahead ${gitState.ahead ?? 0}, behind ${gitState.behind ?? 0}`)
+    );
+    if (gitState.lastCommit) {
+      console.log("  " + DIM("commit ") + DIM(gitState.lastCommit));
+    }
+  }
+  if (result.output) {
+    console.log("");
+    for (const line of result.output.split("\n").slice(0, 20)) {
+      console.log("  " + DIM(line));
+    }
+  }
+  console.log("");
+}
+
 function usage(): void {
   console.log("");
-  console.log("  " + chalk.bold("youmd remote") + DIM(" -- cross-machine agent status (read-only)"));
+  console.log("  " + chalk.bold("youmd remote") + DIM(" -- cross-machine agent status + commands"));
   console.log("");
   console.log("  " + DIM("list:   ") + chalk.cyan("youmd remote list"));
   console.log("  " + DIM("status: ") + chalk.cyan("youmd remote status <machine>"));
+  console.log("  " + DIM("run:    ") + chalk.cyan("youmd remote run <machine> <action> [--project <p>] [--message <m>]"));
+  console.log("");
+  console.log("  " + DIM("actions:"));
+  for (const line of describeWhitelist()) {
+    console.log("    " + DIM(line));
+  }
   console.log("");
   console.log(
-    "  " + DIM("Phase 0 reports synced machine state + last agent activity from the cloud.")
+    "  " + DIM("Remote commands require the ") + chalk.cyan("remote:command") + DIM(" key scope (opt-in).")
   );
   console.log(
-    "  " + DIM("Remote commit/push (Phase 1) is specified in project-context/CROSS-MACHINE-AGENTS.md.")
+    "  " + DIM("Full spec: project-context/CROSS-MACHINE-AGENTS.md")
   );
   console.log("");
 }
@@ -266,6 +406,8 @@ export async function remoteCommand(
       return listMachines(options);
     case "status":
       return machineStatus(args[0], options);
+    case "run":
+      return runRemoteCommand(args[0], args[1], options);
     case undefined:
     case "help":
       return usage();
