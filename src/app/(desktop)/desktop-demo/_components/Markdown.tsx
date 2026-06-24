@@ -66,6 +66,32 @@ export function Markdown({ source, onWikiLink }: { source: string; onWikiLink?: 
   let i = 0;
   let key = 0;
 
+  // Frontmatter (--- … ---) → a clean property panel (Notion/Obsidian style).
+  if (lines[0]?.trim() === "---") {
+    let j = 1;
+    const props: [string, string][] = [];
+    while (j < lines.length && lines[j].trim() !== "---") {
+      const fm = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(lines[j]);
+      if (fm) props.push([fm[1], fm[2]]);
+      j += 1;
+    }
+    if (j < lines.length) {
+      i = j + 1;
+      if (props.length) {
+        blocks.push(
+          <div key={key++} className="mb-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]/40 px-3 py-2">
+            {props.map(([k, v], pi) => (
+              <React.Fragment key={pi}>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">{k}</span>
+                <span className="text-[12px] text-[hsl(var(--text-secondary))]">{v || "—"}</span>
+              </React.Fragment>
+            ))}
+          </div>,
+        );
+      }
+    }
+  }
+
   while (i < lines.length) {
     const line = lines[i];
 
