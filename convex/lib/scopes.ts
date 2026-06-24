@@ -17,6 +17,11 @@
  *                    context writes, skill installs)
  *   write:memories — append/save memories
  *   vault          — read/write the encrypted vault
+ *   remote:command — dispatch whitelisted cross-machine agent commands
+ *                    (git status/commit/push/pull, agent status) over the
+ *                    agent bus to another of the owner's synced machines.
+ *                    Opt-in like `vault` — excluded from default owner key
+ *                    scopes; owner login session keys carry it.
  */
 export const API_SCOPES = [
   "read:public",
@@ -24,6 +29,7 @@ export const API_SCOPES = [
   "write:bundle",
   "write:memories",
   "vault",
+  "remote:command",
 ] as const;
 
 export type ApiScope = (typeof API_SCOPES)[number];

@@ -698,13 +698,19 @@ program
 
 program
   .command("remote [subcommand] [args...]")
-  .description("Cross-machine agent status -- check a synced machine's work state (read-only)")
+  .description("Cross-machine agents -- status (read-only) or run a whitelisted command on a synced machine")
   .option("--limit <n>", "Max machines/messages to scan", "20")
   .option("--json", "Print JSON")
+  .option("--project <name>", "Project to target for a remote run")
+  .option("--message <m>", "Commit message / human-readable command body")
+  .option("--timeout <seconds>", "Seconds to wait for a remote run result", "60")
   .action((subcommand, args, options) => {
     return remoteCommand(subcommand, args || [], {
       limit: options.limit,
       json: options.json,
+      project: options.project,
+      message: options.message,
+      timeout: options.timeout,
     });
   });
 

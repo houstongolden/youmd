@@ -74,6 +74,12 @@ import {
   runYouStackSmoke,
 } from "../lib/youstack";
 import { getPortfolioGraphProjectSlice, portfolioGraphBriefFromSnapshot } from "../lib/portfolio-graph";
+import {
+  dispatchRemoteCommand,
+  pollForResult,
+  describeWhitelist,
+} from "../lib/remote-command";
+import { ALLOWED_REMOTE_ACTIONS, isAllowedRemoteAction } from "../lib/remote-executor";
 
 // ─── Shared config/helpers (duplicated here to avoid circular server.ts dep) ──
 
@@ -1438,6 +1444,118 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
             ),
           },
         ],
+      };
+    },
+  },
+
+  // ── remote_machine_run ──────────────────────────────────────────────────────
+  {
+    name: "remote_machine_run",
+    description:
+      "Dispatch a WHITELISTED command to one of the user's OTHER synced machines (e.g. tell an office Mac mini to commit and push) and wait (bounded) for the result. Use after remote_machine_status shows work that is dirty/unpushed. Only these actions are allowed: git.status, git.last_activity, git.commit_push (git add -A && commit && push), git.pull (--ff-only), agent.status. No arbitrary shell. Requires the opt-in `remote:command` API-key scope. The remote daemon validates the action against the whitelist and resolves the project against known You.md roots before executing.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        machine: {
+          type: "string",
+          description: "Hostname (or close substring) of the target machine, e.g. 'office-mac-mini.local'.",
+        },
+        action: {
+          type: "string",
+          enum: [...ALLOWED_REMOTE_ACTIONS],
+          description: "Whitelisted action id. One of: " + ALLOWED_REMOTE_ACTIONS.join(", "),
+        },
+        args: {
+          type: "object",
+          description: "Action args. `project` (project name) is required for git.* actions; `message` sets the commit message for git.commit_push.",
+          properties: {
+            project: { type: "string", description: "Project name to operate on (resolved against known You.md roots on the target)." },
+            message: { type: "string", description: "Commit message for git.commit_push." },
+          },
+        },
+        timeout_seconds: {
+          type: "number",
+          description: "Seconds to wait for the result (default 60, max 180).",
+        },
+      },
+      required: ["machine", "action"],
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return {
+          content: [{ type: "text", text: "authentication required — run `you login` or provide a you.md API key" }],
+          isError: true,
+        };
+      }
+      const machine = typeof args.machine === "string" ? args.machine.trim() : "";
+      const action = typeof args.action === "string" ? args.action.trim() : "";
+      if (!machine || !action) {
+        return { content: [{ type: "text", text: "machine and action are required" }], isError: true };
+      }
+      if (!isAllowedRemoteAction(action)) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `action not in whitelist: ${action}`,
+              allowed: ALLOWED_REMOTE_ACTIONS,
+              actions: describeWhitelist(),
+            }, null, 2),
+          }],
+          isError: true,
+        };
+      }
+      const rawArgs = args.args && typeof args.args === "object" && !Array.isArray(args.args)
+        ? (args.args as Record<string, unknown>)
+        : {};
+      const timeoutMs = boundedNumber(args.timeout_seconds, 60, 5, 180) * 1000;
+
+      const dispatched = await dispatchRemoteCommand({
+        machine,
+        action,
+        args: rawArgs,
+        message: typeof rawArgs.message === "string" ? rawArgs.message : undefined,
+        sourceAgent: ctx.resolveAgentName(),
+      });
+      if (!dispatched.ok) {
+        ctx.logActivity("write", "remote/command-dispatch", { machine, action, ok: false });
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({ ok: false, error: dispatched.error, scopeHint: /scope/i.test(dispatched.error) ? "this key needs the remote:command scope (opt-in)" : undefined }, null, 2),
+          }],
+          isError: true,
+        };
+      }
+
+      ctx.logActivity("write", "remote/command-dispatch", {
+        machine,
+        action,
+        requestId: dispatched.data.requestId,
+      });
+
+      const result = await pollForResult({ requestId: dispatched.data.requestId, timeoutMs });
+      if (!result) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              ok: false,
+              requestId: dispatched.data.requestId,
+              error: "no response before timeout — the target daemon may be offline",
+              hint: "check remote_machine_status for that machine",
+            }, null, 2),
+          }],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({ schemaVersion: "you-md/remote-command-result/v1", ...result }, null, 2),
+        }],
+        isError: !result.ok,
       };
     },
   },

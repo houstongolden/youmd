@@ -2821,6 +2821,16 @@ http.route({
       return errorResponse("invalid_request", "Invalid JSON body", 400);
     }
 
+    // Cross-machine command dispatch (Phase 1, CROSS-MACHINE-AGENTS.md §7) is
+    // gated behind the opt-in `remote:command` scope. Posting an ordinary
+    // agent-bus message stays on write:memories; only the command channel
+    // requires the elevated scope so an agent key cannot trigger remote git
+    // mutations unless explicitly granted.
+    if (body.channel === "remote-command") {
+      const remoteDenied = await requireScope(ctx, request, auth, "remote:command", "activity");
+      if (remoteDenied) return remoteDenied;
+    }
+
     if (!body.body || typeof body.body !== "string") {
       return errorResponse("invalid_request", "body is required", 400);
     }
