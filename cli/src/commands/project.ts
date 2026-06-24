@@ -122,12 +122,14 @@ async function initProject(args: string[]): Promise<void> {
 
   const description = await ask(rl, chalk.dim("  description (optional): "));
 
-  // Ask if they want to create a .youmd-project marker file in the project root
+  // Ask if they want to create a .you-project marker file in the project root
+  // (legacy .youmd-project is still honored if present).
   let createMarker = false;
   if (detected) {
-    const youmdProjectPath = path.join(detected.root, ".youmd-project");
-    if (!fs.existsSync(youmdProjectPath)) {
-      const markerAnswer = await ask(rl, chalk.dim("  create .youmd-project marker in project root? [Y/n]: "));
+    const markerPath = path.join(detected.root, ".you-project");
+    const legacyMarkerPath = path.join(detected.root, ".youmd-project");
+    if (!fs.existsSync(markerPath) && !fs.existsSync(legacyMarkerPath)) {
+      const markerAnswer = await ask(rl, chalk.dim("  create .you-project marker in project root? [Y/n]: "));
       createMarker = !markerAnswer || markerAnswer.toLowerCase() !== "n";
     }
   }
@@ -147,9 +149,9 @@ async function initProject(args: string[]): Promise<void> {
 
   initProjectFiles(projectDir, projectName, description);
 
-  // Also create .youmd-project marker in the project root if requested
+  // Also create .you-project marker in the project root if requested
   if (createMarker && detected) {
-    const youmdProjectPath = path.join(detected.root, ".youmd-project");
+    const youmdProjectPath = path.join(detected.root, ".you-project");
     const projectFile: YoumdProjectFile = {
       name: projectName,
       description: description || undefined,

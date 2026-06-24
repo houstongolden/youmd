@@ -77,10 +77,12 @@ configure_npm_target() {
 }
 
 npm_install_global() {
+  # --prefer-online: always revalidate the registry so a stale cached dist-tag
+  # (e.g. an old "latest") can never serve an outdated version on install/upgrade.
   if [ -n "$NPM_GLOBAL_PREFIX" ]; then
-    npm install -g --prefix "$NPM_GLOBAL_PREFIX" "$@"
+    npm install -g --prefer-online --prefix "$NPM_GLOBAL_PREFIX" "$@"
   else
-    npm install -g "$@"
+    npm install -g --prefer-online "$@"
   fi
 }
 
