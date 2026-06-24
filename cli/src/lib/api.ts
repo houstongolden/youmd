@@ -347,6 +347,104 @@ export async function recordBrainActivity(
   });
 }
 
+// ─── Cross-machine remote commands (durable, Phase 2) ───────────────
+// CROSS-MACHINE-AGENTS.md §4. Additive over the Phase 1 agent-bus path:
+// these talk to the optional `remoteCommands` table. Every call is wrapped
+// by callers in best-effort try/catch so a deployment without these routes
+// (404/anything) cleanly falls back to bus-only behavior.
+
+export interface RemoteCommandRecord {
+  id: string;
+  requestId: string;
+  targetHost: string;
+  sourceHost: string;
+  sourceAgent: string;
+  action: string;
+  args: unknown;
+  status: "queued" | "acked" | "running" | "done" | "error" | "expired" | "rejected";
+  ok: boolean | null;
+  output: string | null;
+  exitCode: number | null;
+  gitState: unknown;
+  issuedAt: number;
+  expiresAt: number;
+  completedAt: number | null;
+  secretValuesExposed: false;
+}
+
+/** Write a durable queued row + post the Phase 1 bus message (server-side). */
+export async function dispatchRemoteCommandDurable(payload: {
+  requestId: string;
+  action: string;
+  args?: Record<string, unknown>;
+  targetHost: string;
+  sourceHost?: string;
+  sourceAgent?: string;
+  body?: string;
+  issuedAt?: number;
+  expiresAt?: number;
+}): Promise<ApiResponse<{
+  success: boolean;
+  command: RemoteCommandRecord;
+  message: AgentBusMessage;
+}>> {
+  return apiRequest("/api/v1/me/remote-commands/dispatch", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+/** Daemon best-effort status transition (acked→running→done/error). */
+export async function updateRemoteCommandStatus(payload: {
+  requestId: string;
+  status: string;
+  ok?: boolean;
+  output?: string;
+  exitCode?: number | null;
+  gitState?: unknown;
+  completedAt?: number;
+}): Promise<ApiResponse<{ success: boolean; command: RemoteCommandRecord | null }>> {
+  return apiRequest("/api/v1/me/remote-commands/status", {
+    method: "POST",
+    token: getToken(),
+    body: {
+      ...payload,
+      exitCode: payload.exitCode === null ? undefined : payload.exitCode,
+    },
+  });
+}
+
+/** Single-command status poll by requestId. */
+export async function getRemoteCommand(
+  requestId: string
+): Promise<ApiResponse<{ success: boolean; command: RemoteCommandRecord }>> {
+  return apiRequest(
+    `/api/v1/me/remote-commands?requestId=${encodeURIComponent(requestId)}`,
+    { token: getToken() }
+  );
+}
+
+/** List remote commands (daemon work-pull via targetHost+status). */
+export async function listRemoteCommands(opts: {
+  targetHost?: string;
+  status?: string;
+  limit?: number;
+} = {}): Promise<ApiResponse<{
+  success: boolean;
+  commands: RemoteCommandRecord[];
+  count: number;
+}>> {
+  const params = new URLSearchParams();
+  if (opts.targetHost) params.set("targetHost", opts.targetHost);
+  if (opts.status) params.set("status", opts.status);
+  if (opts.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return apiRequest(`/api/v1/me/remote-commands${qs ? `?${qs}` : ""}`, {
+    token: getToken(),
+  });
+}
+
 // ─── Device-flow auth (U7, RFC 8628-shaped) ──────────────────────────
 
 export interface DeviceStartData {
