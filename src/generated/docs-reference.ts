@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "7b94d51e6146990b7c04f0a38d538406c0ac4ac05e5c92aed5b6a1d19b56a811",
+  "sourceHash": "57e257f55706d23dc64fa90b5a92d32cd3f28ea329d56a275de935031b1de5e0",
   "cli": {
-    "version": "0.8.13"
+    "version": "0.8.17"
   },
   "counts": {
-    "endpoints": 108,
+    "endpoints": 111,
     "internalRoutes": 12,
     "mcpTools": 6,
     "hostedMcpTools": 12,
-    "cliCommands": 31,
-    "convexRoutes": 88,
+    "cliCommands": 32,
+    "convexRoutes": 91,
     "nextRoutes": 28
   },
   "endpoints": [
@@ -403,6 +403,39 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Mint a short-lived websocket credential for trusted local daemons.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/remote-commands",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "issuer status poll (requestId) or daemon work pull (targetHost+status).",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/remote-commands/dispatch",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "write a queued row AND post the existing remote-command bus message. Requires the opt-in remote:command scope (same gate as posting a remote-command on the agent bus).",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/remote-commands/status",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "daemon best-effort status update (acked→running→done/error). No-op if the requestId has no queued row.",
       "sources": [
         "convex"
       ]
@@ -1717,6 +1750,13 @@ export const docsReference = {
       "group": "MACHINE & SYNC",
       "summary": "bootstrap a fresh Mac with your synced skills, stacks, and context",
       "description": "set up a new machine with your synced skills, stacks, and agent config"
+    },
+    {
+      "name": "remote",
+      "usage": "remote [subcommand] [args...]",
+      "group": "MACHINE & SYNC",
+      "summary": "check + trigger work on your other synced machines",
+      "description": "Cross-machine agents -- status (read-only) or run a whitelisted command on a synced machine"
     }
   ]
 } as const;
