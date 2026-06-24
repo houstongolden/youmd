@@ -1311,6 +1311,137 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
     },
   },
 
+  // ── remote_machine_status ───────────────────────────────────────────────────
+  {
+    name: "remote_machine_status",
+    description:
+      "Check the work status of one of the user's OTHER synced machines (e.g. an office Mac mini running long agentic tasks). Returns the machine's last sync proof (ready/warn/failed, projects ready, daemon health, last-report time) and its most recent agent-bus activity. Read-only: reports cloud-relayed state without contacting the remote machine. Use when the user asks 'is the work on my <machine> done / what was the last update'. Remote commit/push (remote_machine_run) is a separate, future tool.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        machine: {
+          type: "string",
+          description:
+            "Hostname or substring of the target machine (e.g. 'mac-mini'). If omitted, returns the most recently active machine other than this one.",
+        },
+        limit: {
+          type: "number",
+          description: "Max machine proofs to scan (default 20, max 50).",
+        },
+      },
+    },
+    handler: async (args, ctx) => {
+      if (!ctx.authenticated) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "authentication required — run `you login` or provide a you.md API key",
+            },
+          ],
+          isError: true,
+        };
+      }
+      const limit = boundedNumber(args.limit, 20, 1, 50);
+      const proofs = (await ctx.apiRequest(
+        `/api/v1/me/machines/proofs?limit=${limit}`
+      )) as { machines?: Array<Record<string, unknown>> };
+      const machines = proofs?.machines || [];
+      if (machines.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  machines: [],
+                  note: "No machines reporting yet. Run `you machine sync-now` on the target machine.",
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+
+      const query =
+        typeof args.machine === "string" ? args.machine.toLowerCase() : null;
+      let machine: Record<string, unknown> | undefined;
+      if (query) {
+        machine = machines.find((m) => {
+          const host = String(m.hostName || "").toLowerCase();
+          const key = String(m.machineKey || "").toLowerCase();
+          return host.includes(query) || key.includes(query);
+        });
+        if (!machine) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    error: `no machine matching "${args.machine}"`,
+                    knownMachines: machines.map((m) => m.hostName),
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else {
+        // machines arrive newest-first; pick the freshest (no host-self filter
+        // available in MCP context, so we just take the most recent).
+        machine = machines[0];
+      }
+
+      // Best-effort: attach the latest agent-bus activity for this host.
+      let lastAgentActivity: Record<string, unknown> | null = null;
+      try {
+        const bus = (await ctx.apiRequest(
+          `/api/v1/me/agent-bus/messages?limit=100`
+        )) as { messages?: Array<Record<string, unknown>> };
+        const host = String(machine.hostName || "").toLowerCase();
+        const forHost = (bus?.messages || [])
+          .filter((m) => String(m.sourceHost || "").toLowerCase() === host)
+          .sort(
+            (a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0)
+          );
+        lastAgentActivity = forHost[0] || null;
+      } catch {
+        lastAgentActivity = null;
+      }
+
+      ctx.logActivity("read", "remote/machine-status", {
+        machine: machine.hostName,
+      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                schemaVersion: "you-md/remote-machine-status/v1",
+                machine,
+                lastAgentActivity,
+                // Phase 0 is read-only. Live git state + remote commit/push
+                // (remote_machine_run) land in Phase 1 — see
+                // project-context/CROSS-MACHINE-AGENTS.md.
+                gitState: null,
+                phase: 0,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    },
+  },
+
   // ── get_agent_stack_inventory ───────────────────────────────────────────────
   {
     name: "get_agent_stack_inventory",

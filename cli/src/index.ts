@@ -54,6 +54,7 @@ import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
 import { envBackupCommand, envRestoreCommand, envVaultCommand } from "./commands/env";
 import { machineCommand } from "./commands/machine";
+import { remoteCommand } from "./commands/remote";
 import { readCliVersion } from "./lib/version";
 
 const program = new Command();
@@ -691,6 +692,18 @@ program
       entityId: options.entityId,
       limit: options.limit,
       tail: options.tail,
+      json: options.json,
+    });
+  });
+
+program
+  .command("remote [subcommand] [args...]")
+  .description("Cross-machine agent status -- check a synced machine's work state (read-only)")
+  .option("--limit <n>", "Max machines/messages to scan", "20")
+  .option("--json", "Print JSON")
+  .action((subcommand, args, options) => {
+    return remoteCommand(subcommand, args || [], {
+      limit: options.limit,
       json: options.json,
     });
   });
