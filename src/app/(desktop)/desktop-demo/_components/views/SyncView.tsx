@@ -4,11 +4,25 @@ import { PixelCharacter } from "@/components/ui/PixelCharacter";
 import { DEVICES, DAEMONS, WORKSPACE, SUB_AGENTS, SKILLS } from "../../_data/mock";
 import { ViewHeader, Chip, Dot, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
+import { useRealData } from "../../_lib/RealDataContext";
+import { useToast } from "../Toast";
 
 // The "everything's in sync" overview — promoted from a cramped popout to a
 // real, breathable page. Machines, background daemons, and what's shared.
 export function SyncView() {
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
+  const real = useRealData();
+  const toast = useToast();
+  // Mark "this machine" by the REAL host (server-detected), not a hardcoded
+  // flag — so it's never wrong. If the host is unknown (e.g. hosted web with no
+  // local fs), show no "this" badge rather than mislabel a machine.
+  const realHost = (real?.machine?.host ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const isThisMachine = (name: string) => {
+    if (!realHost) return false;
+    const n = norm(name);
+    return realHost === n || realHost.startsWith(n) || n.startsWith(realHost);
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-8 sm:py-8">
@@ -72,26 +86,46 @@ export function SyncView() {
       {/* machines */}
       <SectionLabel className="mb-2.5">Machines</SectionLabel>
       <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {DEVICES.map((d) => (
-          <div key={d.name} className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3">
-            <div className="mb-2 flex items-center gap-2.5">
-              <PixelCharacter kind="machine" seed={d.name} status={d.status === "active" || d.status === "synced" ? "ready" : "idle"} size="md" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate font-mono text-[12px] text-[hsl(var(--text-primary))]">{d.name}</span>
-                  {d.current && <Chip>this</Chip>}
+        {DEVICES.map((d) => {
+          const here = isThisMachine(d.name);
+          return (
+            <div key={d.name} className="group rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3">
+              <div className="mb-2 flex items-center gap-2.5">
+                <PixelCharacter kind="machine" seed={d.name} status={d.status === "active" || d.status === "synced" ? "ready" : "idle"} size="md" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-mono text-[12px] text-[hsl(var(--text-primary))]">{d.name}</span>
+                    {here && <Chip tone="accent">this</Chip>}
+                  </div>
+                  <div className="truncate font-mono text-[9.5px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/50">{d.os}</div>
                 </div>
-                <div className="truncate font-mono text-[9.5px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/50">{d.os}</div>
+                {/* rename + verify — surfaced on hover; run via the you CLI */}
+                <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    title="Rename machine"
+                    onClick={() => toast(`Rename ${d.name} — runs: you machine rename "${d.name}" <new-name>`, "device")}
+                    className="rounded-sm p-0.5 text-[hsl(var(--text-secondary))]/60 hover:text-[hsl(var(--accent))]"
+                  >
+                    <Icon name="file" size={11} />
+                  </button>
+                  <button
+                    title="Verify machine"
+                    onClick={() => toast(`Verifying ${d.name} — running you machine verify…`, "sync")}
+                    className="rounded-sm p-0.5 text-[hsl(var(--text-secondary))]/60 hover:text-[hsl(var(--accent))]"
+                  >
+                    <Icon name="check" size={11} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between font-mono text-[10px] text-[hsl(var(--text-secondary))]/60">
+                <span className="flex items-center gap-1.5">
+                  <Dot tone={d.status === "idle" ? "dim" : "green"} pulse={d.status === "active"} size={5} /> {d.status}
+                </span>
+                <span>{d.lastSync}</span>
               </div>
             </div>
-            <div className="flex items-center justify-between font-mono text-[10px] text-[hsl(var(--text-secondary))]/60">
-              <span className="flex items-center gap-1.5">
-                <Dot tone={d.status === "idle" ? "dim" : "green"} pulse={d.status === "active"} size={5} /> {d.status}
-              </span>
-              <span>{d.lastSync}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* what's shared */}

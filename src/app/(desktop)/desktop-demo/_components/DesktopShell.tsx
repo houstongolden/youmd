@@ -369,12 +369,23 @@ export function DesktopShell() {
       ? "Chat"
       : PRIMARY_NAV.find((n) => n.id === activeView)?.label ?? "";
 
+  // Auto-collapse the left sidebar when the layout would otherwise show 4+
+  // columns (sidebar + shell rail + chat + main [+ inspector]). Derived, so it
+  // restores the user's preference automatically once columns drop below 4.
+  const visibleCols =
+    1 + // left sidebar
+    (shellOpen && !chatFull ? (railCollapsed ? 1 : 2) : 0) + // shell = rail + chat
+    1 + // main workspace / chat
+    (inspectorOpen && !chatFull ? 1 : 0); // inspector
+  const autoCollapseSidebar = !isMobile && !chatFull && visibleCols >= 4;
+  const effectiveSidebarCollapsed = sidebarCollapsed || autoCollapseSidebar;
+
   return (
     <div className="flex h-full w-full flex-col">
       <TitleBar
         title={title}
         isMobile={isMobile}
-        sidebarCollapsed={sidebarCollapsed}
+        sidebarCollapsed={effectiveSidebarCollapsed}
         onToggleSidebar={toggleSidebar}
         chatFull={chatFull}
         onToggleChatFull={() => setChatFull((f) => !f)}
@@ -448,7 +459,7 @@ export function DesktopShell() {
         ) : (
           <>
             <Sidebar
-              collapsed={sidebarCollapsed}
+              collapsed={effectiveSidebarCollapsed}
               activeView={activeView}
               onNavigate={navigate}
               theme={theme}
