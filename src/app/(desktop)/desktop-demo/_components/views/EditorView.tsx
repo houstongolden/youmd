@@ -4,7 +4,7 @@ import { useState } from "react";
 import { FILE_TREE, FILE_CONTENT, type FileNode } from "../../_data/mock";
 import { useRealData } from "../../_lib/RealDataContext";
 import { Markdown, slugify } from "../Markdown";
-import { Icon } from "../icons";
+import { Icon, type IconName } from "../icons";
 import { SectionLabel } from "../primitives";
 import { cn } from "../../_lib/cn";
 
@@ -92,8 +92,20 @@ function LiveEditor({ source, onWikiLink }: { source: string; onWikiLink?: (n: s
   );
 }
 
+// Note templates — the "how we write docs" layer. Frontmatter + structure so
+// every note starts consistent (and agents can fill the sections).
+type NoteTemplate = { id: string; label: string; icon: IconName; build: (n: number) => { name: string; content: string } };
+const NOTE_TEMPLATES: NoteTemplate[] = [
+  { id: "note", label: "Blank note", icon: "file", build: (n) => ({ name: `untitled-${n}.md`, content: `---\ntitle: Untitled ${n}\ntags: []\n---\n\n# Untitled ${n}\n\nStart writing…\n` }) },
+  { id: "daily", label: "Daily note", icon: "file", build: (n) => ({ name: `daily-${n}.md`, content: `---\ntype: daily\ntags: [daily]\n---\n\n# Today\n\n## Focus\n- \n\n## Notes\n\n## Done\n- [ ] \n` }) },
+  { id: "research", label: "Research", icon: "brain", build: (n) => ({ name: `research-${n}.md`, content: `---\ntype: research\ntags: [research]\n---\n\n# Research: \n\n## Question\n\n## Findings\n\n## Sources\n- [[you]]\n\n## Next\n- [ ] \n` }) },
+  { id: "meeting", label: "Meeting", icon: "agent", build: (n) => ({ name: `meeting-${n}.md`, content: `---\ntype: meeting\ntags: [meeting]\n---\n\n# Meeting: \n\n**Who:** \n\n## Agenda\n- \n\n## Notes\n\n## Action items\n- [ ] \n` }) },
+];
+
 export function EditorView({ activeId, onSelect }: { activeId: string; onSelect: (id: string) => void }) {
   const [mode, setMode] = useState<"read" | "live" | "source">("read");
+  const [drafts, setDrafts] = useState<{ id: string; name: string; content: string }[]>([]);
+  const [tplOpen, setTplOpen] = useState(false);
   const real = useRealData();
 
   // Build the tree + a content map from REAL data when available, else mock.
@@ -168,6 +180,22 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
     ];
   }
 
+  // Merge this session's draft notes into the vault (manual authoring).
+  for (const d of drafts) content[d.id] = d.content;
+  if (drafts.length) {
+    tree = [{ id: "drafts", name: "drafts", type: "folder", children: drafts.map((d) => ({ id: d.id, name: d.name, type: "file" as const })) }, ...tree];
+    openInit = { ...openInit, drafts: true };
+  }
+  const createNote = (tpl: NoteTemplate) => {
+    const n = drafts.length + 1;
+    const { name, content: body } = tpl.build(n);
+    const id = `draft:${tpl.id}-${n}`;
+    setDrafts((d) => [...d, { id, name, content: body }]);
+    setTplOpen(false);
+    onSelect(id);
+    setMode("live");
+  };
+
   const source = content[activeId] ?? real?.brain[0]?.content ?? "# Vault\n\nSelect a file.";
   const title = activeId.startsWith("project:")
     ? activeId.slice(8)
@@ -213,7 +241,33 @@ export function EditorView({ activeId, onSelect }: { activeId: string; onSelect:
       <aside className="max-h-40 w-full shrink-0 overflow-y-auto border-b border-[hsl(var(--border))] py-3 lg:max-h-none lg:w-56 lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between px-3 pb-2">
           <SectionLabel>Vault{real?.available ? " · live" : ""}</SectionLabel>
-          <Icon name="plus" size={13} className="cursor-pointer text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))]" />
+          <div className="relative">
+            <button
+              onClick={() => setTplOpen((o) => !o)}
+              title="New note"
+              aria-label="New note"
+              className={cn("rounded-sm p-0.5 transition-colors", tplOpen ? "text-[hsl(var(--accent))]" : "text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--accent))]")}
+            >
+              <Icon name="plus" size={13} />
+            </button>
+            {tplOpen && (
+              <>
+                <button aria-label="Close" onClick={() => setTplOpen(false)} className="fixed inset-0 z-10 cursor-default" />
+                <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 shadow-2xl">
+                  <div className="px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--text-secondary))]/50">New note</div>
+                  {NOTE_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => createNote(tpl)}
+                      className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-[12px] text-[hsl(var(--text-secondary))] transition-colors hover:bg-[hsl(var(--bg))] hover:text-[hsl(var(--text-primary))]"
+                    >
+                      <Icon name={tpl.icon} size={12} className="opacity-60" /> {tpl.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <FileTree nodes={tree} depth={0} activeId={activeId} onSelect={onSelect} openInit={openInit} />
       </aside>
