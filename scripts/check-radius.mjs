@@ -45,6 +45,7 @@ const ROUNDED_FULL_ALLOWLIST = new Set([
   "src/components/panes/SharePane.tsx", // status dots + radio indicators
   "src/components/terminal/TerminalHeader.tsx", // traffic-light dots
   "src/components/ui/Card.tsx", // terminal-panel header dots
+  "src/app/(desktop)/desktop-demo/_components/TitleBar.tsx", // toggle switch: pill track + circular thumb
 ]);
 
 /**

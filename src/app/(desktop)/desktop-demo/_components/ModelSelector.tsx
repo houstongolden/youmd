@@ -9,7 +9,7 @@ export function ModelMark({ id, size = 16 }: { id: ModelId; size?: number }) {
   const m = MODELS.find((x) => x.id === id) ?? MODELS[0];
   return (
     <span
-      className="grid shrink-0 place-items-center rounded-[3px] font-mono"
+      className="grid shrink-0 place-items-center rounded-sm font-mono"
       style={{ width: size, height: size, background: `${m.color}22`, color: m.color, fontSize: size * 0.62 }}
     >
       {m.mark}

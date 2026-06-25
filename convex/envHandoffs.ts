@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { requireOwner } from "./lib/auth";
 
 // ── Ephemeral, zero-knowledge env handoffs ─────────────────────
@@ -17,10 +17,10 @@ const MAX_READS = 10;
 const MAX_CIPHERTEXT_BYTES = 256 * 1024; // 256KB of base64 ciphertext per project
 const MAX_ACTIVE_HANDOFFS = 100;
 
-function resolveUser(ctx: any, clerkId: string) {
+function resolveUser(ctx: QueryCtx | MutationCtx, clerkId: string) {
   return ctx.db
     .query("users")
-    .withIndex("by_clerkId", (q: any) => q.eq("clerkId", clerkId))
+    .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
     .first();
 }
 

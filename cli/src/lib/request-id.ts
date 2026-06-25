@@ -39,7 +39,7 @@ let counter = 0;
 
 /** Generate a sortable, collision-resistant request id, prefixed `rc_`. */
 export function generateRequestId(): string {
-  let now = Date.now();
+  const now = Date.now();
   if (now === lastTime) {
     counter += 1;
   } else {
