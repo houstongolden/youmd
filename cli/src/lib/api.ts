@@ -304,16 +304,20 @@ export async function sendAgentBusMessage(payload: {
   targetHost?: string;
   targetAgent?: string;
   metadata?: unknown;
+  /** Per-request timeout override (ms). Not sent to the server. */
+  timeoutMs?: number;
 }): Promise<ApiResponse<{
   success: boolean;
   schemaVersion: "you-md/agent-bus/message/v1";
   message: AgentBusMessage;
   secretValuesExposed: false;
 }>> {
+  const { timeoutMs, ...message } = payload;
   return apiRequest("/api/v1/me/agent-bus/messages", {
     method: "POST",
     token: getToken(),
-    body: payload,
+    body: message,
+    timeoutMs,
   });
 }
 
