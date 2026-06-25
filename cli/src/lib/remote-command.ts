@@ -233,7 +233,9 @@ export async function pollForResult(
   opts: PollOptions
 ): Promise<RemoteResultMetadata | null> {
   const interval = opts.intervalMs ?? 2000;
-  const timeout = opts.timeoutMs ?? 60_000;
+  // 90s default: the target daemon may have a slow Convex connection and retries
+  // the result-post, so the result can land later than a tight 60s window.
+  const timeout = opts.timeoutMs ?? 90_000;
   const deadline = Date.now() + timeout;
   let durableAvailable = true;
 
@@ -453,21 +455,36 @@ export async function handleRemoteCommand(
     completedAt: resultMeta.completedAt,
   });
 
-  // Post the result back to the issuer.
-  try {
-    await sendAgentBusMessage({
-      channel: REMOTE_RESULT_CHANNEL,
-      kind: "result",
-      body: summary,
-      sourceHost: os.hostname(),
-      sourceAgent: "youmd remote daemon",
-      sourceRuntime: process.version,
-      targetHost: issuerHost,
-      metadata: resultMeta as unknown as Record<string, unknown>,
-    });
-  } catch (err) {
-    log?.(`failed to post remote-command-result: ${err instanceof Error ? err.message : err}`);
+  // Post the result back to the issuer. This is the one call the issuer is
+  // BLOCKED waiting on, so it must survive a slow/laggy daemon Convex connection:
+  // use a generous timeout and retry a few times (the default 15s single-shot
+  // would silently drop the result against a 20-30s-latency connection).
+  const resultPayload = {
+    channel: REMOTE_RESULT_CHANNEL,
+    kind: "result",
+    body: summary,
+    sourceHost: os.hostname(),
+    sourceAgent: "youmd remote daemon",
+    sourceRuntime: process.version,
+    targetHost: issuerHost,
+    metadata: resultMeta as unknown as Record<string, unknown>,
+    timeoutMs: 40_000,
+  };
+  let posted = false;
+  for (let attempt = 1; attempt <= 3 && !posted; attempt++) {
+    try {
+      const res = await sendAgentBusMessage(resultPayload);
+      if (res.ok) {
+        posted = true;
+      } else {
+        log?.(`remote-command-result post attempt ${attempt} returned HTTP ${res.status}`);
+      }
+    } catch (err) {
+      log?.(`remote-command-result post attempt ${attempt} failed: ${err instanceof Error ? err.message : err}`);
+    }
+    if (!posted && attempt < 3) await new Promise((r) => setTimeout(r, 1000 * attempt));
   }
+  if (!posted) log?.(`gave up posting remote-command-result for ${requestId} after 3 attempts`);
 
   // Audit row — every dispatch outcome is recorded.
   try {
