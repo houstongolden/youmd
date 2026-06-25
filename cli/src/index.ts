@@ -52,7 +52,7 @@ import { agentCommand } from "./commands/agent";
 import { agentsCommand } from "./commands/agents";
 import { stackCommand } from "./commands/stack";
 import { okfCommand } from "./commands/okf";
-import { envBackupCommand, envRestoreCommand, envVaultCommand } from "./commands/env";
+import { envBackupCommand, envRestoreCommand, envVaultCommand, envShareCommand, envPullCommand, envListCommand } from "./commands/env";
 import { machineCommand } from "./commands/machine";
 import { remoteCommand } from "./commands/remote";
 import { readCliVersion } from "./lib/version";
@@ -145,7 +145,7 @@ const HELP_GROUPS: Array<{
   {
     title: "SECURITY",
     commands: [
-      { name: "env", summary: "encrypted .env.local vault — back up and restore secrets across machines" },
+      { name: "env", summary: "encrypted .env.local secrets — local vault + zero-knowledge cross-machine handoff (share/pull)" },
     ],
   },
   {
@@ -732,9 +732,9 @@ program
 // ─── env — encrypted .env.local vault backup/restore ───────────────
 program
   .command("env [subcommand] [args...]")
-  .description("encrypted .env.local vault — back up and restore secrets across machines")
+  .description("encrypted .env.local secrets — local vault backup/restore + zero-knowledge cross-machine handoff")
   .allowUnknownOption(true)
-  .option("--root <dir>", "directory to search for / restore .env.local files")
+  .option("--root <dir>", "code workspace root (share/pull) or search/restore dir (backup/restore)")
   .option("--out <dir>", "output directory for the vault and manifest")
   .option("--preflight", "backup: verify env-vault tooling/discovery without writing a vault")
   .option("--list", "restore: list encrypted vault contents without writing files")
@@ -747,6 +747,10 @@ program
   .option("--print-path", "vault pull: print only the downloaded vault path")
   .option("--device-name <name>", "vault device-register/share: friendly name for this trusted device")
   .option("--json", "vault: print machine-readable JSON")
+  .option("--dir <path>", "explicit target directory for `pull` (overrides --root/<project>)")
+  .option("--ttl <minutes>", "(share) minutes until access codes expire, default 60")
+  .option("--reads <n>", "(share) times each code may be claimed, default 1 (burn-after-read)")
+  .option("--project <name>", "(share) limit to a single project directory")
   .action(async (subcommand, args, options) => {
     const a = args || [];
     if (subcommand === "backup") {
@@ -781,8 +785,14 @@ program
         json: options.json,
       });
       process.exit(status);
+    } else if (subcommand === "share") {
+      await envShareCommand({ root: options.root, ttl: options.ttl, reads: options.reads, project: options.project });
+    } else if (subcommand === "pull") {
+      await envPullCommand(a[0], { root: options.root, dir: options.dir, force: options.force });
+    } else if (subcommand === "list" || subcommand === "ls") {
+      await envListCommand();
     } else {
-      console.log("usage: you env <backup|restore|vault> [options]");
+      console.log("usage: you env <backup|restore|vault|share|pull|list> [options]");
       console.log("  backup              encrypt all .env.local files into a portable vault");
       console.log("  backup --preflight  verify env-vault readiness without writing a vault");
       console.log("  restore <vault>     decrypt and restore .env.local files from a vault");
@@ -795,6 +805,9 @@ program
       console.log("                      register this Mac as a trusted Secret Vault device");
       console.log("  vault device-list   list trusted devices without exposing secret values");
       console.log("  vault share         share latest vault access to trusted devices");
+      console.log("  share               push client-side-encrypted .env.local handoffs, print expiring access codes");
+      console.log("  pull <access-code>  claim + decrypt a handoff onto this machine (writes .env.local, mode 0600)");
+      console.log("  list                show active handoffs (variable names only, never values)");
     }
   });
 
