@@ -333,6 +333,25 @@ Last Updated: 2026-06-22
 7. Add monthly provider/project cost tracking. **PENDING.**
 8. Add full cross-project scan for projects active in the last year. **PENDING full-root audit + persistence; command supports `--root`.**
 **Progress (2026-06-17 provider-account persistence):** Added `portfolioProviderAccounts` to Convex, owner-gated list/upsert/seed mutations, provider accounts inside `getProjectSlice`, and a dashboard seed/refresh action in the APIs + Env Intelligence pane. The UI strips undefined optional fields before sending, wraps the mutation in a timeout so stale backend deploys do not leave `persisting...` forever, and renders `CONVEX PERSISTED ACCOUNT NOTES` once records exist. Verified with `npx convex dev --once`, focused Convex regression `persists provider account metadata without exposing secrets across owners`, TypeScript, lint/radius, production build, and authenticated Codex in-app Browser proof: `persisted 0 new / 4 refreshed provider account notes`, no raw `sk-*` secret pattern, screenshot `/tmp/youmd-api-env-provider-accounts-persisted-proof-2026-06-17.png`. Post-push production proof on `https://www.you.md/shell?tab=apis` verified the same persisted section and no raw secret pattern; screenshot `/tmp/youmd-production-api-env-provider-accounts-proof-2026-06-17.png`.
+## 2026-06-16 — Secure machine setup with zero-knowledge env handoff
+
+### 130. Add a secure-machine-setup skill + zero-knowledge expiring-access-code .env.local exchange
+**Status:** IN PROGRESS (skill/stack/docs authored; needs deploy + publish + e2e test)
+**Verified:** PARTIAL (skill/stack/manifest authored and self-consistent; mechanics not yet exercised)
+**Production Verified:** NO
+**Source:** 2026-06-16 — Houston: wants a skill + secure path for a youmd-api-key agent that authenticates with expiring-access-code-only auth, never commits secrets to GitHub, exchanges secrets encrypted through the you.md API, drops an ephemeral encrypted `.env.local` per project, detects priority projects by activity (30/90/180-365 days), mkdirs `CODE_YOU/{project}` + git clone, delivers each project's `.env.local` via the secure exchange, runs `npm install`, has the agent edit only README / project-connect / root markdown (not app source), and keeps self-improving skills synced across machines.
+**Actionable Scope:**
+1. Author a `secure-machine-setup` You.md skill encoding the end-to-end new-machine flow with exact commands. **DONE:** `you-agent/skills/secure-machine-setup.md`.
+2. Author a `secure-machine-setup` YouStack (`youstack/v1`) with host adapters, capabilities, scopes (`read:private` + `vault`), and a T2 safety block with a human gate on vault reads. **DONE:** `stacks/secure-machine-setup/youstack.json` + `stacks/secure-machine-setup/skills/secure-machine-setup/SKILL.md`.
+3. State the security contract plainly: secrets never committed/printed/logged, on-disk 0600 + ciphertext only, single-use expiring access codes treated like passwords, owner `vault`-scoped key required, agents get scoped revocable keys. **DONE in both docs.**
+4. Add `youmd env share` (source machine: find `.env.local`, AES-256-GCM client-side encrypt, upload ciphertext, print one expiring code per project; default ttl 60 min, reads 1). **PENDING:** CLI implementation + publish.
+5. Add `youmd env pull <access-code>` (new machine: claim by code, decrypt client-side, write `.env.local` at 0600, never print values, burn after reads). **PENDING:** CLI implementation + publish.
+6. Add `youmd env list` (active handoffs: project + variable NAMES only, expiry, reads remaining). **PENDING:** CLI implementation + publish.
+7. Add owner-only `vault`-scoped endpoints `POST /api/v1/me/env/handoff`, `POST /api/v1/me/env/handoff/claim`, `GET /api/v1/me/env/handoffs`. **PENDING:** Convex deploy.
+8. Wire priority-project tiering through `youmd machine projects --days 30 / 90 / 365` with a prompt before the 6-12 month long tail and the `CODE_YOU/{project-name}` clone convention. **DONE in skill flow** (machine projects already exists; tiering encoded).
+9. End-to-end test the handoff between two machines (share on source, pull on new), confirm `.env.local` lands at 0600 and the code burns/expires. **PENDING.**
+10. Document the env-handoff surface in `llms.txt` / agent docs. **PENDING.**
+**Progress (2026-06-16):** Authored the `secure-machine-setup` skill and YouStack and prepended the changelog entry. Access code format `ymenv1_<handoffId>.<key>` (key half never leaves the source machine; server holds ciphertext + handoffId hash, gated by the owner's `vault`-scoped key). Remaining work is owned by the CLI/Convex implementation track: ship `env share`/`env pull`/`env list`, deploy the three handoff endpoints, two-machine e2e test, and agent-docs/llms.txt coverage. Do not mark DONE until the encrypted handoff is exercised across two machines in production.
 
 ## 2026-06-16 — Preserve h.computer platform ideas in You.md
 

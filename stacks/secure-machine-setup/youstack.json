@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "youstack/v1",
+  "kind": "youstack",
+  "slug": "secure-machine-setup",
+  "name": "Secure Machine Setup",
+  "domain": "machine-bootstrap",
+  "aliases": ["secure-setup", "new-machine-secure", "env-handoff-setup"],
+  "tags": ["bootstrap", "secrets", "env", "zero-knowledge", "machine-setup"],
+  "version": "1.0.0",
+  "description": "Bring your You.md agent up on a brand-new machine: clone active projects, deliver per-project .env.local via zero-knowledge expiring access codes, install, and sync skills/stacks. Secrets never touch git.",
+  "visibility": "private",
+  "compatibility": {
+    "hosts": ["claude-code", "codex", "cursor"],
+    "minYoumdCli": "0.8.0",
+    "requiresYoumdApi": true,
+    "requiresYoumdMcp": false
+  },
+  "requiresScopes": ["read:private", "vault"],
+  "brainScopes": [
+    {
+      "scope": "read:private",
+      "required": true,
+      "reason": "Read the owner's project list and active-project recency to plan clones."
+    },
+    {
+      "scope": "vault",
+      "required": true,
+      "reason": "Create and claim zero-knowledge env handoffs that deliver per-project .env.local secrets."
+    }
+  ],
+  "files": [
+    {
+      "path": "skills/secure-machine-setup/SKILL.md",
+      "type": "skill",
+      "required": true
+    }
+  ],
+  "adapters": {
+    "claude-code": {
+      "files": [".claude/skills/youstacks/secure-machine-setup/SKILL.md"],
+      "bootstrap": "CLAUDE.md"
+    },
+    "codex": {
+      "files": [".codex/skills/youstacks/secure-machine-setup/SKILL.md"],
+      "bootstrap": "AGENTS.md"
+    },
+    "cursor": {
+      "files": [".cursor/rules/youstacks-secure-machine-setup.md"],
+      "bootstrap": ".cursor/rules"
+    }
+  },
+  "capabilities": [
+    {
+      "id": "secure-setup",
+      "intent": "Stand up a fresh machine: login + pull identity, tier active projects by recency (30/90 then prompt for 365), clone each into CODE_YOU/<project>, deliver each project's .env.local through a zero-knowledge expiring access code (encrypt client-side on the source machine, claim and write 0600 on the new machine), run npm install, and sync skills/stacks. Never commit, print, or log secrets; only update README / project-context / root skill-stack-tool markdown.",
+      "skill": "secure-machine-setup",
+      "mutationPolicy": "network",
+      "requiredScopes": ["read:private", "vault"],
+      "api": [
+        "POST /api/v1/me/env/handoff",
+        "POST /api/v1/me/env/handoff/claim",
+        "GET /api/v1/me/env/handoffs"
+      ]
+    },
+    {
+      "id": "list-handoffs",
+      "intent": "List active env handoffs — project name, variable NAMES only (never values), expiry, and reads remaining.",
+      "apiEndpoint": "GET /api/v1/me/env/handoffs",
+      "requiredScopes": ["vault"],
+      "mutationPolicy": "read_only"
+    }
+  ],
+  "accessPolicy": {
+    "defaultMode": "local_static",
+    "protectedByDefault": true,
+    "requiresApprovalFor": ["connected_tool.write", "private_context.read"]
+  },
+  "safety": {
+    "tier": "T2",
+    "fs_write": true,
+    "network": true,
+    "shell": true,
+    "auto_pr": false,
+    "humanGate": {
+      "required": true,
+      "for": ["vault.read", "env.claim"]
+    }
+  },
+  "sharing": {
+    "allowedModes": ["private", "scoped-link"],
+    "defaultMode": "private"
+  },
+  "repoSync": {
+    "enabled": false,
+    "provider": "github",
+    "path": "stacks/secure-machine-setup"
+  },
+  "improvement": {
+    "mode": "propose",
+    "cadence": "after each meaningful agent session",
+    "signals": ["usage", "failures", "user corrections", "repo diffs"],
+    "appliesTo": ["skills", "adapters", "docs"],
+    "approvalRequiredFor": ["private_context.read", "connected_tool.write", "remote_repo.write"]
+  },
+  "update": {
+    "channel": "manual",
+    "source": "user-owned GitHub repo or local stack folder",
+    "autoApply": false
+  }
+}

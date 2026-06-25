@@ -52,6 +52,13 @@ Auto-maintained — new messages appended each session.
 1. [2026-06-17 (portfolio-graph-apis-env-implementation)](#session-2026-06-17-portfolio-graph-apis-env-implementation) --- 1 message
 1. [2026-06-17 (project-portfolio-graph-reuse-dependency-routing)](#session-2026-06-17-project-portfolio-graph-reuse-dependency-routing) --- 1 message
 1. [2026-06-16 (fresh-machine-project-sync-finish-now)](#session-2026-06-16-fresh-machine-project-sync-finish-now) --- 1 message
+**Total sessions:** 82
+**Total messages:** 489
+**Last updated:** 2026-06-16
+
+## Table of Contents
+
+1. [2026-06-16 (agent-secure-machine-setup-env-handoff)](#session-2026-06-16-agent-secure-machine-setup-env-handoff) --- 1 message
 1. [2026-06-16 (machine-bootstrap-skill-project-sync)](#session-2026-06-16-machine-bootstrap-skill-project-sync) --- 1 message
 1. [2026-06-16 (mobile-capture-voice-slack-project-routing)](#session-2026-06-16-mobile-capture-voice-slack-project-routing) --- 3 messages
 1. [2026-06-16 (shell-github-update-usage-foldermd)](#session-2026-06-16-shell-github-update-usage-foldermd) --- 1 message
@@ -16657,3 +16664,9 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 
 **2026-06-20 11:57:56 UTC**
 > ok then we need to continue on the minimal-surface area product audit to ensure we are focussing on removing clutter and redundancies and making it all feel more helpful and useful and intuitive and not information overload but fun and useful having our little machines like subagents or whatever in the mix more and better focus on what is useful and valuable about our platform that our people are going to want to see and focus on more and all that  and also ensure that we properly show in a beautiful visual way the whole synced brain graph of skills and projects and the activity in real time like real neurons firing not faked but real - and some sort of actually properly designed and organized version of this that would generate dynamically based on what the user has connected to the you.md sync etc etc file:///Users/houstongolden/Desktop/CODE_2025/youmd/project-context/local-agent-stack-inventory-2026-06-19.html
+## Session: 2026-06-16 (agent-secure-machine-setup-env-handoff)
+
+**2026-06-16 11:20:52 UTC**
+> Need a skill and secure path for a youmd api key connected agent with correct permissions via expiring access code only API/MCP authenticated you.md owners — never committed to GitHub ever - stored and shared secure via encrypted you.md api server etc… but as part of the new skill/stack which is going to enable my you.md agent to be installed on a brand new machine/computer securely sharing ephemeral encrypted .env.local file so the agent already knows the priority Projects the user is working and detected by most active repos last 30-days then last 90 days then optional last 6-12'months - anyways the agent organized the projects by name uses the terminal mkdir in a CODE_YOU/{project-name} matching repo name sub-directory and then running GitHub init to pull each of the associated GitHub repos into their project subdirectories on the new computer all ready to go - then the secure .env.local files are exchanged via you.md api or secure exchange for each project and the agent runs the npm install or whatever other commands need to run and also the you agent typically is only updating the project readme and project-connect directory and root markdown directories for skills/stacks/tools etc - boom then you have all these projects running fully with synced self updating auto improving skills synced across machines
+
+---

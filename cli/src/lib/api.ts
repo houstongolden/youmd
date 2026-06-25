@@ -1950,3 +1950,70 @@ export async function setBrainConsent(
     { method: "POST", token: getToken(), body: { scope, granted } }
   );
 }
+
+// ─── Env handoff (zero-knowledge .env.local exchange) ────────────────
+//
+// Payloads are encrypted CLIENT-SIDE before they reach these functions
+// (see lib/envHandoff.ts). The server never sees plaintext or the key.
+
+export interface EnvHandoffCreateBody {
+  projectName: string;
+  codeHash: string;
+  ciphertext: string;
+  iv: string;
+  authTag: string;
+  varNames: string[];
+  byteSize: number;
+  maxReads: number;
+  ttlMinutes: number;
+  clientName?: string;
+}
+
+export interface EnvHandoffClaimResult {
+  projectName: string;
+  ciphertext: string;
+  iv: string;
+  authTag: string;
+  varNames: string[];
+  byteSize: number;
+  readsRemaining: number;
+}
+
+export interface EnvHandoffSummary {
+  projectName: string;
+  varNames: string[];
+  byteSize: number;
+  expiresAt: number;
+  readsRemaining: number;
+  createdAt: number;
+  clientName: string | null;
+}
+
+/** Store a client-side-encrypted .env.local handoff. */
+export async function createEnvHandoff(
+  body: EnvHandoffCreateBody
+): Promise<ApiResponse<{ id: string; expiresAt: number; maxReads: number }>> {
+  return apiRequest("/api/v1/me/env/handoff", {
+    method: "POST",
+    token: getToken(),
+    body,
+  });
+}
+
+/** Claim a handoff by its code hash (burn-after-read on the server). */
+export async function claimEnvHandoff(
+  codeHash: string
+): Promise<ApiResponse<EnvHandoffClaimResult>> {
+  return apiRequest("/api/v1/me/env/handoff/claim", {
+    method: "POST",
+    token: getToken(),
+    body: { codeHash },
+  });
+}
+
+/** List active handoffs — metadata only, never values. */
+export async function listEnvHandoffs(): Promise<
+  ApiResponse<{ handoffs: EnvHandoffSummary[] }>
+> {
+  return apiRequest("/api/v1/me/env/handoffs", { token: getToken() });
+}
