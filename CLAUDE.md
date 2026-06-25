@@ -343,6 +343,8 @@ Read these before significant work:
 | File | What It Contains |
 |---|---|
 | `project-context/PRINCIPLES.md` | **Read first.** Autonomous-first / never-add-user-work; no bloat for one-offs |
+| `project-context/MACHINE-SYNC-SETUP.md` | Exact steps to sync a Mac + enable cross-machine agent commands |
+| `project-context/CROSS-MACHINE-AGENTS.md` | Cross-machine architecture, message schema, security model |
 | `project-context/PRD.md` | Full product requirements, vision, user journeys |
 | `project-context/ARCHITECTURE.md` | System diagram, all tables, all API endpoints |
 | `project-context/CURRENT_STATE.md` | What's deployed, what's broken, next priorities |
