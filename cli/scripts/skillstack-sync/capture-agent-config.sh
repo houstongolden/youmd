@@ -35,8 +35,11 @@ log() { local ts; ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"; echo "[${ts}] $*"; echo
 is_dry() { [ "${DRY_RUN}" -eq 1 ]; }
 
 if [ ! -d "${AGENT_SHARED}/.git" ]; then
-  log "ERROR: ${AGENT_SHARED} is not a git repo — run machine setup first."
-  exit 1
+  # Expected on a fresh machine: agent-shared hasn't been cloned/provisioned yet.
+  # It will be cloned later in this same sync pass, so skip capture quietly
+  # rather than erroring (nothing local to capture into it yet).
+  log "agent-shared not present yet — skipping capture (will be cloned this sync)."
+  exit 0
 fi
 
 # copy_in <src> <dest-subpath>  — copy a file/dir into the staging dest if it exists

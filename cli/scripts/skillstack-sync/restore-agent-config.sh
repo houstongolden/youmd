@@ -44,8 +44,10 @@ is_dry()   { [ "${DRY_RUN}" -eq 1 ]; }
 is_force() { [ "${FORCE}" -eq 1 ]; }
 
 if [ ! -d "${AGENT_SHARED}/.git" ]; then
-  log "ERROR: ${AGENT_SHARED} is not a git repo — run 'youmd machine setup' first."
-  exit 1
+  # Fresh machine: agent-shared not cloned/provisioned yet. Nothing to restore
+  # from yet — skip quietly instead of erroring (sync clones it this pass).
+  log "agent-shared not present yet — skipping restore (will be cloned this sync)."
+  exit 0
 fi
 
 if [ ! -d "${SRC}" ]; then

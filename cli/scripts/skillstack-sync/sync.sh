@@ -126,6 +126,12 @@ dirs_differ() {
 # ---------------------------------------------------------------------------
 mirror_loose_skills_to_repo() {
   local skill name src dst
+  # On a fresh machine agent-shared isn't cloned yet; nothing to mirror INTO it.
+  # It gets cloned later this pass, then the reverse mirror populates ~/.claude.
+  if [ ! -d "${AGENT_SHARED}/.git" ]; then
+    log "Loose-skill mirror: agent-shared not present yet — skipping (will clone this sync)."
+    return 0
+  fi
   log "--- Loose-skill mirror: ~/.claude/skills/ → ${AGENT_SHARED}/claude-skills/ ---"
 
   for skill in ${LOOSE_SKILLS}; do
