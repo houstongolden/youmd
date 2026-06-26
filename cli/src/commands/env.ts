@@ -259,15 +259,29 @@ function keychainAccount(): string {
 
 function readPassphraseFromKeychain(): string | null {
   if (process.platform !== "darwin") return null;
-  const service = process.env.YOU_ENV_VAULT_KEYCHAIN_SERVICE || process.env.YOUMD_ENV_VAULT_KEYCHAIN_SERVICE || "you-env-vault";
-  const result = child_process.spawnSync(
-    "security",
-    ["find-generic-password", "-a", keychainAccount(), "-s", service, "-w"],
-    { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }
-  );
-  if (result.status !== 0) return null;
-  const passphrase = result.stdout.replace(/\r?\n$/, "");
-  return passphrase || null;
+  // Try the canonical service first, then the legacy `youmd-env-vault` name. The
+  // youmd→you migration never renamed the Keychain item, so on migrated Macs the
+  // passphrase lives under the old name — fall back to it instead of forcing the
+  // user to re-enter a passphrase they never knew (it was auto-stored).
+  const candidates = [
+    process.env.YOU_ENV_VAULT_KEYCHAIN_SERVICE,
+    process.env.YOUMD_ENV_VAULT_KEYCHAIN_SERVICE,
+    "you-env-vault",
+    "youmd-env-vault",
+  ].filter((s): s is string => Boolean(s));
+  const account = keychainAccount();
+  for (const service of candidates) {
+    const result = child_process.spawnSync(
+      "security",
+      ["find-generic-password", "-a", account, "-s", service, "-w"],
+      { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }
+    );
+    if (result.status === 0) {
+      const passphrase = result.stdout.replace(/\r?\n$/, "");
+      if (passphrase) return passphrase;
+    }
+  }
+  return null;
 }
 
 function promptForPassphrase(): string | null {
