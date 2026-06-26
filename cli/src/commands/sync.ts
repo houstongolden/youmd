@@ -302,6 +302,43 @@ function runYoumdSubcommand(label: string, args: string[], timeoutMs: number): v
   }
 }
 
+// Self-upgrade: the resident daemon must keep the runtime current without the
+// user ever running a command (autonomous-first). We spawn the installer-written
+// `youmd-auto-upgrade` helper DETACHED so that when the upgrade reloads the
+// launchd daemon, killing this process does not abort the in-flight upgrade. The
+// helper has its own rate-limit (YOUMD_AUTO_UPDATE_INTERVAL_SECONDS, default 12h)
+// and a post-upgrade health check with rollback, so calling it more often is safe.
+function runAutoUpgradeDetached(): void {
+  const candidates = [
+    path.join(os.homedir(), ".you", "bin", "youmd-auto-upgrade"),
+    path.join(os.homedir(), ".youmd", "bin", "youmd-auto-upgrade"),
+  ];
+  let helper: string | null = null;
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(candidate)) {
+        helper = candidate;
+        break;
+      }
+    } catch {
+      // unreadable — try the next candidate
+    }
+  }
+  if (!helper) return;
+
+  console.log(chalk.dim("  -- runtime auto-upgrade check: ") + chalk.cyan(`${helper} --quiet`));
+  try {
+    const child = child_process.spawn(helper, ["--quiet"], {
+      detached: true,
+      stdio: "ignore",
+      env: process.env,
+    });
+    child.unref();
+  } catch (err) {
+    if (process.env.DEBUG) console.error(`[realtime sync] auto-upgrade spawn failed: ${err}`);
+  }
+}
+
 async function recordDaemonCheckpoint(fields: {
   kind: string;
   status?: string;
@@ -343,6 +380,15 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   ) * 1000;
   const commandTimeoutMs = envNumber("YOUMD_LIVE_SYNC_COMMAND_TIMEOUT_MS", 180) * 1000;
   const ttlSeconds = envNumber("YOUMD_LIVE_SYNC_SESSION_TTL_SECONDS", 3600);
+  // How often the daemon checks for a newer published runtime. The check is cheap
+  // (the helper short-circuits unless its own 12h rate-limit has elapsed), so a
+  // 1h cadence keeps machines current within ~12h of any npm publish. Daemon-only
+  // so interactive `you sync --live` sessions are never upgraded mid-use.
+  const upgradeMinMs = envNumber("YOUMD_LIVE_SYNC_UPGRADE_INTERVAL_SECONDS", 60 * 60) * 1000;
+  const upgradeEnabled =
+    options.daemon === true &&
+    process.env.YOUMD_LIVE_SYNC_UPGRADE !== "0" &&
+    process.env.YOUMD_AUTO_UPDATE !== "0";
   const stackSyncEnabled = process.env.YOUMD_LIVE_SYNC_STACK !== "0";
   const contextSyncEnabled = process.env.YOUMD_LIVE_SYNC_CONTEXT !== "0";
   const inventorySyncEnabled = process.env.YOUMD_LIVE_SYNC_INVENTORY !== "0";
@@ -355,6 +401,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   let lastContextRunAt = 0;
   let lastInventoryRunAt = 0;
   let lastRepairRunAt = 0;
+  let lastUpgradeRunAt = 0;
   let lastAgentMessageAt = 0;
   const seenRemoteCommands = new SeenRequestSet();
   let materializing = false;
@@ -518,6 +565,11 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
             const message = apiErrorMessage(drift.data) || `HTTP ${drift.status}`;
             console.log(chalk.yellow(`  agent stack drift check unavailable: ${message}`));
           }
+        }
+
+        if (upgradeEnabled && shouldRunBoundedSync(lastUpgradeRunAt, now, upgradeMinMs)) {
+          lastUpgradeRunAt = now;
+          runAutoUpgradeDetached();
         }
       } while (pendingReason && !stopped);
     } finally {
