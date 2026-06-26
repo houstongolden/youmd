@@ -55,6 +55,7 @@ import { okfCommand } from "./commands/okf";
 import { envBackupCommand, envRestoreCommand, envVaultCommand, envShareCommand, envPullCommand, envListCommand } from "./commands/env";
 import { machineCommand } from "./commands/machine";
 import { remoteCommand } from "./commands/remote";
+import { orchestrateCommand } from "./commands/orchestrate";
 import { readCliVersion } from "./lib/version";
 
 const program = new Command();
@@ -712,6 +713,26 @@ program
       project: options.project,
       message: options.message,
       timeout: options.timeout,
+    });
+  });
+
+program
+  .command("orchestrate [subcommand] [args...]")
+  .description("Master orchestrator -- launch/monitor/stop worker agents, or autonomously delegate a goal")
+  .option("--harness <name>", "Worker harness: claude | codex | cursor | custom")
+  .option("--project <name>", "You.md project to run the worker in")
+  .option("--dir <path>", "Explicit working directory (overrides --project)")
+  .option("--lines <n>", "Lines to tail for logs")
+  .option("--max-steps <n>", "Max orchestrator loop steps (run)")
+  .option("--json", "Print JSON")
+  .action((subcommand, args, options) => {
+    return orchestrateCommand(subcommand, args || [], {
+      harness: options.harness,
+      project: options.project,
+      dir: options.dir,
+      lines: options.lines,
+      maxSteps: options.maxSteps,
+      json: options.json,
     });
   });
 
