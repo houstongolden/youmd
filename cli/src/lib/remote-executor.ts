@@ -31,6 +31,13 @@ import {
   getWorkspaceRootCandidates,
   getProjectMarkerSignals,
 } from "./project";
+import {
+  spawnWorker,
+  refreshWorkers,
+  getWorkerOutput,
+  stopWorker,
+  WorkerHarness,
+} from "./orchestrator/supervisor";
 
 // ─── Whitelist ──────────────────────────────────────────────────────────────
 
@@ -45,6 +52,15 @@ export const ALLOWED_REMOTE_ACTIONS = [
   "git.commit_push",
   "git.pull",
   "agent.status",
+  // ── Cross-machine orchestration (the You agent conductor driving a remote host) ──
+  // agent.spawn / agent.stop launch/stop a WORKER harness on the target — a real
+  // privilege escalation beyond the git whitelist, so they require the target host to
+  // opt in via YOU_REMOTE_AGENT_HOST=1 (see remoteAgentHostEnabled). list/output are
+  // read-only and need no extra opt-in.
+  "agent.spawn",
+  "agent.list",
+  "agent.output",
+  "agent.stop",
 ] as const;
 
 export type RemoteAction = (typeof ALLOWED_REMOTE_ACTIONS)[number];
@@ -89,7 +105,47 @@ export const ACTION_SPECS: Record<RemoteAction, RemoteActionSpec> = {
     timeoutMs: 15_000,
     description: "report host/runtime + last agent-bus heartbeat hint",
   },
+  "agent.spawn": {
+    // needsProject is false here so the host opt-in gate is checked FIRST (inside the case);
+    // the project dir is resolved + contained inside the case, after the gate.
+    needsProject: false,
+    mutating: "reversible",
+    timeoutMs: 15_000,
+    description: "launch a worker harness (claude|codex|cursor) on a task in a project (opt-in host)",
+  },
+  "agent.list": {
+    needsProject: false,
+    mutating: "no",
+    timeoutMs: 10_000,
+    description: "list worker agents and their status on this host",
+  },
+  "agent.output": {
+    needsProject: false,
+    mutating: "no",
+    timeoutMs: 10_000,
+    description: "tail a worker agent's captured output",
+  },
+  "agent.stop": {
+    needsProject: false,
+    mutating: "reversible",
+    timeoutMs: 10_000,
+    description: "stop a running worker agent (opt-in host)",
+  },
 };
+
+/**
+ * Whether THIS host accepts remote requests to launch/stop autonomous worker agents.
+ * Off by default: a host enrolled in the brain is remotely observable (git/status/agent.list)
+ * but will NOT run a remotely-triggered coding agent unless its owner explicitly opts in. The
+ * y.computer / VPS provision flow sets this deliberately when standing up a worker host.
+ */
+export function remoteAgentHostEnabled(): boolean {
+  const v = (process.env.YOU_REMOTE_AGENT_HOST || process.env.YOUMD_REMOTE_AGENT_HOST || "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
+/** Worker harnesses a REMOTE issuer may request. `custom` (arbitrary argv) is intentionally excluded. */
+const REMOTE_SPAWNABLE_HARNESSES = ["claude", "codex", "cursor"] as const;
 
 export function isAllowedRemoteAction(action: unknown): action is RemoteAction {
   return (
@@ -506,6 +562,7 @@ export async function executeRemoteAction(
           `host: ${os.hostname()}`,
           `runtime: node ${process.version}`,
           `pid: ${process.pid}`,
+          `remote-agent-host: ${remoteAgentHostEnabled() ? "enabled" : "disabled"}`,
         ].join("\n");
         return {
           ok: true,
@@ -513,6 +570,113 @@ export async function executeRemoteAction(
           exitCode: 0,
           output: cleanOutput(summary, ""),
           status: "ok",
+          secretValuesExposed: false,
+        };
+      }
+
+      case "agent.spawn": {
+        // Higher-privilege: requires explicit host opt-in (this launches an autonomous worker).
+        if (!remoteAgentHostEnabled()) {
+          return reject(
+            action,
+            "this host does not accept remote agent spawns (set YOU_REMOTE_AGENT_HOST=1 to enable)"
+          );
+        }
+        const harness = String(args.harness ?? "claude") as WorkerHarness;
+        if (!(REMOTE_SPAWNABLE_HARNESSES as readonly string[]).includes(harness)) {
+          return reject(action, `harness not allowed for remote spawn: ${harness}`);
+        }
+        const goal = typeof args.goal === "string" ? args.goal.trim() : "";
+        if (!goal) {
+          return reject(action, "agent.spawn requires a non-empty goal");
+        }
+        // Resolve + contain the project dir AFTER the opt-in/harness/goal gates.
+        const resolvedSpawn = resolveProjectDir(args.project, { startDir: opts.startDir });
+        if (!resolvedSpawn.ok) {
+          return reject(action, resolvedSpawn.reason);
+        }
+        const res = spawnWorker({
+          harness,
+          goal,
+          cwd: resolvedSpawn.dir,
+          project: typeof args.project === "string" ? args.project : undefined,
+          host: os.hostname(),
+        });
+        if (!res.ok || !res.worker) {
+          return {
+            ok: false,
+            action,
+            exitCode: null,
+            output: cleanOutput("", res.error ?? "spawn failed"),
+            error: res.error ?? "spawn failed",
+            status: "error",
+            secretValuesExposed: false,
+          };
+        }
+        return {
+          ok: true,
+          action,
+          exitCode: 0,
+          output: cleanOutput(
+            `launched ${harness} worker ${res.worker.id} (pid ${res.worker.pid}) in ${resolvedSpawn.dir}`,
+            ""
+          ),
+          status: "ok",
+          secretValuesExposed: false,
+        };
+      }
+
+      case "agent.list": {
+        const workers = refreshWorkers();
+        const summary =
+          workers.length === 0
+            ? "no workers"
+            : workers
+                .map((w) => `${w.id} [${w.status}] ${w.harness} ${w.project ?? "-"} :: ${w.goal.slice(0, 60)}`)
+                .join("\n");
+        return {
+          ok: true,
+          action,
+          exitCode: 0,
+          output: cleanOutput(summary, ""),
+          status: "ok",
+          secretValuesExposed: false,
+        };
+      }
+
+      case "agent.output": {
+        const id = typeof args.id === "string" ? args.id.trim() : "";
+        if (!id) return reject(action, "agent.output requires a worker id");
+        const lines = Number(args.lines) > 0 ? Number(args.lines) : 40;
+        const res = getWorkerOutput(id, lines);
+        return {
+          ok: res.ok,
+          action,
+          exitCode: res.ok ? 0 : null,
+          output: cleanOutput(res.ok ? res.output ?? "" : "", res.ok ? "" : res.error ?? ""),
+          status: res.ok ? "ok" : "error",
+          ...(res.ok ? {} : { error: res.error }),
+          secretValuesExposed: false,
+        };
+      }
+
+      case "agent.stop": {
+        if (!remoteAgentHostEnabled()) {
+          return reject(
+            action,
+            "this host does not accept remote agent control (set YOU_REMOTE_AGENT_HOST=1 to enable)"
+          );
+        }
+        const id = typeof args.id === "string" ? args.id.trim() : "";
+        if (!id) return reject(action, "agent.stop requires a worker id");
+        const res = stopWorker(id);
+        return {
+          ok: res.ok,
+          action,
+          exitCode: res.ok ? 0 : null,
+          output: cleanOutput(res.ok ? `stopped ${id}` : "", res.ok ? "" : res.error ?? ""),
+          status: res.ok ? "ok" : "error",
+          ...(res.ok ? {} : { error: res.error }),
           secretValuesExposed: false,
         };
       }

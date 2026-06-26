@@ -1,5 +1,19 @@
 # You.md — Changelog
 
+## 2026-06-26 — Build: cross-machine orchestration (remote agent spawn/monitor)
+
+### feat(orchestrator): cross-machine worker spawn/monitor over the agent bus
+- The remote-executor whitelist gains `agent.spawn` / `agent.list` / `agent.output` /
+  `agent.stop`, so the You agent conductor on one machine can launch + monitor worker
+  harnesses (claude/codex/cursor) on another (office Mac mini, Hostinger VPS) over the
+  existing bus. `agent.spawn`/`agent.stop` run an autonomous coding agent — a real escalation
+  past the git whitelist — so they require the TARGET to opt in via `YOU_REMOTE_AGENT_HOST=1`;
+  a fresh enrolled host is remotely observable but won't run a remotely-triggered worker until
+  its owner enables it. `custom` harness is barred over remote. Issuer side: `you remote run
+  <machine> agent.spawn --harness claude --project youmd --goal "…"` (new --harness/--goal/--id/
+  --lines pass-through). Verified: tsc clean; 23 remote-executor tests incl. 6 new gating tests;
+  34 tests green across daemon/executor/remote-command/install-script.
+
 ## 2026-06-26 — Build: Linux daemon, You-agent orchestrator, folder.md client
 
 ### feat(daemon): systemd --user support — You.md runs always-on on a Linux VPS

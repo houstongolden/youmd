@@ -706,6 +706,10 @@ program
   .option("--project <name>", "Project to target for a remote run")
   .option("--message <m>", "Commit message / human-readable command body")
   .option("--timeout <seconds>", "Seconds to wait for a remote run result", "60")
+  .option("--harness <name>", "agent.spawn: worker harness on the remote (claude|codex|cursor)")
+  .option("--goal <text>", "agent.spawn: task prompt for the remote worker")
+  .option("--id <workerId>", "agent.output/agent.stop: remote worker id")
+  .option("--lines <n>", "agent.output: lines to tail")
   .action((subcommand, args, options) => {
     return remoteCommand(subcommand, args || [], {
       limit: options.limit,
@@ -713,6 +717,10 @@ program
       project: options.project,
       message: options.message,
       timeout: options.timeout,
+      harness: options.harness,
+      goal: options.goal,
+      id: options.id,
+      lines: options.lines,
     });
   });
 

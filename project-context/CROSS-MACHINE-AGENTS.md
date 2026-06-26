@@ -224,10 +224,24 @@ daemon. On each agent-bus update (already subscribed):
 | `git.commit_push` | `git add -A && git commit -m <msg> && git push` on current branch | yes (reversible) |
 | `git.pull` | `git pull --ff-only` | yes (reversible) |
 | `agent.status` | report running agent processes / last agent-bus heartbeat | no |
+| `agent.spawn` | launch a worker harness (claude\|codex\|cursor) on a task in a contained project — **requires `YOU_REMOTE_AGENT_HOST=1` on the target** | yes (reversible) |
+| `agent.list` | list worker agents + status on the target | no |
+| `agent.output` | tail a worker agent's captured output by id | no |
+| `agent.stop` | stop a running worker agent — **requires `YOU_REMOTE_AGENT_HOST=1`** | yes (reversible) |
 
 Explicitly **NOT** allowed: arbitrary shell, `rm`, force-push, branch deletion,
-`git reset --hard`, npm scripts, file writes outside git, anything not in the table.
-New actions require a code change + review — the whitelist is the security boundary.
+`git reset --hard`, npm scripts, file writes outside git, `custom` harness over remote,
+anything not in the table. New actions require a code change + review — the whitelist is
+the security boundary.
+
+**Cross-machine orchestration tier (2026-06-26):** the `agent.*` spawn/list/output/stop
+actions let the You agent conductor on one machine launch + monitor worker harnesses on
+another (office Mac mini, Hostinger VPS) over the same bus. Because `agent.spawn` runs an
+autonomous coding agent (a real escalation past the git whitelist), the **target** must opt
+in with `YOU_REMOTE_AGENT_HOST=1` — a fresh enrolled host is remotely *observable*
+(`agent.list`/`agent.output`/`git.*`) but will not *run* a remotely-triggered worker until
+its owner enables it (the y.computer/VPS provision flow sets it deliberately). Issuer side:
+`you remote run <machine> agent.spawn --harness claude --project youmd --goal "…"`.
 
 ---
 

@@ -63,10 +63,15 @@ cli/src/commands/orchestrate.ts   `you orchestrate` (run | spawn | list | logs |
 
 The vision has reach beyond what one session builds. Mapped to substrate:
 
-1. **Cross-machine orchestration.** Today the supervisor runs workers on the local host. Next:
-   let `spawn_agent` target a *remote* machine via the already-shipped agent bus + remote-executor
-   (`cli/src/lib/remote-executor.ts`) — add a whitelisted `agent.spawn`/`agent.report` action so U
-   on your MacBook can launch + monitor a worker on the office Mac mini or a Hostinger VPS.
+1. **Cross-machine orchestration — SHIPPED (2026-06-26).** The supervisor runs workers locally;
+   the remote-executor now also carries `agent.spawn`/`agent.list`/`agent.output`/`agent.stop`
+   over the agent bus, so U on your MacBook can launch + monitor a worker on the office Mac mini
+   or a Hostinger VPS: `you remote run <machine> agent.spawn --harness claude --project youmd
+   --goal "…"`. `agent.spawn`/`agent.stop` require `YOU_REMOTE_AGENT_HOST=1` on the target (an
+   autonomous worker is a real escalation past the git whitelist); read-only list/output do not.
+   9 unit tests cover the gating + whitelist. *Next:* wire these as loop tools (a `machine` arg on
+   `spawn_agent`) so `you orchestrate run` can delegate across machines autonomously, not just via
+   the explicit CLI.
 2. **Brain-aware routing.** Wire the existing MCP brain tools (identity, portfolio graph, project
    goals/tasks) into the loop's tool set so U routes by *project goal*, not just by prompt — "push
    the youmd PR" knows which repo, which machine, which harness.

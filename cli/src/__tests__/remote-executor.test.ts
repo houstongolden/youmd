@@ -28,13 +28,17 @@ import {
 import { generateRequestId } from "../lib/request-id";
 
 describe("whitelist", () => {
-  it("accepts exactly the five whitelisted actions", () => {
+  it("accepts exactly the whitelisted actions (git + cross-machine agent control)", () => {
     expect([...ALLOWED_REMOTE_ACTIONS]).toEqual([
       "git.status",
       "git.last_activity",
       "git.commit_push",
       "git.pull",
       "agent.status",
+      "agent.spawn",
+      "agent.list",
+      "agent.output",
+      "agent.stop",
     ]);
     for (const action of ALLOWED_REMOTE_ACTIONS) {
       expect(isAllowedRemoteAction(action)).toBe(true);
@@ -75,6 +79,76 @@ describe("whitelist", () => {
     const result = await executeRemoteAction({ action: "git.status; echo pwned" });
     expect(result.ok).toBe(false);
     expect(result.status).toBe("rejected");
+  });
+});
+
+describe("cross-machine agent control (opt-in gate)", () => {
+  it("agent.spawn is rejected unless the host opted in via YOU_REMOTE_AGENT_HOST", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    delete process.env.YOU_REMOTE_AGENT_HOST;
+    try {
+      const result = await executeRemoteAction({
+        action: "agent.spawn",
+        args: { harness: "claude", goal: "do a thing", project: "youmd" },
+      });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/YOU_REMOTE_AGENT_HOST/);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("agent.stop is also gated behind the host opt-in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    delete process.env.YOU_REMOTE_AGENT_HOST;
+    try {
+      const result = await executeRemoteAction({ action: "agent.stop", args: { id: "w_x" } });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/YOU_REMOTE_AGENT_HOST/);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("agent.list is read-only and runs without the opt-in (no host enablement needed)", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    delete process.env.YOU_REMOTE_AGENT_HOST;
+    try {
+      const result = await executeRemoteAction({ action: "agent.list" });
+      expect(result.ok).toBe(true);
+      expect(result.status).toBe("ok");
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("agent.output requires a worker id", async () => {
+    const result = await executeRemoteAction({ action: "agent.output", args: {} });
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe("rejected");
+    expect(result.error).toMatch(/worker id/i);
+  });
+
+  it("agent.spawn rejects a disallowed harness even when the host opted in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "1";
+    try {
+      const result = await executeRemoteAction({
+        action: "agent.spawn",
+        args: { harness: "custom", goal: "x", project: "youmd" },
+      });
+      expect(result.ok).toBe(false);
+      // custom is blocked either at harness validation or project containment — both are rejections.
+      expect(result.status).toBe("rejected");
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
   });
 });
 
