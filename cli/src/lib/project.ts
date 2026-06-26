@@ -491,10 +491,15 @@ function discoverWorkspaceRootsFromProjectMarkers(seeds: string[], maxDirs = 700
         const child = path.join(current.dir, entry.name);
         const markers = getProjectMarkerSignals(child);
         if (markers.length > 0) {
+          // The child is itself a project → its parent is a workspace root.
           roots.add(path.dirname(child));
-          continue;
         }
 
+        // Keep descending even into a marked project so NESTED sub-projects are
+        // also discovered. A workspace folder that itself carries a marker (e.g.
+        // ~/Desktop/CODE_2025 has a CLAUDE.md) must not hide the repos inside it;
+        // otherwise `--project <repo>` can't resolve those repos. The depth cap
+        // and maxDirs budget keep this bounded.
         if (current.depth < 2) {
           stack.push({ dir: child, depth: current.depth + 1 });
         }
