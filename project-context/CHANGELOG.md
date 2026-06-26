@@ -1,5 +1,23 @@
 # You.md — Changelog
 
+## 2026-06-26 — Strategy: multi-computer agents, the synced brain, y.computer + folder.md platform
+
+### docs(strategy): multi-computer agent platform + y.computer / folder.md positioning
+- Captured Houston's strategy drop on truly-separate-agents-on-separate-computers, the
+  synced brain, and the three-surface platform (you.md brain + folder.md storage +
+  y.computer compute).
+- Added `project-context/MULTICOMPUTER_AGENTS_AND_Y_COMPUTER_STRATEGY_2026-06-26.md`:
+  competitive landscape across 4 lanes (orchestration, sandboxes, agent storage, portable
+  memory), what's genuinely unique (owner-scoped federation of independent physical hosts +
+  real-time bus + cross-fleet self-improving skills + vault-synced secrets), the 3-surface
+  architecture, and a tiered y.computer recommendation (buy the domain; build a thin
+  control plane, NOT a sandbox provider; ship Tier 0 BYO-host on existing substrate first).
+- Verbatim prompt archived at
+  `project-context/prompts/2026-06-26-multicomputer-agents-y-computer-platform.md`.
+- Maps the platform onto the existing `CROSS-MACHINE-AGENTS.md` substrate (~90% built);
+  the work is assembly + naming + finishing the already-specced Phase 1 remote-command
+  executor, not new invention.
+
 ## 2026-06-25 — Cross-machine hardening, daemon self-upgrade, shell sidebar, multi-repo sync
 
 ### feat(daemon): self-upgrade the runtime on an interval (0.8.22)
