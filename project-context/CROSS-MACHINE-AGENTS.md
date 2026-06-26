@@ -243,6 +243,13 @@ in with `YOU_REMOTE_AGENT_HOST=1` — a fresh enrolled host is remotely *observa
 its owner enables it (the y.computer/VPS provision flow sets it deliberately). Issuer side:
 `you remote run <machine> agent.spawn --harness claude --project youmd --goal "…"`.
 
+**Enabling a worker host (the daemon-visible way):** the opt-in is read from BOTH
+`YOU_REMOTE_AGENT_HOST=1` (env) and a durable `remoteAgentHost` flag in `~/.you/config.json`.
+The **config flag is the real path** because the resident daemon — which receives the remote
+command — does NOT inherit shell exports, so an env-only opt-in would never reach it. Set it
+with **`you orchestrate host on`** (and `host off` / `host status`). An explicit
+`YOU_REMOTE_AGENT_HOST=0` hard-overrides the config flag as a kill switch.
+
 ---
 
 ## 6. MCP tools + CLI + YStack

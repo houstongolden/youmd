@@ -38,6 +38,7 @@ import {
   stopWorker,
   WorkerHarness,
 } from "./orchestrator/supervisor";
+import { readGlobalConfig } from "./config";
 
 // ─── Whitelist ──────────────────────────────────────────────────────────────
 
@@ -141,7 +142,15 @@ export const ACTION_SPECS: Record<RemoteAction, RemoteActionSpec> = {
  */
 export function remoteAgentHostEnabled(): boolean {
   const v = (process.env.YOU_REMOTE_AGENT_HOST || process.env.YOUMD_REMOTE_AGENT_HOST || "").trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes";
+  if (v === "1" || v === "true" || v === "yes") return true;
+  if (v === "0" || v === "false" || v === "no") return false; // explicit env override wins
+  // Persisted opt-in: the resident daemon's process env carries no shell exports, so the
+  // durable flag in config is the real enablement path (set via `you orchestrate host on`).
+  try {
+    return readGlobalConfig().remoteAgentHost === true;
+  } catch {
+    return false;
+  }
 }
 
 /** Worker harnesses a REMOTE issuer may request. `custom` (arbitrary argv) is intentionally excluded. */

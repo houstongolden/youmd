@@ -2,6 +2,14 @@
 
 ## 2026-06-26 — Build: cross-machine orchestration (remote agent spawn/monitor)
 
+### fix(orchestrator): durable worker-host opt-in the daemon can actually read
+- The remote `agent.spawn` is handled by the resident daemon, whose process env carries no
+  shell exports — so an env-only `YOU_REMOTE_AGENT_HOST` opt-in could never enable it in
+  practice. Added a durable `remoteAgentHost` flag in config; `remoteAgentHostEnabled()` now
+  reads env OR config (with explicit env `0` as a hard kill switch). New `you orchestrate host
+  on|off|status` toggles it. Verified: 2 new tests (config-enable path + env-0 override);
+  26 executor/daemon tests green.
+
 ### feat(orchestrator): always-on report-back — `you orchestrate watch` + resident daemon
 - The orchestrator launched workers but nothing noticed when they finished. Added
   `you orchestrate watch [--once] [--interval N]`: reconciles worker status and posts a

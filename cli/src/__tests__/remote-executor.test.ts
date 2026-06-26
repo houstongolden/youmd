@@ -17,8 +17,10 @@ import {
   resolveProjectDir,
   redactSecrets,
   truncateOutput,
+  remoteAgentHostEnabled,
   ALLOWED_REMOTE_ACTIONS,
 } from "../lib/remote-executor";
+import { writeGlobalConfig } from "../lib/config";
 import {
   shouldHandleCommand,
   SeenRequestSet,
@@ -85,7 +87,7 @@ describe("whitelist", () => {
 describe("cross-machine agent control (opt-in gate)", () => {
   it("agent.spawn is rejected unless the host opted in via YOU_REMOTE_AGENT_HOST", async () => {
     const prev = process.env.YOU_REMOTE_AGENT_HOST;
-    delete process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "0";
     try {
       const result = await executeRemoteAction({
         action: "agent.spawn",
@@ -102,7 +104,7 @@ describe("cross-machine agent control (opt-in gate)", () => {
 
   it("agent.stop is also gated behind the host opt-in", async () => {
     const prev = process.env.YOU_REMOTE_AGENT_HOST;
-    delete process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "0";
     try {
       const result = await executeRemoteAction({ action: "agent.stop", args: { id: "w_x" } });
       expect(result.ok).toBe(false);
@@ -132,6 +134,34 @@ describe("cross-machine agent control (opt-in gate)", () => {
     expect(result.ok).toBe(false);
     expect(result.status).toBe("rejected");
     expect(result.error).toMatch(/worker id/i);
+  });
+
+  it("remoteAgentHostEnabled: env '0' hard-overrides; otherwise the persisted config flag enables it", () => {
+    const prevEnv = process.env.YOU_REMOTE_AGENT_HOST;
+    const prevHome = process.env.YOU_HOME;
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "you-host-flag-"));
+    process.env.YOU_HOME = tmpHome;
+    try {
+      // No env, config flag on → enabled (this is the daemon path).
+      delete process.env.YOU_REMOTE_AGENT_HOST;
+      writeGlobalConfig({ remoteAgentHost: true });
+      expect(remoteAgentHostEnabled()).toBe(true);
+
+      // Explicit env "0" wins even when config says true (a kill switch).
+      process.env.YOU_REMOTE_AGENT_HOST = "0";
+      expect(remoteAgentHostEnabled()).toBe(false);
+
+      // Config off → disabled.
+      delete process.env.YOU_REMOTE_AGENT_HOST;
+      writeGlobalConfig({ remoteAgentHost: false });
+      expect(remoteAgentHostEnabled()).toBe(false);
+    } finally {
+      if (prevEnv === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prevEnv;
+      if (prevHome === undefined) delete process.env.YOU_HOME;
+      else process.env.YOU_HOME = prevHome;
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
   });
 
   it("agent.spawn rejects a disallowed harness even when the host opted in", async () => {

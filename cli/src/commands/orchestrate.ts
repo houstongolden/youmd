@@ -16,7 +16,8 @@ import {
   WorkerRecord,
 } from "../lib/orchestrator/supervisor";
 import { sendAgentBusMessage } from "../lib/api";
-import { isAuthenticated } from "../lib/config";
+import { isAuthenticated, readGlobalConfig, writeGlobalConfig } from "../lib/config";
+import { remoteAgentHostEnabled } from "../lib/remote-executor";
 import { buildOrchestratorTools, makeModelCaller, resolveProjectDir } from "../lib/orchestrator/tools";
 import { runAgentLoop } from "../lib/orchestrator/loop";
 
@@ -82,6 +83,7 @@ function usage(): void {
   console.log("  " + chalk.cyan("logs <id>") + DIM("             tail a worker's output (--lines)"));
   console.log("  " + chalk.cyan("stop <id>") + DIM("             stop a running worker"));
   console.log("  " + chalk.cyan("watch") + DIM("                 report worker completions to the bus (--once, --interval)"));
+  console.log("  " + chalk.cyan("host on|off") + DIM("           allow/deny remote machines to spawn workers HERE"));
   console.log("  " + chalk.cyan("prune") + DIM("                 drop old finished workers from the registry"));
   console.log("");
   console.log("  " + DIM("harnesses: claude | codex | cursor | custom   (override bins via YOU_HARNESS_*)"));
@@ -147,6 +149,35 @@ export async function orchestrateCommand(
     }
     const res = stopWorker(id);
     console.log(res.ok ? "  " + chalk.green(`stopped ${id}`) : chalk.red("  " + res.error));
+    return;
+  }
+
+  if (subcommand === "host") {
+    // Toggle whether THIS machine accepts remote agent.spawn/agent.stop (durable opt-in).
+    const verb = (args[0] || "status").toLowerCase();
+    if (verb === "on" || verb === "off") {
+      const cfg = readGlobalConfig();
+      cfg.remoteAgentHost = verb === "on";
+      writeGlobalConfig(cfg);
+      console.log("");
+      console.log(
+        "  " + (verb === "on" ? chalk.green("enabled") : chalk.yellow("disabled")) +
+        DIM(`  this host ${verb === "on" ? "now accepts" : "no longer accepts"} remote worker spawns`)
+      );
+      if (verb === "on") {
+        console.log("  " + DIM("remote machines with your key + remote:command scope can now run workers here."));
+      }
+      console.log("");
+      return;
+    }
+    // status
+    console.log("");
+    console.log(
+      "  remote worker host: " +
+      (remoteAgentHostEnabled() ? chalk.green("enabled") : chalk.dim("disabled")) +
+      DIM("   (you orchestrate host on|off)")
+    );
+    console.log("");
     return;
   }
 

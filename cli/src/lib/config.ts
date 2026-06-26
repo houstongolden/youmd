@@ -30,6 +30,13 @@ export interface GlobalConfig {
   folderMdKey?: string;
   /** folder.md folder/workspace id that holds this user's you.md media. */
   folderMdFolderId?: string;
+  /**
+   * This machine accepts remote requests to launch/stop autonomous worker agents
+   * (orchestrator agent.spawn/agent.stop). Off by default; persisted here so the resident
+   * daemon — whose process env does NOT carry shell exports — can read the opt-in. Set via
+   * `you orchestrate host on`.
+   */
+  remoteAgentHost?: boolean;
 }
 
 export interface LocalConfig {
