@@ -389,6 +389,13 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
     options.daemon === true &&
     process.env.YOUMD_LIVE_SYNC_UPGRADE !== "0" &&
     process.env.YOUMD_AUTO_UPDATE !== "0";
+  // Auto-share the Secret Vault to any newly-registered trusted device so a new
+  // machine's .env.local decrypts with zero manual `vault share` (the daemon has
+  // Keychain access). Daemon-only; gated on the vault being ready and a device
+  // missing an envelope. Reads the passphrase from the Keychain (legacy fallback).
+  const vaultShareMinMs = envNumber("YOUMD_LIVE_SYNC_VAULT_SHARE_INTERVAL_SECONDS", 10 * 60) * 1000;
+  const vaultShareEnabled =
+    options.daemon === true && process.env.YOUMD_LIVE_SYNC_VAULT_SHARE !== "0";
   const stackSyncEnabled = process.env.YOUMD_LIVE_SYNC_STACK !== "0";
   const contextSyncEnabled = process.env.YOUMD_LIVE_SYNC_CONTEXT !== "0";
   const inventorySyncEnabled = process.env.YOUMD_LIVE_SYNC_INVENTORY !== "0";
@@ -402,6 +409,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   let lastInventoryRunAt = 0;
   let lastRepairRunAt = 0;
   let lastUpgradeRunAt = 0;
+  let lastVaultShareRunAt = 0;
   let lastAgentMessageAt = 0;
   const seenRemoteCommands = new SeenRequestSet();
   let materializing = false;
@@ -570,6 +578,19 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
         if (upgradeEnabled && shouldRunBoundedSync(lastUpgradeRunAt, now, upgradeMinMs)) {
           lastUpgradeRunAt = now;
           runAutoUpgradeDetached();
+        }
+
+        if (vaultShareEnabled && shouldRunBoundedSync(lastVaultShareRunAt, now, vaultShareMinMs)) {
+          lastVaultShareRunAt = now;
+          const vault = describeRealtimeSecretVault(latestHead);
+          const devices = vault.trustedDeviceCount ?? 0;
+          const envelopes = vault.latestSnapshotEnvelopeCount ?? 0;
+          if (vault.state === "ready" && devices > envelopes) {
+            console.log(
+              chalk.dim(`  -- secret vault: ${envelopes}/${devices} device envelopes — auto-sharing to new trusted device(s)...`),
+            );
+            runYoumdSubcommand("auto-share secret vault to new trusted devices", ["env", "vault", "share"], commandTimeoutMs);
+          }
         }
       } while (pendingReason && !stopped);
     } finally {
