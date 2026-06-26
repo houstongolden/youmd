@@ -31,6 +31,7 @@ import {
 } from "../lib/machine-verify";
 import type { MachineVerificationProof } from "../lib/machine-verify";
 import { buildFreshMachineBootstrapPrompt } from "../lib/machine-bootstrap-prompt";
+import { provisionAgentSharedIfNeeded } from "./stack";
 
 // The compiled file lives at dist/commands/machine.js.
 // Walking up two levels lands at the package root, then into scripts/.
@@ -458,6 +459,9 @@ async function machineSyncNowCommand(opts: {
   const required = { required: true };
   runYoumdMachineStep("pull identity bundle", ["pull"], required);
   runYoumdMachineStep("sync identity bundle", ["sync", "--daemon"], required);
+  console.log(chalk.dim("  -- provision shared agent stack (new users only)"));
+  await provisionAgentSharedIfNeeded();
+  runYoumdMachineStep("write stack-sources registry", ["stack", "source", "sync"]);
   runYoumdMachineStep("sync shared skill/stack git roots", ["stack", "sync"], required);
   runYoumdMachineStep("install catalog skills", ["skill", "install", "all"]);
   runYoumdMachineStep("render installed skills", ["skill", "sync"], required);

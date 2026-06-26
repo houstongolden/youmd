@@ -343,6 +343,7 @@ SYNC_MODE="\${YOU_INSTALL_MACHINE_SYNC:-\${YOUMD_INSTALL_MACHINE_SYNC:-auto}}"
 LOGIN_MODE="\${YOU_INSTALL_LOGIN:-\${YOUMD_INSTALL_LOGIN:-auto}}"
 SYNC_ROOT="\${YOU_CODE_ROOT:-\${YOUMD_CODE_ROOT:-$HOME/Desktop/CODE_YOU}}"
 SYNC_LIMIT="\${YOU_PROJECT_LIMIT:-\${YOUMD_PROJECT_LIMIT:-80}}"
+SYNC_DAYS="\${YOU_PROJECT_DAYS:-\${YOUMD_PROJECT_DAYS:-30}}"
 
 machine_sync_enabled() {
   case "$SYNC_MODE" in
@@ -390,7 +391,11 @@ run_you_login_auto() {
 }
 
 run_machine_sync_now() {
-  you machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"
+  # full-sync (not sync-now) so a fresh machine also CLONES the user's active
+  # projects (last \$SYNC_DAYS days) + pulls the Secret Vault — not just skills.
+  # --recent-only keeps it non-interactive (skips out-of-window projects without
+  # prompting). Private repo clones still require GitHub auth (\`gh auth login\`).
+  you machine full-sync --recent-only --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT" --days "$SYNC_DAYS"
 }
 
 if machine_sync_enabled; then
@@ -420,7 +425,7 @@ if machine_sync_enabled; then
     echo "  - machine sync proof complete"
   else
     echo "  - account sync is waiting on authentication"
-    echo "  - rerun the same curl command, or run: you login && you machine sync-now --root \\"$SYNC_ROOT\\""
+    echo "  - rerun the same curl command, or run: you login && you machine full-sync --recent-only --root \\"$SYNC_ROOT\\""
   fi
 fi
 

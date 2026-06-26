@@ -26,6 +26,15 @@ GIT_USER_EMAIL="${GIT_USER_EMAIL:-houston@bamf.ai}"
 AGENT_SHARED="${HOME}/.agent-shared"
 SCISTACK="${HOME}/.claude/scistack"
 
+# Per-user stack-source registry for AUTO-CLONE on a fresh machine (so the
+# skill/stack layer self-installs — no manual `git clone`). Resolved per-repo from:
+#   1) SKILLSTACK_REPO_REMOTES env  ("/abs/path=https://git/url /path2=...")
+#   2) ~/.you/stack-sources file    (one "abs_path=remote_url" per line, '#' comments)
+# This is intentionally NOT hardcoded to any one user's repos: each You.md user
+# registers their OWN agent-shared / science-stack remotes (You.md writes the file
+# from the user's identity). A repo with no resolvable remote is skipped, never cloned.
+STACK_SOURCES_FILE="${STACK_SOURCES_FILE:-${YOU_HOME:-${YOUMD_HOME:-${HOME}/.you}}/stack-sources}"
+
 # 4 loose skills that live in ~/.claude/skills/ but aren't in any repo
 LOOSE_SKILLS="agent-runtime-guard agent-stack-sync continue skill-governor"
 
@@ -117,6 +126,12 @@ dirs_differ() {
 # ---------------------------------------------------------------------------
 mirror_loose_skills_to_repo() {
   local skill name src dst
+  # On a fresh machine agent-shared isn't cloned yet; nothing to mirror INTO it.
+  # It gets cloned later this pass, then the reverse mirror populates ~/.claude.
+  if [ ! -d "${AGENT_SHARED}/.git" ]; then
+    log "Loose-skill mirror: agent-shared not present yet — skipping (will clone this sync)."
+    return 0
+  fi
   log "--- Loose-skill mirror: ~/.claude/skills/ → ${AGENT_SHARED}/claude-skills/ ---"
 
   for skill in ${LOOSE_SKILLS}; do
@@ -181,6 +196,48 @@ mirror_loose_skills_from_repo() {
 }
 
 # ---------------------------------------------------------------------------
+# Resolve the clone remote for a repo path (env map first, then built-in).
+# Prints the URL, or nothing if no remote is known for that path.
+# ---------------------------------------------------------------------------
+repo_remote() {
+  local repo="$1"
+  # 1) env map
+  if [ -n "${SKILLSTACK_REPO_REMOTES:-}" ]; then
+    local pair
+    for pair in ${SKILLSTACK_REPO_REMOTES}; do
+      case "${pair}" in
+        "${repo}="*) printf '%s' "${pair#*=}"; return 0 ;;
+      esac
+    done
+  fi
+  # 2) per-user ~/.you/stack-sources file (abs_path=remote_url per line)
+  if [ -f "${STACK_SOURCES_FILE}" ]; then
+    local line key val
+    while IFS= read -r line; do
+      case "${line}" in ''|\#*) continue ;; esac
+      key="${line%%=*}"
+      val="${line#*=}"
+      # expand a leading ~ in the registered path
+      case "${key}" in "~/"*) key="${HOME}/${key#\~/}" ;; esac
+      if [ "${key}" = "${repo}" ] && [ -n "${val}" ]; then
+        printf '%s' "${val}"
+        return 0
+      fi
+    done < "${STACK_SOURCES_FILE}"
+  fi
+  printf ''
+}
+
+# Run a freshly-cloned repo's own setup so its symlinks/mirrors exist immediately.
+hydrate_cloned_repo() {
+  local repo="$1"
+  if [ "${repo}" = "${AGENT_SHARED}" ] && [ -x "${repo}/bin/sync-agent-shared.sh" ]; then
+    log "Hydrating freshly-cloned agent-shared (instruction symlinks + agent mirrors)..."
+    "${repo}/bin/sync-agent-shared.sh" >>"${LOG_FILE}" 2>&1 || log_warn "sync-agent-shared.sh failed (non-fatal)"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # SYNC ONE REPO
 # Returns 0 on success, 1 on non-fatal failure.
 # ---------------------------------------------------------------------------
@@ -191,10 +248,26 @@ sync_repo() {
 
   log "=== Syncing repo: ${repo} ==="
 
-  # Guard: must be a git repo
+  # Auto-clone if missing (fresh machine) so skills/stacks self-install.
   if [ ! -d "${repo}/.git" ]; then
-    log_warn "Skipping ${repo}: not a git repository."
-    return 1
+    local remote
+    remote="$(repo_remote "${repo}")"
+    if [ -z "${remote}" ]; then
+      log_warn "Skipping ${repo}: not a git repository and no known remote to clone."
+      return 1
+    fi
+    if is_dry; then
+      log_dry "Would clone ${remote} → ${repo}"
+      return 0
+    fi
+    log "Cloning ${remote} → ${repo} (missing on this machine)..."
+    mkdir -p "$(dirname "${repo}")"
+    if GIT_TERMINAL_PROMPT=0 git clone "${remote}" "${repo}" >>"${LOG_FILE}" 2>&1; then
+      log "Cloned ${repo_name}."
+    else
+      log_warn "Skipping ${repo}: clone of ${remote} failed (private/unreachable — ensure GitHub auth)."
+      return 1
+    fi
   fi
 
   # Guard: must not be mid-merge/rebase
@@ -308,12 +381,18 @@ main() {
   # Step 1: Mirror loose skills into agent-shared BEFORE syncing it
   mirror_loose_skills_to_repo
 
-  # Step 2: Sync each repo
+  # Step 2: Sync each repo (auto-cloning any that are missing + registered).
   local agent_shared_synced=0
   for repo in ${SKILLSTACK_REPOS}; do
+    local was_missing=0
+    [ ! -d "${repo}/.git" ] && was_missing=1
     if sync_repo "${repo}"; then
       if [ "${repo}" = "${AGENT_SHARED}" ]; then
         agent_shared_synced=1
+      fi
+      # On a fresh clone, run the repo's own setup so symlinks/mirrors exist now.
+      if [ "${was_missing}" -eq 1 ] && ! is_dry; then
+        hydrate_cloned_repo "${repo}"
       fi
     fi
   done
@@ -324,6 +403,19 @@ main() {
     mirror_loose_skills_from_repo
   else
     log_warn "Skipping reverse loose-skill mirror because agent-shared sync did not complete cleanly."
+  fi
+
+  # Step 4: Ensure science-stack skills are symlinked into ~/.claude/skills/
+  # (idempotent; picks up any newly-pulled skills each sync). Only runs if a
+  # scistack checkout with its own sync script is present.
+  if [ -x "${SCISTACK}/bin/sync-to-claude.sh" ]; then
+    if is_dry; then
+      log_dry "Would run scistack sync-to-claude.sh + build-index.sh"
+    else
+      "${SCISTACK}/bin/sync-to-claude.sh" >>"${LOG_FILE}" 2>&1 || log_warn "scistack sync-to-claude.sh failed (non-fatal)"
+      [ -x "${SCISTACK}/bin/build-index.sh" ] && "${SCISTACK}/bin/build-index.sh" >>"${LOG_FILE}" 2>&1 || true
+      log "scistack science skills symlinked into ~/.claude/skills/."
+    fi
   fi
 
   log "============================================================"

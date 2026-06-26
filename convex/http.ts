@@ -2671,6 +2671,98 @@ http.route({
   }),
 });
 
+// GET /api/v1/me/stack-sources — List identity-backed stack source registry entries.
+http.route({
+  path: "/api/v1/me/stack-sources",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private", "projects");
+    if (denied) return denied;
+
+    try {
+      const sources = await ctx.runQuery(api.stackSources.listForUser, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+      });
+      return json({
+        stackSources: sources.map((s) => ({
+          path: s.path,
+          remote: s.remote,
+          label: s.label,
+          kind: s.kind,
+        })),
+      });
+    } catch (err) {
+      return serverErrorResponse("me/stack-sources", err, "Failed to list stack sources");
+    }
+  }),
+});
+
+// POST /api/v1/me/stack-sources — Upsert a stack source registry entry.
+http.route({
+  path: "/api/v1/me/stack-sources",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const body = await request.json() as Record<string, unknown>;
+    const stackPath = cleanOptionalString(body.path, 700);
+    const remote = cleanOptionalString(body.remote, 700);
+    if (!stackPath) return errorResponse("invalid_request", "path must be a non-empty string", 400);
+    if (!remote) return errorResponse("invalid_request", "remote must be a non-empty string", 400);
+
+    try {
+      const result = await ctx.runMutation(api.stackSources.upsert, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        path: stackPath,
+        remote,
+        label: cleanOptionalString(body.label, 200),
+        kind: cleanOptionalString(body.kind, 80),
+      });
+      return guard.finish(json({ success: true, ...result }));
+    } catch (err) {
+      return serverErrorResponse("me/stack-sources", err, "Failed to upsert stack source");
+    }
+  }),
+});
+
+// POST /api/v1/me/stack-sources/remove — Remove a stack source registry entry.
+http.route({
+  path: "/api/v1/me/stack-sources/remove",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle", "projects");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    const body = await request.json() as Record<string, unknown>;
+    const stackPath = cleanOptionalString(body.path, 700);
+    if (!stackPath) return errorResponse("invalid_request", "path must be a non-empty string", 400);
+
+    try {
+      const result = await ctx.runMutation(api.stackSources.remove, {
+        clerkId: auth.userId,
+        _internalAuthToken: TRUSTED_INTERNAL_AUTH_TOKEN,
+        path: stackPath,
+      });
+      return guard.finish(json({ success: true, ...result }));
+    } catch (err) {
+      return serverErrorResponse("me/stack-sources/remove", err, "Failed to remove stack source");
+    }
+  }),
+});
+
 // GET /api/v1/me/synced-brain/graph — Canonical graph DTO for synced machines, skills, activity, and portfolio signals.
 http.route({
   path: "/api/v1/me/synced-brain/graph",
@@ -5385,6 +5477,8 @@ http.route({ path: "/api/v1/me/webhooks", method: "OPTIONS", handler: corsPrefli
 http.route({ path: "/api/v1/me/maintainer/proposals", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/maintainer/proposals/decision", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/me/brain-consent", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/stack-sources", method: "OPTIONS", handler: corsPreflight });
+http.route({ path: "/api/v1/me/stack-sources/remove", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/chat/stream", method: "OPTIONS", handler: corsPreflight });
 http.route({ path: "/api/v1/scrape", method: "OPTIONS", handler: corsPreflight });
