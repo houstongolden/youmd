@@ -1,7 +1,21 @@
 # Cross-Machine Agent-to-Agent Collaboration
 
+> **⚠️ STALENESS CORRECTION (2026-06-26, code-grounded audit):** the "proposed, not
+> built" status below is **out of date**. The Phase 1+2 remote-command path is **shipped
+> in code**: the whitelisted git executor (`cli/src/lib/remote-executor.ts`, 5 actions,
+> `execFile` + `shell:false` + path containment), the durable `remoteCommands` table
+> (`convex/remoteCommands.ts`), the daemon handler (`cli/src/commands/sync.ts:478`), the
+> `remote:command` opt-in scope (`convex/lib/scopes.ts:31`), and `you remote run`
+> (`cli/src/commands/remote.ts:260`) all exist. Remaining gaps are NOT the executor; they
+> are: (a) the resident daemon is **macOS/launchd-only** (`cli/src/lib/daemon.ts:131`) so a
+> Linux VPS has no always-on path, (b) unattended secret-vault provisioning on a fresh host
+> still needs a one-time `share` from an existing trusted device, and (c) `remote.ts:246`
+> status copy still says "Phase 1" though the executor ships. See
+> `MULTICOMPUTER_AGENTS_AND_Y_COMPUTER_STRATEGY_2026-06-26.md` §9 for the audit.
+
 **Status:** Phase 0 (read-only status slice) implemented on `prototype/desktop-shell-ia`.
-Phases 1–3 (command execution) are proposed, not built.
+Phases 1–2 (command execution) are now SHIPPED in code (see correction above); Phase 3
+(autonomy skill) and the rented-host glue (Linux daemon, unattended vault) remain.
 
 **Founder use case (verbatim intent):**
 > "My Mac mini at the office is running long-running agentic tasks. From my MacBook

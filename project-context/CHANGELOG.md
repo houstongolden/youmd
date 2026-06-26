@@ -18,6 +18,26 @@
   the work is assembly + naming + finishing the already-specced Phase 1 remote-command
   executor, not new invention.
 
+### docs(strategy): code-grounded audit addendum + cross-machine staleness fix
+- Ran three parallel code audits (Convex/GitHub storage, brain-sync architecture,
+  agent-integration surface) to answer Houston's three forks with file:line evidence.
+  Added §9 to the strategy doc:
+  - **Storage:** no binary/large-file path exists today (text strings ≤~1MB bundle, 700KB
+    text-only GitHub mirror; only blob path is the 8MB encrypted vault). Decision: keep
+    You.md text-first; folder.md = OPTIONAL pluggable media backend behind a brain pointer
+    (one MCP handoff), never a hard dependency.
+  - **Harness:** ~80% already exists (broad MCP surface, 3 host adapters, skill registry,
+    safe remote-executor, single-hop tool-router skeleton at `chat.ts:1815-2055`). Only
+    net-new is the iterative loop. Decision: don't build a Cursor rival; optionally close
+    the loop into a lightweight "You agent that acts across your brain/fleet."
+  - **Compute:** keep hosting capability inside You.md; `y.computer` is a brand/control-
+    plane wrapper, not a separate codebase. Two real blockers: macOS-only daemon (no Linux
+    systemd unit) and unattended vault provisioning. Hosted Mac mini works today; Linux VPS
+    needs the daemon first.
+- Corrected `CROSS-MACHINE-AGENTS.md`: the remote-command executor, durable table, daemon
+  handler, `remote:command` scope, and `you remote run` are SHIPPED in code — the doc's
+  "proposed, not built" status was stale.
+
 ## 2026-06-25 — Cross-machine hardening, daemon self-upgrade, shell sidebar, multi-repo sync
 
 ### feat(daemon): self-upgrade the runtime on an interval (0.8.22)

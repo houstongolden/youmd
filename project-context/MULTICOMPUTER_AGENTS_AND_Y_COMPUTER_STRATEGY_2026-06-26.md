@@ -292,3 +292,130 @@ shared skills) are done or in flight. That's the leverage.
 - **Is multi-physical-machine a mass-market need or a power-user (Houston) need today?** Be
   honest. The brain + folder.md are broadly useful now; y.computer compute-scaling may be a
   power-user feature for a while. That's fine — build Tier 0, watch the pull.
+
+---
+
+## 9. Code-grounded audit (2026-06-26) — answering the three real forks
+
+A deeper audit of the actual codebase (Convex storage, brain sync, agent-integration
+surface) sharpened three decisions Houston is wrestling with. Findings are cited to
+`file:line`; this section supersedes the higher-altitude guesses above where they differ.
+
+### 9.1 Storage: do we need folder.md, or is Convex/GitHub enough?
+
+**Finding — there is no binary/large-file path in You.md today, at all.**
+- Every user "file" is a markdown/JSON **string** inside one `bundles` document
+  (`convex/schema.ts:387-388`; `custom_files` = `{path, content: string}`,
+  `convex/lib/compile.ts:62-67`), bounded by Convex's **~1 MB per-document** limit.
+- The GitHub mirror is **text-only and tiny**: 100 files / 128 KB per file / **700 KB
+  total** (`convex/lib/repoMirrorPolicy.ts:8-10`); binary can't enter (content must be a
+  UTF-8 string, `convex/githubRepo.ts:366`).
+- Portraits/images are **ASCII text or external URLs** — never stored bytes
+  (`convex/schema.ts:201-210`; `convex/portrait.ts` never calls `storage.store`).
+- The only blob path (`ctx.storage`) is wired to exactly two internal cases: the HTML
+  scrape cache and the **8 MB encrypted env vault** (`convex/http.ts:54,3569`). Not exposed
+  for user media. No `generateUploadUrl`, no R2/S3, no CDN, no per-user quota.
+- **A 50 MB video, a 10 MB PDF, or a folder of design assets has nowhere to go today.**
+
+**Decision — keep You.md text-first; make folder.md an OPTIONAL, pluggable media backend
+behind a pointer. Do NOT make it a hard dependency, and do NOT grow a blob subsystem inside
+You.md.** Rationale (simplicity AND power):
+- You.md's *nature* is small structured text + pointers — which the brain already syncs
+  perfectly (the 1 MB bundle is fine for *pointers*, terrible for *payloads*).
+- The brain already stores strings flawlessly, so a folder.md URL/key **is** a first-class
+  brain value with zero new machinery. The integration is just "the brain hands a big/binary
+  artifact to folder.md and stores the returned pointer string." Since folder.md is already
+  MCP-native and Houston owns it, this is nearly free: **one MCP handoff tool**, not a
+  storage rewrite.
+- folder.md (Cloudflare R2 default, S3 coming, CDN, multi-writer concurrency control) is the
+  *right tool* for real media at scale; Convex `ctx.storage` is **not** a fit for 50 MB+
+  media (no CDN, egress cost) even though it could host modest blobs.
+- **Escape hatch for max simplicity:** if Houston ever wants zero external storage
+  dependency, a minimal `ctx.storage` + `generateUploadUrl` path could handle small media
+  (avatars, ≤few-MB PDFs) with no new vendor — but that's a fallback, not the media answer.
+
+**Net:** folder.md earns its place as the *optional media lane* the brain points at — but the
+brain must not require it, and most users (text identity) will never touch it. Boundary rule
+holds: brain = small structured owner-state + pointers; folder.md = big/binary payloads.
+
+### 9.2 The "You agent" harness temptation: build or don't?
+
+**Finding — You.md already has ~80% of a harness; the only missing piece is the loop.**
+- **Strong, broad MCP surface already exists** (the "works with any agent" asset): ~29 local
+  stdio tools (`cli/src/mcp/registry.ts` + `cli/src/mcp/server.ts`) + 12 hosted HTTP tools
+  (`convex/lib/mcpRegistry.ts`) covering identity, memory, projects, stack routing,
+  portfolio, activity, and remote-machine.
+- **Three real host adapters** (Claude/Codex/Cursor, `cli/src/lib/host-link.ts`) + a Convex
+  skill registry with outcome telemetry (`convex/skills.ts`). **Pi / OpenClaw / Hermes are
+  zero code** — roadmap/mock only.
+- **A safe cross-machine execution primitive already exists**: the 5-action whitelisted
+  `remote-executor.ts`, bus-driven, no arbitrary shell — this already solves "connects to all
+  your computers" *securely*.
+- **The skeleton of a tool loop exists** (`cli/src/commands/chat.ts:1815-2055`): typed tool
+  enum, an LLM router (`chooseLocalHostTool`), single tool execution — but it
+  **template-summarizes the result and stops** instead of re-invoking the LLM. Every path in
+  the repo is **single-hop**; there is no plan/act/observe loop, no `maxSteps` driver.
+
+**Decision — do NOT build a general harness to rival Claude Code/Cursor (a trap). DO
+consider closing the loop on the You agent you already have — strictly as "the brain that can
+act," not a coding-harness competitor.** Rationale:
+- The differentiated value is **not** "a better coding agent" — it's "an agent born connected
+  to your entire brain / fleet / projects / computers out of the box," which none of
+  Claude Code / Cursor / Hermes / Pi are. That aligns with everything already built.
+- The cost is genuinely small: the **only** net-new piece is turning the existing single-hop
+  router into an iterative loop (feed each tool result back to the LLM → repeat until
+  `respond`) over a **unified tool dispatcher** that fronts the existing MCP registry, reusing
+  `remote-executor.ts` for cross-machine reach. "Below the loop" already exists.
+- **Build-the-loop vs adopt Pi.dev:** the loop is ~the only missing 20% and is not large.
+  Writing a thin loop yourself keeps it lightweight, dependency-free, and yours, and avoids
+  adapting Pi's tool format to You.md's three disjoint tool surfaces. Lean **write the thin
+  loop**; only adopt Pi.dev if its runtime features (sandboxing, planning) are specifically
+  wanted. Either way, the You agent's moat is the *context + connectivity*, not the loop.
+- **Guardrail (`PRINCIPLES.md`):** scope it to "my You agent autonomously acts across my
+  brain/fleet." The moment it drifts toward general planning / arbitrary code-exec / being a
+  Cursor, stop — that's the harness trap.
+
+### 9.3 y.computer: separate product, or just a capability inside You.md?
+
+**Finding — hosting an always-on agent is already a You.md capability; the blockers are two
+small pieces of glue, not a missing product.**
+- Install one-liner + `YOU_API_KEY` already does: runtime install, auth, identity/skill/
+  stack/context sync, MCP wiring, machine proof, self-upgrade — **autonomous, one shot**
+  (`src/app/install.sh/route.ts`, `cli/skills/machine-bootstrap.md`).
+- **Blocker 1 — no Linux daemon.** The resident daemon is **macOS/launchd-only**
+  (`cli/src/lib/daemon.ts:131`; `YOU_INSTALL_DAEMON` defaults off). A Linux Hostinger VPS
+  syncs once at install but won't stay subscribed or pick up bus commands. **A hosted Mac
+  mini (Scaleway) has NO such gap** — it gets the full daemon today. → If Houston wants to
+  test always-on *now* with zero new code, a **hosted Mac mini is the path**; a Linux VPS
+  needs a systemd unit built first (cheaper metal, small one-time dev cost).
+- **Blocker 2 — unattended vault provisioning.** A fresh host can't self-decrypt `.env.local`
+  until an existing trusted device runs `you env vault share`; the daemon never auto-restores
+  (`cli/src/lib/realtime-sync.ts:209-210`). The server is zero-knowledge by design, so it
+  *can't* auto-provision without an explicit envelope mint. This is the hardest "just works"
+  piece.
+
+**Decision — keep the compute-hosting capability INSIDE You.md. `y.computer` is a brand +
+(eventual) control-plane wrapper, NOT a separate codebase or infrastructure.** Rationale:
+- The capability is `install script + daemon + machine-bootstrap + (new) provision command` —
+  all You.md. Spinning up a separate y.computer system now would duplicate the brain's
+  enrollment machinery for no benefit, and violates "no bloat for a user base of ~one"
+  (`PRINCIPLES.md` §2).
+- Concrete near-term work, all in You.md: (1) ship a **Linux systemd daemon unit** + flip
+  daemon auto-install on for the rented-host path; (2) **auto-register a provisioned host as a
+  trusted vault device** at enroll time + a daemon-side auto-restore; (3) optional thin
+  `you machine provision <vps>` command that drives a provider API then runs the existing
+  enroll flow. (4) Fix the `remote.ts:246` "Phase 1" status copy lag.
+- Buy `y.computer` for the narrative/landing and as the future managed-SKU brand — but the
+  bytes live in You.md until there's real multi-user pull for managed compute.
+
+### 9.4 Audit bottom line
+
+The temptations Houston named are correctly resisted (no sandbox infra, no general harness),
+and the audit shows the genuinely valuable moves are **small and mostly already built**:
+- **Storage:** folder.md = optional pluggable media backend behind a brain pointer (one MCP
+  handoff), not a dependency. Convex stays text-first.
+- **Harness:** don't build a Cursor; *optionally* close the single-hop loop into a real
+  iterative "You agent that acts across your brain/fleet" — ~20% net-new, lightweight, yours.
+- **Compute:** keep it inside You.md (Linux daemon + unattended vault + a provision command);
+  `y.computer` is a brand/control-plane wrapper, not a separate product. Hosted Mac mini works
+  today; Linux VPS needs the daemon first.
