@@ -1,5 +1,17 @@
 # You.md — Changelog
 
+## 2026-06-26 — Build: `you storage` (folder.md media offload, manual-key path)
+
+### feat(storage): `you storage` CLI for large files/media via folder.md
+- The you.md-side of the folder.md integration, usable today with a manual key:
+  `you storage setup <fmd_live_…> | status | push <file> | pull <fileId> <dest> | list`
+  (`cli/src/commands/storage.ts` over the existing `lib/foldermd.ts` client). `push`
+  auto-creates+persists a "you.md media" folder, uploads, and prints the `BrainMediaPointer`
+  (the string the text-first brain stores; bytes stay in folder.md). Key precedence
+  explicit → config → env. The autonomous zero-paste `/provision` flow (folder.md-side) will
+  replace the one-time `setup`. Verified: tsc clean; 3 offline unit tests (setup persistence +
+  resolution precedence); network paths need a live folder.md account.
+
 ## 2026-06-26 — Build: cross-machine orchestration (remote agent spawn/monitor)
 
 ### fix(orchestrator): durable worker-host opt-in the daemon can actually read

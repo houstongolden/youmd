@@ -56,6 +56,7 @@ import { envBackupCommand, envRestoreCommand, envVaultCommand, envShareCommand, 
 import { machineCommand } from "./commands/machine";
 import { remoteCommand } from "./commands/remote";
 import { orchestrateCommand } from "./commands/orchestrate";
+import { storageCommand } from "./commands/storage";
 import { readCliVersion } from "./lib/version";
 
 const program = new Command();
@@ -744,6 +745,20 @@ program
       maxSteps: options.maxSteps,
       once: options.once,
       interval: options.interval,
+      json: options.json,
+    });
+  });
+
+program
+  .command("storage [subcommand] [args...]")
+  .description("Large files & media via folder.md -- setup | status | push | pull | list")
+  .option("--name <destPath>", "Destination path/name for an upload")
+  .option("--folder <id>", "folder.md folder id to target")
+  .option("--json", "Print JSON")
+  .action((subcommand, args, options) => {
+    return storageCommand(subcommand, args || [], {
+      name: options.name,
+      folder: options.folder,
       json: options.json,
     });
   });

@@ -81,6 +81,12 @@ from config/env so the whole path is testable now with a manually pasted key.
 - `cli/src/lib/config.ts` — added `folderMdKey` + `folderMdFolderId` to `GlobalConfig`.
 - **Compiles clean** (tsc). Endpoint shapes need ONE live-verify pass against a real folder.md
   account before production (flagged in the client header).
+- **`you storage` CLI shipped (manual-key path, works today):** `setup <fmd_live_…>` /
+  `status` / `push <file>` / `pull <fileId> <dest>` / `list` (`cli/src/commands/storage.ts`).
+  `push` auto-creates+persists a "you.md media" folder, uploads, and prints the
+  `BrainMediaPointer` to store in a memory/file. Key resolution precedence explicit → config →
+  env; 3 offline unit tests cover setup persistence + precedence (network paths need a live
+  account). The autonomous `/provision` step (below) will replace the one-time `setup`.
 
 ---
 
