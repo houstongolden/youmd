@@ -124,6 +124,9 @@ write_timer   "you-identity-sync.timer"   "You.md identity/API sync (every 5m)" 
 write_service "you-context-sync.service" "You.md project-context sync" "stack context-sync" "context-sync" "oneshot"
 write_timer   "you-context-sync.timer"   "You.md project-context sync (every 15m)" 900 "you-context-sync.service"
 
+write_service "you-orchestrator-watch.service" "You.md orchestrator report-back" "orchestrate watch --once" "orchestrator-watch" "oneshot"
+write_timer   "you-orchestrator-watch.timer"   "You.md orchestrator report-back (every 60s)" 60 "you-orchestrator-watch.service"
+
 echo ""
 echo "==> Enabling linger so daemons run without an active login session"
 # Best-effort: enable-linger usually needs no sudo for your own user; ignore failure.
@@ -137,6 +140,7 @@ systemctl --user enable --now you-realtime-sync.service
 systemctl --user enable --now you-skillstack-sync.timer
 systemctl --user enable --now you-identity-sync.timer
 systemctl --user enable --now you-context-sync.timer
+systemctl --user enable --now you-orchestrator-watch.timer
 
 echo ""
 echo "================================================================"

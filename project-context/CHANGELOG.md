@@ -2,14 +2,17 @@
 
 ## 2026-06-26 — Build: cross-machine orchestration (remote agent spawn/monitor)
 
-### feat(orchestrator): always-on report-back — `you orchestrate watch`
+### feat(orchestrator): always-on report-back — `you orchestrate watch` + resident daemon
 - The orchestrator launched workers but nothing noticed when they finished. Added
   `you orchestrate watch [--once] [--interval N]`: reconciles worker status and posts a
   `worker-complete` message to the agent-bus `orchestrator` channel exactly once per completion
   (report-once via a `reported` flag), so U on any machine sees finishes/failures —
   the "always on to report back to you" piece. `collectUnreportedCompletions()` +
-  `isTerminalWorkerStatus()` are the primitives. Verified: tsc clean; 2 new unit tests
-  (terminal-status classification + report-once via a temp YOU_HOME); spawn→complete smoke.
+  `isTerminalWorkerStatus()` are the primitives.
+- Made it genuinely always-on: `com.you.orchestrator-watch` is now a 5th resident daemon
+  (every 60s) installed by BOTH the launchd plist and the systemd --user timer, so report-back
+  runs with zero user action on Mac + Linux. Verified: tsc clean; bash -n clean; daemon-array +
+  systemd-unit-mapping + report-once tests (14 across daemon/watch/machine-verify/install-script).
 
 ### feat(orchestrator): autonomous cross-machine delegation in the loop
 - The orchestrator loop tools are now remote-capable: `spawn_agent`/`list_agents`/

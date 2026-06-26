@@ -606,6 +606,7 @@ export async function stackCommand(
           "you-skillstack-sync.timer", "you-skillstack-sync.service",
           "you-identity-sync.timer", "you-identity-sync.service",
           "you-context-sync.timer", "you-context-sync.service",
+          "you-orchestrator-watch.timer", "you-orchestrator-watch.service",
         ];
         for (const unit of units) {
           child_process.spawnSync("systemctl", ["--user", "disable", "--now", unit], { stdio: "inherit" });

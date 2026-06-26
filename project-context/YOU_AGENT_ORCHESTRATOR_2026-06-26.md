@@ -83,8 +83,10 @@ The vision has reach beyond what one session builds. Mapped to substrate:
    the agent-bus `orchestrator` channel **exactly once** per completion (report-once via a
    `reported` flag on the registry record), so U on any machine sees when a worker finishes/fails.
    `collectUnreportedCompletions()` is the primitive; 2 unit tests lock the terminal-status +
-   report-once semantics. *Next:* keep it always-on by running `watch` under a process manager /
-   the existing daemon stack (a sibling timer), rather than hand-running it.
+   report-once semantics. **Now genuinely always-on (2026-06-26):** `you orchestrate watch --once`
+   is a 5th resident daemon (`com.you.orchestrator-watch`, every 60s) installed by BOTH the launchd
+   plist and the systemd `--user` timer, so report-back runs with zero user action on Mac and Linux
+   hosts alike.
 4. **Computer-use of GUI agent apps.** The desktop app (not the CLI) is the right home for U
    driving the Claude/Codex/Cursor **desktop apps** via computer-use, for harnesses without a clean
    headless CLI. CLI-spawn covers the headless case today; computer-use covers the GUI case later.

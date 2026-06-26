@@ -80,6 +80,15 @@ export const YOUMD_DAEMONS: YoumdDaemon[] = [
     combinedLog: runtimeLogPath("context-sync.log"),
     linuxUnit: "you-context-sync.timer",
   },
+  {
+    label: "com.you.orchestrator-watch",
+    name: "orchestrator report-back",
+    command: "you orchestrate watch --once",
+    intervalSeconds: 60,
+    stdoutLog: runtimeLogPath("orchestrator-watch.out.log"),
+    stderrLog: runtimeLogPath("orchestrator-watch.err.log"),
+    linuxUnit: "you-orchestrator-watch.timer",
+  },
 ];
 
 /** Daemon supervisor backends we know how to install/inspect. */
