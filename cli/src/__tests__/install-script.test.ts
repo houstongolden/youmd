@@ -36,7 +36,7 @@ describe("install.sh route", () => {
     expect(script).toContain('YOU_BOOTSTRAP_API_KEY="${YOU_API_KEY:-${YOUMD_API_KEY:-}}"');
     expect(script).toContain('you login --key "$YOU_BOOTSTRAP_API_KEY"');
     expect(script).toContain('you login </dev/tty');
-    expect(script).toContain('you machine sync-now --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT"');
+    expect(script).toContain('you machine full-sync --recent-only --root "$SYNC_ROOT" --max-projects "$SYNC_LIMIT" --days "$SYNC_DAYS"');
     expect(script).toContain("installs, authenticates when possible, syncs brain/skills/stacks/MCP/proof/daemons");
     expect(script).toContain("YOU_INSTALL_MACHINE_SYNC=0");
     expect(script).not.toContain("NPM_GLOBAL_FLAGS");
