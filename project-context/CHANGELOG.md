@@ -2,6 +2,15 @@
 
 ## 2026-06-26 — Build: cross-machine orchestration (remote agent spawn/monitor)
 
+### feat(orchestrator): always-on report-back — `you orchestrate watch`
+- The orchestrator launched workers but nothing noticed when they finished. Added
+  `you orchestrate watch [--once] [--interval N]`: reconciles worker status and posts a
+  `worker-complete` message to the agent-bus `orchestrator` channel exactly once per completion
+  (report-once via a `reported` flag), so U on any machine sees finishes/failures —
+  the "always on to report back to you" piece. `collectUnreportedCompletions()` +
+  `isTerminalWorkerStatus()` are the primitives. Verified: tsc clean; 2 new unit tests
+  (terminal-status classification + report-once via a temp YOU_HOME); spawn→complete smoke.
+
 ### feat(orchestrator): autonomous cross-machine delegation in the loop
 - The orchestrator loop tools are now remote-capable: `spawn_agent`/`list_agents`/
   `get_agent_output`/`stop_agent` take an optional `machine` arg that dispatches the matching

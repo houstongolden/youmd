@@ -732,6 +732,8 @@ program
   .option("--dir <path>", "Explicit working directory (overrides --project)")
   .option("--lines <n>", "Lines to tail for logs")
   .option("--max-steps <n>", "Max orchestrator loop steps (run)")
+  .option("--once", "watch: do a single report pass and exit")
+  .option("--interval <seconds>", "watch: seconds between report passes")
   .option("--json", "Print JSON")
   .action((subcommand, args, options) => {
     return orchestrateCommand(subcommand, args || [], {
@@ -740,6 +742,8 @@ program
       dir: options.dir,
       lines: options.lines,
       maxSteps: options.maxSteps,
+      once: options.once,
+      interval: options.interval,
       json: options.json,
     });
   });

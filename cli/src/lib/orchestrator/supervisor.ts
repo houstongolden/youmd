@@ -33,6 +33,15 @@ export interface WorkerRecord {
   logFile: string;
   /** Host that launched this worker (for cross-machine fleet views). */
   host: string;
+  /** True once this worker's terminal transition has been reported (watch loop). */
+  reported?: boolean;
+}
+
+/** Terminal worker states — the worker is no longer doing work. */
+export const TERMINAL_WORKER_STATUSES: WorkerStatus[] = ["exited", "stopped", "failed"];
+
+export function isTerminalWorkerStatus(status: WorkerStatus): boolean {
+  return TERMINAL_WORKER_STATUSES.includes(status);
 }
 
 /** Headless invocation templates per harness. `{prompt}` is replaced with the task. */
@@ -244,6 +253,21 @@ export function stopWorker(id: string): { ok: boolean; error?: string } {
   } catch (err) {
     return { ok: false, error: `failed to stop: ${(err as Error).message}` };
   }
+}
+
+/**
+ * Reconcile status, then return workers that just reached a terminal state and have NOT yet been
+ * reported — marking them reported so each completion is surfaced exactly once. This is the
+ * "always on, report back" primitive the watch loop / daemon uses.
+ */
+export function collectUnreportedCompletions(): WorkerRecord[] {
+  const workers = refreshWorkers();
+  const done = workers.filter((w) => isTerminalWorkerStatus(w.status) && !w.reported);
+  if (done.length > 0) {
+    for (const w of done) w.reported = true;
+    saveWorkers(workers);
+  }
+  return done;
 }
 
 /** Drop exited/stopped workers older than `maxAgeMs` from the registry (keeps running ones). */

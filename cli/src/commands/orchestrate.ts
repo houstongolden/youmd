@@ -11,8 +11,12 @@ import {
   getWorkerOutput,
   stopWorker,
   pruneWorkers,
+  collectUnreportedCompletions,
   WorkerHarness,
+  WorkerRecord,
 } from "../lib/orchestrator/supervisor";
+import { sendAgentBusMessage } from "../lib/api";
+import { isAuthenticated } from "../lib/config";
 import { buildOrchestratorTools, makeModelCaller, resolveProjectDir } from "../lib/orchestrator/tools";
 import { runAgentLoop } from "../lib/orchestrator/loop";
 
@@ -26,6 +30,46 @@ export interface OrchestrateOptions {
   lines?: string;
   maxSteps?: string;
   json?: boolean;
+  once?: boolean;
+  interval?: string;
+}
+
+/** Post a worker-completion notice to the agent bus so U (here or on another machine) sees it. */
+async function reportCompletion(w: WorkerRecord): Promise<boolean> {
+  if (!isAuthenticated()) return false;
+  const res = await sendAgentBusMessage({
+    channel: "orchestrator",
+    kind: "worker-complete",
+    body: `worker ${w.id} (${w.harness}${w.project ? ` · ${w.project}` : ""}) ${w.status} — ${w.goal.slice(0, 100)}`,
+    sourceAgent: "you orchestrator",
+    metadata: {
+      workerId: w.id,
+      harness: w.harness,
+      project: w.project,
+      status: w.status,
+      exitCode: w.exitCode,
+      startedAt: w.startedAt,
+      endedAt: w.endedAt,
+      secretValuesExposed: false,
+    },
+  });
+  return res.ok;
+}
+
+/** One reconcile-and-report pass. Returns the count reported. */
+async function reportPass(): Promise<number> {
+  const done = collectUnreportedCompletions();
+  let reported = 0;
+  for (const w of done) {
+    const ok = await reportCompletion(w);
+    if (ok) reported++;
+    console.log(
+      "  " + (w.status === "exited" ? chalk.green("done") : chalk.yellow(w.status)) + " " +
+      chalk.cyan(w.id) + DIM(` ${w.harness}${w.project ? ` · ${w.project}` : ""}`) +
+      (ok ? "" : DIM("  (not posted — login to report across machines)"))
+    );
+  }
+  return reported;
 }
 
 function usage(): void {
@@ -37,6 +81,7 @@ function usage(): void {
   console.log("  " + chalk.cyan("list") + DIM("                  show workers and their status"));
   console.log("  " + chalk.cyan("logs <id>") + DIM("             tail a worker's output (--lines)"));
   console.log("  " + chalk.cyan("stop <id>") + DIM("             stop a running worker"));
+  console.log("  " + chalk.cyan("watch") + DIM("                 report worker completions to the bus (--once, --interval)"));
   console.log("  " + chalk.cyan("prune") + DIM("                 drop old finished workers from the registry"));
   console.log("");
   console.log("  " + DIM("harnesses: claude | codex | cursor | custom   (override bins via YOU_HARNESS_*)"));
@@ -109,6 +154,31 @@ export async function orchestrateCommand(
     const removed = pruneWorkers();
     console.log("  " + chalk.green(`pruned ${removed} finished worker(s)`));
     return;
+  }
+
+  if (subcommand === "watch") {
+    // One pass (--once) or a poll loop reporting completions to the agent bus. For always-on
+    // report-back, run this under a process manager (systemd/launchd/nohup) or a sibling daemon
+    // timer; foreground is fine for tailing a session.
+    console.log("");
+    if (options.once) {
+      const n = await reportPass();
+      console.log("  " + DIM(n > 0 ? `reported ${n} completion(s)` : "no new completions"));
+      console.log("");
+      return;
+    }
+    const interval = Math.max(Number(options.interval) || 15, 5) * 1000;
+    console.log("  " + ACCENT("U watching workers") + DIM(`  every ${interval / 1000}s — ctrl-c to stop`));
+    console.log("");
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      try {
+        await reportPass();
+      } catch (err) {
+        console.log("  " + chalk.yellow("watch pass error: ") + DIM(String((err as Error).message)));
+      }
+      await new Promise((r) => setTimeout(r, interval));
+    }
   }
 
   if (subcommand === "spawn") {

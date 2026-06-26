@@ -78,9 +78,13 @@ The vision has reach beyond what one session builds. Mapped to substrate:
 2. **Brain-aware routing.** Wire the existing MCP brain tools (identity, portfolio graph, project
    goals/tasks) into the loop's tool set so U routes by *project goal*, not just by prompt — "push
    the youmd PR" knows which repo, which machine, which harness.
-3. **Always-on report-back.** Run the loop (or a lightweight monitor) under the resident daemon so
-   U watches running workers and reports completions/failures to you via the agent bus / a push
-   channel — the "always on to report back" piece.
+3. **Always-on report-back — MECHANISM SHIPPED (2026-06-26).** `you orchestrate watch`
+   (`--once` or `--interval`) reconciles worker status and posts a `worker-complete` message to
+   the agent-bus `orchestrator` channel **exactly once** per completion (report-once via a
+   `reported` flag on the registry record), so U on any machine sees when a worker finishes/fails.
+   `collectUnreportedCompletions()` is the primitive; 2 unit tests lock the terminal-status +
+   report-once semantics. *Next:* keep it always-on by running `watch` under a process manager /
+   the existing daemon stack (a sibling timer), rather than hand-running it.
 4. **Computer-use of GUI agent apps.** The desktop app (not the CLI) is the right home for U
    driving the Claude/Codex/Cursor **desktop apps** via computer-use, for harnesses without a clean
    headless CLI. CLI-spawn covers the headless case today; computer-use covers the GUI case later.
