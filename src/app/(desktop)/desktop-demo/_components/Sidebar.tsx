@@ -13,6 +13,7 @@ export function Sidebar({
   theme,
   onToggleTheme,
   onOpenStatus,
+  onExpand,
   chats,
   activeChat,
   onSelectChat,
@@ -25,6 +26,7 @@ export function Sidebar({
   theme: "dark" | "light";
   onToggleTheme: () => void;
   onOpenStatus: () => void;
+  onExpand?: () => void;
   chats: ChatThread[];
   activeChat: string;
   onSelectChat: (id: string) => void;
@@ -40,10 +42,11 @@ export function Sidebar({
         collapsed ? "w-[58px]" : "w-60",
       )}
     >
-      {/* workspace + system-status trigger */}
+      {/* workspace + system-status trigger. When collapsed, the Y mark is the
+          primary affordance to re-expand the rail; when expanded it opens status. */}
       <button
-        onClick={onOpenStatus}
-        title={collapsed ? "System status" : undefined}
+        onClick={collapsed ? () => onExpand?.() : onOpenStatus}
+        title={collapsed ? "Expand sidebar" : "System status"}
         className={cn(
           "flex shrink-0 items-center gap-2.5 px-3 py-3 text-left transition-colors hover:bg-[hsl(var(--bg-raised))]",
           collapsed && "justify-center px-0",
@@ -158,9 +161,17 @@ export function Sidebar({
             <button
               aria-label="Close menu"
               onClick={() => setAccountOpen(false)}
-              className="fixed inset-0 z-10 cursor-default"
+              className="fixed inset-0 z-30 cursor-default"
             />
-            <div className="absolute bottom-full left-2 right-2 z-20 mb-1 overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 shadow-2xl">
+            <div
+              className={cn(
+                "absolute bottom-full z-40 mb-1 overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] py-1 shadow-2xl",
+                // When collapsed, the rail is too narrow to hold the menu, so give
+                // it a fixed comfortable width that floats out over the workspace
+                // instead of being clipped at the rail's right border.
+                collapsed ? "left-2 w-56" : "left-2 right-2",
+              )}
+            >
               <button
                 onClick={() => {
                   onToggleTheme();

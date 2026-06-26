@@ -465,6 +465,7 @@ export function DesktopShell() {
               theme={theme}
               onToggleTheme={toggleTheme}
               onOpenStatus={() => navigate("sync")}
+              onExpand={() => setSidebarCollapsed(false)}
               chats={chats}
               activeChat={activeChat}
               onSelectChat={selectChat}
