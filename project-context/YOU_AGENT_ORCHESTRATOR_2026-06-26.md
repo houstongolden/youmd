@@ -69,9 +69,12 @@ The vision has reach beyond what one session builds. Mapped to substrate:
    or a Hostinger VPS: `you remote run <machine> agent.spawn --harness claude --project youmd
    --goal "…"`. `agent.spawn`/`agent.stop` require `YOU_REMOTE_AGENT_HOST=1` on the target (an
    autonomous worker is a real escalation past the git whitelist); read-only list/output do not.
-   9 unit tests cover the gating + whitelist. *Next:* wire these as loop tools (a `machine` arg on
-   `spawn_agent`) so `you orchestrate run` can delegate across machines autonomously, not just via
-   the explicit CLI.
+   9 unit tests cover the gating + whitelist. **The loop tools are now remote-capable too
+   (2026-06-26):** `spawn_agent`/`list_agents`/`get_agent_output`/`stop_agent` take an optional
+   `machine` arg that dispatches the `agent.*` action over the bus + polls for the result, and a
+   new `list_machines` tool lets U discover targets — so `you orchestrate run` can delegate across
+   machines autonomously, not just via explicit `you remote run`. Unauthenticated calls fail
+   gracefully (no throw).
 2. **Brain-aware routing.** Wire the existing MCP brain tools (identity, portfolio graph, project
    goals/tasks) into the loop's tool set so U routes by *project goal*, not just by prompt — "push
    the youmd PR" knows which repo, which machine, which harness.

@@ -2,6 +2,15 @@
 
 ## 2026-06-26 — Build: cross-machine orchestration (remote agent spawn/monitor)
 
+### feat(orchestrator): autonomous cross-machine delegation in the loop
+- The orchestrator loop tools are now remote-capable: `spawn_agent`/`list_agents`/
+  `get_agent_output`/`stop_agent` take an optional `machine` arg that dispatches the matching
+  `agent.*` action over the bus + polls for the result; new `list_machines` tool for target
+  discovery. So `you orchestrate run "<goal>"` can delegate work to the office Mac mini / VPS on
+  its own, not just via explicit `you remote run`. Unauthenticated calls fail gracefully (no
+  throw). Verified: tsc clean; tool wiring smoke (remote-capable tools + graceful unauth); 33
+  tests green.
+
 ### feat(orchestrator): cross-machine worker spawn/monitor over the agent bus
 - The remote-executor whitelist gains `agent.spawn` / `agent.list` / `agent.output` /
   `agent.stop`, so the You agent conductor on one machine can launch + monitor worker

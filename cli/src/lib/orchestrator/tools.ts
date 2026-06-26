@@ -14,7 +14,9 @@ import {
   stopWorker,
   WorkerHarness,
 } from "./supervisor";
-import { readGlobalConfig } from "../config";
+import { readGlobalConfig, isAuthenticated } from "../config";
+import { dispatchRemoteCommand, pollForResult } from "../remote-command";
+import { getMachineProofs } from "../api";
 
 const SITE = process.env.YOU_APP_URL || process.env.YOUMD_APP_URL || "https://you.md";
 const CHAT_PROXY_URL = `${SITE}/api/v1/chat`;
@@ -45,6 +47,32 @@ export interface BuildToolsOptions {
   cwd?: string;
 }
 
+/**
+ * Dispatch a whitelisted agent action to a REMOTE machine over the bus and wait (bounded) for
+ * the result. This is how the conductor delegates across machines autonomously inside the loop.
+ * Returns a human-readable string for the loop to reason over.
+ */
+async function runRemoteAgentAction(
+  machine: string,
+  action: "agent.spawn" | "agent.list" | "agent.output" | "agent.stop",
+  args: Record<string, unknown>,
+  timeoutMs = 90_000
+): Promise<string> {
+  if (!isAuthenticated()) {
+    return "error: not authenticated — run `you login` to dispatch across machines";
+  }
+  const dispatched = await dispatchRemoteCommand({ machine, action, args, sourceAgent: "you orchestrator" });
+  if (!dispatched.ok) return `error dispatching ${action} to ${machine}: ${dispatched.error}`;
+  const result = await pollForResult({ requestId: dispatched.data.requestId, timeoutMs });
+  if (!result) {
+    return `dispatched ${action} to ${machine} (request ${dispatched.data.requestId}) — no result within ${Math.round(
+      timeoutMs / 1000
+    )}s; the target may be offline or its daemon not running. Try agent.list later.`;
+  }
+  if (result.ok) return `[${machine}] ${action} ok:\n${result.output || "(no output)"}`;
+  return `[${machine}] ${action} ${result.status}: ${result.error ?? "failed"}\n${result.output || ""}`.trim();
+}
+
 /** Build the orchestrator tool set (process supervision over worker harnesses). */
 export function buildOrchestratorTools(opts: BuildToolsOptions = {}): LoopTool[] {
   const host = opts.host || os.hostname();
@@ -54,17 +82,25 @@ export function buildOrchestratorTools(opts: BuildToolsOptions = {}): LoopTool[]
     {
       name: "spawn_agent",
       description:
-        "Launch a worker agent harness on a task in a project directory (delegate the actual work).",
+        "Launch a worker agent harness on a task in a project (delegate the actual work). Add `machine` to run it on another computer (that host must have YOU_REMOTE_AGENT_HOST=1).",
       parameters: {
-        harness: "claude | codex | cursor | custom",
+        harness: "claude | codex | cursor (custom = local only)",
         goal: "the task prompt for the worker",
         project: "(optional) You.md project name or absolute path to run in",
-        dir: "(optional) explicit working directory (overrides project)",
+        dir: "(optional, local only) explicit working directory (overrides project)",
+        machine: "(optional) remote machine hostname to run on instead of this host",
       },
       run: async (args) => {
         const harness = String(args.harness || "claude") as WorkerHarness;
         const goal = String(args.goal || "").trim();
         if (!goal) return "error: spawn_agent requires a non-empty goal";
+        if (args.machine) {
+          return runRemoteAgentAction(String(args.machine), "agent.spawn", {
+            harness,
+            goal,
+            project: args.project ? String(args.project) : undefined,
+          });
+        }
         const dir = args.dir
           ? String(args.dir)
           : resolveProjectDir(args.project ? String(args.project) : undefined, cwd);
@@ -81,9 +117,10 @@ export function buildOrchestratorTools(opts: BuildToolsOptions = {}): LoopTool[]
     },
     {
       name: "list_agents",
-      description: "List worker agents and their status (running/exited/stopped) on this host.",
-      parameters: {},
-      run: async () => {
+      description: "List worker agents and their status on this host, or on a remote `machine`.",
+      parameters: { machine: "(optional) remote machine hostname" },
+      run: async (args) => {
+        if (args.machine) return runRemoteAgentAction(String(args.machine), "agent.list", {});
         const workers = refreshWorkers();
         if (workers.length === 0) return "no workers yet";
         return workers
@@ -96,25 +133,51 @@ export function buildOrchestratorTools(opts: BuildToolsOptions = {}): LoopTool[]
     },
     {
       name: "get_agent_output",
-      description: "Tail a worker agent's captured output to see progress or results.",
-      parameters: { id: "worker id", lines: "(optional) number of lines to tail (default 40)" },
+      description: "Tail a worker agent's captured output (local, or on a remote `machine`).",
+      parameters: {
+        id: "worker id",
+        lines: "(optional) number of lines to tail (default 40)",
+        machine: "(optional) remote machine hostname",
+      },
       run: async (args) => {
         const id = String(args.id || "").trim();
         if (!id) return "error: get_agent_output requires id";
         const lines = Number(args.lines) > 0 ? Number(args.lines) : 40;
+        if (args.machine)
+          return runRemoteAgentAction(String(args.machine), "agent.output", { id, lines });
         const res = getWorkerOutput(id, lines);
         return res.ok ? res.output || "(empty)" : `error: ${res.error}`;
       },
     },
     {
       name: "stop_agent",
-      description: "Stop a running worker agent.",
-      parameters: { id: "worker id" },
+      description: "Stop a running worker agent (local, or on a remote `machine`).",
+      parameters: { id: "worker id", machine: "(optional) remote machine hostname" },
       run: async (args) => {
         const id = String(args.id || "").trim();
         if (!id) return "error: stop_agent requires id";
+        if (args.machine) return runRemoteAgentAction(String(args.machine), "agent.stop", { id });
         const res = stopWorker(id);
         return res.ok ? `stopped ${id}` : `error: ${res.error}`;
+      },
+    },
+    {
+      name: "list_machines",
+      description: "List the user's synced machines (candidates to delegate work to).",
+      parameters: {},
+      run: async () => {
+        if (!isAuthenticated()) return "error: not authenticated — run `you login`";
+        const res = await getMachineProofs({ limit: 25 });
+        const machines = res.ok ? res.data?.machines || [] : [];
+        if (machines.length === 0) return "no synced machines yet";
+        const self = host.toLowerCase();
+        return machines
+          .map((m) => {
+            const name = m.hostName || "(unknown)";
+            const tag = name.toLowerCase() === self ? " (this host)" : "";
+            return `${name}${tag} — ${m.status ?? "?"}, last seen ${m.generatedAt ?? "?"}`;
+          })
+          .join("\n");
       },
     },
   ];

@@ -155,7 +155,7 @@ export async function orchestrateCommand(
       tools,
       callModel,
       maxSteps,
-      context: `host: ${host}`,
+      context: `host: ${host}\nYou can run workers on THIS host, or delegate to another computer: call list_machines to see synced machines, then pass machine="<hostname>" to spawn_agent/list_agents/get_agent_output/stop_agent (the target must have YOU_REMOTE_AGENT_HOST=1 to accept spawns).`,
       onStep: (step) => {
         const head = step.thought ? `${step.thought} ` : "";
         console.log("  " + DIM(`#${step.index + 1} `) + chalk.cyan(step.tool) + " " + DIM(head));
