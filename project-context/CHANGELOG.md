@@ -1,6 +1,42 @@
 # You.md — Changelog
 
-## 2026-06-24 — Cross-machine agents + autonomous publishing + vault authoring
+## 2026-06-25 — Cross-machine hardening, daemon self-upgrade, shell sidebar, multi-repo sync
+
+### feat(daemon): self-upgrade the runtime on an interval (0.8.22)
+- The resident realtime daemon had zero version-check logic, so a 24/7 machine
+  sat on its installed version until a manual upgrade — an autonomous-first
+  violation. `runLiveSync` (daemon mode) now runs a bounded upgrade tick (default
+  1h, `YOUMD_LIVE_SYNC_UPGRADE_INTERVAL_SECONDS`) that spawns the installer's
+  `~/.you/bin/youmd-auto-upgrade --quiet` **detached** (survives the installer's
+  own daemon reload); the helper keeps its 12h rate-limit + health-check/rollback.
+  Gated by `YOUMD_LIVE_SYNC_UPGRADE` / `YOUMD_AUTO_UPDATE`. Net: publish to npm →
+  every machine self-installs within ~12h, zero user commands.
+
+### fix(cli): nested project-root discovery so `--project <repo>` resolves (0.8.21)
+- Workspace-root discovery stopped descending once a dir had a marker, so a
+  container folder carrying its own `CLAUDE.md` (e.g. `~/Desktop/CODE_2025`)
+  registered only its parent and hid the repos inside it — `you remote run <host>
+  git.status --project youmd` failed with "project not found" on the receiver.
+  Discovery now keeps descending into marked dirs (within depth/budget caps).
+  Verified `youmd`/`bamfsite` resolve with no `YOUMD_WORKSPACE_ROOTS` override.
+
+### feat: secure-setup merge — ephemeral zero-knowledge env handoffs (0.8.20, PR #59)
+- Union-merged the long-stale `secure-setup` branch into the Secret Vault:
+  adds `env share/pull/list` (`envHandoffs` table, one-time expiring codes,
+  client-side AES-256-GCM, burn-after-read) alongside the existing
+  `env backup/restore/vault`. Conflicts resolved as a superset (both subsystems
+  kept). Convex deployed to prod (additive: new `envHandoffs` table + routes).
+
+### fix(shell): collapsed-sidebar UX
+- The Y mark now re-expands the collapsed left rail (was a no-op); the account/
+  Settings popout floats over the workspace at full width when collapsed instead
+  of being clipped to the ~42px rail.
+
+### chore(ci): cleared pre-existing lint/radius errors blocking main CI
+- Typed `convex/envHandoffs.ts` ctx, `let`→`const` in `request-id.ts`, and fixed
+  two desktop-demo radius violations so `main` CI is green.
+
+
 
 ### feat(cross-machine): agent-to-agent collaboration over the synced bus
 - From any machine/agent: `you remote status/list` + `remote_machine_status` MCP
