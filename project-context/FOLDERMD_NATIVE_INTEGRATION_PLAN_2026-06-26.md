@@ -87,6 +87,11 @@ from config/env so the whole path is testable now with a manually pasted key.
   `BrainMediaPointer` to store in a memory/file. Key resolution precedence explicit → config →
   env; 3 offline unit tests cover setup persistence + precedence (network paths need a live
   account). The autonomous `/provision` step (below) will replace the one-time `setup`.
+- **MCP tools shipped (`store_media` / `get_media`):** any agent (Claude/Codex/Cursor) can now
+  offload a large/binary asset and get back a `BrainMediaPointer`, or download one by
+  folderId+fileId — wired into the local stdio MCP registry (`cli/src/mcp/registry.ts`, 28 tools).
+  The folder-ensure logic is shared with the CLI via `ensureUserFolder()` in the client. So media
+  offload is available across the whole "works with any agent" surface, not just `you storage`.
 
 ---
 

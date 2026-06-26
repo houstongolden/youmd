@@ -10,8 +10,7 @@ import chalk from "chalk";
 import { readGlobalConfig, writeGlobalConfig } from "../lib/config";
 import {
   resolveFolderMdKey,
-  listFolders,
-  createFolder,
+  ensureUserFolder,
   listFiles,
   uploadFile,
   downloadFile,
@@ -45,35 +44,6 @@ function resolveFolderId(explicit?: string): string | null {
   if (explicit && explicit.trim()) return explicit.trim();
   const cfg = readGlobalConfig();
   return cfg.folderMdFolderId || null;
-}
-
-/** Ensure a folder exists for this user; create + persist one if needed. */
-async function ensureFolder(apiKey: string, explicit?: string): Promise<string> {
-  const existing = resolveFolderId(explicit);
-  if (existing) return existing;
-  // Try to reuse an existing folder, else create a dedicated one.
-  try {
-    const folders = (await listFolders({ apiKey })) as Array<{ id?: string; name?: string }>;
-    const mine = folders.find((f) => f.name === "you.md media") || folders[0];
-    if (mine?.id) {
-      persistFolderId(mine.id);
-      return mine.id;
-    }
-  } catch {
-    // listing failed — fall through to create
-  }
-  const created = await createFolder({ apiKey }, "you.md media");
-  if (!created.id) throw new Error("folder.md did not return a folder id on create");
-  persistFolderId(created.id);
-  return created.id;
-}
-
-function persistFolderId(id: string): void {
-  const cfg = readGlobalConfig();
-  if (cfg.folderMdFolderId !== id) {
-    cfg.folderMdFolderId = id;
-    writeGlobalConfig(cfg);
-  }
 }
 
 function requireKey(): string | null {
@@ -129,7 +99,7 @@ export async function storageCommand(
     const key = requireKey();
     if (!key) return;
     try {
-      const folderId = await ensureFolder(key, options.folder);
+      const folderId = await ensureUserFolder(key, options.folder);
       const files = await listFiles({ apiKey: key }, folderId);
       if (options.json) {
         console.log(JSON.stringify({ folderId, files }, null, 2));
@@ -159,7 +129,7 @@ export async function storageCommand(
     const key = requireKey();
     if (!key) return;
     try {
-      const folderId = await ensureFolder(key, options.folder);
+      const folderId = await ensureUserFolder(key, options.folder);
       const uploaded: FolderMdFile = await uploadFile({ apiKey: key }, folderId, file, {
         destPath: options.name,
       });

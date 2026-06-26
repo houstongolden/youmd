@@ -15,7 +15,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { readGlobalConfig } from "./config";
+import { readGlobalConfig, writeGlobalConfig } from "./config";
 
 export const FOLDERMD_DEFAULT_BASE = "https://www.folder.md/api/v1";
 
@@ -62,6 +62,38 @@ async function asError(res: Response): Promise<Error> {
     /* ignore */
   }
   return new Error(`folder.md ${res.status} ${res.statusText}${body ? `: ${body.slice(0, 300)}` : ""}`);
+}
+
+/**
+ * Resolve the folder id to use for this user's media, creating + persisting a dedicated
+ * "you.md media" folder if none is configured. Shared by the CLI and the MCP tools so the
+ * "which folder?" logic lives in one place.
+ */
+export async function ensureUserFolder(apiKey: string, explicit?: string): Promise<string> {
+  const cfg = readGlobalConfig();
+  const existing = (explicit && explicit.trim()) || cfg.folderMdFolderId;
+  if (existing) return existing;
+  const auth: FolderMdAuth = { apiKey };
+  // Reuse an existing folder if present, else create one.
+  try {
+    const folders = (await listFolders(auth)) as Array<{ id?: string; name?: string }>;
+    const mine = folders.find((f) => f.name === "you.md media") || folders[0];
+    if (mine?.id) return persistFolderId(mine.id);
+  } catch {
+    // listing failed — fall through to create
+  }
+  const created = await createFolder(auth, "you.md media");
+  if (!created.id) throw new Error("folder.md did not return a folder id on create");
+  return persistFolderId(String(created.id));
+}
+
+function persistFolderId(id: string): string {
+  const cfg = readGlobalConfig();
+  if (cfg.folderMdFolderId !== id) {
+    cfg.folderMdFolderId = id;
+    writeGlobalConfig(cfg);
+  }
+  return id;
 }
 
 /** List the user's folders (workspaces). */

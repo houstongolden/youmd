@@ -2,6 +2,14 @@
 
 ## 2026-06-26 — Build: `you storage` (folder.md media offload, manual-key path)
 
+### feat(storage): store_media / get_media MCP tools (any agent can offload media)
+- Exposed folder.md offload over the local stdio MCP registry so Claude/Codex/Cursor can call
+  `store_media` (upload a big/binary asset → returns a BrainMediaPointer) and `get_media`
+  (download by folderId+fileId) directly — completing the "works with any agent" surface for
+  media, not just the `you` CLI. Folder-ensure logic shared with the CLI via `ensureUserFolder()`.
+  Verified: tsc clean; registry smoke (28 tools, schemas + handlers, graceful no-key error);
+  storage + mcp tests green.
+
 ### feat(storage): `you storage` CLI for large files/media via folder.md
 - The you.md-side of the folder.md integration, usable today with a manual key:
   `you storage setup <fmd_live_…> | status | push <file> | pull <fileId> <dest> | list`
