@@ -2017,3 +2017,44 @@ export async function listEnvHandoffs(): Promise<
 > {
   return apiRequest("/api/v1/me/env/handoffs", { token: getToken() });
 }
+
+// ─── Stack sources registry ──────────────────────────────────────────
+
+export interface StackSourceEntry {
+  path: string;
+  remote: string;
+  label?: string;
+  kind?: string;
+}
+
+/** List all identity-backed stack source registry entries for the current user. */
+export async function listStackSources(): Promise<
+  ApiResponse<{ stackSources: StackSourceEntry[] }>
+> {
+  return apiRequest("/api/v1/me/stack-sources", { token: getToken() });
+}
+
+/** Upsert a stack source registry entry by path. */
+export async function upsertStackSource(payload: {
+  path: string;
+  remote: string;
+  label?: string;
+  kind?: string;
+}): Promise<ApiResponse<{ success: boolean; sourceId: string; created: boolean }>> {
+  return apiRequest("/api/v1/me/stack-sources", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}
+
+/** Remove a stack source registry entry by path. */
+export async function removeStackSource(payload: {
+  path: string;
+}): Promise<ApiResponse<{ success: boolean; removed: boolean }>> {
+  return apiRequest("/api/v1/me/stack-sources/remove", {
+    method: "POST",
+    token: getToken(),
+    body: payload,
+  });
+}

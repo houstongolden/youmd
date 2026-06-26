@@ -10,8 +10,11 @@ import {
   setBrainConsent,
   apiErrorMessage,
   recordBrainActivity,
+  listStackSources,
+  upsertStackSource,
+  removeStackSource,
 } from "../lib/api";
-import { isAuthenticated } from "../lib/config";
+import { isAuthenticated, getWritableHomeBundleDir } from "../lib/config";
 import { detectShadowing } from "../lib/projectContext";
 import { SkillDiscoveryCheck, verifySkillDiscovery } from "../lib/host-link";
 import {
@@ -57,6 +60,7 @@ interface StackCommandOptions {
   apply?: boolean;
   force?: boolean;
   dir?: string;
+  label?: string;
 }
 
 function runGitText(repoDir: string, args: string[]): string | null {
@@ -151,6 +155,38 @@ async function recordStackSyncActivity(options: {
   }
 }
 
+/**
+ * Fetch the remote stack-sources registry and write ~/.you/stack-sources.
+ * The file format is one `abs_path=remote` per line with a header comment.
+ * Leading `~` in stored paths is expanded to the home directory.
+ * Returns the written file path, or null if the registry is empty.
+ */
+async function writeStackSourcesFile(): Promise<string | null> {
+  const res = await listStackSources();
+  if (!res.ok) {
+    const msg = apiErrorMessage(res.data) ?? `request failed (${res.status})`;
+    throw new Error(msg);
+  }
+  const { stackSources } = res.data as { stackSources: Array<{ path: string; remote: string }> };
+  if (!stackSources || stackSources.length === 0) return null;
+
+  const home = os.homedir();
+  const lines: string[] = [
+    "# stack-sources — written by `you stack source sync` — do not hand-edit",
+    "",
+    ...stackSources.map((s) => {
+      const absPath = s.path.replace(/^~(?=$|\/)/, home);
+      return `${absPath}=${s.remote}`;
+    }),
+  ];
+
+  const dir = getWritableHomeBundleDir();
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const filePath = path.join(dir, "stack-sources");
+  fs.writeFileSync(filePath, lines.join("\n") + "\n", { encoding: "utf8", mode: 0o600 });
+  return filePath;
+}
+
 function printHelp(): void {
   console.log("");
   console.log("  " + chalk.bold("you stack") + DIM(" -- local YouStack manifest tools"));
@@ -175,6 +211,10 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("consent revoke <scope>") + DIM(" Revoke a brainScope"));
   console.log("    " + chalk.cyan("sync") + DIM("                 Sync agent skills/stacks across machines (--dry-run to preview)"));
   console.log("    " + chalk.cyan("context-sync") + DIM("         Sync per-project context files (conflict-safe, --dry-run to preview)"));
+  console.log("    " + chalk.cyan("source list") + DIM("          List identity-backed stack source registry entries"));
+  console.log("    " + chalk.cyan("source add <path>=<remote>") + DIM(" Register a stack repo (--label <name>)"));
+  console.log("    " + chalk.cyan("source remove <path>") + DIM(" Remove a stack source entry"));
+  console.log("    " + chalk.cyan("source sync") + DIM("          Write ~/.you/stack-sources from the registry"));
   console.log("    " + chalk.cyan("daemon install") + DIM("       Install resident identity, skillstack, and context sync daemons"));
   console.log("    " + chalk.cyan("daemon uninstall") + DIM("     Remove launchd daemon plists"));
   console.log("    " + chalk.cyan("daemon status") + DIM("        Show loaded/not-loaded state and recent daemon health"));
@@ -484,6 +524,171 @@ export async function stackCommand(
       console.log("");
       process.exitCode = 1;
     }
+    return;
+  }
+
+  // ── stack source — identity-backed stack source registry ────────────────────
+  if (cmd === "source") {
+    const sub = args[0]; // "list" | "add" | "remove" | "sync"
+    const { BrailleSpinner } = await import("../lib/render");
+
+    if (!sub || sub === "list") {
+      const spinner = new BrailleSpinner("fetching stack sources");
+      spinner.start();
+      try {
+        const res = await listStackSources();
+        spinner.stop();
+        if (!res.ok) {
+          const msg = apiErrorMessage(res.data) ?? `request failed (${res.status})`;
+          console.log("");
+          console.log(chalk.red("  stack source list: ") + msg);
+          console.log("");
+          process.exitCode = 1;
+          return;
+        }
+        const { stackSources } = res.data as { stackSources: Array<{ path: string; remote: string; label?: string; kind?: string }> };
+        console.log("");
+        if (!stackSources || stackSources.length === 0) {
+          console.log("  " + chalk.dim("no stack sources registered"));
+          console.log("  " + DIM("use `you stack source add <path>=<remote>` to register one"));
+          console.log("");
+          return;
+        }
+        console.log("  " + ACCENT("stack sources") + DIM(` (${stackSources.length})`));
+        console.log("");
+        for (const s of stackSources) {
+          const label = s.label ? " " + DIM(`[${s.label}]`) : "";
+          const kind = s.kind ? " " + DIM(`(${s.kind})`) : "";
+          console.log("  " + chalk.cyan(s.path) + DIM(" → ") + s.remote + label + kind);
+        }
+        console.log("");
+      } catch (err) {
+        spinner.fail("source list failed");
+        console.log("");
+        console.log(chalk.red("  error: ") + (err instanceof Error ? err.message : String(err)));
+        console.log("");
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    if (sub === "add") {
+      const ref = args[1];
+      if (!ref || !ref.includes("=")) {
+        console.log("");
+        console.log(chalk.yellow("  usage: you stack source add <path>=<remote> [--label <name>]"));
+        console.log("  " + DIM("example: you stack source add ~/.agent-shared=git@github.com:org/agent-shared.git"));
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      const eqIdx = ref.indexOf("=");
+      const sourcePath = ref.slice(0, eqIdx).trim();
+      const remote = ref.slice(eqIdx + 1).trim();
+      if (!sourcePath || !remote) {
+        console.log("");
+        console.log(chalk.yellow("  usage: you stack source add <path>=<remote>"));
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      const spinner = new BrailleSpinner(`registering ${ACCENT(sourcePath)}`);
+      spinner.start();
+      try {
+        const res = await upsertStackSource({ path: sourcePath, remote, label: options.label });
+        spinner.stop();
+        if (!res.ok) {
+          const msg = apiErrorMessage(res.data) ?? `request failed (${res.status})`;
+          console.log("");
+          console.log(chalk.red("  stack source add: ") + msg);
+          console.log("");
+          process.exitCode = 1;
+          return;
+        }
+        const result = res.data as { created: boolean };
+        console.log("");
+        console.log(
+          "  " + (result.created ? chalk.green("registered") : chalk.cyan("updated")) +
+          " " + ACCENT(sourcePath) + DIM(" → ") + remote
+        );
+        // Rewrite the local file after mutating the registry.
+        await writeStackSourcesFile();
+        console.log("");
+      } catch (err) {
+        spinner.fail("source add failed");
+        console.log("");
+        console.log(chalk.red("  error: ") + (err instanceof Error ? err.message : String(err)));
+        console.log("");
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    if (sub === "remove") {
+      const sourcePath = args[1];
+      if (!sourcePath) {
+        console.log("");
+        console.log(chalk.yellow("  usage: you stack source remove <path>"));
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      const spinner = new BrailleSpinner(`removing ${ACCENT(sourcePath)}`);
+      spinner.start();
+      try {
+        const res = await removeStackSource({ path: sourcePath });
+        spinner.stop();
+        if (!res.ok) {
+          const msg = apiErrorMessage(res.data) ?? `request failed (${res.status})`;
+          console.log("");
+          console.log(chalk.red("  stack source remove: ") + msg);
+          console.log("");
+          process.exitCode = 1;
+          return;
+        }
+        const result = res.data as { removed: boolean };
+        console.log("");
+        if (result.removed) {
+          console.log("  " + chalk.green("removed") + " " + ACCENT(sourcePath));
+          await writeStackSourcesFile();
+        } else {
+          console.log("  " + chalk.dim("not found: ") + sourcePath);
+        }
+        console.log("");
+      } catch (err) {
+        spinner.fail("source remove failed");
+        console.log("");
+        console.log(chalk.red("  error: ") + (err instanceof Error ? err.message : String(err)));
+        console.log("");
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    if (sub === "sync") {
+      try {
+        const written = await writeStackSourcesFile();
+        console.log("");
+        if (written !== null) {
+          console.log("  " + chalk.green("wrote") + " " + written);
+        } else {
+          console.log("  " + chalk.dim("no stack sources — nothing to write"));
+        }
+        console.log("");
+      } catch (err) {
+        console.log("");
+        console.log(chalk.red("  stack source sync: ") + (err instanceof Error ? err.message : String(err)));
+        console.log("");
+        process.exitCode = 1;
+      }
+      return;
+    }
+
+    console.log("");
+    console.log(chalk.yellow(`  unknown source subcommand: ${sub}`));
+    console.log("  " + DIM("use: list | add | remove | sync"));
+    console.log("");
+    process.exitCode = 1;
     return;
   }
 

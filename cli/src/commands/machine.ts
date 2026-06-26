@@ -458,6 +458,7 @@ async function machineSyncNowCommand(opts: {
   const required = { required: true };
   runYoumdMachineStep("pull identity bundle", ["pull"], required);
   runYoumdMachineStep("sync identity bundle", ["sync", "--daemon"], required);
+  runYoumdMachineStep("write stack-sources registry", ["stack", "source", "sync"]);
   runYoumdMachineStep("sync shared skill/stack git roots", ["stack", "sync"], required);
   runYoumdMachineStep("install catalog skills", ["skill", "install", "all"]);
   runYoumdMachineStep("render installed skills", ["skill", "sync"], required);

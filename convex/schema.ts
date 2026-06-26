@@ -891,6 +891,18 @@ export default defineSchema({
     .index("by_userId_machineKey", ["userId", "machineKey"])
     .index("by_userId_generatedAt", ["userId", "generatedAt"]),
 
+  stackSources: defineTable({
+    userId: v.id("users"),
+    path: v.string(),
+    remote: v.string(),
+    label: v.optional(v.string()),
+    kind: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_path", ["userId", "path"]),
+
   repoUpdateRuns: defineTable({
     userId: v.id("users"),
     source: v.string(), // "shell" | "chat" | "cli" | "api" | "github-pane"

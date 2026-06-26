@@ -91,6 +91,7 @@ import type * as seed from "../seed.js";
 import type * as skills from "../skills.js";
 import type * as sourceRefresh from "../sourceRefresh.js";
 import type * as sourceRunPolicy from "../sourceRunPolicy.js";
+import type * as stackSources from "../stackSources.js";
 import type * as users from "../users.js";
 import type * as vault from "../vault.js";
 import type * as webhooks from "../webhooks.js";
@@ -186,6 +187,7 @@ declare const fullApi: ApiFromModules<{
   skills: typeof skills;
   sourceRefresh: typeof sourceRefresh;
   sourceRunPolicy: typeof sourceRunPolicy;
+  stackSources: typeof stackSources;
   users: typeof users;
   vault: typeof vault;
   webhooks: typeof webhooks;
