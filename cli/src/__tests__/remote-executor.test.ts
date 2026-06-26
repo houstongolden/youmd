@@ -17,8 +17,11 @@ import {
   resolveProjectDir,
   redactSecrets,
   truncateOutput,
+  remoteAgentHostEnabled,
+  remoteWorkerEnv,
   ALLOWED_REMOTE_ACTIONS,
 } from "../lib/remote-executor";
+import { writeGlobalConfig } from "../lib/config";
 import {
   shouldHandleCommand,
   SeenRequestSet,
@@ -28,13 +31,17 @@ import {
 import { generateRequestId } from "../lib/request-id";
 
 describe("whitelist", () => {
-  it("accepts exactly the five whitelisted actions", () => {
+  it("accepts exactly the whitelisted actions (git + cross-machine agent control)", () => {
     expect([...ALLOWED_REMOTE_ACTIONS]).toEqual([
       "git.status",
       "git.last_activity",
       "git.commit_push",
       "git.pull",
       "agent.status",
+      "agent.spawn",
+      "agent.list",
+      "agent.output",
+      "agent.stop",
     ]);
     for (const action of ALLOWED_REMOTE_ACTIONS) {
       expect(isAllowedRemoteAction(action)).toBe(true);
@@ -75,6 +82,152 @@ describe("whitelist", () => {
     const result = await executeRemoteAction({ action: "git.status; echo pwned" });
     expect(result.ok).toBe(false);
     expect(result.status).toBe("rejected");
+  });
+});
+
+describe("cross-machine agent control (opt-in gate)", () => {
+  it("agent.spawn is rejected unless the host opted in via YOU_REMOTE_AGENT_HOST", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "0";
+    try {
+      const result = await executeRemoteAction({
+        action: "agent.spawn",
+        args: { harness: "claude", goal: "do a thing", project: "youmd" },
+      });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/YOU_REMOTE_AGENT_HOST/);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("agent.stop is also gated behind the host opt-in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "0";
+    try {
+      const result = await executeRemoteAction({ action: "agent.stop", args: { id: "w_x" } });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/YOU_REMOTE_AGENT_HOST/);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("agent.list and agent.output are ALSO gated by the host opt-in (worker logs are sensitive)", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "0";
+    try {
+      const list = await executeRemoteAction({ action: "agent.list" });
+      expect(list.ok).toBe(false);
+      expect(list.status).toBe("rejected");
+      expect(list.error).toMatch(/YOU_REMOTE_AGENT_HOST/);
+
+      const out = await executeRemoteAction({ action: "agent.output", args: { id: "w_x" } });
+      expect(out.ok).toBe(false);
+      expect(out.status).toBe("rejected");
+      expect(out.error).toMatch(/YOU_REMOTE_AGENT_HOST/);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("agent.list succeeds when the host opted in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "1";
+    try {
+      const result = await executeRemoteAction({ action: "agent.list" });
+      expect(result.ok).toBe(true);
+      expect(result.status).toBe("ok");
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("agent.output requires a worker id (when the host opted in)", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "1";
+    try {
+      const result = await executeRemoteAction({ action: "agent.output", args: {} });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/worker id/i);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("remoteWorkerEnv strips daemon secrets but keeps harness auth + PATH", () => {
+    const base = {
+      PATH: "/usr/bin",
+      HOME: "/home/u",
+      YOU_API_KEY: "ym_secret",
+      OPENROUTER_API_KEY: "sk-or-secret",
+      FOLDER_API_KEY: "fmd_live_secret",
+      GITHUB_TOKEN: "ghp_secret",
+      DB_PASSWORD: "hunter2",
+      ANTHROPIC_API_KEY: "sk-ant-keep",
+    } as NodeJS.ProcessEnv;
+    const env = remoteWorkerEnv(base);
+    expect(env.PATH).toBe("/usr/bin");
+    expect(env.HOME).toBe("/home/u");
+    expect(env.ANTHROPIC_API_KEY).toBe("sk-ant-keep"); // harness still authenticates
+    expect(env.YOU_API_KEY).toBeUndefined();
+    expect(env.OPENROUTER_API_KEY).toBeUndefined();
+    expect(env.FOLDER_API_KEY).toBeUndefined();
+    expect(env.GITHUB_TOKEN).toBeUndefined();
+    expect(env.DB_PASSWORD).toBeUndefined();
+  });
+
+  it("remoteAgentHostEnabled: env '0' hard-overrides; otherwise the persisted config flag enables it", () => {
+    const prevEnv = process.env.YOU_REMOTE_AGENT_HOST;
+    const prevHome = process.env.YOU_HOME;
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "you-host-flag-"));
+    process.env.YOU_HOME = tmpHome;
+    try {
+      // No env, config flag on → enabled (this is the daemon path).
+      delete process.env.YOU_REMOTE_AGENT_HOST;
+      writeGlobalConfig({ remoteAgentHost: true });
+      expect(remoteAgentHostEnabled()).toBe(true);
+
+      // Explicit env "0" wins even when config says true (a kill switch).
+      process.env.YOU_REMOTE_AGENT_HOST = "0";
+      expect(remoteAgentHostEnabled()).toBe(false);
+
+      // Config off → disabled.
+      delete process.env.YOU_REMOTE_AGENT_HOST;
+      writeGlobalConfig({ remoteAgentHost: false });
+      expect(remoteAgentHostEnabled()).toBe(false);
+    } finally {
+      if (prevEnv === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prevEnv;
+      if (prevHome === undefined) delete process.env.YOU_HOME;
+      else process.env.YOU_HOME = prevHome;
+      fs.rmSync(tmpHome, { recursive: true, force: true });
+    }
+  });
+
+  it("agent.spawn rejects a disallowed harness even when the host opted in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "1";
+    try {
+      const result = await executeRemoteAction({
+        action: "agent.spawn",
+        args: { harness: "custom", goal: "x", project: "youmd" },
+      });
+      expect(result.ok).toBe(false);
+      // custom is blocked either at harness validation or project containment — both are rejections.
+      expect(result.status).toBe("rejected");
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
   });
 });
 

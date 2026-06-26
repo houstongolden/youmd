@@ -14,6 +14,11 @@ export interface YoumdDaemon {
   stdoutLog: string;
   stderrLog: string;
   combinedLog?: string;
+  /**
+   * systemd --user unit whose `is-active` state mirrors this daemon on Linux.
+   * Live daemons map to a `.service`; interval daemons map to their `.timer`.
+   */
+  linuxUnit: string;
 }
 
 export interface YoumdDaemonHealth extends YoumdDaemon {
@@ -41,6 +46,7 @@ export const YOUMD_DAEMONS: YoumdDaemon[] = [
     intervalSeconds: 0,
     stdoutLog: runtimeLogPath("realtime-sync.out.log"),
     stderrLog: runtimeLogPath("realtime-sync.err.log"),
+    linuxUnit: "you-realtime-sync.service",
   },
   {
     label: "com.you.skillstack-sync",
@@ -51,6 +57,7 @@ export const YOUMD_DAEMONS: YoumdDaemon[] = [
     stdoutLog: runtimeLogPath("skillstack-sync.out.log"),
     stderrLog: runtimeLogPath("skillstack-sync.err.log"),
     combinedLog: runtimeLogPath("skillstack-sync.log"),
+    linuxUnit: "you-skillstack-sync.timer",
   },
   {
     label: "com.you.identity-sync",
@@ -60,6 +67,7 @@ export const YOUMD_DAEMONS: YoumdDaemon[] = [
     intervalSeconds: 300,
     stdoutLog: runtimeLogPath("identity-sync.out.log"),
     stderrLog: runtimeLogPath("identity-sync.err.log"),
+    linuxUnit: "you-identity-sync.timer",
   },
   {
     label: "com.you.context-sync",
@@ -70,8 +78,50 @@ export const YOUMD_DAEMONS: YoumdDaemon[] = [
     stdoutLog: runtimeLogPath("context-sync.out.log"),
     stderrLog: runtimeLogPath("context-sync.err.log"),
     combinedLog: runtimeLogPath("context-sync.log"),
+    linuxUnit: "you-context-sync.timer",
+  },
+  {
+    label: "com.you.orchestrator-watch",
+    name: "orchestrator report-back",
+    command: "you orchestrate watch --once",
+    intervalSeconds: 60,
+    stdoutLog: runtimeLogPath("orchestrator-watch.out.log"),
+    stderrLog: runtimeLogPath("orchestrator-watch.err.log"),
+    linuxUnit: "you-orchestrator-watch.timer",
   },
 ];
+
+/** Daemon supervisor backends we know how to install/inspect. */
+export type DaemonBackend = "launchd" | "systemd" | "unsupported";
+
+/**
+ * Which resident-daemon supervisor this host uses.
+ * - macOS → launchd (LaunchAgents), the original path.
+ * - Linux with a reachable `systemctl --user` → systemd user units (VPS path).
+ * - anything else → unsupported (sync still works on an interval via cron/manual).
+ */
+export function detectDaemonBackend(): DaemonBackend {
+  if (process.platform === "darwin") return "launchd";
+  if (process.platform === "linux" && hasUserSystemd()) return "systemd";
+  return "unsupported";
+}
+
+let cachedUserSystemd: boolean | undefined;
+export function hasUserSystemd(): boolean {
+  // Only memoize a POSITIVE result: a transient probe failure at boot (user bus not up yet right
+  // after linger/boot) must not wedge a long-lived daemon into "no systemd" for its whole life.
+  if (cachedUserSystemd === true) return true;
+  if (process.platform !== "linux") return false;
+  // `--version` succeeds even with no user manager / no XDG_RUNTIME_DIR, so it is a poor proxy for
+  // "user units actually work" on a headless box. `show-environment` requires a live connection to
+  // the per-user systemd manager, which is exactly what enable/start/is-active need.
+  const result = child_process.spawnSync("systemctl", ["--user", "show-environment"], {
+    encoding: "utf-8",
+  });
+  const ok = !result.error && result.status === 0;
+  if (ok) cachedUserSystemd = true;
+  return ok;
+}
 
 export function expandHome(input: string): string {
   if (input === "~") return os.homedir();
@@ -135,6 +185,29 @@ export function isLaunchAgentLoaded(label: string): boolean {
   return result.status === 0 && !!result.stdout.trim();
 }
 
+/** True if the given systemd --user unit is active (running service or armed timer). */
+export function isSystemdUnitActive(unit: string): boolean {
+  if (!hasUserSystemd()) return false;
+  const result = child_process.spawnSync("systemctl", ["--user", "is-active", unit], {
+    encoding: "utf-8",
+  });
+  // `is-active` prints "active" / "activating" and exits 0 when up; non-zero otherwise.
+  const state = (result.stdout || "").trim();
+  return result.status === 0 && (state === "active" || state === "activating");
+}
+
+/** Platform-aware "is this daemon loaded?" for a YoumdDaemon, across launchd + systemd. */
+export function isDaemonLoaded(daemon: YoumdDaemon): boolean {
+  switch (detectDaemonBackend()) {
+    case "launchd":
+      return isLaunchAgentLoaded(daemon.label);
+    case "systemd":
+      return isSystemdUnitActive(daemon.linuxUnit);
+    default:
+      return false;
+  }
+}
+
 export function getDaemonHealth(): YoumdDaemonHealth[] {
   return YOUMD_DAEMONS.map((daemon) => {
     const logs = [
@@ -153,7 +226,7 @@ export function getDaemonHealth(): YoumdDaemonHealth[] {
         : undefined;
     return {
       ...daemon,
-      loaded: isLaunchAgentLoaded(daemon.label),
+      loaded: isDaemonLoaded(daemon),
       legacyLoaded: daemon.legacyLabel ? isLaunchAgentLoaded(daemon.legacyLabel) : false,
       lastLogLine: tailUsefulLine(daemon.combinedLog ?? daemon.stdoutLog) ?? tailUsefulLine(daemon.stdoutLog),
       lastErrorLine,

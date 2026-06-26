@@ -19,7 +19,7 @@ import { readSkillCatalog } from "../lib/skill-catalog";
 import { hasLinkedClaudeSkills } from "../lib/host-link";
 import { loadIdentityData, resolveVariable } from "../lib/skill-renderer";
 import { getHeartbeatSignal } from "../lib/heartbeat";
-import { getDaemonHealth } from "../lib/daemon";
+import { getDaemonHealth, detectDaemonBackend } from "../lib/daemon";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -297,7 +297,7 @@ export async function statusCommand(): Promise<void> {
   } catch { /* skip */ }
   try {
     const daemons = getDaemonHealth();
-    if (process.platform === "darwin" && daemons.some((d) => !d.loaded)) {
+    if (detectDaemonBackend() !== "unsupported" && daemons.some((d) => !d.loaded)) {
       recs.push("Run " + chalk.cyan("youmd stack daemon install") + " to keep identity, skills, stacks, and project context synced");
     }
   } catch { /* skip */ }

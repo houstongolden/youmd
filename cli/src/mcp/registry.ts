@@ -80,6 +80,14 @@ import {
   describeWhitelist,
 } from "../lib/remote-command";
 import { ALLOWED_REMOTE_ACTIONS, isAllowedRemoteAction } from "../lib/remote-executor";
+import {
+  resolveFolderMdKey,
+  ensureUserFolder,
+  uploadFile,
+  downloadFile,
+  FolderMdFile,
+  BrainMediaPointer,
+} from "../lib/foldermd";
 
 // ─── Shared config/helpers (duplicated here to avoid circular server.ts dep) ──
 
@@ -1720,6 +1728,88 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
           text: `── recent agent activity (${events.length} events) ──\n\n${formatted}`,
         }],
       };
+    },
+  },
+  {
+    name: "store_media",
+    description:
+      "Offload a large file or media asset (video, PDF, image, design assets, anything binary) to the user's folder.md storage and get back a portable pointer to keep in you.md. Use this when a file is too big for the text-first identity brain (the brain caps at ~1MB of markdown). Returns a BrainMediaPointer JSON to save in a memory or file. Requires a configured folder.md key (`you storage setup`).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        file_path: { type: "string", description: "Absolute path to the local file to upload." },
+        name: { type: "string", description: "Optional destination path/name in folder.md." },
+        folder: { type: "string", description: "Optional folder.md folder id (defaults to the user's you.md media folder)." },
+      },
+      required: ["file_path"],
+    },
+    handler: async (args) => {
+      const key = resolveFolderMdKey();
+      if (!key) {
+        return {
+          content: [{ type: "text", text: "no folder.md key configured — run `you storage setup <fmd_live_…>` (or set FOLDER_API_KEY)" }],
+          isError: true,
+        };
+      }
+      const a = args as { file_path?: string; name?: string; folder?: string };
+      const filePath = typeof a.file_path === "string" ? a.file_path.trim() : "";
+      if (!filePath) {
+        return { content: [{ type: "text", text: "missing required argument: file_path" }], isError: true };
+      }
+      try {
+        const folderId = await ensureUserFolder(key, a.folder);
+        const uploaded: FolderMdFile = await uploadFile({ apiKey: key }, folderId, filePath, { destPath: a.name });
+        const pointer: BrainMediaPointer = {
+          provider: "folder.md",
+          folderId,
+          fileId: String(uploaded.id),
+          name: a.name || path.basename(filePath),
+          mimeType: uploaded.mimeType,
+          size: uploaded.size,
+          uploadedAt: new Date().toISOString(),
+        };
+        return {
+          content: [{
+            type: "text",
+            text: `uploaded to folder.md. Save this pointer in a you.md memory/file:\n${JSON.stringify(pointer)}`,
+          }],
+        };
+      } catch (err) {
+        return { content: [{ type: "text", text: `store_media failed: ${(err as Error).message}` }], isError: true };
+      }
+    },
+  },
+  {
+    name: "get_media",
+    description:
+      "Download a media asset previously stored in folder.md (via store_media) to a local path, using a BrainMediaPointer's folderId + fileId. Requires a configured folder.md key.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        folder_id: { type: "string", description: "folder.md folder id (from the BrainMediaPointer)." },
+        file_id: { type: "string", description: "folder.md file id (from the BrainMediaPointer)." },
+        dest_path: { type: "string", description: "Local path to write the downloaded bytes to." },
+      },
+      required: ["folder_id", "file_id", "dest_path"],
+    },
+    handler: async (args) => {
+      const key = resolveFolderMdKey();
+      if (!key) {
+        return {
+          content: [{ type: "text", text: "no folder.md key configured — run `you storage setup <fmd_live_…>`" }],
+          isError: true,
+        };
+      }
+      const a = args as { folder_id?: string; file_id?: string; dest_path?: string };
+      if (!a.folder_id || !a.file_id || !a.dest_path) {
+        return { content: [{ type: "text", text: "missing required arguments: folder_id, file_id, dest_path" }], isError: true };
+      }
+      try {
+        const res = await downloadFile({ apiKey: key }, String(a.folder_id), String(a.file_id), String(a.dest_path));
+        return { content: [{ type: "text", text: `downloaded ${res.bytes} bytes → ${res.path}` }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: `get_media failed: ${(err as Error).message}` }], isError: true };
+      }
     },
   },
 ];

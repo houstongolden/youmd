@@ -43,7 +43,7 @@ import { runStackImprove, type ImproveMode } from "../lib/stackImprove";
 import { checkStackUpdate, applyStackUpdate } from "../lib/stackUpdate";
 import { installStack } from "../lib/stackInstall";
 import { getHeartbeatSignal } from "../lib/heartbeat";
-import { YOUMD_DAEMONS, getDaemonHealth } from "../lib/daemon";
+import { YOUMD_DAEMONS, getDaemonHealth, detectDaemonBackend } from "../lib/daemon";
 
 const ACCENT = chalk.hex("#C46A3A");
 const DIM = chalk.dim;
@@ -957,11 +957,23 @@ export async function stackCommand(
       return;
     }
 
+    const backend = detectDaemonBackend();
+
     if (action === "install") {
-      const scriptPath = path.join(__dirname, "..", "..", "scripts", "skillstack-sync", "install-daemons.sh");
+      if (backend === "unsupported") {
+        console.log("");
+        console.log(chalk.yellow("  Resident daemons need launchd (macOS) or systemd --user (Linux).") );
+        console.log("  " + chalk.dim("This host has neither. Fallback: run `you sync --live` under nohup/pm2/tmux,"));
+        console.log("  " + chalk.dim("or schedule `you sync` + `you stack sync` via cron."));
+        console.log("");
+        process.exitCode = 1;
+        return;
+      }
+      const scriptName = backend === "systemd" ? "install-daemons-linux.sh" : "install-daemons.sh";
+      const scriptPath = path.join(__dirname, "..", "..", "scripts", "skillstack-sync", scriptName);
       if (!fs.existsSync(scriptPath)) {
         console.error(
-          chalk.hex("#C46A3A")(`  error: install-daemons.sh not found: ${scriptPath}`) +
+          chalk.hex("#C46A3A")(`  error: ${scriptName} not found: ${scriptPath}`) +
             "\n  " + chalk.dim("run `npm run build` from the cli/ directory.")
         );
         process.exitCode = 1;
@@ -969,7 +981,7 @@ export async function stackCommand(
       }
       const result = child_process.spawnSync("bash", [scriptPath], { stdio: "inherit" });
       if (result.error) {
-        console.error(chalk.hex("#C46A3A")(`  error spawning install-daemons.sh: ${result.error.message}`));
+        console.error(chalk.hex("#C46A3A")(`  error spawning ${scriptName}: ${result.error.message}`));
         process.exitCode = 1;
         return;
       }
@@ -979,6 +991,32 @@ export async function stackCommand(
 
     if (action === "uninstall") {
       console.log("");
+      if (backend === "systemd") {
+        // Stop + disable + remove the systemd --user units.
+        const UNIT_DIR = path.join(
+          process.env.XDG_CONFIG_HOME ?? path.join(process.env.HOME ?? "/", ".config"),
+          "systemd", "user"
+        );
+        const units = [
+          "you-realtime-sync.service",
+          "you-skillstack-sync.timer", "you-skillstack-sync.service",
+          "you-identity-sync.timer", "you-identity-sync.service",
+          "you-context-sync.timer", "you-context-sync.service",
+          "you-orchestrator-watch.timer", "you-orchestrator-watch.service",
+        ];
+        for (const unit of units) {
+          child_process.spawnSync("systemctl", ["--user", "disable", "--now", unit], { stdio: "inherit" });
+          const unitPath = path.join(UNIT_DIR, unit);
+          if (fs.existsSync(unitPath)) {
+            fs.unlinkSync(unitPath);
+            console.log("  " + chalk.green("removed") + " " + unitPath);
+          }
+        }
+        child_process.spawnSync("systemctl", ["--user", "daemon-reload"], { stdio: "inherit" });
+        console.log("");
+        return;
+      }
+      // launchd (macOS) path.
       for (const daemon of YOUMD_DAEMONS) {
         for (const label of [daemon.label, daemon.legacyLabel].filter(Boolean) as string[]) {
           const plistPath = path.join(LAUNCH_AGENTS_DIR, `${label}.plist`);

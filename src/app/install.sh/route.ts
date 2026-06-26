@@ -430,11 +430,16 @@ if machine_sync_enabled; then
 fi
 
 if [ "\${YOU_INSTALL_DAEMON:-\${YOUMD_INSTALL_DAEMON:-0}}" = "1" ]; then
-  if [ "$(uname -s 2>/dev/null || true)" = "Darwin" ]; then
-    echo "Installing resident You.md sync daemon..."
+  UNAME_S="$(uname -s 2>/dev/null || true)"
+  if [ "$UNAME_S" = "Darwin" ]; then
+    echo "Installing resident You.md sync daemon (launchd)..."
+    you stack daemon install || true
+  elif [ "$UNAME_S" = "Linux" ] && systemctl --user --version >/dev/null 2>&1; then
+    echo "Installing resident You.md sync daemon (systemd --user)..."
     you stack daemon install || true
   else
-    echo "Resident daemon auto-install is currently macOS launchd-only; skipping."
+    echo "Resident daemon auto-install needs launchd (macOS) or systemd --user (Linux); skipping."
+    echo "Fallback: run 'you sync --live' under nohup/pm2/tmux for always-on sync."
   fi
 fi
 
