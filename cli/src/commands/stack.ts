@@ -156,6 +156,191 @@ async function recordStackSyncActivity(options: {
 }
 
 /**
+ * Provision a shared agent stack for a brand-new user.
+ *
+ * Guard: if the user already has ANY registered stack sources (e.g. Houston),
+ * this is a no-op. Also no-ops if ~/.agent-shared/.git already exists.
+ *
+ * Otherwise: scaffolds ~/.agent-shared from the bundled template, git-inits it,
+ * creates a private GitHub repo via `gh` if available, registers the source in
+ * the You.md identity registry, writes the local stack-sources file, and runs
+ * the local sync script to wire up agent host symlinks.
+ */
+export async function provisionAgentSharedIfNeeded(opts: { force?: boolean } = {}): Promise<void> {
+  const { BrailleSpinner } = await import("../lib/render");
+  const home = os.homedir();
+  const agentSharedDir = path.join(home, ".agent-shared");
+
+  // ── guard: skip if sources already registered (unless forced) ──────────────
+  if (!opts.force) {
+    let hasSources = false;
+    try {
+      const res = await listStackSources();
+      if (res.ok) {
+        const { stackSources } = res.data as { stackSources: Array<{ path: string }> };
+        hasSources = Array.isArray(stackSources) && stackSources.length > 0;
+      }
+    } catch {
+      // network error — treat as no sources, proceed cautiously
+    }
+    if (hasSources) {
+      console.log("  " + chalk.dim("stack sources already registered — skipping provision"));
+      return;
+    }
+  }
+
+  // ── guard: ~/.agent-shared already a git repo — just register if needed ────
+  if (fs.existsSync(path.join(agentSharedDir, ".git"))) {
+    console.log("  " + chalk.dim("~/.agent-shared already exists — registering if needed"));
+    const remoteResult = child_process.spawnSync(
+      "git",
+      ["-C", agentSharedDir, "remote", "get-url", "origin"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+    );
+    const existingRemote = remoteResult.status === 0
+      ? String(remoteResult.stdout ?? "").trim()
+      : "";
+    try {
+      await upsertStackSource({
+        path: agentSharedDir,
+        remote: existingRemote,
+        kind: "standalone",
+        label: "shared agent stack",
+      });
+      await writeStackSourcesFile();
+    } catch (err) {
+      console.log("  " + chalk.yellow("warn: could not register existing ~/.agent-shared: ") + (err instanceof Error ? err.message : String(err)));
+    }
+    const syncScript = path.join(agentSharedDir, "bin", "sync-agent-shared.sh");
+    if (fs.existsSync(syncScript)) {
+      child_process.spawnSync("bash", [syncScript], { stdio: "inherit" });
+    }
+    return;
+  }
+
+  // ── scaffold ─────────────────────────────────────────────────────────────────
+  const spinner = new BrailleSpinner("provisioning shared agent stack...");
+  spinner.start();
+
+  try {
+    // dist/commands/stack.js → ../../scripts/agent-shared-template
+    const templateDir = path.join(__dirname, "..", "..", "scripts", "agent-shared-template");
+    if (!fs.existsSync(templateDir)) {
+      spinner.fail("template not found — reinstall youmd");
+      console.log("  " + chalk.red("error: ") + `template missing at ${templateDir}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    function copyDirRecursive(src: string, dest: string): void {
+      fs.mkdirSync(dest, { recursive: true });
+      for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+        const srcPath = path.join(src, entry.name);
+        const destPath = path.join(dest, entry.name);
+        if (entry.isDirectory()) {
+          copyDirRecursive(srcPath, destPath);
+        } else {
+          fs.copyFileSync(srcPath, destPath);
+        }
+      }
+    }
+
+    copyDirRecursive(templateDir, agentSharedDir);
+
+    const syncScript = path.join(agentSharedDir, "bin", "sync-agent-shared.sh");
+    if (fs.existsSync(syncScript)) {
+      fs.chmodSync(syncScript, 0o755);
+    }
+
+    // git init + initial commit
+    const gitOpts = { cwd: agentSharedDir, stdio: "inherit" as const };
+    child_process.spawnSync("git", ["init", "-b", "main"], gitOpts);
+    child_process.spawnSync("git", ["add", "-A"], gitOpts);
+    child_process.spawnSync("git", ["commit", "-m", "init: You.md shared agent stack"], gitOpts);
+
+    spinner.stop();
+
+    // ── try to create GitHub repo ─────────────────────────────────────────────
+    let remoteUrl = "";
+    const ghCheck = child_process.spawnSync("gh", ["auth", "status"], { stdio: "ignore" });
+    const ghAvailable = ghCheck.status === 0;
+    let ghLogin = "";
+
+    if (ghAvailable) {
+      const loginResult = child_process.spawnSync(
+        "gh",
+        ["api", "user", "--jq", ".login"],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }
+      );
+      ghLogin = loginResult.status === 0 ? String(loginResult.stdout ?? "").trim() : "";
+
+      if (ghLogin) {
+        const repoName = `${ghLogin}-agent-shared`;
+        remoteUrl = `https://github.com/${ghLogin}/${repoName}.git`;
+
+        console.log("");
+        console.log("  " + ACCENT("creating GitHub repo") + " " + chalk.dim(repoName));
+
+        const createResult = child_process.spawnSync(
+          "gh",
+          [
+            "repo", "create", repoName,
+            "--private",
+            `--source=${agentSharedDir}`,
+            "--remote=origin",
+            "--push",
+          ],
+          { stdio: "inherit" }
+        );
+
+        if (createResult.status !== 0) {
+          remoteUrl = "";
+          console.log("  " + chalk.yellow("warn: gh repo create failed — continuing without remote"));
+        }
+      }
+    }
+
+    // ── register in You.md identity ───────────────────────────────────────────
+    try {
+      await upsertStackSource({
+        path: agentSharedDir,
+        remote: remoteUrl,
+        kind: "standalone",
+        label: "shared agent stack",
+      });
+      await writeStackSourcesFile();
+    } catch (err) {
+      console.log("  " + chalk.yellow("warn: could not register source in You.md: ") + (err instanceof Error ? err.message : String(err)));
+    }
+
+    // ── run local sync script ─────────────────────────────────────────────────
+    if (fs.existsSync(syncScript)) {
+      console.log("");
+      console.log("  " + chalk.dim("running sync-agent-shared.sh..."));
+      child_process.spawnSync("bash", [syncScript], { stdio: "inherit" });
+    }
+
+    console.log("");
+    console.log("  " + chalk.green("shared agent stack provisioned") + " " + chalk.dim(agentSharedDir));
+    if (remoteUrl) {
+      console.log("  " + chalk.dim("remote: ") + remoteUrl);
+    } else {
+      const displayLogin = ghLogin || "<login>";
+      const repoName = `${displayLogin}-agent-shared`;
+      console.log("  " + chalk.yellow("no remote yet") + chalk.dim(" — for cross-machine sync, run:"));
+      console.log("    " + chalk.cyan(`cd ~/.agent-shared && gh repo create ${repoName} --private --source=. --push`));
+      console.log("    " + chalk.cyan(`you stack source add ~/.agent-shared=https://github.com/${displayLogin}/${repoName}.git`));
+    }
+    console.log("");
+
+  } catch (err) {
+    spinner.fail("provision failed");
+    console.log("  " + chalk.red("error: ") + (err instanceof Error ? err.message : String(err)));
+    process.exitCode = 1;
+  }
+}
+
+/**
  * Fetch the remote stack-sources registry and write ~/.you/stack-sources.
  * The file format is one `abs_path=remote` per line with a header comment.
  * Leading `~` in stored paths is expanded to the home directory.
@@ -215,6 +400,7 @@ function printHelp(): void {
   console.log("    " + chalk.cyan("source add <path>=<remote>") + DIM(" Register a stack repo (--label <name>)"));
   console.log("    " + chalk.cyan("source remove <path>") + DIM(" Remove a stack source entry"));
   console.log("    " + chalk.cyan("source sync") + DIM("          Write ~/.you/stack-sources from the registry"));
+  console.log("    " + chalk.cyan("source provision") + DIM("     Scaffold ~/.agent-shared + create private GitHub repo (new users only)"));
   console.log("    " + chalk.cyan("daemon install") + DIM("       Install resident identity, skillstack, and context sync daemons"));
   console.log("    " + chalk.cyan("daemon uninstall") + DIM("     Remove launchd daemon plists"));
   console.log("    " + chalk.cyan("daemon status") + DIM("        Show loaded/not-loaded state and recent daemon health"));
@@ -684,9 +870,14 @@ export async function stackCommand(
       return;
     }
 
+    if (sub === "provision") {
+      await provisionAgentSharedIfNeeded({ force: options.force });
+      return;
+    }
+
     console.log("");
     console.log(chalk.yellow(`  unknown source subcommand: ${sub}`));
-    console.log("  " + DIM("use: list | add | remove | sync"));
+    console.log("  " + DIM("use: list | add | remove | sync | provision"));
     console.log("");
     process.exitCode = 1;
     return;
