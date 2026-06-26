@@ -12,6 +12,7 @@ import {
   stopWorker,
   pruneWorkers,
   collectUnreportedCompletions,
+  markReported,
   WorkerHarness,
   WorkerRecord,
 } from "../lib/orchestrator/supervisor";
@@ -57,20 +58,22 @@ async function reportCompletion(w: WorkerRecord): Promise<boolean> {
   return res.ok;
 }
 
-/** One reconcile-and-report pass. Returns the count reported. */
+/** One reconcile-and-report pass. Returns the count reported. Marks reported ONLY after a
+ *  successful post, so a transient/unauthenticated failure is retried next pass (no dropped events). */
 async function reportPass(): Promise<number> {
   const done = collectUnreportedCompletions();
-  let reported = 0;
+  const posted: string[] = [];
   for (const w of done) {
     const ok = await reportCompletion(w);
-    if (ok) reported++;
+    if (ok) posted.push(w.id);
     console.log(
       "  " + (w.status === "exited" ? chalk.green("done") : chalk.yellow(w.status)) + " " +
       chalk.cyan(w.id) + DIM(` ${w.harness}${w.project ? ` · ${w.project}` : ""}`) +
-      (ok ? "" : DIM("  (not posted — login to report across machines)"))
+      (ok ? "" : DIM("  (not posted — will retry; run you login to report across machines)"))
     );
   }
-  return reported;
+  markReported(posted);
+  return posted.length;
 }
 
 function usage(): void {

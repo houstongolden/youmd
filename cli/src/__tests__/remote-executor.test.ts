@@ -18,6 +18,7 @@ import {
   redactSecrets,
   truncateOutput,
   remoteAgentHostEnabled,
+  remoteWorkerEnv,
   ALLOWED_REMOTE_ACTIONS,
 } from "../lib/remote-executor";
 import { writeGlobalConfig } from "../lib/config";
@@ -116,9 +117,28 @@ describe("cross-machine agent control (opt-in gate)", () => {
     }
   });
 
-  it("agent.list is read-only and runs without the opt-in (no host enablement needed)", async () => {
+  it("agent.list and agent.output are ALSO gated by the host opt-in (worker logs are sensitive)", async () => {
     const prev = process.env.YOU_REMOTE_AGENT_HOST;
-    delete process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "0";
+    try {
+      const list = await executeRemoteAction({ action: "agent.list" });
+      expect(list.ok).toBe(false);
+      expect(list.status).toBe("rejected");
+      expect(list.error).toMatch(/YOU_REMOTE_AGENT_HOST/);
+
+      const out = await executeRemoteAction({ action: "agent.output", args: { id: "w_x" } });
+      expect(out.ok).toBe(false);
+      expect(out.status).toBe("rejected");
+      expect(out.error).toMatch(/YOU_REMOTE_AGENT_HOST/);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("agent.list succeeds when the host opted in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "1";
     try {
       const result = await executeRemoteAction({ action: "agent.list" });
       expect(result.ok).toBe(true);
@@ -129,11 +149,40 @@ describe("cross-machine agent control (opt-in gate)", () => {
     }
   });
 
-  it("agent.output requires a worker id", async () => {
-    const result = await executeRemoteAction({ action: "agent.output", args: {} });
-    expect(result.ok).toBe(false);
-    expect(result.status).toBe("rejected");
-    expect(result.error).toMatch(/worker id/i);
+  it("agent.output requires a worker id (when the host opted in)", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "1";
+    try {
+      const result = await executeRemoteAction({ action: "agent.output", args: {} });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/worker id/i);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("remoteWorkerEnv strips daemon secrets but keeps harness auth + PATH", () => {
+    const base = {
+      PATH: "/usr/bin",
+      HOME: "/home/u",
+      YOU_API_KEY: "ym_secret",
+      OPENROUTER_API_KEY: "sk-or-secret",
+      FOLDER_API_KEY: "fmd_live_secret",
+      GITHUB_TOKEN: "ghp_secret",
+      DB_PASSWORD: "hunter2",
+      ANTHROPIC_API_KEY: "sk-ant-keep",
+    } as NodeJS.ProcessEnv;
+    const env = remoteWorkerEnv(base);
+    expect(env.PATH).toBe("/usr/bin");
+    expect(env.HOME).toBe("/home/u");
+    expect(env.ANTHROPIC_API_KEY).toBe("sk-ant-keep"); // harness still authenticates
+    expect(env.YOU_API_KEY).toBeUndefined();
+    expect(env.OPENROUTER_API_KEY).toBeUndefined();
+    expect(env.FOLDER_API_KEY).toBeUndefined();
+    expect(env.GITHUB_TOKEN).toBeUndefined();
+    expect(env.DB_PASSWORD).toBeUndefined();
   });
 
   it("remoteAgentHostEnabled: env '0' hard-overrides; otherwise the persisted config flag enables it", () => {

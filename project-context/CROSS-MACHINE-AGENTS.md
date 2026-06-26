@@ -243,6 +243,20 @@ in with `YOU_REMOTE_AGENT_HOST=1` — a fresh enrolled host is remotely *observa
 its owner enables it (the y.computer/VPS provision flow sets it deliberately). Issuer side:
 `you remote run <machine> agent.spawn --harness claude --project youmd --goal "…"`.
 
+**Pre-merge security hardening (2026-06-26 review):** `agent.list`/`agent.output` are now also
+gated by the host opt-in (worker logs can contain sensitive output, so a non-opted-in host no
+longer exposes them); remotely-triggered spawns run with a **secret-minimized env**
+(`remoteWorkerEnv` strips the daemon's you.md/OpenRouter/folder/vault keys so a remote agent can't
+read them off `process.env`, while keeping harness auth like `ANTHROPIC_API_KEY`); output
+redaction gained JWT + PEM-private-key patterns.
+
+**Known follow-ups (documented, not yet done):** (1) a dedicated scope for agent spawn — today
+the coarse `remote:command` scope authorizes both read-only git AND `agent.spawn`; the host opt-in
+is the hard gate, but a separate `remote:agent` scope would match privilege to intent. (2) a
+per-project allowlist for remote spawn (current containment admits any project under known roots,
+same breadth as `git.*`). (3) durable-row idempotency so a daemon restart can't re-execute a
+mutating command still in its TTL window (in-memory seen-set today, same as `git.commit_push`).
+
 **Enabling a worker host (the daemon-visible way):** the opt-in is read from BOTH
 `YOU_REMOTE_AGENT_HOST=1` (env) and a durable `remoteAgentHost` flag in `~/.you/config.json`.
 The **config flag is the real path** because the resident daemon — which receives the remote

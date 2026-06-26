@@ -1,5 +1,42 @@
 # You.md — Changelog
 
+## 2026-06-26 — Hardening: pre-merge security + correctness review of PR #60
+
+Ran a recall-biased multi-agent review (correctness / security / cross-file) over the whole
+branch and fixed the real findings before marking ready:
+
+### security
+- `agent.list`/`agent.output` are now gated by the host opt-in too (worker logs/goals can hold
+  sensitive output; a non-opted-in host no longer leaks them to a remote issuer).
+- Remotely-triggered spawns get a **secret-minimized env** (`remoteWorkerEnv`): strips the
+  daemon's you.md/OpenRouter/folder/vault keys + generic `*_TOKEN/*_SECRET/PASSWORD/PRIVATE_KEY`,
+  keeps harness auth (`ANTHROPIC_API_KEY`) so the worker still runs.
+- Output redaction gained JWT + PEM-private-key patterns.
+- Documented known follow-ups in CROSS-MACHINE-AGENTS.md (dedicated agent-spawn scope, per-project
+  allowlist, durable-row idempotency).
+
+### correctness
+- Report-back no longer drops completions: `collectUnreportedCompletions` no longer flips the
+  `reported` flag; the caller marks reported only AFTER a successful post (`markReported`), so a
+  transient/unauthenticated failure retries next pass.
+- `spawnWorker` now handles the async `error` event (missing harness binary → marked `failed`,
+  no uncaught exception / phantom `running` worker).
+- Atomic registry writes (tmp + rename) so concurrent readers never see a half-written file.
+- `parseToolCall` is string-aware and scans balanced `{…}` spans, so prose-plus-JSON and
+  multi-object model replies parse; the loop bails after 2 unparseable replies instead of burning
+  the whole step budget.
+
+### daemon (Linux/VPS)
+- `hasUserSystemd()` probes `systemctl --user show-environment` (requires the user bus) instead of
+  `--version` (which succeeds with no bus) — so a headless install no longer reports systemd-OK
+  then fails to actually install units; only positive results are memoized.
+- systemd units run ExecStart via a login shell so node/git/harness subprocesses resolve under
+  nvm/fnm prefixes; `loginctl enable-linger` failure now warns loudly with the fix.
+- `you status` surfaces the daemon-install recommendation on Linux too, not just macOS.
+
+Verified: tsc clean; 40 tests across remote-executor/orchestrator-watch/orchestrator-loop/
+daemon/storage (incl. new gating, env-minimization, report-once, and parse-robustness tests).
+
 ## 2026-06-26 — Build: `you storage` (folder.md media offload, manual-key path)
 
 ### feat(storage): store_media / get_media MCP tools (any agent can offload media)

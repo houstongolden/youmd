@@ -156,6 +156,29 @@ export function remoteAgentHostEnabled(): boolean {
 /** Worker harnesses a REMOTE issuer may request. `custom` (arbitrary argv) is intentionally excluded. */
 const REMOTE_SPAWNABLE_HARNESSES = ["claude", "codex", "cursor"] as const;
 
+/**
+ * Build a secret-minimized environment for a REMOTELY-triggered worker so it does not inherit the
+ * resident daemon's own credentials (you.md token, OpenRouter, folder.md, vault) — a remote issuer
+ * should not be able to launch an agent that can read those off process.env. Defense-in-depth, not
+ * a full sandbox: the worker harness keeps its own auth (e.g. ANTHROPIC_API_KEY) so it still runs.
+ */
+export function remoteWorkerEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...base };
+  const explicitDrop = [
+    "YOU_API_KEY", "YOUMD_API_KEY",
+    "OPENROUTER_API_KEY",
+    "FOLDER_API_KEY", "FOLDERMD_API_KEY",
+    "YOU_REMOTE_AGENT_HOST", "YOUMD_REMOTE_AGENT_HOST",
+  ];
+  for (const k of explicitDrop) delete env[k];
+  // Drop obvious secret-shaped vars (tokens/secrets/passwords/private keys). Keeps *_API_KEY
+  // like ANTHROPIC_API_KEY so the harness can authenticate.
+  for (const k of Object.keys(env)) {
+    if (/(_SECRET$|^SECRET|_TOKEN$|TOKEN$|PASSWORD|PASSWD|PRIVATE_KEY)/i.test(k)) delete env[k];
+  }
+  return env;
+}
+
 export function isAllowedRemoteAction(action: unknown): action is RemoteAction {
   return (
     typeof action === "string" &&
@@ -206,6 +229,10 @@ const SECRET_PATTERNS: RegExp[] = [
   /\bBearer\s+[A-Za-z0-9._-]{12,}\b/gi,
   // URLs with embedded credentials (https://user:pass@host)
   /(https?:\/\/)[^/\s:@]+:[^/\s@]+@/gi,
+  // JWTs (header.payload.signature)
+  /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
+  // PEM private key blocks
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g,
 ];
 
 export function redactSecrets(text: string): string {
@@ -610,6 +637,7 @@ export async function executeRemoteAction(
           cwd: resolvedSpawn.dir,
           project: typeof args.project === "string" ? args.project : undefined,
           host: os.hostname(),
+          env: remoteWorkerEnv(), // strip the daemon's own secrets from the remote worker
         });
         if (!res.ok || !res.worker) {
           return {
@@ -636,6 +664,14 @@ export async function executeRemoteAction(
       }
 
       case "agent.list": {
+        // Worker logs/goals can contain sensitive output; do not expose them remotely unless the
+        // host owner opted in (same gate as spawn/stop). agent.status is the unauthenticated probe.
+        if (!remoteAgentHostEnabled()) {
+          return reject(
+            action,
+            "this host does not expose worker agents remotely (set YOU_REMOTE_AGENT_HOST=1 to enable)"
+          );
+        }
         const workers = refreshWorkers();
         const summary =
           workers.length === 0
@@ -654,6 +690,12 @@ export async function executeRemoteAction(
       }
 
       case "agent.output": {
+        if (!remoteAgentHostEnabled()) {
+          return reject(
+            action,
+            "this host does not expose worker output remotely (set YOU_REMOTE_AGENT_HOST=1 to enable)"
+          );
+        }
         const id = typeof args.id === "string" ? args.id.trim() : "";
         if (!id) return reject(action, "agent.output requires a worker id");
         const lines = Number(args.lines) > 0 ? Number(args.lines) : 40;

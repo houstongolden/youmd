@@ -46,8 +46,8 @@ describe("terminal status classification", () => {
 });
 
 describe("collectUnreportedCompletions (report-once)", () => {
-  it("returns terminal+unreported workers once, then never again; keeps live ones", async () => {
-    const { collectUnreportedCompletions } = await load();
+  it("returns terminal+unreported workers; markReported flips them so they aren't returned again; keeps live ones", async () => {
+    const { collectUnreportedCompletions, markReported } = await load();
 
     writeRegistry([
       {
@@ -77,10 +77,14 @@ describe("collectUnreportedCompletions (report-once)", () => {
 
     const first = collectUnreportedCompletions();
     expect(first.map((w) => w.id)).toEqual(["w_done"]);
-    expect(first[0].reported).toBe(true);
+    // collect does NOT mark reported (the caller marks only after a successful post).
+    expect(first[0].reported).toBeFalsy();
 
-    // Second pass: the completion was already reported → nothing new. Live worker not reported.
-    const second = collectUnreportedCompletions();
-    expect(second).toEqual([]);
+    // Not yet marked → still returned (so a failed post is retried, not dropped).
+    expect(collectUnreportedCompletions().map((w) => w.id)).toEqual(["w_done"]);
+
+    // After marking, it is no longer returned; the live worker is never returned.
+    markReported(["w_done"]);
+    expect(collectUnreportedCompletions()).toEqual([]);
   });
 });

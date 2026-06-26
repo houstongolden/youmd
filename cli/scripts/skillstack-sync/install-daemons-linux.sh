@@ -79,7 +79,10 @@ write_service() {
     printf 'Environment=HOME=%s\n' "${HOME}"
     printf 'Environment=YOU_HOME=%s\n' "${YOU_HOME}"
     printf 'Environment=PATH=%s\n' "${UNIT_PATH}"
-    printf 'ExecStart=%s %s\n' "${YOU_BIN}" "${cmd_args}"
+    # Run via a login shell so PATH is sourced from the user's profile — the CLI shells out to
+    # node/git and the claude/codex/cursor harnesses by name, and those may live under nvm/fnm
+    # prefixes not in the static Environment=PATH above (mirrors the macOS `/bin/zsh -lc` plists).
+    printf "ExecStart=/bin/bash -lc 'exec \"%s\" %s'\n" "${YOU_BIN}" "${cmd_args}"
     log_lines "${base}"
     if [ "${restart}" = "always" ]; then
       printf '\n[Install]\nWantedBy=default.target\n'
@@ -129,9 +132,15 @@ write_timer   "you-orchestrator-watch.timer"   "You.md orchestrator report-back 
 
 echo ""
 echo "==> Enabling linger so daemons run without an active login session"
-# Best-effort: enable-linger usually needs no sudo for your own user; ignore failure.
-loginctl enable-linger "$(id -un)" 2>/dev/null \
-  || echo "  (could not enable linger automatically; run: sudo loginctl enable-linger $(id -un))"
+# Linger is what keeps the units alive AFTER you log out — without it the user manager is torn
+# down at logout and every "resident" daemon stops, defeating the headless-VPS goal. So if we
+# cannot enable it, warn loudly (not a silent advisory) with the exact fix.
+if loginctl enable-linger "$(id -un)" 2>/dev/null; then
+  echo "  linger enabled for $(id -un)"
+else
+  echo "  !! WARNING: could not enable linger. Daemons will STOP when you log out." >&2
+  echo "  !! Fix (one time):  sudo loginctl enable-linger $(id -un)" >&2
+fi
 
 echo ""
 echo "==> Reloading + starting units"

@@ -108,16 +108,19 @@ export function detectDaemonBackend(): DaemonBackend {
 
 let cachedUserSystemd: boolean | undefined;
 export function hasUserSystemd(): boolean {
-  if (cachedUserSystemd !== undefined) return cachedUserSystemd;
-  if (process.platform !== "linux") {
-    cachedUserSystemd = false;
-    return cachedUserSystemd;
-  }
-  const result = child_process.spawnSync("systemctl", ["--user", "--version"], {
+  // Only memoize a POSITIVE result: a transient probe failure at boot (user bus not up yet right
+  // after linger/boot) must not wedge a long-lived daemon into "no systemd" for its whole life.
+  if (cachedUserSystemd === true) return true;
+  if (process.platform !== "linux") return false;
+  // `--version` succeeds even with no user manager / no XDG_RUNTIME_DIR, so it is a poor proxy for
+  // "user units actually work" on a headless box. `show-environment` requires a live connection to
+  // the per-user systemd manager, which is exactly what enable/start/is-active need.
+  const result = child_process.spawnSync("systemctl", ["--user", "show-environment"], {
     encoding: "utf-8",
   });
-  cachedUserSystemd = !result.error && result.status === 0;
-  return cachedUserSystemd;
+  const ok = !result.error && result.status === 0;
+  if (ok) cachedUserSystemd = true;
+  return ok;
 }
 
 export function expandHome(input: string): string {

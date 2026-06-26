@@ -88,7 +88,14 @@ export function loadWorkers(): WorkerRecord[] {
 }
 
 function saveWorkers(workers: WorkerRecord[]): void {
-  fs.writeFileSync(registryPath(), JSON.stringify(workers, null, 2));
+  // Atomic write (tmp + rename) so a concurrent reader never sees a half-written file.
+  // NOTE: this does not prevent lost updates under concurrent writers (the registry is a
+  // single JSON file with no lock); spawn/watch/remote runs are low-frequency so the window
+  // is small, but a future hardening is per-record files or a lockfile.
+  const target = registryPath();
+  const tmp = `${target}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(workers, null, 2));
+  fs.renameSync(tmp, target);
 }
 
 /** True if a pid is alive (signal 0 probe). */
@@ -132,6 +139,12 @@ export interface SpawnWorkerInput {
   host: string;
   /** Required when harness === "custom": full argv, with {prompt} substituted in any element. */
   customCommand?: string[];
+  /**
+   * Environment for the worker process. Defaults to the parent env for LOCAL spawns. Remote
+   * (bus-triggered) spawns MUST pass a minimized env so a remotely-launched agent does not
+   * inherit the daemon's secrets (you.md token, OPENROUTER_API_KEY, vault/folder keys).
+   */
+  env?: NodeJS.ProcessEnv;
 }
 
 export interface SpawnWorkerResult {
@@ -182,9 +195,26 @@ export function spawnWorker(input: SpawnWorkerInput): SpawnWorkerResult {
       cwd,
       detached: true,
       stdio: ["ignore", out, out],
-      env: process.env,
+      env: input.env ?? process.env,
     });
     pid = child.pid;
+    // A missing/unlaunchable binary surfaces ASYNCHRONOUSLY via 'error' (ENOENT), after spawn
+    // returns. Without this handler Node throws it as an uncaught exception, and the registry
+    // would keep a phantom "running" record. Mark the worker failed and never let it crash us.
+    child.on("error", (err) => {
+      try {
+        fs.appendFileSync(logFile, `\n# launch error: ${(err as Error).message}\n`);
+      } catch {
+        /* ignore */
+      }
+      const all = loadWorkers();
+      const rec = all.find((w) => w.id === id);
+      if (rec && rec.status === "running") {
+        rec.status = "failed";
+        rec.endedAt = new Date().toISOString();
+        saveWorkers(all);
+      }
+    });
     child.unref();
     fs.closeSync(out);
   } catch (err) {
@@ -257,17 +287,28 @@ export function stopWorker(id: string): { ok: boolean; error?: string } {
 
 /**
  * Reconcile status, then return workers that just reached a terminal state and have NOT yet been
- * reported — marking them reported so each completion is surfaced exactly once. This is the
- * "always on, report back" primitive the watch loop / daemon uses.
+ * reported. Does NOT flip the `reported` flag — the caller marks each id reported only AFTER a
+ * successful post (via markReported), so a failed/transient post is retried next pass instead of
+ * silently dropping the completion. The "always on, report back" primitive for the watch loop.
  */
 export function collectUnreportedCompletions(): WorkerRecord[] {
   const workers = refreshWorkers();
-  const done = workers.filter((w) => isTerminalWorkerStatus(w.status) && !w.reported);
-  if (done.length > 0) {
-    for (const w of done) w.reported = true;
-    saveWorkers(workers);
+  return workers.filter((w) => isTerminalWorkerStatus(w.status) && !w.reported);
+}
+
+/** Mark the given worker ids as reported (call only after the completion was successfully posted). */
+export function markReported(ids: string[]): void {
+  if (ids.length === 0) return;
+  const set = new Set(ids);
+  const workers = loadWorkers();
+  let changed = false;
+  for (const w of workers) {
+    if (set.has(w.id) && !w.reported) {
+      w.reported = true;
+      changed = true;
+    }
   }
-  return done;
+  if (changed) saveWorkers(workers);
 }
 
 /** Drop exited/stopped workers older than `maxAgeMs` from the registry (keeps running ones). */

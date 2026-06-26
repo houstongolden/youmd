@@ -93,30 +93,72 @@ function buildSystemPrompt(goal: string, tools: LoopTool[], context?: string): s
     .join("\n");
 }
 
-/** Extract the first JSON object from a model reply (tolerates stray prose / fences). */
+function toolCallFromObject(obj: Record<string, unknown>): ToolCall | null {
+  if (typeof obj.tool !== "string") return null;
+  const args = obj.args && typeof obj.args === "object" ? (obj.args as Record<string, unknown>) : {};
+  return {
+    thought: typeof obj.thought === "string" ? obj.thought : undefined,
+    tool: obj.tool,
+    args,
+  };
+}
+
+/**
+ * Extract a tool call from a model reply, tolerating prose around/between JSON, code fences, and
+ * multiple objects. Scans for every balanced `{…}` span and returns the first that parses to an
+ * object with a string `tool` — so "Sure! {…prose…} {\"tool\":…}" still works (the naive
+ * first-`{`-to-last-`}` slice would fail on that).
+ */
 export function parseToolCall(raw: string): ToolCall | null {
   if (!raw) return null;
   let text = raw.trim();
-  // Strip code fences if the model added them despite instructions.
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fence) text = fence[1].trim();
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) return null;
-  const candidate = text.slice(start, end + 1);
+
+  // Whole-string fast path.
   try {
-    const obj = JSON.parse(candidate) as Record<string, unknown>;
-    if (typeof obj.tool !== "string") return null;
-    const args =
-      obj.args && typeof obj.args === "object" ? (obj.args as Record<string, unknown>) : {};
-    return {
-      thought: typeof obj.thought === "string" ? obj.thought : undefined,
-      tool: obj.tool,
-      args,
-    };
+    const obj = JSON.parse(text) as Record<string, unknown>;
+    const call = toolCallFromObject(obj);
+    if (call) return call;
   } catch {
-    return null;
+    /* fall through to span scan */
   }
+
+  // Scan for balanced {…} spans (string-aware) and try each.
+  let depth = 0;
+  let startIdx = -1;
+  let inStr = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inStr) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === "{") {
+      if (depth === 0) startIdx = i;
+      depth++;
+    } else if (ch === "}") {
+      if (depth > 0) {
+        depth--;
+        if (depth === 0 && startIdx !== -1) {
+          const candidate = text.slice(startIdx, i + 1);
+          try {
+            const obj = JSON.parse(candidate) as Record<string, unknown>;
+            const call = toolCallFromObject(obj);
+            if (call) return call;
+          } catch {
+            /* try next span */
+          }
+          startIdx = -1;
+        }
+      }
+    }
+  }
+  return null;
 }
 
 function truncate(s: string, max = 4000): string {
@@ -138,6 +180,8 @@ export async function runAgentLoop(options: RunLoopOptions): Promise<LoopOutcome
   ];
 
   const steps: LoopStep[] = [];
+  let consecutiveParseFailures = 0;
+  const MAX_PARSE_FAILURES = 2;
 
   for (let i = 0; i < maxSteps; i++) {
     let reply: string;
@@ -153,7 +197,16 @@ export async function runAgentLoop(options: RunLoopOptions): Promise<LoopOutcome
 
     const call = parseToolCall(reply);
     if (!call) {
-      // Model didn't emit a valid tool call — nudge once, then treat as finish.
+      // Model didn't emit a valid tool call — nudge, but bail after a couple of failures so a
+      // model that can't produce JSON doesn't silently burn the whole step budget.
+      consecutiveParseFailures++;
+      if (consecutiveParseFailures >= MAX_PARSE_FAILURES) {
+        return {
+          finished: false,
+          summary: `Stopped: the model did not return a valid tool call after ${MAX_PARSE_FAILURES} tries. Last reply: ${reply.slice(0, 200)}`,
+          steps,
+        };
+      }
       messages.push({ role: "assistant", content: reply });
       messages.push({
         role: "user",
@@ -162,6 +215,7 @@ export async function runAgentLoop(options: RunLoopOptions): Promise<LoopOutcome
       });
       continue;
     }
+    consecutiveParseFailures = 0;
 
     messages.push({ role: "assistant", content: JSON.stringify(call) });
 
