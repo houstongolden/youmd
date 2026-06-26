@@ -1,5 +1,30 @@
 # You.md — Changelog
 
+## 2026-06-26 — Build: Linux daemon, You-agent orchestrator, folder.md client
+
+### feat(daemon): systemd --user support — You.md runs always-on on a Linux VPS
+- Resident daemon was macOS/launchd-only, so a Hostinger Linux VPS synced once at install but
+  never stayed live. Added a full systemd `--user` backend: `detectDaemonBackend()`,
+  `install-daemons-linux.sh` (service + timers, `enable-linger` for headless hosts), platform
+  branching in `you stack daemon install/uninstall`, and Linux install in the install.sh route.
+  Verified: tsc + bash -n clean, sample units valid.
+
+### feat(orchestrator): You agent master-orchestrator loop + worker supervisor
+- The You agent reframed as conductor (not worker): launch/monitor/stop other harnesses
+  (Claude/Codex/Cursor), model- and harness-agnostic. New `cli/src/lib/orchestrator/`
+  (supervisor + iterative loop + tools) and `you orchestrate run|spawn|list|logs|stop|prune`.
+  Closes the single net-new gap the audit found (every prior path was single-hop). Verified:
+  tsc clean; functional smoke (parser, spawn→list→tail→stop, loop iteration via mock model).
+- Design + roadmap: `project-context/YOU_AGENT_ORCHESTRATOR_2026-06-26.md`.
+
+### feat(storage): folder.md client for large-file/media offload (you.md-side scaffold)
+- `cli/src/lib/foldermd.ts`: typed client (upload multipart / download / list / create folder)
+  + `BrainMediaPointer` (the string the brain stores; bytes stay in folder.md). Config gains
+  `folderMdKey` / `folderMdFolderId`. The zero-user-work server-to-server provisioning is
+  folder.md-side and continues next session — full plan in
+  `project-context/FOLDERMD_NATIVE_INTEGRATION_PLAN_2026-06-26.md` (audited from the folder-md
+  repo: Vercel Blob today, R2/public-URLs/OAuth are roadmap).
+
 ## 2026-06-26 — Strategy: multi-computer agents, the synced brain, y.computer + folder.md platform
 
 ### docs(strategy): multi-computer agent platform + y.computer / folder.md positioning

@@ -22,6 +22,14 @@ export interface GlobalConfig {
   openrouterKey?: string;
   lastCliLatestVersion?: string;
   lastCliUpdateCheckAt?: string;
+  /**
+   * folder.md API key (`fmd_live_…`) for large-file/media offload. Manual today; the
+   * autonomous server-to-server provisioning (no user paste) lands with the folder.md side —
+   * see project-context/FOLDERMD_NATIVE_INTEGRATION_PLAN_2026-06-26.md.
+   */
+  folderMdKey?: string;
+  /** folder.md folder/workspace id that holds this user's you.md media. */
+  folderMdFolderId?: string;
 }
 
 export interface LocalConfig {
