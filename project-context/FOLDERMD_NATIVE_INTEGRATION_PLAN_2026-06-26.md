@@ -35,6 +35,41 @@ Optionally set `FOLDERMD_BASE_URL` on you.md (defaults to `https://www.folder.md
 
 ---
 
+## Security review (2026-06-27) — fixed + deferred
+
+An adversarial review traced the full S2S flow. **Confirmed solid:** service-secret auth is
+constant-time, fails closed (503) when unset/short, and rejects unauthenticated callers (401)
+before any work; `externalUserId` is server-derived from the authenticated session (not
+client-controlled, no cross-tenant reach); the minted key is returned only to the first-party
+**owner** client (`credentialType === "api-key"`) — connected apps and `GET /me/storage` never see
+it; AES-GCM IV handling is correct.
+
+**Fixed this pass:**
+- **Least privilege (H1):** the provision key is now minted with `write`, not `admin` — it only
+  needs file read/write on its own Folder (the Folder is created server-side), so a leaked key
+  can't manage keys/folders or touch account admin. (`lib/account-bootstrap.ts`)
+- **Encryption domain separation (M1):** the stored folder.md key is bound to an AES-GCM AAD
+  (`foldermd-api-key:v1`), so its ciphertext can never be cross-decrypted as another secret class
+  (e.g. a GitHub token) that shares the deployment encryption secret. +3 unit tests.
+  (`convex/lib/secretCrypto.ts`, `convex/folderMd.ts`)
+- **Input caps (M3):** `externalSystem`/`externalUserId`/`displayName` length-bounded on the
+  provision route (anti-amplification). (`app/api/v1/provision/route.ts`)
+
+**Deferred (documented, not blockers) — need a Convex-transaction change best validated live:**
+- **Idempotency race (C1) / rotation race (L1):** a truly-concurrent *first* provision for the
+  same user (or simultaneous `forceNewKey` from two machines) can create an orphaned duplicate
+  folder.md account/key and split which Folder a machine resolves. Severity is **low** (same
+  tenant, no escalation/cross-tenant) and the system self-heals on the next provision (the
+  `getByUser` cache + recovery rotation converge). The proper fix is to perform
+  create-user+folder+key+link inside a **single Convex mutation** so OCC serializes racers — a
+  structural change to `provisionExternalAccount` worth doing with a live deployment to verify.
+- **Prefix-collision key lookup (M2):** pre-existing in folder.md's `apiKeys.getByPrefix().first()`
+  (not introduced here); the full-hash `secureCompare` keeps it non-exploitable for forgery, but a
+  rare prefix collision could fail a legitimate key. Out of scope for this PR (general key-auth
+  internals); widen the stored prefix or compare-all-matches in a dedicated change.
+
+---
+
 ## 0. Why this exists (the gap, confirmed by code audit)
 
 You.md has **no binary/large-file path**. Every "file" is a markdown/JSON *string* in a ~1MB

@@ -19,6 +19,9 @@ import { encryptSecret, decryptSecret } from "./lib/secretCrypto";
 
 const DEFAULT_BASE = "https://www.folder.md/api/v1";
 const EXTERNAL_SYSTEM = "you.md";
+// AES-GCM domain separation: folder.md key ciphertexts are bound to this AAD so they can never
+// be cross-decrypted as another secret class (e.g. GitHub tokens) sharing the encryption secret.
+const KEY_AAD = "foldermd-api-key:v1";
 
 function folderMdBase(): string {
   return (process.env.FOLDERMD_BASE_URL || DEFAULT_BASE).replace(/\/$/, "");
@@ -146,7 +149,7 @@ export const provision = internalAction({
     });
 
     if (existing && args.forceNewKey !== true) {
-      const apiKey = await decryptSecret(existing.apiKeyCipher, existing.apiKeyIv);
+      const apiKey = await decryptSecret(existing.apiKeyCipher, existing.apiKeyIv, KEY_AAD);
       return {
         folderId: existing.folderId,
         apiKey,
@@ -183,7 +186,7 @@ export const provision = internalAction({
       throw new Error("folder.md provision returned no usable credentials");
     }
 
-    const enc = await encryptSecret(apiKey);
+    const enc = await encryptSecret(apiKey, KEY_AAD);
     await ctx.runMutation(internal.folderMd.saveCreds, {
       userId: args.userId,
       folderId,
