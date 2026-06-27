@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LAUNCH_AGENTS_DIR="${HOME}/Library/LaunchAgents"
 LOG_DIR="${YOU_HOME:-${YOUMD_HOME:-${HOME}/.you}}/logs"
 
-PLISTS="com.you.realtime-sync com.you.skillstack-sync com.you.identity-sync com.you.context-sync"
+PLISTS="com.you.realtime-sync com.you.skillstack-sync com.you.identity-sync com.you.context-sync com.you.orchestrator-watch"
 LEGACY_PLISTS="com.youmd.realtime-sync com.youmd.skillstack-sync com.youmd.identity-sync com.youmd.context-sync"
 
 echo "==> Creating log directory: ${LOG_DIR}"

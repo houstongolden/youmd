@@ -26,6 +26,14 @@ export type RemoteCommandOptions = {
   message?: string;
   project?: string;
   timeout?: string;
+  /** agent.spawn: which worker harness to launch on the remote (claude|codex|cursor). */
+  harness?: string;
+  /** agent.spawn: the task prompt for the remote worker. */
+  goal?: string;
+  /** agent.output / agent.stop: the remote worker id. */
+  id?: string;
+  /** agent.output: lines to tail. */
+  lines?: string;
 };
 
 function relativeTime(ts: number): string {
@@ -287,6 +295,10 @@ async function runRemoteCommand(
   const args: Record<string, unknown> = {};
   if (options.project) args.project = options.project;
   if (options.message) args.message = options.message;
+  if (options.harness) args.harness = options.harness;
+  if (options.goal) args.goal = options.goal;
+  if (options.id) args.id = options.id;
+  if (options.lines) args.lines = options.lines;
 
   const timeoutMs = Math.min(
     Math.max(Number(options.timeout) * 1000 || 60_000, 5_000),

@@ -2,9 +2,9 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 125
-**Total messages:** 557
-**Last updated:** 2026-06-20
+**Total sessions:** 126
+**Total messages:** 558
+**Last updated:** 2026-06-27
 
 ## Table of Contents
 
@@ -16670,3 +16670,8 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 > Need a skill and secure path for a youmd api key connected agent with correct permissions via expiring access code only API/MCP authenticated you.md owners — never committed to GitHub ever - stored and shared secure via encrypted you.md api server etc… but as part of the new skill/stack which is going to enable my you.md agent to be installed on a brand new machine/computer securely sharing ephemeral encrypted .env.local file so the agent already knows the priority Projects the user is working and detected by most active repos last 30-days then last 90 days then optional last 6-12'months - anyways the agent organized the projects by name uses the terminal mkdir in a CODE_YOU/{project-name} matching repo name sub-directory and then running GitHub init to pull each of the associated GitHub repos into their project subdirectories on the new computer all ready to go - then the secure .env.local files are exchanged via you.md api or secure exchange for each project and the agent runs the npm install or whatever other commands need to run and also the you agent typically is only updating the project readme and project-connect directory and root markdown directories for skills/stacks/tools etc - boom then you have all these projects running fully with synced self updating auto improving skills synced across machines
 
 ---
+
+## Session: 2026-06-27 (youmd-folder-md-native-integration)
+
+**2026-06-27 00:57:00 UTC**
+> Ok… we have just shipped a ton of updates on youmd and I needed to start a new chat with both youmd and folder-md GitHub repos connected here so you can finish the full native integration between these two projects APIs/mcps etc - you should look at all the recent commits and updates on youmd for anything related to folder.md api/MCP integration etc but I'll share some basic notes from the final message in the other session to steer you in right direction: Shipped to main 🎉 The full multi-computer You.md vision landed in PR #60 … Still pending (needs you / live hosts): 1. Live two-machine test … 2. folder.md autonomous /provision — share the folder-md repo and I'll build the zero-paste key mint that replaces you storage setup. 3. Orchestrator LLM tuning against real models. 4. Vercel deploy … Whenever you're ready for any of those, point me at it. Nice work shipping this

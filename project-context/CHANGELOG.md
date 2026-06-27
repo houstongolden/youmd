@@ -1,5 +1,225 @@
 # You.md — Changelog
 
+## 2026-06-27 — "Continue ALL": Vercel unblock + orchestrator hardening + two-machine readiness
+
+Swept the remaining pending items from the multi-computer handoff.
+
+### #4 Vercel deploy — ROOT CAUSE FOUND & FIXED (it was the code, not a dashboard setting)
+The Vercel "instant-error on every commit" was the `prebuild` step (`npm run docs:generate`)
+hard-failing: `Commander commands missing from HELP_GROUPS in cli/src/index.ts: orchestrate, storage`.
+Since prebuild runs before `next build`, every build died immediately — broken since PR #60 added
+those commands without registering them (same class as `8a4b34f` for `remote`). Fixed: registered
+`orchestrate` + a new STORAGE group, regenerated the drift-checked artifacts. `npm run docs:check`
+now passes. **This unblocks prod deploys of everything on main once PR #61 merges.**
+
+### #3 Orchestrator — hardened for real (flaky) models, no live model needed
+- Bounded retry/backoff around the model call (transient timeout/5xx/socket reset no longer
+  abandons the goal mid-run; injectable sleep for tests).
+- Message-budget guard (256) + reject >256KB tool-call JSON + drop malformed worker-registry rows.
+- +5 offline tests (retry recovery/exhaustion, size guard). 16/16 orchestrator+storage tests pass.
+
+### #1 Two-machine live test — verified CODE-READY (audited; no gaps)
+Full audit of the runbook (`MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md`) vs. the CLI: every
+runbook command + flag exists (`you orchestrate host/spawn/list/logs/stop/watch`, `you remote
+run agent.*`, `you stack daemon install`, `you machine sync-now`). Linux systemd `--user` units +
+linger and macOS launchd plists are complete, not stubbed. Cross-machine bus, durable
+`remoteCommands` table, scope gating, host opt-in, output redaction all shipped. **No code changes
+needed** — it only awaits a live VPS/Mac-mini host to run the round-trip.
+
+### Not actionable from here
+#2 was already done this session; live two-deployment provision round-trip + the two-machine
+round-trip both need live hosts/secrets. Orchestrator LLM *tuning* against specific models still
+wants a live model, but the loop is now robust to real-world API behavior.
+
+## 2026-06-27 — folder.md native integration: autonomous zero-paste provisioning (end-to-end)
+
+Closed the loop on the folder.md media lane. The manual `you storage setup <key>` step is gone —
+storage now **provisions itself** the first time any agent or the CLI touches it. No user paste.
+
+### folder.md (`houstongolden/folder-md`)
+- New **`POST /api/v1/provision`** — server-to-server, guarded by a shared `FOLDERMD_SERVICE_SECRET`
+  (>=32 chars; returns 503 when unset so it's closed by default). Idempotent per
+  `(externalSystem, externalUserId)`: first call creates an agent-owned account + media Folder and
+  mints a scoped `fmd_live_…` key; repeat calls resolve the same Folder without re-showing a key;
+  `forceNewKey: true` rotates. New `externalAccounts` table + `provisionExternalAccount()` helper.
+- Live contract test added to `scripts/run-tests.ts` (idempotency + rotation + closed-when-unset).
+
+### you.md (`houstongolden/youmd`)
+- New `convex/folderMd.ts` (`provision` action + `getByUser`/`saveCreds`) — calls folder.md
+  `/provision`, stores the minted key **encrypted at rest** (AES-GCM via `lib/secretCrypto`), and
+  only ever returns it to the authenticated **owner's** own client. `folderMdAccounts` table added.
+- New HTTP routes: `POST /api/v1/me/storage/provision` (owner-only key return; connected apps get
+  metadata, never the secret) and `GET /api/v1/me/storage` (status, never the key).
+- CLI/MCP auto-provision: `ensureProvisionedKey()` mints + caches on first use; wired into
+  `you storage push/pull/list` and the `store_media` / `get_media` MCP tools. `setup` stays as an
+  optional bring-your-own-key override. CLI bumped to **0.9.0**.
+
+Pending (needs live secrets on both deployments): one end-to-end round-trip with
+`FOLDERMD_SERVICE_SECRET` set on both Convex deployments + folder.md prod.
+
+## 2026-06-26 — Hardening: pre-merge security + correctness review of PR #60
+
+Ran a recall-biased multi-agent review (correctness / security / cross-file) over the whole
+branch and fixed the real findings before marking ready:
+
+### security
+- `agent.list`/`agent.output` are now gated by the host opt-in too (worker logs/goals can hold
+  sensitive output; a non-opted-in host no longer leaks them to a remote issuer).
+- Remotely-triggered spawns get a **secret-minimized env** (`remoteWorkerEnv`): strips the
+  daemon's you.md/OpenRouter/folder/vault keys + generic `*_TOKEN/*_SECRET/PASSWORD/PRIVATE_KEY`,
+  keeps harness auth (`ANTHROPIC_API_KEY`) so the worker still runs.
+- Output redaction gained JWT + PEM-private-key patterns.
+- Documented known follow-ups in CROSS-MACHINE-AGENTS.md (dedicated agent-spawn scope, per-project
+  allowlist, durable-row idempotency).
+
+### correctness
+- Report-back no longer drops completions: `collectUnreportedCompletions` no longer flips the
+  `reported` flag; the caller marks reported only AFTER a successful post (`markReported`), so a
+  transient/unauthenticated failure retries next pass.
+- `spawnWorker` now handles the async `error` event (missing harness binary → marked `failed`,
+  no uncaught exception / phantom `running` worker).
+- Atomic registry writes (tmp + rename) so concurrent readers never see a half-written file.
+- `parseToolCall` is string-aware and scans balanced `{…}` spans, so prose-plus-JSON and
+  multi-object model replies parse; the loop bails after 2 unparseable replies instead of burning
+  the whole step budget.
+
+### daemon (Linux/VPS)
+- `hasUserSystemd()` probes `systemctl --user show-environment` (requires the user bus) instead of
+  `--version` (which succeeds with no bus) — so a headless install no longer reports systemd-OK
+  then fails to actually install units; only positive results are memoized.
+- systemd units run ExecStart via a login shell so node/git/harness subprocesses resolve under
+  nvm/fnm prefixes; `loginctl enable-linger` failure now warns loudly with the fix.
+- `you status` surfaces the daemon-install recommendation on Linux too, not just macOS.
+
+Verified: tsc clean; 40 tests across remote-executor/orchestrator-watch/orchestrator-loop/
+daemon/storage (incl. new gating, env-minimization, report-once, and parse-robustness tests).
+
+## 2026-06-26 — Build: `you storage` (folder.md media offload, manual-key path)
+
+### feat(storage): store_media / get_media MCP tools (any agent can offload media)
+- Exposed folder.md offload over the local stdio MCP registry so Claude/Codex/Cursor can call
+  `store_media` (upload a big/binary asset → returns a BrainMediaPointer) and `get_media`
+  (download by folderId+fileId) directly — completing the "works with any agent" surface for
+  media, not just the `you` CLI. Folder-ensure logic shared with the CLI via `ensureUserFolder()`.
+  Verified: tsc clean; registry smoke (28 tools, schemas + handlers, graceful no-key error);
+  storage + mcp tests green.
+
+### feat(storage): `you storage` CLI for large files/media via folder.md
+- The you.md-side of the folder.md integration, usable today with a manual key:
+  `you storage setup <fmd_live_…> | status | push <file> | pull <fileId> <dest> | list`
+  (`cli/src/commands/storage.ts` over the existing `lib/foldermd.ts` client). `push`
+  auto-creates+persists a "you.md media" folder, uploads, and prints the `BrainMediaPointer`
+  (the string the text-first brain stores; bytes stay in folder.md). Key precedence
+  explicit → config → env. The autonomous zero-paste `/provision` flow (folder.md-side) will
+  replace the one-time `setup`. Verified: tsc clean; 3 offline unit tests (setup persistence +
+  resolution precedence); network paths need a live folder.md account.
+
+## 2026-06-26 — Build: cross-machine orchestration (remote agent spawn/monitor)
+
+### fix(orchestrator): durable worker-host opt-in the daemon can actually read
+- The remote `agent.spawn` is handled by the resident daemon, whose process env carries no
+  shell exports — so an env-only `YOU_REMOTE_AGENT_HOST` opt-in could never enable it in
+  practice. Added a durable `remoteAgentHost` flag in config; `remoteAgentHostEnabled()` now
+  reads env OR config (with explicit env `0` as a hard kill switch). New `you orchestrate host
+  on|off|status` toggles it. Verified: 2 new tests (config-enable path + env-0 override);
+  26 executor/daemon tests green.
+
+### feat(orchestrator): always-on report-back — `you orchestrate watch` + resident daemon
+- The orchestrator launched workers but nothing noticed when they finished. Added
+  `you orchestrate watch [--once] [--interval N]`: reconciles worker status and posts a
+  `worker-complete` message to the agent-bus `orchestrator` channel exactly once per completion
+  (report-once via a `reported` flag), so U on any machine sees finishes/failures —
+  the "always on to report back to you" piece. `collectUnreportedCompletions()` +
+  `isTerminalWorkerStatus()` are the primitives.
+- Made it genuinely always-on: `com.you.orchestrator-watch` is now a 5th resident daemon
+  (every 60s) installed by BOTH the launchd plist and the systemd --user timer, so report-back
+  runs with zero user action on Mac + Linux. Verified: tsc clean; bash -n clean; daemon-array +
+  systemd-unit-mapping + report-once tests (14 across daemon/watch/machine-verify/install-script).
+
+### feat(orchestrator): autonomous cross-machine delegation in the loop
+- The orchestrator loop tools are now remote-capable: `spawn_agent`/`list_agents`/
+  `get_agent_output`/`stop_agent` take an optional `machine` arg that dispatches the matching
+  `agent.*` action over the bus + polls for the result; new `list_machines` tool for target
+  discovery. So `you orchestrate run "<goal>"` can delegate work to the office Mac mini / VPS on
+  its own, not just via explicit `you remote run`. Unauthenticated calls fail gracefully (no
+  throw). Verified: tsc clean; tool wiring smoke (remote-capable tools + graceful unauth); 33
+  tests green.
+
+### feat(orchestrator): cross-machine worker spawn/monitor over the agent bus
+- The remote-executor whitelist gains `agent.spawn` / `agent.list` / `agent.output` /
+  `agent.stop`, so the You agent conductor on one machine can launch + monitor worker
+  harnesses (claude/codex/cursor) on another (office Mac mini, Hostinger VPS) over the
+  existing bus. `agent.spawn`/`agent.stop` run an autonomous coding agent — a real escalation
+  past the git whitelist — so they require the TARGET to opt in via `YOU_REMOTE_AGENT_HOST=1`;
+  a fresh enrolled host is remotely observable but won't run a remotely-triggered worker until
+  its owner enables it. `custom` harness is barred over remote. Issuer side: `you remote run
+  <machine> agent.spawn --harness claude --project youmd --goal "…"` (new --harness/--goal/--id/
+  --lines pass-through). Verified: tsc clean; 23 remote-executor tests incl. 6 new gating tests;
+  34 tests green across daemon/executor/remote-command/install-script.
+
+## 2026-06-26 — Build: Linux daemon, You-agent orchestrator, folder.md client
+
+### feat(daemon): systemd --user support — You.md runs always-on on a Linux VPS
+- Resident daemon was macOS/launchd-only, so a Hostinger Linux VPS synced once at install but
+  never stayed live. Added a full systemd `--user` backend: `detectDaemonBackend()`,
+  `install-daemons-linux.sh` (service + timers, `enable-linger` for headless hosts), platform
+  branching in `you stack daemon install/uninstall`, and Linux install in the install.sh route.
+  Verified: tsc + bash -n clean, sample units valid.
+
+### feat(orchestrator): You agent master-orchestrator loop + worker supervisor
+- The You agent reframed as conductor (not worker): launch/monitor/stop other harnesses
+  (Claude/Codex/Cursor), model- and harness-agnostic. New `cli/src/lib/orchestrator/`
+  (supervisor + iterative loop + tools) and `you orchestrate run|spawn|list|logs|stop|prune`.
+  Closes the single net-new gap the audit found (every prior path was single-hop). Verified:
+  tsc clean; functional smoke (parser, spawn→list→tail→stop, loop iteration via mock model).
+- Design + roadmap: `project-context/YOU_AGENT_ORCHESTRATOR_2026-06-26.md`.
+
+### feat(storage): folder.md client for large-file/media offload (you.md-side scaffold)
+- `cli/src/lib/foldermd.ts`: typed client (upload multipart / download / list / create folder)
+  + `BrainMediaPointer` (the string the brain stores; bytes stay in folder.md). Config gains
+  `folderMdKey` / `folderMdFolderId`. The zero-user-work server-to-server provisioning is
+  folder.md-side and continues next session — full plan in
+  `project-context/FOLDERMD_NATIVE_INTEGRATION_PLAN_2026-06-26.md` (audited from the folder-md
+  repo: Vercel Blob today, R2/public-URLs/OAuth are roadmap).
+
+## 2026-06-26 — Strategy: multi-computer agents, the synced brain, y.computer + folder.md platform
+
+### docs(strategy): multi-computer agent platform + y.computer / folder.md positioning
+- Captured Houston's strategy drop on truly-separate-agents-on-separate-computers, the
+  synced brain, and the three-surface platform (you.md brain + folder.md storage +
+  y.computer compute).
+- Added `project-context/MULTICOMPUTER_AGENTS_AND_Y_COMPUTER_STRATEGY_2026-06-26.md`:
+  competitive landscape across 4 lanes (orchestration, sandboxes, agent storage, portable
+  memory), what's genuinely unique (owner-scoped federation of independent physical hosts +
+  real-time bus + cross-fleet self-improving skills + vault-synced secrets), the 3-surface
+  architecture, and a tiered y.computer recommendation (buy the domain; build a thin
+  control plane, NOT a sandbox provider; ship Tier 0 BYO-host on existing substrate first).
+- Verbatim prompt archived at
+  `project-context/prompts/2026-06-26-multicomputer-agents-y-computer-platform.md`.
+- Maps the platform onto the existing `CROSS-MACHINE-AGENTS.md` substrate (~90% built);
+  the work is assembly + naming + finishing the already-specced Phase 1 remote-command
+  executor, not new invention.
+
+### docs(strategy): code-grounded audit addendum + cross-machine staleness fix
+- Ran three parallel code audits (Convex/GitHub storage, brain-sync architecture,
+  agent-integration surface) to answer Houston's three forks with file:line evidence.
+  Added §9 to the strategy doc:
+  - **Storage:** no binary/large-file path exists today (text strings ≤~1MB bundle, 700KB
+    text-only GitHub mirror; only blob path is the 8MB encrypted vault). Decision: keep
+    You.md text-first; folder.md = OPTIONAL pluggable media backend behind a brain pointer
+    (one MCP handoff), never a hard dependency.
+  - **Harness:** ~80% already exists (broad MCP surface, 3 host adapters, skill registry,
+    safe remote-executor, single-hop tool-router skeleton at `chat.ts:1815-2055`). Only
+    net-new is the iterative loop. Decision: don't build a Cursor rival; optionally close
+    the loop into a lightweight "You agent that acts across your brain/fleet."
+  - **Compute:** keep hosting capability inside You.md; `y.computer` is a brand/control-
+    plane wrapper, not a separate codebase. Two real blockers: macOS-only daemon (no Linux
+    systemd unit) and unattended vault provisioning. Hosted Mac mini works today; Linux VPS
+    needs the daemon first.
+- Corrected `CROSS-MACHINE-AGENTS.md`: the remote-command executor, durable table, daemon
+  handler, `remote:command` scope, and `you remote run` are SHIPPED in code — the doc's
+  "proposed, not built" status was stale.
+
 ## 2026-06-25 — Cross-machine hardening, daemon self-upgrade, shell sidebar, multi-repo sync
 
 ### feat(daemon): self-upgrade the runtime on an interval (0.8.22)

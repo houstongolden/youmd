@@ -41,17 +41,17 @@ export type DocsInternalRoute = {
 };
 
 export const docsReference = {
-  "sourceHash": "57e257f55706d23dc64fa90b5a92d32cd3f28ea329d56a275de935031b1de5e0",
+  "sourceHash": "efa933e01d8e61e5b76c44c333a12a12986ffeb5eb87fdf374e878c272da2226",
   "cli": {
-    "version": "0.8.17"
+    "version": "0.9.0"
   },
   "counts": {
-    "endpoints": 111,
+    "endpoints": 119,
     "internalRoutes": 12,
     "mcpTools": 6,
     "hostedMcpTools": 12,
-    "cliCommands": 32,
-    "convexRoutes": 91,
+    "cliCommands": 34,
+    "convexRoutes": 99,
     "nextRoutes": 28
   },
   "endpoints": [
@@ -238,6 +238,39 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Fetch a specific bundle version",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/env/handoff",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "create a handoff (store ciphertext)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/env/handoff/claim",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "claim a handoff by code (burn-after-read)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/env/handoffs",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "list active handoffs (metadata only)",
       "sources": [
         "convex"
       ]
@@ -557,6 +590,61 @@ export const docsReference = {
       "auth": "Bearer API key",
       "source": "convex",
       "summary": "Add a source",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/stack-sources",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "List identity-backed stack source registry entries.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/stack-sources",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Upsert a stack source registry entry.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/stack-sources/remove",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "Remove a stack source registry entry.",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/storage",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "folder.md media-lane status (never returns the key)",
+      "sources": [
+        "convex"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/me/storage/provision",
+      "category": "Account",
+      "auth": "Bearer API key",
+      "source": "convex",
+      "summary": "metadata but never the raw key. Pass { forceNewKey: true } to rotate.",
       "sources": [
         "convex"
       ]
@@ -1741,8 +1829,8 @@ export const docsReference = {
       "name": "env",
       "usage": "env [subcommand] [args...]",
       "group": "SECURITY",
-      "summary": "encrypted .env.local vault — back up and restore secrets across machines",
-      "description": "encrypted .env.local vault — back up and restore secrets across machines"
+      "summary": "encrypted .env.local secrets — local vault + zero-knowledge cross-machine handoff (share/pull)",
+      "description": "encrypted .env.local secrets — local vault backup/restore + zero-knowledge cross-machine handoff"
     },
     {
       "name": "machine",
@@ -1757,6 +1845,20 @@ export const docsReference = {
       "group": "MACHINE & SYNC",
       "summary": "check + trigger work on your other synced machines",
       "description": "Cross-machine agents -- status (read-only) or run a whitelisted command on a synced machine"
+    },
+    {
+      "name": "orchestrate",
+      "usage": "orchestrate [subcommand] [args...]",
+      "group": "MACHINE & SYNC",
+      "summary": "the You agent orchestrator — spawn/watch worker agents across machines",
+      "description": "Master orchestrator -- launch/monitor/stop worker agents, or autonomously delegate a goal"
+    },
+    {
+      "name": "storage",
+      "usage": "storage [subcommand] [args...]",
+      "group": "STORAGE",
+      "summary": "large files & media via folder.md (auto-provisions, no key to paste)",
+      "description": "Large files & media via folder.md -- setup | status | push | pull | list"
     }
   ]
 } as const;

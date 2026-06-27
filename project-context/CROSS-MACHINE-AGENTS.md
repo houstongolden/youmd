@@ -1,7 +1,21 @@
 # Cross-Machine Agent-to-Agent Collaboration
 
+> **⚠️ STALENESS CORRECTION (2026-06-26, code-grounded audit):** the "proposed, not
+> built" status below is **out of date**. The Phase 1+2 remote-command path is **shipped
+> in code**: the whitelisted git executor (`cli/src/lib/remote-executor.ts`, 5 actions,
+> `execFile` + `shell:false` + path containment), the durable `remoteCommands` table
+> (`convex/remoteCommands.ts`), the daemon handler (`cli/src/commands/sync.ts:478`), the
+> `remote:command` opt-in scope (`convex/lib/scopes.ts:31`), and `you remote run`
+> (`cli/src/commands/remote.ts:260`) all exist. Remaining gaps are NOT the executor; they
+> are: (a) the resident daemon is **macOS/launchd-only** (`cli/src/lib/daemon.ts:131`) so a
+> Linux VPS has no always-on path, (b) unattended secret-vault provisioning on a fresh host
+> still needs a one-time `share` from an existing trusted device, and (c) `remote.ts:246`
+> status copy still says "Phase 1" though the executor ships. See
+> `MULTICOMPUTER_AGENTS_AND_Y_COMPUTER_STRATEGY_2026-06-26.md` §9 for the audit.
+
 **Status:** Phase 0 (read-only status slice) implemented on `prototype/desktop-shell-ia`.
-Phases 1–3 (command execution) are proposed, not built.
+Phases 1–2 (command execution) are now SHIPPED in code (see correction above); Phase 3
+(autonomy skill) and the rented-host glue (Linux daemon, unattended vault) remain.
 
 **Founder use case (verbatim intent):**
 > "My Mac mini at the office is running long-running agentic tasks. From my MacBook
@@ -210,10 +224,45 @@ daemon. On each agent-bus update (already subscribed):
 | `git.commit_push` | `git add -A && git commit -m <msg> && git push` on current branch | yes (reversible) |
 | `git.pull` | `git pull --ff-only` | yes (reversible) |
 | `agent.status` | report running agent processes / last agent-bus heartbeat | no |
+| `agent.spawn` | launch a worker harness (claude\|codex\|cursor) on a task in a contained project — **requires `YOU_REMOTE_AGENT_HOST=1` on the target** | yes (reversible) |
+| `agent.list` | list worker agents + status on the target | no |
+| `agent.output` | tail a worker agent's captured output by id | no |
+| `agent.stop` | stop a running worker agent — **requires `YOU_REMOTE_AGENT_HOST=1`** | yes (reversible) |
 
 Explicitly **NOT** allowed: arbitrary shell, `rm`, force-push, branch deletion,
-`git reset --hard`, npm scripts, file writes outside git, anything not in the table.
-New actions require a code change + review — the whitelist is the security boundary.
+`git reset --hard`, npm scripts, file writes outside git, `custom` harness over remote,
+anything not in the table. New actions require a code change + review — the whitelist is
+the security boundary.
+
+**Cross-machine orchestration tier (2026-06-26):** the `agent.*` spawn/list/output/stop
+actions let the You agent conductor on one machine launch + monitor worker harnesses on
+another (office Mac mini, Hostinger VPS) over the same bus. Because `agent.spawn` runs an
+autonomous coding agent (a real escalation past the git whitelist), the **target** must opt
+in with `YOU_REMOTE_AGENT_HOST=1` — a fresh enrolled host is remotely *observable*
+(`agent.list`/`agent.output`/`git.*`) but will not *run* a remotely-triggered worker until
+its owner enables it (the y.computer/VPS provision flow sets it deliberately). Issuer side:
+`you remote run <machine> agent.spawn --harness claude --project youmd --goal "…"`.
+
+**Pre-merge security hardening (2026-06-26 review):** `agent.list`/`agent.output` are now also
+gated by the host opt-in (worker logs can contain sensitive output, so a non-opted-in host no
+longer exposes them); remotely-triggered spawns run with a **secret-minimized env**
+(`remoteWorkerEnv` strips the daemon's you.md/OpenRouter/folder/vault keys so a remote agent can't
+read them off `process.env`, while keeping harness auth like `ANTHROPIC_API_KEY`); output
+redaction gained JWT + PEM-private-key patterns.
+
+**Known follow-ups (documented, not yet done):** (1) a dedicated scope for agent spawn — today
+the coarse `remote:command` scope authorizes both read-only git AND `agent.spawn`; the host opt-in
+is the hard gate, but a separate `remote:agent` scope would match privilege to intent. (2) a
+per-project allowlist for remote spawn (current containment admits any project under known roots,
+same breadth as `git.*`). (3) durable-row idempotency so a daemon restart can't re-execute a
+mutating command still in its TTL window (in-memory seen-set today, same as `git.commit_push`).
+
+**Enabling a worker host (the daemon-visible way):** the opt-in is read from BOTH
+`YOU_REMOTE_AGENT_HOST=1` (env) and a durable `remoteAgentHost` flag in `~/.you/config.json`.
+The **config flag is the real path** because the resident daemon — which receives the remote
+command — does NOT inherit shell exports, so an env-only opt-in would never reach it. Set it
+with **`you orchestrate host on`** (and `host off` / `host status`). An explicit
+`YOU_REMOTE_AGENT_HOST=0` hard-overrides the config flag as a kill switch.
 
 ---
 
