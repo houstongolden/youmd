@@ -1,6 +1,6 @@
 # You.md Full Agent Context
 
-> Generated full agent context. Source hash: 57e257f55706d23dc64fa90b5a92d32cd3f28ea329d56a275de935031b1de5e0. CLI version: 0.8.17. Endpoints: 111 documented (12 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 12. CLI commands: 32. Reference intelligence: 2026-06-18T22:52:02.362Z.
+> Generated full agent context. Source hash: efa933e01d8e61e5b76c44c333a12a12986ffeb5eb87fdf374e878c272da2226. CLI version: 0.9.0. Endpoints: 119 documented (12 internal/retired routes excluded). Local MCP tools: 6. Hosted MCP tools: 12. CLI commands: 34. Reference intelligence: 2026-06-25T15:42:53.281Z.
 
 You.md is the agent brain and expertise-stack layer for the agent internet. It gives AI agents a portable public brain, private memory through scoped access, named YouStacks, a local runtime, HTTP APIs, and MCP tools so agents can start with the right context instead of asking the user to repeat themselves.
 
@@ -117,7 +117,7 @@ Use `you` as the primary runtime command. `youmd` remains installed as a compati
 
 ## CLI Commands
 
-All 32 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `you <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
+All 34 registered runtime commands, generated from the commander registrations in `cli/src/index.ts` (run `you <command> --help` for per-command options; namespaces like `skill`, `stack`, `memories`, and `private` take subcommands):
 
 ### AUTH
 
@@ -174,12 +174,17 @@ All 32 registered runtime commands, generated from the commander registrations i
 
 ### SECURITY
 
-- `you env [subcommand] [args...]`: encrypted .env.local vault - back up and restore secrets across machines
+- `you env [subcommand] [args...]`: encrypted .env.local secrets - local vault backup/restore + zero-knowledge cross-machine handoff
 
 ### MACHINE & SYNC
 
 - `you machine [subcommand]`: set up a new machine with your synced skills, stacks, and agent config
 - `you remote [subcommand] [args...]`: Cross-machine agents -- status (read-only) or run a whitelisted command on a synced machine
+- `you orchestrate [subcommand] [args...]`: Master orchestrator -- launch/monitor/stop worker agents, or autonomously delegate a goal
+
+### STORAGE
+
+- `you storage [subcommand] [args...]`: Large files & media via folder.md -- setup | status | push | pull | list
 
 ## MCP
 
@@ -384,9 +389,9 @@ Agents should prefer read-before-write and route-before-action:
 
 You.md keeps these as first-class inspiration and monitoring sources:
 
-- GStack: https://github.com/garrytan/gstack (main @ a861c00cfac6; No new commits since last sync (a861c00))
-- GBrain: https://github.com/garrytan/gbrain (master @ 9bf96db807c2; No new commits since last sync (9bf96db))
-- Agent Scripts: https://github.com/steipete/agent-scripts (main @ 6e512e6fe054; No new commits since last sync (6e512e6))
+- GStack: https://github.com/garrytan/gstack (main @ 9fd03fae9e74; No new commits since last sync (9fd03fa))
+- GBrain: https://github.com/garrytan/gbrain (master @ 814258dda679; No new commits since last sync (814258d))
+- Agent Scripts: https://github.com/steipete/agent-scripts (main @ ea989d661163; No new commits since last sync (ea989d6))
 - The Library: https://github.com/disler/the-library (main @ 47f455cd139b; No new commits since last sync (47f455c))
 
 The monitor writes:
