@@ -1,5 +1,36 @@
 # You.md — Changelog
 
+## 2026-06-27 — "Continue ALL": Vercel unblock + orchestrator hardening + two-machine readiness
+
+Swept the remaining pending items from the multi-computer handoff.
+
+### #4 Vercel deploy — ROOT CAUSE FOUND & FIXED (it was the code, not a dashboard setting)
+The Vercel "instant-error on every commit" was the `prebuild` step (`npm run docs:generate`)
+hard-failing: `Commander commands missing from HELP_GROUPS in cli/src/index.ts: orchestrate, storage`.
+Since prebuild runs before `next build`, every build died immediately — broken since PR #60 added
+those commands without registering them (same class as `8a4b34f` for `remote`). Fixed: registered
+`orchestrate` + a new STORAGE group, regenerated the drift-checked artifacts. `npm run docs:check`
+now passes. **This unblocks prod deploys of everything on main once PR #61 merges.**
+
+### #3 Orchestrator — hardened for real (flaky) models, no live model needed
+- Bounded retry/backoff around the model call (transient timeout/5xx/socket reset no longer
+  abandons the goal mid-run; injectable sleep for tests).
+- Message-budget guard (256) + reject >256KB tool-call JSON + drop malformed worker-registry rows.
+- +5 offline tests (retry recovery/exhaustion, size guard). 16/16 orchestrator+storage tests pass.
+
+### #1 Two-machine live test — verified CODE-READY (audited; no gaps)
+Full audit of the runbook (`MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md`) vs. the CLI: every
+runbook command + flag exists (`you orchestrate host/spawn/list/logs/stop/watch`, `you remote
+run agent.*`, `you stack daemon install`, `you machine sync-now`). Linux systemd `--user` units +
+linger and macOS launchd plists are complete, not stubbed. Cross-machine bus, durable
+`remoteCommands` table, scope gating, host opt-in, output redaction all shipped. **No code changes
+needed** — it only awaits a live VPS/Mac-mini host to run the round-trip.
+
+### Not actionable from here
+#2 was already done this session; live two-deployment provision round-trip + the two-machine
+round-trip both need live hosts/secrets. Orchestrator LLM *tuning* against specific models still
+wants a live model, but the loop is now robust to real-world API behavior.
+
 ## 2026-06-27 — folder.md native integration: autonomous zero-paste provisioning (end-to-end)
 
 Closed the loop on the folder.md media lane. The manual `you storage setup <key>` step is gone —

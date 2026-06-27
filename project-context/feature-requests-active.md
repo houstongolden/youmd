@@ -36,6 +36,35 @@ server-to-server, stores it encrypted, syncs it to the user's machines, and uplo
 
 ---
 
+## 2026-06-27 — "Continue ALL": remaining multi-computer handoff items
+
+### 147. Vercel deploy was instant-erroring on every commit (blocks prod)
+**Status:** ROOT-CAUSED & FIXED — was the code, not a dashboard setting
+**Verified:** `npm run docs:generate` reproduced the failure (`Commander commands missing from
+HELP_GROUPS in cli/src/index.ts: orchestrate, storage`); registered both (orchestrate → MACHINE &
+SYNC, new STORAGE group), regenerated artifacts, `npm run docs:check` exit 0. prebuild runs before
+`next build`, so this was the instant-error since PR #60 (same class as fix `8a4b34f` for `remote`).
+**Production Verified:** PENDING — confirm a green Vercel build once PR #61 merges to main.
+**Source:** 2026-06-27 — Houston: "Vercel deploy — worth a glance … it was instant-erroring even on
+web commits, which would block prod deploys (a project-level setting, not the code)." (It was the code.)
+
+### 148. Orchestrator tuning against real models
+**Status:** HARDENED FOR REAL-MODEL BEHAVIOR (live-model tuning still needs a live model)
+**Verified:** retry/backoff around the model call, message-budget guard, >256KB tool-call rejection,
+registry-corruption resilience, prompt identity clarified; +5 offline tests, 16/16 pass, tsc clean.
+**Source:** 2026-06-27 — Houston: "Orchestrator LLM tuning against real models."
+
+### 149. Live two-machine spawn round-trip
+**Status:** CODE-READY / AWAITING LIVE HOST (no code changes needed)
+**Verified:** full audit of `MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md` vs CLI — every command +
+flag exists; Linux systemd `--user` units + linger and macOS launchd plists complete; cross-machine
+bus, durable `remoteCommands` table, scopes, host opt-in, redaction all shipped. Zero stubs in the
+critical paths.
+**Production Verified:** NO — needs a Hostinger VPS / Mac mini to run runbook sections 0–3.
+**Source:** 2026-06-27 — Houston: "Live two-machine test … run the real spawn round-trip."
+
+---
+
 ## 2026-06-19 — Local/global skill stack inventory and You.md catalog gap
 
 ### 144. Map the whole local agent skill/prompt/context system before fixing account sync
