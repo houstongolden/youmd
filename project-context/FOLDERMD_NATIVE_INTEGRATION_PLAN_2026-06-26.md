@@ -1,10 +1,37 @@
 # folder.md ↔ You.md — Native Integration Plan
 
-**Date:** 2026-06-26
-**Status:** Plan + you.md-side scaffold shipped this session. The autonomous provisioning piece
-is folder.md-side and continues in a new session with both repos shared.
-**Owner advantage:** both products are Houston's, so we build the missing delegation primitive
+**Date:** 2026-06-26 (updated 2026-06-27)
+**Status:** ✅ **AUTONOMOUS PROVISIONING SHIPPED (2026-06-27, both repos).** The zero-paste key
+mint described in §2 is now built end-to-end and typechecks clean on both sides; the manual
+`you storage setup` step is no longer required. Remaining: one live round-trip once
+`FOLDERMD_SERVICE_SECRET` is set on both deployments (see "What shipped 2026-06-27" below).
+**Owner advantage:** both products are Houston's, so we built the missing delegation primitive
 rather than make users paste keys.
+
+---
+
+## What shipped 2026-06-27 (the §2 + §4 work, done)
+
+**folder.md (`houstongolden/folder-md`):**
+- `POST /api/v1/provision` (`app/api/v1/provision/route.ts`) — Bearer `FOLDERMD_SERVICE_SECRET`
+  (or `x-service-secret`), constant-time compare, **503 when unset** (closed by default).
+- `provisionExternalAccount()` + `mintApiKey()` in `lib/account-bootstrap.ts`; `externalAccounts`
+  table + `convex/externalAccounts.ts` (`getByExternal` / `link`) for idempotency per
+  `(externalSystem, externalUserId)`. `forceNewKey` rotates the provision key only.
+- Contract test #23 in `scripts/run-tests.ts`.
+
+**you.md (`houstongolden/youmd`):**
+- `convex/folderMd.ts`: `provision` internal action (calls folder.md, encrypts the key with
+  `lib/secretCrypto` AES-GCM, persists to `folderMdAccounts`, recovers a lost key via forced
+  rotation), `getByUser`, `saveCreds`.
+- HTTP: `POST /api/v1/me/storage/provision` (returns the key to the **owner's** first-party client
+  only; connected apps get metadata) and `GET /api/v1/me/storage` (status, no secret).
+- CLI/MCP: `ensureProvisionedKey()` auto-mints + caches on first use; wired into `you storage`
+  and `store_media`/`get_media`. `setup` kept as an optional BYO-key override. CLI → 0.9.0.
+
+**Operational note (not user homework):** set the same `FOLDERMD_SERVICE_SECRET` (>=32 chars) on
+the you.md Convex deployment and folder.md — a deploy-time secret, like every other API key.
+Optionally set `FOLDERMD_BASE_URL` on you.md (defaults to `https://www.folder.md/api/v1`).
 
 ---
 

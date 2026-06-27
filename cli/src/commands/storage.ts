@@ -1,15 +1,16 @@
 // storage.ts — `you storage` : large-file / media offload to folder.md.
 //
-// You.md is text-first; bytes live in folder.md and the brain keeps a pointer string. This is
-// the manual-key path (works today): `you storage setup <fmd_live_…>` once, then push/pull/list.
-// The zero-user-work server-to-server provisioning is folder.md-side (see
-// FOLDERMD_NATIVE_INTEGRATION_PLAN_2026-06-26.md) and will replace the manual setup step.
+// You.md is text-first; bytes live in folder.md and the brain keeps a pointer string. Storage
+// now auto-provisions: the first push/pull/list with no key mints a scoped folder.md key
+// server-to-server via the you.md backend (zero user paste) and caches it locally. `setup`
+// stays as a manual override for bring-your-own-key. See FOLDERMD_NATIVE_INTEGRATION_PLAN.
 
 import * as path from "path";
 import chalk from "chalk";
 import { readGlobalConfig, writeGlobalConfig } from "../lib/config";
 import {
   resolveFolderMdKey,
+  ensureProvisionedKey,
   ensureUserFolder,
   listFiles,
   uploadFile,
@@ -31,11 +32,13 @@ function usage(): void {
   console.log("");
   console.log("  " + ACCENT("you storage") + DIM("  — large files & media (folder.md)"));
   console.log("");
-  console.log("  " + chalk.cyan("setup <fmd_live_key>") + DIM("   save your folder.md key (one time)"));
-  console.log("  " + chalk.cyan("status") + DIM("                 show configured key/folder"));
   console.log("  " + chalk.cyan("push <file>") + DIM("            upload a file, print its brain pointer (--name, --folder)"));
   console.log("  " + chalk.cyan("pull <fileId> <dest>") + DIM("   download a file (--folder)"));
   console.log("  " + chalk.cyan("list") + DIM("                   list files in the folder (--folder)"));
+  console.log("  " + chalk.cyan("status") + DIM("                 show storage state"));
+  console.log("  " + chalk.cyan("setup <fmd_live_key>") + DIM("   override with your own key (optional)"));
+  console.log("");
+  console.log("  " + DIM("storage auto-provisions on first use — no key to paste."));
   console.log("");
 }
 
@@ -46,16 +49,22 @@ function resolveFolderId(explicit?: string): string | null {
   return cfg.folderMdFolderId || null;
 }
 
-function requireKey(): string | null {
-  const key = resolveFolderMdKey();
-  if (!key) {
+/**
+ * Resolve a usable folder.md key, auto-provisioning via the you.md backend when
+ * none is configured (zero user paste). Prints a friendly hint and returns null
+ * on failure (not logged in / provisioning disabled).
+ */
+async function resolveKey(): Promise<string | null> {
+  try {
+    const { apiKey } = await ensureProvisionedKey();
+    return apiKey;
+  } catch (err) {
     console.log("");
-    console.log("  " + chalk.yellow("no folder.md key configured."));
-    console.log("  " + DIM("run ") + chalk.cyan("you storage setup <fmd_live_…>") + DIM(" or set FOLDER_API_KEY"));
+    console.log("  " + chalk.yellow((err as Error).message));
+    console.log("  " + DIM("or bring your own key: ") + chalk.cyan("you storage setup <fmd_live_…>"));
     console.log("");
     return null;
   }
-  return key;
 }
 
 export async function storageCommand(
@@ -89,14 +98,14 @@ export async function storageCommand(
     const key = resolveFolderMdKey();
     const folder = resolveFolderId(options.folder);
     console.log("");
-    console.log("  folder.md key: " + (key ? chalk.green("configured") : chalk.dim("not set")));
+    console.log("  folder.md key: " + (key ? chalk.green("configured") : chalk.dim("not set (auto-provisions on first use)")));
     console.log("  folder id:     " + (folder ? chalk.cyan(folder) : chalk.dim("not set (auto-created on first push)")));
     console.log("");
     return;
   }
 
   if (subcommand === "list") {
-    const key = requireKey();
+    const key = await resolveKey();
     if (!key) return;
     try {
       const folderId = await ensureUserFolder(key, options.folder);
@@ -126,7 +135,7 @@ export async function storageCommand(
       process.exitCode = 1;
       return;
     }
-    const key = requireKey();
+    const key = await resolveKey();
     if (!key) return;
     try {
       const folderId = await ensureUserFolder(key, options.folder);
@@ -166,7 +175,7 @@ export async function storageCommand(
       process.exitCode = 1;
       return;
     }
-    const key = requireKey();
+    const key = await resolveKey();
     if (!key) return;
     try {
       const folderId = resolveFolderId(options.folder);

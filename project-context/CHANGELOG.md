@@ -1,5 +1,31 @@
 # You.md — Changelog
 
+## 2026-06-27 — folder.md native integration: autonomous zero-paste provisioning (end-to-end)
+
+Closed the loop on the folder.md media lane. The manual `you storage setup <key>` step is gone —
+storage now **provisions itself** the first time any agent or the CLI touches it. No user paste.
+
+### folder.md (`houstongolden/folder-md`)
+- New **`POST /api/v1/provision`** — server-to-server, guarded by a shared `FOLDERMD_SERVICE_SECRET`
+  (>=32 chars; returns 503 when unset so it's closed by default). Idempotent per
+  `(externalSystem, externalUserId)`: first call creates an agent-owned account + media Folder and
+  mints a scoped `fmd_live_…` key; repeat calls resolve the same Folder without re-showing a key;
+  `forceNewKey: true` rotates. New `externalAccounts` table + `provisionExternalAccount()` helper.
+- Live contract test added to `scripts/run-tests.ts` (idempotency + rotation + closed-when-unset).
+
+### you.md (`houstongolden/youmd`)
+- New `convex/folderMd.ts` (`provision` action + `getByUser`/`saveCreds`) — calls folder.md
+  `/provision`, stores the minted key **encrypted at rest** (AES-GCM via `lib/secretCrypto`), and
+  only ever returns it to the authenticated **owner's** own client. `folderMdAccounts` table added.
+- New HTTP routes: `POST /api/v1/me/storage/provision` (owner-only key return; connected apps get
+  metadata, never the secret) and `GET /api/v1/me/storage` (status, never the key).
+- CLI/MCP auto-provision: `ensureProvisionedKey()` mints + caches on first use; wired into
+  `you storage push/pull/list` and the `store_media` / `get_media` MCP tools. `setup` stays as an
+  optional bring-your-own-key override. CLI bumped to **0.9.0**.
+
+Pending (needs live secrets on both deployments): one end-to-end round-trip with
+`FOLDERMD_SERVICE_SECRET` set on both Convex deployments + folder.md prod.
+
 ## 2026-06-26 — Hardening: pre-merge security + correctness review of PR #60
 
 Ran a recall-biased multi-agent review (correctness / security / cross-file) over the whole

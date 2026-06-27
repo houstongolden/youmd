@@ -1494,6 +1494,55 @@ export async function revokeApiKey(keyId: string): Promise<ApiResponse<{ success
   });
 }
 
+// ─── Storage (folder.md media lane) ────────────────────────────────
+
+export interface StorageProvisionResult {
+  success: boolean;
+  schemaVersion: "you-md/storage/v1";
+  provider: "folder.md";
+  configured: boolean;
+  folderId: string;
+  keyPrefix: string | null;
+  created: boolean;
+  rotated: boolean;
+  /** The scoped folder.md key — returned to the owner's own client only. */
+  apiKey: string | null;
+  secretValuesExposed: boolean;
+}
+
+export interface StorageStatusResult {
+  schemaVersion: "you-md/storage/v1";
+  provider: "folder.md";
+  configured: boolean;
+  folderId: string | null;
+  keyPrefix: string | null;
+  provisionedAt: number | null;
+  secretValuesExposed: false;
+}
+
+/**
+ * Zero-paste folder.md key mint. The you.md backend provisions (or returns the
+ * owner's existing) folder.md media Folder + scoped key, minted server-to-server
+ * so the user never pastes anything. Pass forceNewKey to rotate.
+ */
+export async function provisionStorage(
+  opts: { forceNewKey?: boolean } = {}
+): Promise<ApiResponse<StorageProvisionResult>> {
+  return apiRequest<StorageProvisionResult>("/api/v1/me/storage/provision", {
+    method: "POST",
+    token: getToken(),
+    body: { forceNewKey: opts.forceNewKey === true },
+    timeoutMs: 30_000,
+  });
+}
+
+/** Read folder.md media-lane status (never returns the key). */
+export async function getStorageStatus(): Promise<ApiResponse<StorageStatusResult>> {
+  return apiRequest<StorageStatusResult>("/api/v1/me/storage", {
+    token: getToken(),
+  });
+}
+
 // ─── Secret Vault ──────────────────────────────────────────────────
 
 export interface SecretEnvVaultSnapshot {

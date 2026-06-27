@@ -1,6 +1,38 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-22
+Last Updated: 2026-06-27
+
+---
+
+## 2026-06-27 — Finish the native you.md ↔ folder.md integration (autonomous /provision)
+
+### 146. folder.md autonomous /provision — zero-paste key mint replacing `you storage setup`
+**Status:** CODE COMPLETE BOTH REPOS / TYPECHECKS CLEAN / CLI BUILD + STORAGE TESTS GREEN / CLI 0.9.0 / AWAITING LIVE TWO-DEPLOYMENT ROUND-TRIP
+**Verified:** Code-level only here (no node_modules at session start; installed both):
+folder-md `npx tsc --noEmit` exit 0, you.md `tsc -p convex/tsconfig.json --noEmit` exit 0, CLI
+`tsc --noEmit` exit 0 + `tsc` build, `vitest run src/__tests__/storage.test.ts` 4/4 pass
+(incl. new `ensureProvisionedKey` offline short-circuit).
+**Production Verified:** NO — needs `FOLDERMD_SERVICE_SECRET` (>=32 chars, identical) on the you.md
+Convex deployment + folder.md, then one real `store_media`/`you storage push` round-trip.
+**Source:** 2026-06-27 — Houston: "start a new chat with both youmd and folder-md GitHub repos
+connected … finish the full native integration between these two projects APIs/mcps etc … folder.md
+autonomous /provision — share the folder-md repo and I'll build the zero-paste key mint that
+replaces you storage setup."
+**Goal / Success Definition:** A you.md user never pastes a folder.md key. The first time the CLI or
+any agent (`store_media`) offloads a large/binary asset, you.md mints a scoped folder.md key
+server-to-server, stores it encrypted, syncs it to the user's machines, and uploads — invisibly.
+**What shipped:**
+1. folder.md `POST /api/v1/provision` (service-secret guarded, idempotent, rotatable, 503-when-unset)
+   + `externalAccounts` mapping + `provisionExternalAccount()`/`mintApiKey()` + contract test #23.
+2. you.md `convex/folderMd.ts` (provision action, encrypted-at-rest creds, lost-key recovery) +
+   `folderMdAccounts` table + `POST /api/v1/me/storage/provision` (owner-only key) + `GET
+   /api/v1/me/storage` (status, no secret).
+3. CLI/MCP `ensureProvisionedKey()` auto-mint-and-cache wired into `you storage` + `store_media`/
+   `get_media`; `setup` kept as optional BYO override; CLI 0.9.0.
+**Open / next:**
+- Set `FOLDERMD_SERVICE_SECRET` on both deployments; run a live round-trip.
+- (Houston's other pending items, out of this session's scope) live two-machine spawn test,
+  orchestrator LLM tuning, Vercel project-setting deploy fix.
 
 ---
 

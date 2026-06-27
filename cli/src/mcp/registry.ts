@@ -81,7 +81,7 @@ import {
 } from "../lib/remote-command";
 import { ALLOWED_REMOTE_ACTIONS, isAllowedRemoteAction } from "../lib/remote-executor";
 import {
-  resolveFolderMdKey,
+  ensureProvisionedKey,
   ensureUserFolder,
   uploadFile,
   downloadFile,
@@ -1733,7 +1733,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
   {
     name: "store_media",
     description:
-      "Offload a large file or media asset (video, PDF, image, design assets, anything binary) to the user's folder.md storage and get back a portable pointer to keep in you.md. Use this when a file is too big for the text-first identity brain (the brain caps at ~1MB of markdown). Returns a BrainMediaPointer JSON to save in a memory or file. Requires a configured folder.md key (`you storage setup`).",
+      "Offload a large file or media asset (video, PDF, image, design assets, anything binary) to the user's folder.md storage and get back a portable pointer to keep in you.md. Use this when a file is too big for the text-first identity brain (the brain caps at ~1MB of markdown). Returns a BrainMediaPointer JSON to save in a memory or file. Storage auto-provisions on first use — no setup needed.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1744,17 +1744,19 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       required: ["file_path"],
     },
     handler: async (args) => {
-      const key = resolveFolderMdKey();
-      if (!key) {
-        return {
-          content: [{ type: "text", text: "no folder.md key configured — run `you storage setup <fmd_live_…>` (or set FOLDER_API_KEY)" }],
-          isError: true,
-        };
-      }
       const a = args as { file_path?: string; name?: string; folder?: string };
       const filePath = typeof a.file_path === "string" ? a.file_path.trim() : "";
       if (!filePath) {
         return { content: [{ type: "text", text: "missing required argument: file_path" }], isError: true };
+      }
+      let key: string;
+      try {
+        ({ apiKey: key } = await ensureProvisionedKey());
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `store_media: ${(err as Error).message}` }],
+          isError: true,
+        };
       }
       try {
         const folderId = await ensureUserFolder(key, a.folder);
@@ -1782,7 +1784,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
   {
     name: "get_media",
     description:
-      "Download a media asset previously stored in folder.md (via store_media) to a local path, using a BrainMediaPointer's folderId + fileId. Requires a configured folder.md key.",
+      "Download a media asset previously stored in folder.md (via store_media) to a local path, using a BrainMediaPointer's folderId + fileId. Storage auto-provisions on first use — no setup needed.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1793,16 +1795,18 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
       required: ["folder_id", "file_id", "dest_path"],
     },
     handler: async (args) => {
-      const key = resolveFolderMdKey();
-      if (!key) {
-        return {
-          content: [{ type: "text", text: "no folder.md key configured — run `you storage setup <fmd_live_…>`" }],
-          isError: true,
-        };
-      }
       const a = args as { folder_id?: string; file_id?: string; dest_path?: string };
       if (!a.folder_id || !a.file_id || !a.dest_path) {
         return { content: [{ type: "text", text: "missing required arguments: folder_id, file_id, dest_path" }], isError: true };
+      }
+      let key: string;
+      try {
+        ({ apiKey: key } = await ensureProvisionedKey());
+      } catch (err) {
+        return {
+          content: [{ type: "text", text: `get_media: ${(err as Error).message}` }],
+          isError: true,
+        };
       }
       try {
         const res = await downloadFile({ apiKey: key }, String(a.folder_id), String(a.file_id), String(a.dest_path));

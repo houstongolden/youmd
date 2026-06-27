@@ -5,17 +5,16 @@
 // folder.md (Houston's own agent-native storage product) fills that slot. The brain stays
 // text-first and stores only a POINTER (folder.md folder/file id); the bytes live in folder.md.
 //
-// Auth today is a per-folder Bearer API key (`fmd_live_…`). The ZERO-USER-WORK provisioning
-// (you.md mints a scoped key for the user via a server-to-server call) does NOT exist on the
-// folder.md side yet — see FOLDERMD_NATIVE_INTEGRATION_PLAN. Until it lands, this client reads
-// a key from config/env (FOLDER_API_KEY / FOLDERMD_API_KEY) so the path is testable now.
-//
-// NOTE: endpoint shapes are from a docs/source audit of folder.md and need one live-verify
-// pass against a real account before being relied on in production.
+// Auth is a per-folder Bearer API key (`fmd_live_…`). ZERO-USER-WORK provisioning now exists:
+// `ensureProvisionedKey()` calls the you.md backend (`POST /api/v1/me/storage/provision`),
+// which mints a scoped folder.md key server-to-server (shared FOLDERMD_SERVICE_SECRET) and
+// returns it to the authenticated owner's client, cached locally. The user never pastes a key.
+// An explicit key (config / FOLDER_API_KEY / FOLDERMD_API_KEY) still wins when present.
 
 import * as fs from "fs";
 import * as path from "path";
 import { readGlobalConfig, writeGlobalConfig } from "./config";
+import { provisionStorage, apiErrorMessage } from "./api";
 
 export const FOLDERMD_DEFAULT_BASE = "https://www.folder.md/api/v1";
 
@@ -44,6 +43,41 @@ export function resolveFolderMdKey(explicit?: string): string | null {
     process.env.FOLDERMD_API_KEY ||
     null
   );
+}
+
+/**
+ * Resolve a usable folder.md key with ZERO user paste. Explicit/env/config key
+ * wins; otherwise auto-provision via the you.md backend (mints a scoped key
+ * server-to-server) and cache it locally. Returns the key + the media folderId
+ * when provisioning supplied one. Throws a friendly error if not authenticated
+ * or if provisioning is not configured on the backend.
+ */
+export async function ensureProvisionedKey(
+  explicit?: string
+): Promise<{ apiKey: string; folderId?: string }> {
+  const local = resolveFolderMdKey(explicit);
+  if (local) {
+    const cfg = readGlobalConfig();
+    return { apiKey: local, folderId: cfg.folderMdFolderId };
+  }
+
+  const res = await provisionStorage();
+  if (!res.ok || !res.data?.apiKey) {
+    const msg =
+      apiErrorMessage(res.data) ||
+      (res.status === 401
+        ? "not authenticated — run `you login` first"
+        : res.status === 503
+          ? "folder.md storage isn't enabled on the server yet"
+          : "could not provision folder.md storage");
+    throw new Error(msg);
+  }
+
+  const cfg = readGlobalConfig();
+  cfg.folderMdKey = res.data.apiKey;
+  if (res.data.folderId) cfg.folderMdFolderId = res.data.folderId;
+  writeGlobalConfig(cfg);
+  return { apiKey: res.data.apiKey, folderId: res.data.folderId || cfg.folderMdFolderId };
 }
 
 function baseUrl(auth: FolderMdAuth): string {
