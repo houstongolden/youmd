@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-26T16:40:54.955Z
+Last updated: 2026-06-27T15:34:46.856Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git. "No new commits since last sync" means no delta versus the previous local reference head, not "the upstream repo has been inactive."
 
@@ -27,11 +27,10 @@ Follow-through ledger:
 - Local path: `.reference-repos/garrytan/gstack`
 - Branch: `main`
 - Latest commit: `11de390be1be`
-- Latest upstream activity: 2026-06-25T09:42:45-07:00 (23h ago)
-- Mode: Changes since 9fd03fa
+- Latest upstream activity: 2026-06-25T09:42:45-07:00 (1d ago)
+- Mode: No new commits since last sync (11de390)
 
-- `11de390` 2026-06-25 — v1.58.5.0 feat: first-run activation scaffold + gstack router front door (#2078)
-  Files: `.github/workflows/evals.yml`, `CHANGELOG.md`, `SKILL.md`, `SKILL.md.tmpl`, `VERSION`, `autoplan/SKILL.md`, `benchmark-models/SKILL.md`, `benchmark/SKILL.md`, +69 more
+- No commits found.
 
 ## GBrain
 
@@ -39,7 +38,7 @@ Follow-through ledger:
 - Local path: `.reference-repos/garrytan/gbrain`
 - Branch: `master`
 - Latest commit: `814258dda679`
-- Latest upstream activity: 2026-06-24T06:05:16-07:00 (2d ago)
+- Latest upstream activity: 2026-06-24T06:05:16-07:00 (3d ago)
 - Mode: No new commits since last sync (814258d)
 
 - No commits found.
@@ -50,7 +49,7 @@ Follow-through ledger:
 - Local path: `.reference-repos/steipete/agent-scripts`
 - Branch: `main`
 - Latest commit: `ea989d661163`
-- Latest upstream activity: 2026-06-22T00:35:16-04:00 (4d ago)
+- Latest upstream activity: 2026-06-22T00:35:16-04:00 (5d ago)
 - Mode: No new commits since last sync (ea989d6)
 
 - No commits found.
@@ -61,12 +60,11 @@ Follow-through ledger:
 - Local path: `.reference-repos/disler/the-library`
 - Branch: `main`
 - Latest commit: `47f455cd139b`
-- Latest upstream activity: 2026-03-15T10:00:28-05:00 (103d ago)
+- Latest upstream activity: 2026-03-15T10:00:28-05:00 (104d ago)
 - Mode: No new commits since last sync (47f455c)
 
 - No commits found.
 
 ## Candidate Tasks
 
-- [ ] YouStacks skill packaging: Review whether this upstream skill/agent pattern should become a YouStack artifact, bundled skill, or adapter-generation rule.
-  Source: GStack 11de390: v1.58.5.0 feat: first-run activation scaffold + gstack router front door (#2078)
+- No task candidates generated.
