@@ -81,7 +81,16 @@ export function loadWorkers(): WorkerRecord[] {
   try {
     const raw = fs.readFileSync(registryPath(), "utf-8");
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as WorkerRecord[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    // Drop malformed records (partial write, hand-edit, schema drift) instead of letting a
+    // single bad entry throw downstream — a corrupt row shouldn't hide every healthy worker.
+    return (parsed as unknown[]).filter(
+      (w): w is WorkerRecord =>
+        !!w &&
+        typeof w === "object" &&
+        typeof (w as WorkerRecord).id === "string" &&
+        typeof (w as WorkerRecord).status === "string"
+    );
   } catch {
     return [];
   }

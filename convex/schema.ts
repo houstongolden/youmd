@@ -1604,4 +1604,20 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_fullName", ["userId", "fullName"]),
+
+  // folder.md media-lane credentials, one row per user. You.md is text-first;
+  // large/binary assets live in folder.md and the brain stores only a pointer.
+  // The scoped folder.md API key is minted server-to-server (zero user paste)
+  // and stored encrypted at rest (AES-GCM via lib/secretCrypto) — never logged,
+  // only ever returned to the authenticated owner's own client.
+  folderMdAccounts: defineTable({
+    userId: v.id("users"),
+    folderId: v.string(),              // folder.md Folder id (not secret)
+    apiKeyCipher: v.string(),          // AES-GCM ciphertext of the fmd_live_ key
+    apiKeyIv: v.string(),              // AES-GCM iv (base64)
+    keyPrefix: v.string(),             // fmd_live_abc123… for display/audit
+    provisionedAt: v.number(),
+    rotatedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"]),
 });

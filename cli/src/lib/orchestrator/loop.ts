@@ -44,6 +44,13 @@ export interface RunLoopOptions {
   context?: string;
   /** Progress callback per step (for spinner/log output). */
   onStep?: (step: LoopStep) => void;
+  /**
+   * Transient model-call failures to absorb before giving up on a step (real LLM APIs hiccup;
+   * one network blip shouldn't abandon the whole goal). Default 2 retries → 3 attempts total.
+   */
+  maxModelRetries?: number;
+  /** Injectable sleep (so tests don't wait on real backoff). Defaults to setTimeout. */
+  sleep?: (ms: number) => Promise<void>;
 }
 
 export interface LoopOutcome {
@@ -71,7 +78,7 @@ function buildSystemPrompt(goal: string, tools: LoopTool[], context?: string): s
     .join("\n");
 
   return [
-    "You are U — Houston's personal master ORCHESTRATOR agent.",
+    "You are U — Houston's personal master ORCHESTRATOR agent (U = the ultimate orchestrator, a role, not a person).",
     "You do NOT write code or do the work yourself. You are model- and harness-agnostic: you",
     "route work to the best worker agent (Claude Code for coding, etc.), launch and monitor",
     "them across machines and projects, and report back. You are project-goal and task oriented.",
@@ -109,6 +116,10 @@ function toolCallFromObject(obj: Record<string, unknown>): ToolCall | null {
  * object with a string `tool` — so "Sure! {…prose…} {\"tool\":…}" still works (the naive
  * first-`{`-to-last-`}` slice would fail on that).
  */
+/** Reject absurdly large candidate JSON before parsing — a sane tool call is small, and a
+ * multi-hundred-KB span is either junk or a runaway response we don't want to parse/echo. */
+const MAX_TOOL_CALL_CHARS = 256_000;
+
 export function parseToolCall(raw: string): ToolCall | null {
   if (!raw) return null;
   let text = raw.trim();
@@ -116,12 +127,14 @@ export function parseToolCall(raw: string): ToolCall | null {
   if (fence) text = fence[1].trim();
 
   // Whole-string fast path.
-  try {
-    const obj = JSON.parse(text) as Record<string, unknown>;
-    const call = toolCallFromObject(obj);
-    if (call) return call;
-  } catch {
-    /* fall through to span scan */
+  if (text.length <= MAX_TOOL_CALL_CHARS) {
+    try {
+      const obj = JSON.parse(text) as Record<string, unknown>;
+      const call = toolCallFromObject(obj);
+      if (call) return call;
+    } catch {
+      /* fall through to span scan */
+    }
   }
 
   // Scan for balanced {…} spans (string-aware) and try each.
@@ -146,6 +159,10 @@ export function parseToolCall(raw: string): ToolCall | null {
         depth--;
         if (depth === 0 && startIdx !== -1) {
           const candidate = text.slice(startIdx, i + 1);
+          if (candidate.length > MAX_TOOL_CALL_CHARS) {
+            startIdx = -1;
+            continue;
+          }
           try {
             const obj = JSON.parse(candidate) as Record<string, unknown>;
             const call = toolCallFromObject(obj);
@@ -172,7 +189,25 @@ function truncate(s: string, max = 4000): string {
 export async function runAgentLoop(options: RunLoopOptions): Promise<LoopOutcome> {
   const { goal, tools, callModel, context } = options;
   const maxSteps = options.maxSteps ?? 12;
+  const maxModelRetries = options.maxModelRetries ?? 2;
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const toolByName = new Map(tools.map((t) => [t.name, t]));
+
+  // Absorb transient model-call failures (timeouts, 5xx, socket resets) with bounded
+  // exponential backoff. Real LLM/proxy endpoints hiccup; a single blip shouldn't abandon
+  // the whole goal mid-run. Throws the last error only after every attempt fails.
+  const callModelWithRetry = async (msgs: LoopMessage[]): Promise<string> => {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= maxModelRetries; attempt++) {
+      try {
+        return await callModel(msgs);
+      } catch (err) {
+        lastErr = err;
+        if (attempt < maxModelRetries) await sleep(Math.min(250 * 2 ** attempt, 4000));
+      }
+    }
+    throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+  };
 
   const messages: LoopMessage[] = [
     { role: "system", content: buildSystemPrompt(goal, tools, context) },
@@ -182,15 +217,26 @@ export async function runAgentLoop(options: RunLoopOptions): Promise<LoopOutcome
   const steps: LoopStep[] = [];
   let consecutiveParseFailures = 0;
   const MAX_PARSE_FAILURES = 2;
+  // Safety net for high maxSteps: each step appends 1-2 messages, so a long/stuck run could
+  // grow the context unboundedly. Stop cleanly well before that becomes a token problem.
+  const MAX_MESSAGES = 256;
 
   for (let i = 0; i < maxSteps; i++) {
+    if (messages.length > MAX_MESSAGES) {
+      return {
+        finished: false,
+        summary: `Stopped: conversation grew past ${MAX_MESSAGES} messages without finishing (likely stuck). Narrow the goal or run again.`,
+        steps,
+      };
+    }
+
     let reply: string;
     try {
-      reply = await callModel(messages);
+      reply = await callModelWithRetry(messages);
     } catch (err) {
       return {
         finished: false,
-        summary: `Model call failed at step ${i + 1}: ${(err as Error).message}`,
+        summary: `Model call failed at step ${i + 1} after ${maxModelRetries + 1} attempt(s): ${(err as Error).message}`,
         steps,
       };
     }

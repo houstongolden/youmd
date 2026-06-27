@@ -155,6 +155,13 @@ const HELP_GROUPS: Array<{
     commands: [
       { name: "machine", summary: "bootstrap a fresh Mac with your synced skills, stacks, and context" },
       { name: "remote", summary: "check + trigger work on your other synced machines" },
+      { name: "orchestrate", summary: "the You agent orchestrator — spawn/watch worker agents across machines" },
+    ],
+  },
+  {
+    title: "STORAGE",
+    commands: [
+      { name: "storage", summary: "large files & media via folder.md (auto-provisions, no key to paste)" },
     ],
   },
 ];

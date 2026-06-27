@@ -5,7 +5,7 @@ export const openApiSpec = {
   "openapi": "3.1.0",
   "info": {
     "title": "You.md API",
-    "version": "0.8.17",
+    "version": "0.9.0",
     "description": "Generated source-of-truth API inventory for the You.md identity context protocol."
   },
   "servers": [
@@ -644,6 +644,123 @@ export const openApiSpec = {
       "get": {
         "operationId": "get_api_v1_me_bundles",
         "summary": "Fetch a specific bundle version",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/env/handoff": {
+      "post": {
+        "operationId": "post_api_v1_me_env_handoff",
+        "summary": "create a handoff (store ciphertext)",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/env/handoff/claim": {
+      "post": {
+        "operationId": "post_api_v1_me_env_handoff_claim",
+        "summary": "claim a handoff by code (burn-after-read)",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/env/handoffs": {
+      "get": {
+        "operationId": "get_api_v1_me_env_handoffs",
+        "summary": "list active handoffs (metadata only)",
         "tags": [
           "Account"
         ],
@@ -1767,6 +1884,199 @@ export const openApiSpec = {
       "post": {
         "operationId": "post_api_v1_me_sources",
         "summary": "Add a source",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/stack-sources": {
+      "get": {
+        "operationId": "get_api_v1_me_stack_sources",
+        "summary": "List identity-backed stack source registry entries.",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "post_api_v1_me_stack_sources",
+        "summary": "Upsert a stack source registry entry.",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/stack-sources/remove": {
+      "post": {
+        "operationId": "post_api_v1_me_stack_sources_remove",
+        "summary": "Remove a stack source registry entry.",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/storage": {
+      "get": {
+        "operationId": "get_api_v1_me_storage",
+        "summary": "folder.md media-lane status (never returns the key)",
+        "tags": [
+          "Account"
+        ],
+        "x-youmd-auth": "Bearer API key",
+        "x-youmd-source": "convex",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "default": {
+            "description": "Error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/storage/provision": {
+      "post": {
+        "operationId": "post_api_v1_me_storage_provision",
+        "summary": "metadata but never the raw key. Pass { forceNewKey: true } to rotate.",
         "tags": [
           "Account"
         ],

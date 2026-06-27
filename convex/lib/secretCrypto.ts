@@ -47,14 +47,21 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return buffer;
 }
 
+// Optional AES-GCM additional authenticated data (AAD) for domain separation. When provided, a
+// ciphertext can only be decrypted with the SAME `aad` — so blobs from one secret class (e.g.
+// folder.md keys) can never be cross-decrypted as another (e.g. GitHub tokens), even though both
+// share the deployment encryption secret. Omit it for byte-identical legacy behavior.
+
 export async function encryptSecret(
-  plaintext: string
+  plaintext: string,
+  aad?: string
 ): Promise<{ ciphertext: string; iv: string }> {
   const key = await getCryptoKey();
   const encoder = new TextEncoder();
   const iv = crypto.getRandomValues(new Uint8Array(12));
+  const additionalData = aad ? encoder.encode(aad) : undefined;
   const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    additionalData ? { name: "AES-GCM", iv, additionalData } : { name: "AES-GCM", iv },
     key,
     encoder.encode(plaintext)
   );
@@ -66,11 +73,14 @@ export async function encryptSecret(
 
 export async function decryptSecret(
   ciphertext: string,
-  iv: string
+  iv: string,
+  aad?: string
 ): Promise<string> {
   const key = await getCryptoKey();
+  const ivBytes = new Uint8Array(base64ToArrayBuffer(iv));
+  const additionalData = aad ? new TextEncoder().encode(aad) : undefined;
   const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(base64ToArrayBuffer(iv)) },
+    additionalData ? { name: "AES-GCM", iv: ivBytes, additionalData } : { name: "AES-GCM", iv: ivBytes },
     key,
     base64ToArrayBuffer(ciphertext)
   );

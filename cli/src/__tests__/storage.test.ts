@@ -73,4 +73,15 @@ describe("you storage setup + key resolution", () => {
     // explicit beats both
     expect(resolveFolderMdKey("fmd_live_explicit")).toBe("fmd_live_explicit");
   });
+
+  it("ensureProvisionedKey returns the configured key offline (no provisioning call)", async () => {
+    const { writeGlobalConfig } = await import("../lib/config");
+    const { ensureProvisionedKey } = await import("../lib/foldermd");
+
+    // A configured key short-circuits provisioning — no network, no you.md call.
+    writeGlobalConfig({ folderMdKey: "fmd_live_cfg", folderMdFolderId: "fld_9" });
+    const res = await ensureProvisionedKey();
+    expect(res.apiKey).toBe("fmd_live_cfg");
+    expect(res.folderId).toBe("fld_9");
+  });
 });

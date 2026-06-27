@@ -29,6 +29,49 @@ describe("parseToolCall", () => {
   it("returns null for replies with no JSON object", () => {
     expect(parseToolCall("I cannot do that")).toBeNull();
   });
+
+  it("rejects an absurdly large tool-call object instead of parsing it", () => {
+    const huge = JSON.stringify({ tool: "x", args: { blob: "a".repeat(300_000) } });
+    expect(parseToolCall(huge)).toBeNull();
+  });
+});
+
+describe("runAgentLoop model-call retry", () => {
+  it("absorbs transient model failures and still completes", async () => {
+    let attempts = 0;
+    const callModel = async () => {
+      attempts++;
+      if (attempts <= 2) throw new Error("transient network blip");
+      return JSON.stringify({ tool: "finish", args: { summary: "recovered" } });
+    };
+    const outcome = await runAgentLoop({
+      goal: "g",
+      tools: [],
+      callModel,
+      sleep: async () => {}, // no real backoff in tests
+    });
+    expect(attempts).toBe(3); // 2 failures + 1 success
+    expect(outcome.finished).toBe(true);
+    expect(outcome.summary).toBe("recovered");
+  });
+
+  it("gives up cleanly after exhausting retries", async () => {
+    let attempts = 0;
+    const callModel = async () => {
+      attempts++;
+      throw new Error("model down");
+    };
+    const outcome = await runAgentLoop({
+      goal: "g",
+      tools: [],
+      callModel,
+      maxModelRetries: 2,
+      sleep: async () => {},
+    });
+    expect(attempts).toBe(3); // maxModelRetries + 1
+    expect(outcome.finished).toBe(false);
+    expect(outcome.summary).toContain("Model call failed");
+  });
 });
 
 describe("runAgentLoop bounded retry", () => {

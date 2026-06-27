@@ -1,6 +1,67 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-22
+Last Updated: 2026-06-27
+
+---
+
+## 2026-06-27 — Finish the native you.md ↔ folder.md integration (autonomous /provision)
+
+### 146. folder.md autonomous /provision — zero-paste key mint replacing `you storage setup`
+**Status:** CODE COMPLETE BOTH REPOS / TYPECHECKS CLEAN / CLI BUILD + STORAGE TESTS GREEN / CLI 0.9.0 / AWAITING LIVE TWO-DEPLOYMENT ROUND-TRIP
+**Verified:** Code-level only here (no node_modules at session start; installed both):
+folder-md `npx tsc --noEmit` exit 0, you.md `tsc -p convex/tsconfig.json --noEmit` exit 0, CLI
+`tsc --noEmit` exit 0 + `tsc` build, `vitest run src/__tests__/storage.test.ts` 4/4 pass
+(incl. new `ensureProvisionedKey` offline short-circuit).
+**Production Verified:** NO — needs `FOLDERMD_SERVICE_SECRET` (>=32 chars, identical) on the you.md
+Convex deployment + folder.md, then one real `store_media`/`you storage push` round-trip.
+**Source:** 2026-06-27 — Houston: "start a new chat with both youmd and folder-md GitHub repos
+connected … finish the full native integration between these two projects APIs/mcps etc … folder.md
+autonomous /provision — share the folder-md repo and I'll build the zero-paste key mint that
+replaces you storage setup."
+**Goal / Success Definition:** A you.md user never pastes a folder.md key. The first time the CLI or
+any agent (`store_media`) offloads a large/binary asset, you.md mints a scoped folder.md key
+server-to-server, stores it encrypted, syncs it to the user's machines, and uploads — invisibly.
+**What shipped:**
+1. folder.md `POST /api/v1/provision` (service-secret guarded, idempotent, rotatable, 503-when-unset)
+   + `externalAccounts` mapping + `provisionExternalAccount()`/`mintApiKey()` + contract test #23.
+2. you.md `convex/folderMd.ts` (provision action, encrypted-at-rest creds, lost-key recovery) +
+   `folderMdAccounts` table + `POST /api/v1/me/storage/provision` (owner-only key) + `GET
+   /api/v1/me/storage` (status, no secret).
+3. CLI/MCP `ensureProvisionedKey()` auto-mint-and-cache wired into `you storage` + `store_media`/
+   `get_media`; `setup` kept as optional BYO override; CLI 0.9.0.
+**Open / next:**
+- Set `FOLDERMD_SERVICE_SECRET` on both deployments; run a live round-trip.
+- (Houston's other pending items, out of this session's scope) live two-machine spawn test,
+  orchestrator LLM tuning, Vercel project-setting deploy fix.
+
+---
+
+## 2026-06-27 — "Continue ALL": remaining multi-computer handoff items
+
+### 147. Vercel deploy was instant-erroring on every commit (blocks prod)
+**Status:** ROOT-CAUSED & FIXED — was the code, not a dashboard setting
+**Verified:** `npm run docs:generate` reproduced the failure (`Commander commands missing from
+HELP_GROUPS in cli/src/index.ts: orchestrate, storage`); registered both (orchestrate → MACHINE &
+SYNC, new STORAGE group), regenerated artifacts, `npm run docs:check` exit 0. prebuild runs before
+`next build`, so this was the instant-error since PR #60 (same class as fix `8a4b34f` for `remote`).
+**Production Verified:** PENDING — confirm a green Vercel build once PR #61 merges to main.
+**Source:** 2026-06-27 — Houston: "Vercel deploy — worth a glance … it was instant-erroring even on
+web commits, which would block prod deploys (a project-level setting, not the code)." (It was the code.)
+
+### 148. Orchestrator tuning against real models
+**Status:** HARDENED FOR REAL-MODEL BEHAVIOR (live-model tuning still needs a live model)
+**Verified:** retry/backoff around the model call, message-budget guard, >256KB tool-call rejection,
+registry-corruption resilience, prompt identity clarified; +5 offline tests, 16/16 pass, tsc clean.
+**Source:** 2026-06-27 — Houston: "Orchestrator LLM tuning against real models."
+
+### 149. Live two-machine spawn round-trip
+**Status:** CODE-READY / AWAITING LIVE HOST (no code changes needed)
+**Verified:** full audit of `MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md` vs CLI — every command +
+flag exists; Linux systemd `--user` units + linger and macOS launchd plists complete; cross-machine
+bus, durable `remoteCommands` table, scopes, host opt-in, redaction all shipped. Zero stubs in the
+critical paths.
+**Production Verified:** NO — needs a Hostinger VPS / Mac mini to run runbook sections 0–3.
+**Source:** 2026-06-27 — Houston: "Live two-machine test … run the real spawn round-trip."
 
 ---
 

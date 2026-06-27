@@ -24,6 +24,7 @@ import type * as crons from "../crons.js";
 import type * as dsi from "../dsi.js";
 import type * as envHandoffs from "../envHandoffs.js";
 import type * as fleet from "../fleet.js";
+import type * as folderMd from "../folderMd.js";
 import type * as github from "../github.js";
 import type * as githubAgentSync from "../githubAgentSync.js";
 import type * as githubApp from "../githubApp.js";
@@ -120,6 +121,7 @@ declare const fullApi: ApiFromModules<{
   dsi: typeof dsi;
   envHandoffs: typeof envHandoffs;
   fleet: typeof fleet;
+  folderMd: typeof folderMd;
   github: typeof github;
   githubAgentSync: typeof githubAgentSync;
   githubApp: typeof githubApp;

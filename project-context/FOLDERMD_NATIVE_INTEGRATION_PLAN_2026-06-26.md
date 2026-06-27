@@ -1,10 +1,72 @@
 # folder.md ↔ You.md — Native Integration Plan
 
-**Date:** 2026-06-26
-**Status:** Plan + you.md-side scaffold shipped this session. The autonomous provisioning piece
-is folder.md-side and continues in a new session with both repos shared.
-**Owner advantage:** both products are Houston's, so we build the missing delegation primitive
+**Date:** 2026-06-26 (updated 2026-06-27)
+**Status:** ✅ **AUTONOMOUS PROVISIONING SHIPPED (2026-06-27, both repos).** The zero-paste key
+mint described in §2 is now built end-to-end and typechecks clean on both sides; the manual
+`you storage setup` step is no longer required. Remaining: one live round-trip once
+`FOLDERMD_SERVICE_SECRET` is set on both deployments (see "What shipped 2026-06-27" below).
+**Owner advantage:** both products are Houston's, so we built the missing delegation primitive
 rather than make users paste keys.
+
+---
+
+## What shipped 2026-06-27 (the §2 + §4 work, done)
+
+**folder.md (`houstongolden/folder-md`):**
+- `POST /api/v1/provision` (`app/api/v1/provision/route.ts`) — Bearer `FOLDERMD_SERVICE_SECRET`
+  (or `x-service-secret`), constant-time compare, **503 when unset** (closed by default).
+- `provisionExternalAccount()` + `mintApiKey()` in `lib/account-bootstrap.ts`; `externalAccounts`
+  table + `convex/externalAccounts.ts` (`getByExternal` / `link`) for idempotency per
+  `(externalSystem, externalUserId)`. `forceNewKey` rotates the provision key only.
+- Contract test #23 in `scripts/run-tests.ts`.
+
+**you.md (`houstongolden/youmd`):**
+- `convex/folderMd.ts`: `provision` internal action (calls folder.md, encrypts the key with
+  `lib/secretCrypto` AES-GCM, persists to `folderMdAccounts`, recovers a lost key via forced
+  rotation), `getByUser`, `saveCreds`.
+- HTTP: `POST /api/v1/me/storage/provision` (returns the key to the **owner's** first-party client
+  only; connected apps get metadata) and `GET /api/v1/me/storage` (status, no secret).
+- CLI/MCP: `ensureProvisionedKey()` auto-mints + caches on first use; wired into `you storage`
+  and `store_media`/`get_media`. `setup` kept as an optional BYO-key override. CLI → 0.9.0.
+
+**Operational note (not user homework):** set the same `FOLDERMD_SERVICE_SECRET` (>=32 chars) on
+the you.md Convex deployment and folder.md — a deploy-time secret, like every other API key.
+Optionally set `FOLDERMD_BASE_URL` on you.md (defaults to `https://www.folder.md/api/v1`).
+
+---
+
+## Security review (2026-06-27) — fixed + deferred
+
+An adversarial review traced the full S2S flow. **Confirmed solid:** service-secret auth is
+constant-time, fails closed (503) when unset/short, and rejects unauthenticated callers (401)
+before any work; `externalUserId` is server-derived from the authenticated session (not
+client-controlled, no cross-tenant reach); the minted key is returned only to the first-party
+**owner** client (`credentialType === "api-key"`) — connected apps and `GET /me/storage` never see
+it; AES-GCM IV handling is correct.
+
+**Fixed this pass:**
+- **Least privilege (H1):** the provision key is now minted with `write`, not `admin` — it only
+  needs file read/write on its own Folder (the Folder is created server-side), so a leaked key
+  can't manage keys/folders or touch account admin. (`lib/account-bootstrap.ts`)
+- **Encryption domain separation (M1):** the stored folder.md key is bound to an AES-GCM AAD
+  (`foldermd-api-key:v1`), so its ciphertext can never be cross-decrypted as another secret class
+  (e.g. a GitHub token) that shares the deployment encryption secret. +3 unit tests.
+  (`convex/lib/secretCrypto.ts`, `convex/folderMd.ts`)
+- **Input caps (M3):** `externalSystem`/`externalUserId`/`displayName` length-bounded on the
+  provision route (anti-amplification). (`app/api/v1/provision/route.ts`)
+
+**Deferred (documented, not blockers) — need a Convex-transaction change best validated live:**
+- **Idempotency race (C1) / rotation race (L1):** a truly-concurrent *first* provision for the
+  same user (or simultaneous `forceNewKey` from two machines) can create an orphaned duplicate
+  folder.md account/key and split which Folder a machine resolves. Severity is **low** (same
+  tenant, no escalation/cross-tenant) and the system self-heals on the next provision (the
+  `getByUser` cache + recovery rotation converge). The proper fix is to perform
+  create-user+folder+key+link inside a **single Convex mutation** so OCC serializes racers — a
+  structural change to `provisionExternalAccount` worth doing with a live deployment to verify.
+- **Prefix-collision key lookup (M2):** pre-existing in folder.md's `apiKeys.getByPrefix().first()`
+  (not introduced here); the full-hash `secureCompare` keeps it non-exploitable for forgery, but a
+  rare prefix collision could fail a legitimate key. Out of scope for this PR (general key-auth
+  internals); widen the stored prefix or compare-all-matches in a dedicated change.
 
 ---
 

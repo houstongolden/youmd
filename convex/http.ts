@@ -1475,6 +1475,108 @@ http.route({
   }),
 });
 
+// GET /api/v1/me/storage — folder.md media-lane status (never returns the key)
+http.route({
+  path: "/api/v1/me/storage",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "read:private");
+    if (denied) return denied;
+
+    try {
+      const row = await ctx.runQuery(internal.folderMd.getByUser, {
+        userId: auth.userDbId,
+      });
+      return json({
+        schemaVersion: "you-md/storage/v1",
+        provider: "folder.md",
+        configured: Boolean(row),
+        folderId: row?.folderId ?? null,
+        keyPrefix: row?.keyPrefix ?? null,
+        provisionedAt: row?.provisionedAt ?? null,
+        secretValuesExposed: false,
+      });
+    } catch (err) {
+      return serverErrorResponse("me/storage", err, "Failed to read storage status");
+    }
+  }),
+});
+
+// POST /api/v1/me/storage/provision — zero-paste folder.md key mint.
+// Idempotently ensures the owner has a folder.md media Folder + scoped key
+// (minted server-to-server via folder.md /provision) and returns the credential
+// to the authenticated OWNER's own client only. Connected apps get folder
+// metadata but never the raw key. Pass { forceNewKey: true } to rotate.
+http.route({
+  path: "/api/v1/me/storage/provision",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = await authenticateRequest(ctx, request);
+    if (auth instanceof Response) return auth;
+    const denied = await requireScope(ctx, request, auth, "write:bundle");
+    if (denied) return denied;
+    const guard = await guardWrite(ctx, request, auth);
+    if (guard.blocked) return guard.blocked;
+
+    try {
+      let forceNewKey = false;
+      try {
+        const body = await request.json();
+        forceNewKey = body?.forceNewKey === true;
+      } catch {
+        // empty/no body is fine — default provisioning
+      }
+
+      const result = await ctx.runAction(internal.folderMd.provision, {
+        userId: auth.userDbId,
+        displayName: auth.username ? `${auth.username} media` : undefined,
+        forceNewKey,
+      });
+
+      // Only the owner's first-party key/login client receives the raw folder.md
+      // key. Third-party connected apps get metadata but not the secret.
+      const ownerClient = auth.credentialType === "api-key";
+
+      try {
+        const agent = detectAgent(request.headers.get("user-agent"));
+        await ctx.runMutation(internal.activity.logActivity, {
+          userId: auth.userDbId,
+          agentName: auth.appName || agent.name,
+          agentSource: authAgentSource(auth, request),
+          agentVersion: agent.version,
+          action: "write",
+          resource: "storage",
+          status: "success",
+          connectedAppGrantId: auth.connectedAppGrantId,
+          details: { created: result.created, rotated: result.rotated },
+        });
+      } catch {
+        // non-fatal — provisioning succeeded
+      }
+
+      return guard.finish(
+        json({
+          success: true,
+          schemaVersion: "you-md/storage/v1",
+          provider: "folder.md",
+          configured: true,
+          folderId: result.folderId,
+          keyPrefix: result.keyPrefix,
+          created: result.created,
+          rotated: result.rotated,
+          // Owner-only: the scoped folder.md key, cached by the CLI/MCP locally.
+          apiKey: ownerClient ? result.apiKey : null,
+          secretValuesExposed: ownerClient,
+        })
+      );
+    } catch (err) {
+      return serverErrorResponse("me/storage/provision", err, "Failed to provision storage");
+    }
+  }),
+});
+
 // GET /api/v1/me — Get current user profile
 http.route({
   path: "/api/v1/me",

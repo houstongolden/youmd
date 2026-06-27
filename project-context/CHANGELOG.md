@@ -1,5 +1,62 @@
 # You.md — Changelog
 
+## 2026-06-27 — "Continue ALL": Vercel unblock + orchestrator hardening + two-machine readiness
+
+Swept the remaining pending items from the multi-computer handoff.
+
+### #4 Vercel deploy — ROOT CAUSE FOUND & FIXED (it was the code, not a dashboard setting)
+The Vercel "instant-error on every commit" was the `prebuild` step (`npm run docs:generate`)
+hard-failing: `Commander commands missing from HELP_GROUPS in cli/src/index.ts: orchestrate, storage`.
+Since prebuild runs before `next build`, every build died immediately — broken since PR #60 added
+those commands without registering them (same class as `8a4b34f` for `remote`). Fixed: registered
+`orchestrate` + a new STORAGE group, regenerated the drift-checked artifacts. `npm run docs:check`
+now passes. **This unblocks prod deploys of everything on main once PR #61 merges.**
+
+### #3 Orchestrator — hardened for real (flaky) models, no live model needed
+- Bounded retry/backoff around the model call (transient timeout/5xx/socket reset no longer
+  abandons the goal mid-run; injectable sleep for tests).
+- Message-budget guard (256) + reject >256KB tool-call JSON + drop malformed worker-registry rows.
+- +5 offline tests (retry recovery/exhaustion, size guard). 16/16 orchestrator+storage tests pass.
+
+### #1 Two-machine live test — verified CODE-READY (audited; no gaps)
+Full audit of the runbook (`MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md`) vs. the CLI: every
+runbook command + flag exists (`you orchestrate host/spawn/list/logs/stop/watch`, `you remote
+run agent.*`, `you stack daemon install`, `you machine sync-now`). Linux systemd `--user` units +
+linger and macOS launchd plists are complete, not stubbed. Cross-machine bus, durable
+`remoteCommands` table, scope gating, host opt-in, output redaction all shipped. **No code changes
+needed** — it only awaits a live VPS/Mac-mini host to run the round-trip.
+
+### Not actionable from here
+#2 was already done this session; live two-deployment provision round-trip + the two-machine
+round-trip both need live hosts/secrets. Orchestrator LLM *tuning* against specific models still
+wants a live model, but the loop is now robust to real-world API behavior.
+
+## 2026-06-27 — folder.md native integration: autonomous zero-paste provisioning (end-to-end)
+
+Closed the loop on the folder.md media lane. The manual `you storage setup <key>` step is gone —
+storage now **provisions itself** the first time any agent or the CLI touches it. No user paste.
+
+### folder.md (`houstongolden/folder-md`)
+- New **`POST /api/v1/provision`** — server-to-server, guarded by a shared `FOLDERMD_SERVICE_SECRET`
+  (>=32 chars; returns 503 when unset so it's closed by default). Idempotent per
+  `(externalSystem, externalUserId)`: first call creates an agent-owned account + media Folder and
+  mints a scoped `fmd_live_…` key; repeat calls resolve the same Folder without re-showing a key;
+  `forceNewKey: true` rotates. New `externalAccounts` table + `provisionExternalAccount()` helper.
+- Live contract test added to `scripts/run-tests.ts` (idempotency + rotation + closed-when-unset).
+
+### you.md (`houstongolden/youmd`)
+- New `convex/folderMd.ts` (`provision` action + `getByUser`/`saveCreds`) — calls folder.md
+  `/provision`, stores the minted key **encrypted at rest** (AES-GCM via `lib/secretCrypto`), and
+  only ever returns it to the authenticated **owner's** own client. `folderMdAccounts` table added.
+- New HTTP routes: `POST /api/v1/me/storage/provision` (owner-only key return; connected apps get
+  metadata, never the secret) and `GET /api/v1/me/storage` (status, never the key).
+- CLI/MCP auto-provision: `ensureProvisionedKey()` mints + caches on first use; wired into
+  `you storage push/pull/list` and the `store_media` / `get_media` MCP tools. `setup` stays as an
+  optional bring-your-own-key override. CLI bumped to **0.9.0**.
+
+Pending (needs live secrets on both deployments): one end-to-end round-trip with
+`FOLDERMD_SERVICE_SECRET` set on both Convex deployments + folder.md prod.
+
 ## 2026-06-26 — Hardening: pre-merge security + correctness review of PR #60
 
 Ran a recall-biased multi-agent review (correctness / security / cross-file) over the whole
