@@ -1,8 +1,8 @@
 # You.md — Current State
 
 Last Updated: 2026-06-30
-Latest Verified Production Web Commit: 052507c fix(web): install youmd without sudo
-Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing workflow
+Latest Verified Production Web Commit: 30c92d7 docs: reconcile youmd 0.9.1 handoff state
+Latest CLI Publish Workflow Commit: 51999bf fix(storage): normalize foldermd upload pointers
 
 ---
 
@@ -32,6 +32,11 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Local verification passes: `npm run agent-docs:ci`, `npm run profiles:targets-check`,
   `npm run profiles:portrait-contract`, CLI storage regression tests, CLI build, `git diff --check`,
   and full `npm run build`.
+- Production verification for commit `30c92d7` passed: GitHub Actions `Agent Docs` and `CI` green,
+  Vercel deployment `dpl_HtDuYc4GPQJwQwnUS83Jkf6geZoW` Ready and aliased to `https://www.you.md`,
+  live `npm run llms:smoke -- --base-url https://www.you.md` passed, `https://www.you.md/houstongolden?smoke=30c92d7`
+  returned `200` / ~97 KB / one `asciiPortrait` / no app-error marker, and unauthenticated
+  `https://www.you.md/shell` redirected to `/sign-in?next=%2Fshell` as expected.
 
 ### Desktop shell — new 6-destination IA (default at `/shell`)
 - `/shell` now renders the converged second-brain shell (`ShellV2`): unified sessions (chat/CLI/remote/cloud), Obsidian-grade Vault (Read/Live/Source, outline/backlinks/tags/wikilinks), force-directed graph, Live Log, Connections, Provision, Sync.

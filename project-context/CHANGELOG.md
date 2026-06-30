@@ -16,6 +16,9 @@ Followed through after the folder.md storage proof so the repo, docs, and tracke
 - Ran a fresh live folder.md storage push/list/pull proof after the docs/build cleanup:
   `j975wqrpzz1x74tnc8pz03m7qx89nvdy` at
   `/youmd/proofs/youmd-foldermd-live-proof-20260630T233716Z.txt`, with byte-compare passing.
+- Pushed commit `30c92d7`; GitHub Actions `Agent Docs` and `CI` passed; Vercel production deployment
+  `dpl_HtDuYc4GPQJwQwnUS83Jkf6geZoW` is Ready and aliased to `https://www.you.md`; live
+  `llms:smoke`, public profile smoke, and unauthenticated `/shell` redirect smoke passed.
 - Tracked the broader reconciliation as feature request #151 instead of marking the whole workstream
   done early; authenticated production shell visual QA, live two-host spawn, and real-model
   orchestrator tuning remain explicit open items.
