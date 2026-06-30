@@ -16,11 +16,22 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - Direct folder.md provisioning now behaves correctly: no secret returns `401`, the shared-secret
   server-to-server call returns `201` with folder/key fields.
 - A You.md CLI with no cached folder.md key successfully auto-provisioned on first `you storage push`.
-  Follow-up live proof pushed, listed, and pulled
-  `/youmd/proofs/youmd-foldermd-roundtrip-proof-20260630T231554Z.txt` from folder.md.
+  Follow-up live proofs pushed, listed, and pulled
+  `/youmd/proofs/youmd-foldermd-roundtrip-proof-20260630T231554Z.txt` and
+  `/youmd/proofs/youmd-foldermd-live-proof-20260630T233716Z.txt` from folder.md.
 - CLI `youmd@0.9.1` fixes folder.md upload response normalization so brain pointers store the real
   folder.md `fileId` instead of `"undefined"`. Focused storage tests, CLI build, and npm pack dry-run
-  pass. Remaining distribution step: publish `youmd@0.9.1`.
+  pass. `youmd@0.9.1` is published to npm; `npm view youmd version` and `npx youmd@0.9.1 --version`
+  return `0.9.1`.
+
+### Agent docs / release handoff — locally reconciled 2026-06-30
+- Regenerated `src/generated/docs-reference.ts`, `src/generated/openapi.ts`, `public/llms.txt`, and
+  `public/llms-full.txt` after the CLI `0.9.1` publish so generated docs no longer advertise `0.9.0`.
+- Updated root `AGENTS.md` and `CLAUDE.md` CLI handoff markers to `youmd 0.9.1` / `CLI package
+  (npm: youmd, v0.9.1)`.
+- Local verification passes: `npm run agent-docs:ci`, `npm run profiles:targets-check`,
+  `npm run profiles:portrait-contract`, CLI storage regression tests, CLI build, `git diff --check`,
+  and full `npm run build`.
 
 ### Desktop shell — new 6-destination IA (default at `/shell`)
 - `/shell` now renders the converged second-brain shell (`ShellV2`): unified sessions (chat/CLI/remote/cloud), Obsidian-grade Vault (Read/Live/Source, outline/backlinks/tags/wikilinks), force-directed graph, Live Log, Connections, Provision, Sync.

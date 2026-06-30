@@ -4,6 +4,22 @@ Last Updated: 2026-06-30
 
 ---
 
+## 2026-06-30 — Full workstream reconciliation after folder.md storage proof
+
+### 151. Reconcile the whole active You.md workstream before calling the goal done
+**Status:** IN PROGRESS / LOCAL CORE VERIFIED / PROD DEPLOY VERIFICATION PENDING
+**Verified:** Local `main` fast-forward pulled from `origin/main`; folder.md `main` pulled from `origin/main`; coordinated with the active folder.md Codex thread; folder.md reported production login fix deployed/verified, Vercel production ready, `FOLDERMD_SERVICE_SECRET` present, and unauthenticated provision smoke returning `401`; You.md agent docs were regenerated for CLI `0.9.1`; `AGENTS.md` / `CLAUDE.md` handoff markers now match `cli/package.json`; `npm run agent-docs:ci`, `npm run profiles:targets-check`, `npm run profiles:portrait-contract`, CLI storage regression tests, CLI build, `git diff --check`, and full `npm run build` pass; fresh live folder.md storage push/list/pull byte-compare proof passed for `j975wqrpzz1x74tnc8pz03m7qx89nvdy` at `/youmd/proofs/youmd-foldermd-live-proof-20260630T233716Z.txt`; `npm view youmd version` and `npx youmd@0.9.1 --version` return `0.9.1`.
+**Production Verified:** PARTIAL — the storage/API path is live verified and current pushed web commits before this doc fix have green CI. This docs-handoff reconciliation still needs commit, push, GitHub Actions, Vercel Ready, and live `llms:smoke` after deploy.
+**Source:** 2026-06-30 — Houston: "bro you need to touch everything and make sure it is all working there's no way the goal is achieved and you left so many things unfinished that are still in progress -- create a full more complete goal please"
+**Actionable Scope:**
+1. Reconstruct the active worklist from git, trackers, folder.md coordination, CI, npm, and deployment state. **DONE.**
+2. Reconcile dirty generated docs/root handoff markers after CLI `0.9.1`. **DONE LOCAL.**
+3. Re-run focused local verification for docs, shell/profile contracts, CLI, and storage. **DONE LOCAL.**
+4. Commit/push the reconciliation and verify GitHub Actions + Vercel production. **PENDING IN THIS SESSION.**
+5. Leave only true external blockers explicit: authenticated production `/shell` visual in Houston's browser session, live two-host spawn runbook, and real-model orchestrator tuning. **PENDING FINAL REPORT.**
+
+---
+
 ## 2026-06-30 — Production shell/profile truthfulness fix
 
 ### 150. Fix `/shell` sidebar expansion, public profile crash, and fake placeholder UI
@@ -29,7 +45,10 @@ Direct authorized `POST https://www.folder.md/api/v1/provision` returned `201` w
 fields. From a You.md CLI with no cached folder.md key, `you storage push` auto-provisioned through
 You.md and uploaded a proof file; follow-up push after the client response-shape fix returned a real
 folder.md file id, `you storage list --json` listed the uploaded path, and `you storage pull` read
-back the proof contents. Focused storage regression test now covers folder.md's wrapped
+back the proof contents. A later post-reconciliation proof pushed file
+`j975wqrpzz1x74tnc8pz03m7qx89nvdy`, listed
+`/youmd/proofs/youmd-foldermd-live-proof-20260630T233716Z.txt`, pulled 43 bytes, and byte-compared
+the local/pulled files. Focused storage regression test now covers folder.md's wrapped
 `{ file: ... }` upload response, and `cli npm run build` + `npm pack --dry-run` pass for `youmd@0.9.1`.
 **Production Verified:** YES for the live API/storage path. npm `youmd@0.9.1` is published for
 fresh installs (`npm view youmd version` returns `0.9.1`; trusted workflow reported a duplicate

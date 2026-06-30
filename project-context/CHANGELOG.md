@@ -1,5 +1,25 @@
 # You.md — Changelog
 
+## 2026-06-30 — Full workstream reconciliation + agent docs 0.9.1 alignment
+
+Followed through after the folder.md storage proof so the repo, docs, and trackers do not overclaim.
+
+- Pulled You.md and folder.md `main` up to date and coordinated with the active folder.md Codex thread.
+- Confirmed folder.md-side state: login slice fix is committed/pushed/deployed, production is Ready,
+  `FOLDERMD_SERVICE_SECRET` is present, and unauthenticated `/api/v1/provision` returns `401`.
+- Regenerated generated docs/OpenAPI/root agent docs for CLI `0.9.1`.
+- Updated `AGENTS.md` and `CLAUDE.md` handoff markers from `0.9.0` to `0.9.1`, closing the
+  `agent-docs:ci` handoff failure.
+- Re-ran verification: `npm run agent-docs:ci`, `npm run profiles:targets-check`,
+  `npm run profiles:portrait-contract`, CLI storage regression tests, CLI build, `git diff --check`,
+  full `npm run build`, `npm view youmd version`, and `npx youmd@0.9.1 --version`.
+- Ran a fresh live folder.md storage push/list/pull proof after the docs/build cleanup:
+  `j975wqrpzz1x74tnc8pz03m7qx89nvdy` at
+  `/youmd/proofs/youmd-foldermd-live-proof-20260630T233716Z.txt`, with byte-compare passing.
+- Tracked the broader reconciliation as feature request #151 instead of marking the whole workstream
+  done early; authenticated production shell visual QA, live two-host spawn, and real-model
+  orchestrator tuning remain explicit open items.
+
 ## 2026-06-30 — Shell truth-first pass + profile payload crash fix
 
 Fixed the production `/shell` and public profile issues reported from the live app.

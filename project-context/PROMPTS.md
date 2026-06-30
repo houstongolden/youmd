@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 127
-**Total messages:** 559
+**Total sessions:** 128
+**Total messages:** 564
 **Last updated:** 2026-06-30
 
 ## Table of Contents
 
+1. [2026-06-30 (foldermd-full-workstream-reconciliation)](#session-2026-06-30-foldermd-full-workstream-reconciliation) --- 5 messages
 1. [2026-06-30 (prod-shell-profile-placeholder-fix)](#session-2026-06-30-prod-shell-profile-placeholder-fix) --- 1 message
 1. [2026-06-20 (skill-mesh-server-restart-and-mac-mini-proof)](#session-2026-06-20-skill-mesh-server-restart-and-mac-mini-proof) --- 1 message
 1. [2026-06-20 (minimal-surface-synced-brain-graph)](#session-2026-06-20-minimal-surface-synced-brain-graph) --- 1 message
@@ -16686,3 +16687,64 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 >
 > ## My request for Codex:
 > i can't expand the left sidebar menu on you.md on prod and also it crashes when i open my public profile - and i think the /shell still has some fake placeholder data stuff that we need to remove for clarity bc i do not want anything faked or placeholder to show at all in the ui anywhere bc it makes it hard to tell what is real and what is working vs what needs attention to finish etc etc.
+
+## Session: 2026-06-30 (foldermd-full-workstream-reconciliation)
+
+**2026-06-29 18:45:21 UTC**
+> please pull down from remote main to ensure you are up to date and summarize the most recent additions and commits and any remaining tasks we need to finish up the
+>   work that was most recently being done on youmd
+
+**2026-06-29 18:48:11 UTC**
+> here is what claude code said btw - Here's a concise summary of where things stand:
+>
+> ---
+> Most Recent Work (Last 2-3 Sessions)
+>
+> What Shipped (PR #60 + #61, merged to main)
+>
+> Multi-computer agents + Linux daemon — You.md can now orchestrate agents across machines. Ships Linux systemd daemon, macOS launchd, cross-machine bus (remoteCommands Convex table), scoped host opt-in, and redaction.
+>
+> folder.md zero-paste provisioning — The flagship feature: a you.md user never manually pastes a folder.md API key. First time any CLI/agent calls store_media, you.md mints a scoped folder.md key server-to-server, stores it encrypted, syncs to the user's machines. Ships:
+> - folder.md POST /api/v1/provision (service-secret guarded, idempotent)
+> - you.md convex/folderMd.ts + folderMdAccounts table + /api/v1/me/storage/provision + /api/v1/me/storage
+> - CLI ensureProvisionedKey() wired into you storage + store_media/get_media MCP
+> - CLI bumped to 0.9.0
+>
+> Orchestrator hardening — retry/backoff, message-budget guard, >256KB tool-call rejection, registry-corruption resilience, +16 offline tests.
+>
+> Vercel build fix — orchestrate and storage commander commands were missing from HELP_GROUPS, causing instant Vercel failures since PR #60.
+>
+> ---
+> Remaining Open Tasks
+>
+> Blocking (needs live infra):
+> 1. FOLDERMD_SERVICE_SECRET — must be set (≥32 chars, identical value) on both the you.md Convex prod deployment and the folder.md deployment. Then run one live you storage push round-trip to prove end-to-end. (#146, production unverified)
+> 2. Live two-machine spawn test — run the MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md sections 0–3 on a real second host (Hostinger VPS or Mac mini). Code is complete, just needs a live receiver. (#149)
+> 3. Vercel build green confirmation — PR #61 merged but production green build not yet eyeball-confirmed. (#147)
+>
+> Orchestrator (code-ready, needs real model):
+> 4. Orchestrator LLM tuning against real models — the hardening was offline only; real-model behavior needs a live test run. (#148)
+>
+> Longer-horizon open items (pre-existing):
+> - Second-Mac curl install + inventory proof (skill mesh #144)
+> - DSI widget catalog/editor via You Agent from chat (#143)
+> - Consolidate Analytics/Activity/Stats/Live Log into one Brain Activity surface (#143)
+> - Clean Skills matrix by project/stack/machine (#143)
+> - Full web/Tauri Skill Mesh deeper drilldowns (#144)
+>
+> ---
+> Best Next Steps:
+> 1. Set FOLDERMD_SERVICE_SECRET on both Convex deployments and run the live storage provision round-trip — this unblocks #146 and proves the flagship feature
+> 2. Confirm Vercel shows a green build post-PR-#61 merge
+> 3. Run the multicomputer runbook on a second machine to close #149
+>
+> Say continue and I will take the next best scoped step.
+
+**2026-06-30 17:57:39 UTC**
+> ok so main thing you need now is just the foldermd service secret for youmd? right? then you can continue everything else or do you need anything else from me?
+
+**2026-06-30 23:03:11 UTC**
+> ok we now have codex working on the folermd app locally etc and you should coordinate with it now to try and get what you need for the FOLDERMD_SERVICE_SECRET and anything else you need to do in order to the our built in user and/or project scoped you.md large file storage fully integrated with folder.md natively following wahtever is the next steps plan etc that you had outlined (and that claude code had revealed as the same) to continue on all best next steps comprehensively until all updates are live and working seamlessly together and the full plan is executed - set the goal for yourself of the objective quantifiable goal you can achieve for ALL pending work and best next steps work in progress to get you.md pushed live and syncing in real-time and all other you agent and real-time sync and whatever else we were working on that needs to be finished and or started and finished building it out end to end
+
+**2026-06-30 23:31:54 UTC**
+> bro you need to touch everything and make sure it is all working there's no way the goal is achieved and you left so many things unfinished that are still in progress -- create a full more complete goal please

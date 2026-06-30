@@ -16,6 +16,8 @@ PRD Version: 2.3
 - [x] Verify live `you storage push` → `you storage list` → `you storage pull` round-trip against folder.md
 - [x] Bump CLI to `youmd@0.9.1` and pass focused storage tests, CLI build, and package dry-run
 - [x] Publish `youmd@0.9.1` to npm; `npm view youmd version` returns `0.9.1` (trusted workflow reported a duplicate-version error after npm accepted the publish)
+- [x] Regenerate generated agent docs/OpenAPI surfaces and root handoff markers so the repo, `/llms.txt`, `/llms-full.txt`, and OpenAPI advertise CLI `0.9.1`
+- [x] Re-run a fresh folder.md storage push/list/pull byte-compare proof after the docs/build reconciliation (`/youmd/proofs/youmd-foldermd-live-proof-20260630T233716Z.txt`)
 
 ### 2026-06-19 — Local/global agent stack inventory
 - [x] Confirm `youmd skill list` is catalog-driven, not a full local filesystem skill crawl
