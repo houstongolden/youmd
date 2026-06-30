@@ -4,7 +4,7 @@ import { PixelCharacter } from "@/components/ui/PixelCharacter";
 import { DEVICES, DAEMONS, WORKSPACE, SUB_AGENTS, SKILLS } from "../../_data/mock";
 import { ViewHeader, Chip, Dot, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
-import { useRealData } from "../../_lib/RealDataContext";
+import { useAllowMockFallback, useRealData } from "../../_lib/RealDataContext";
 import { useToast } from "../Toast";
 
 // The "everything's in sync" overview — promoted from a cramped popout to a
@@ -12,7 +12,19 @@ import { useToast } from "../Toast";
 export function SyncView() {
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
   const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
   const toast = useToast();
+  const live = Boolean(real?.available);
+  const realMachineRows = real?.machine?.host
+    ? [{
+        name: real.machine.host,
+        os: `${real.machine.ready ?? 0}/${real.machine.scanned ?? 0} projects ready`,
+        status: "synced" as const,
+        lastSync: "real proof",
+        current: true,
+      }]
+    : [];
+  const machineRows = live ? realMachineRows : allowMockFallback ? DEVICES : [];
   // Mark "this machine" by the REAL host (server-detected), not a hardcoded
   // flag — so it's never wrong. If the host is unknown (e.g. hosted web with no
   // local fs), show no "this" badge rather than mislabel a machine.
@@ -37,11 +49,15 @@ export function SyncView() {
 
       {/* status hero */}
       <div className="mb-6 flex items-center gap-3 rounded-sm border-l-2 border-[hsl(var(--success))]/60 bg-[hsl(var(--bg-raised))] px-4 py-3">
-        <Dot tone="green" pulse size={7} />
+        <Dot tone={live || allowMockFallback ? "green" : "dim"} pulse={live || allowMockFallback} size={7} />
         <div>
-          <div className="text-[13px] text-[hsl(var(--text-primary))]">Everything&apos;s in sync</div>
+          <div className="text-[13px] text-[hsl(var(--text-primary))]">{live || allowMockFallback ? "Everything's in sync" : "Real sync data loading"}</div>
           <div className="font-mono text-[11px] text-[hsl(var(--text-secondary))]/65">
-            {WORKSPACE.machines} machines · {activeAgents} active agents · last sync {WORKSPACE.lastSync}
+            {live
+              ? `${machineRows.length} machine${machineRows.length === 1 ? "" : "s"} · ${real?.sessions?.length ?? 0} sessions · real proof`
+              : allowMockFallback
+                ? `${WORKSPACE.machines} machines · ${activeAgents} active agents · last sync ${WORKSPACE.lastSync}`
+                : "no placeholder sync status shown"}
           </div>
         </div>
       </div>
@@ -86,7 +102,11 @@ export function SyncView() {
       {/* machines */}
       <SectionLabel className="mb-2.5">Machines</SectionLabel>
       <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {DEVICES.map((d) => {
+        {machineRows.length === 0 ? (
+          <div className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 text-[12px] text-[hsl(var(--text-secondary))]/60 sm:col-span-3">
+            no real machine proof loaded yet
+          </div>
+        ) : machineRows.map((d) => {
           const here = isThisMachine(d.name);
           return (
             <div key={d.name} className="group rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3">
@@ -133,7 +153,7 @@ export function SyncView() {
       <div className="mb-6 grid grid-cols-3 gap-2">
         {[
           { label: "Identity", value: "in sync", icon: "brain" as const },
-          { label: "Skills", value: `${SKILLS.length} shared`, icon: "layers" as const },
+          { label: "Skills", value: live ? `${real?.skills.length ?? 0} real` : allowMockFallback ? `${SKILLS.length} shared` : "loading", icon: "layers" as const },
           { label: "Env vault", value: "trusted-device", icon: "sync" as const },
         ].map((s) => (
           <div key={s.label} className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3">
@@ -170,7 +190,7 @@ export function SyncView() {
       {/* background daemons */}
       <SectionLabel className="mb-2.5">Background sync</SectionLabel>
       <div className="rounded-sm border border-[hsl(var(--border))]">
-        {DAEMONS.map((d, i) => (
+        {(allowMockFallback ? DAEMONS : []).map((d, i) => (
           <div
             key={d.name}
             className={

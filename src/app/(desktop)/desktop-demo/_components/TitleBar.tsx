@@ -5,6 +5,7 @@ import { Icon } from "./icons";
 import { Dot } from "./primitives";
 import { DEVICES, SUB_AGENTS } from "../_data/mock";
 import { cn } from "../_lib/cn";
+import { useAllowMockFallback, useRealData } from "../_lib/RealDataContext";
 
 // macOS-style title bar. Window-level layout controls (shell dock side,
 // inspector, focus) are consolidated behind one minimal "layout" popover so the
@@ -42,8 +43,15 @@ export function TitleBar({
   shellOpen?: boolean;
   onToggleShell?: () => void;
 }) {
-  const machines = DEVICES.length;
-  const agents = SUB_AGENTS.filter((a) => a.status === "active").length;
+  const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
+  const machines = real?.machine?.host ? 1 : allowMockFallback ? DEVICES.length : 0;
+  const agents = real?.sessions
+    ? real.sessions.filter((session) => session.id !== "you-local" && session.status === "active").length
+    : allowMockFallback
+      ? SUB_AGENTS.filter((a) => a.status === "active").length
+      : 0;
+  const syncLabel = real?.available || allowMockFallback ? "synced" : "loading";
   const [layoutOpen, setLayoutOpen] = useState(false);
 
   return (
@@ -102,7 +110,7 @@ export function TitleBar({
           <Icon name="agent" size={12} /> {agents}
         </span>
         <span className="flex items-center gap-1.5 font-mono text-[10px] text-[hsl(var(--text-secondary))]/70">
-          <Dot tone="green" pulse size={5} /> synced
+          <Dot tone={real?.available || allowMockFallback ? "green" : "dim"} pulse={real?.available || allowMockFallback} size={5} /> {syncLabel}
         </span>
       </div>
 

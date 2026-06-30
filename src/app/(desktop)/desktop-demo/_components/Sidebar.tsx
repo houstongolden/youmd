@@ -5,6 +5,7 @@ import { DESTINATIONS, destinationForView, WORKSPACE, type ChatThread, type View
 import { Icon } from "./icons";
 import { Dot, SectionLabel } from "./primitives";
 import { cn } from "../_lib/cn";
+import { useAllowMockFallback, useRealData } from "../_lib/RealDataContext";
 
 export function Sidebar({
   collapsed,
@@ -34,6 +35,11 @@ export function Sidebar({
   onSignOut?: () => void;
 }) {
   const [accountOpen, setAccountOpen] = useState(false);
+  const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
+  const machineCount = real?.machine?.host ? 1 : allowMockFallback ? WORKSPACE.machines : 0;
+  const displayName = allowMockFallback ? WORKSPACE.name : "you.md";
+  const displayHandle = allowMockFallback ? WORKSPACE.handle : real?.machine?.host ?? "real data only";
 
   return (
     <aside
@@ -59,9 +65,9 @@ export function Sidebar({
           <div className="min-w-0 flex-1">
             <div className="truncate font-mono text-[13px] font-semibold leading-tight">{WORKSPACE.brain}</div>
             <div className="flex items-center gap-1.5">
-              <Dot tone="green" pulse size={5} />
+              <Dot tone={real?.available ? "green" : "dim"} pulse={Boolean(real?.available)} size={5} />
               <span className="truncate font-mono text-[10px] text-[hsl(var(--text-secondary))]/70">
-                synced · {WORKSPACE.machines} machines
+                {real?.available ? `synced · ${machineCount} machine${machineCount === 1 ? "" : "s"}` : "loading real data"}
               </span>
             </div>
           </div>
@@ -205,7 +211,7 @@ export function Sidebar({
         )}
         <button
           onClick={() => setAccountOpen((o) => !o)}
-          title={collapsed ? WORKSPACE.name : undefined}
+          title={collapsed ? displayName : undefined}
           className={cn(
             "flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-left transition-colors hover:bg-[hsl(var(--bg-raised))]",
             collapsed && "justify-center px-0",
@@ -219,8 +225,8 @@ export function Sidebar({
           </span>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] leading-tight text-[hsl(var(--text-primary))]">{WORKSPACE.name}</div>
-              <div className="truncate font-mono text-[10px] text-[hsl(var(--text-secondary))]/60">{WORKSPACE.handle}</div>
+              <div className="truncate text-[13px] leading-tight text-[hsl(var(--text-primary))]">{displayName}</div>
+              <div className="truncate font-mono text-[10px] text-[hsl(var(--text-secondary))]/60">{displayHandle}</div>
             </div>
           )}
           {!collapsed && <Icon name="chevronDown" size={14} className="shrink-0 rotate-180 text-[hsl(var(--text-secondary))]/60" />}

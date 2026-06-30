@@ -2,12 +2,13 @@
 All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
-**Total sessions:** 126
-**Total messages:** 558
-**Last updated:** 2026-06-27
+**Total sessions:** 127
+**Total messages:** 559
+**Last updated:** 2026-06-30
 
 ## Table of Contents
 
+1. [2026-06-30 (prod-shell-profile-placeholder-fix)](#session-2026-06-30-prod-shell-profile-placeholder-fix) --- 1 message
 1. [2026-06-20 (skill-mesh-server-restart-and-mac-mini-proof)](#session-2026-06-20-skill-mesh-server-restart-and-mac-mini-proof) --- 1 message
 1. [2026-06-20 (minimal-surface-synced-brain-graph)](#session-2026-06-20-minimal-surface-synced-brain-graph) --- 1 message
 1. [2026-06-19 (local-global-skill-stack-inventory)](#session-2026-06-19-local-global-skill-stack-inventory) --- 5 messages
@@ -16675,3 +16676,13 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 
 **2026-06-27 00:57:00 UTC**
 > Ok… we have just shipped a ton of updates on youmd and I needed to start a new chat with both youmd and folder-md GitHub repos connected here so you can finish the full native integration between these two projects APIs/mcps etc - you should look at all the recent commits and updates on youmd for anything related to folder.md api/MCP integration etc but I'll share some basic notes from the final message in the other session to steer you in right direction: Shipped to main 🎉 The full multi-computer You.md vision landed in PR #60 … Still pending (needs you / live hosts): 1. Live two-machine test … 2. folder.md autonomous /provision — share the folder-md repo and I'll build the zero-paste key mint that replaces you storage setup. 3. Orchestrator LLM tuning against real models. 4. Vercel deploy … Whenever you're ready for any of those, point me at it. Nice work shipping this
+
+## Session: 2026-06-30 (prod-shell-profile-placeholder-fix)
+
+**2026-06-30 23:06:16 UTC**
+> # Files mentioned by the user:
+>
+> ## codex-clipboard-429457d4-baa4-4d52-9177-9152e65d3ed4.png: /var/folders/4n/hqpz_03d477c1f_m2ks7x18c0000gn/T/codex-clipboard-429457d4-baa4-4d52-9177-9152e65d3ed4.png
+>
+> ## My request for Codex:
+> i can't expand the left sidebar menu on you.md on prod and also it crashes when i open my public profile - and i think the /shell still has some fake placeholder data stuff that we need to remove for clarity bc i do not want anything faked or placeholder to show at all in the ui anywhere bc it makes it hard to tell what is real and what is working vs what needs attention to finish etc etc.

@@ -1,6 +1,20 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-27
+Last Updated: 2026-06-30
+
+---
+
+## 2026-06-30 — Production shell/profile truthfulness fix
+
+### 150. Fix `/shell` sidebar expansion, public profile crash, and fake placeholder UI
+**Status:** CODE COMPLETE / LOCAL BUILD + HTML SMOKE VERIFIED / PRODUCTION DEPLOY + HOUSTON VISUAL VERIFICATION PENDING
+**Verified:** `npx tsc --noEmit`, `git diff --check`, `npm run build`, local production `/houstongolden` smoke (`200`, ~94 KB, one `asciiPortrait` reference, no `Application error` markers), and authenticated local `/shell` HTML smoke with zero matches for removed demo strings (`Demo response`, `Houstons-Mini`, `cloud-vps`, `Lock desktop UI`, `Slack capture`, `Connect Cursor cloud`, `Connect Codex cloud`) plus no top-bar mock `3` count.
+**Source:** 2026-06-30 — Houston: "i can't expand the left sidebar menu on you.md on prod and also it crashes when i open my public profile ... /shell still has some fake placeholder data stuff ... i do not want anything faked or placeholder to show at all in the ui anywhere"
+**Actionable Scope:**
+1. Make the collapsed left sidebar expandable on production shell widths. **DONE LOCAL:** collapse state is now `auto` / `collapsed` / `expanded`, so manual expansion overrides layout auto-collapse.
+2. Remove fake/demo placeholder data from production `/shell`. **DONE LOCAL:** production shell passes `allowMockFallback={false}`; sessions, chats, activity, skills, agents, sync, top-bar counts, Home cards, and demo-only panes render real data or explicit empty/loading states only.
+3. Stop public profile crashes from oversized client payloads. **DONE LOCAL:** public profile client hydration strips heavy `_profile.asciiPortrait` data while preserving server-rendered profile and JSON-LD data.
+4. Production proof. **PENDING:** push/deploy the fix, then smoke `https://www.you.md/shell` with a real browser session and `https://www.you.md/houstongolden` after Vercel is ready.
 
 ---
 

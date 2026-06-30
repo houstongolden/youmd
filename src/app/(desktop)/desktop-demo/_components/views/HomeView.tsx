@@ -14,7 +14,7 @@ import {
 import { Dot, Chip, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
 import { ActivityStream } from "../ActivityStream";
-import { useRealData } from "../../_lib/RealDataContext";
+import { useAllowMockFallback, useRealData } from "../../_lib/RealDataContext";
 
 function greeting() {
   const h = new Date().getHours();
@@ -27,6 +27,7 @@ type HomeProject = { name: string; blurb: string; focus: "focusing" | "active" |
 
 export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => void; tasks: Task[] }) {
   const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
   const openTasks = tasks.filter((t) => t.status !== "done").length;
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
 
@@ -40,9 +41,11 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
         metric: p.files.length,
         badge: p.label,
       }))
-    : PROJECTS.map((p) => ({ name: p.name, blurb: p.blurb, focus: p.focus, metric: p.shipped7d }));
+    : allowMockFallback
+      ? PROJECTS.map((p) => ({ name: p.name, blurb: p.blurb, focus: p.focus, metric: p.shipped7d }))
+      : [];
   const skillCount = live ? real!.skills.length : 0;
-  const machineCount = live ? Math.max(1, [real!.machine?.host, "Houstons-MBP", "cloud-vps"].filter(Boolean).length) : 3;
+  const machineCount = live ? (real!.machine?.host ? 1 : 0) : allowMockFallback ? 3 : 0;
 
   // "Needs you" — derived from real project gaps when live, else mock tasks.
   const realNeeds = live
@@ -50,14 +53,18 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
     : [];
   const needsAttention = live
     ? realNeeds
-    : tasks
+    : allowMockFallback
+      ? tasks
         .filter((t) => t.status !== "done" && (t.priority === "high" || t.owner === "you"))
         .slice(0, 3)
-        .map((t) => ({ id: t.id, title: t.title, project: t.project, high: t.priority === "high" }));
+        .map((t) => ({ id: t.id, title: t.title, project: t.project, high: t.priority === "high" }))
+      : [];
 
   const brief = live
     ? `${projects.length} projects and ${skillCount} skills synced across ${machineCount} machines. ${needsAttention.length} need you; the rest are tracked by your agents.`
-    : DAILY_BRIEF;
+    : allowMockFallback
+      ? DAILY_BRIEF
+      : "Real shell data is loading. No placeholder counts are shown here.";
 
   const readyCount = live ? real!.projects.filter((p) => p.hasEnvLocal).length : 0;
   const insights = live
@@ -74,9 +81,9 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
       <div className="mb-1 flex items-center gap-2">
         <SectionLabel>{WORKSPACE.brain}</SectionLabel>
         <span className="flex items-center gap-1.5">
-          <Dot tone="green" pulse />
+          <Dot tone={live ? "green" : "dim"} pulse={live} />
           <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--success))]">
-            synced · {WORKSPACE.machines} machines
+            {live ? `synced · ${machineCount} machine${machineCount === 1 ? "" : "s"}` : "loading real data"}
           </span>
         </span>
       </div>
@@ -136,27 +143,34 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
       )}
 
       {/* your agents — clones of you, alive */}
-      <div className="mb-2.5 flex items-center justify-between">
-        <SectionLabel>Your agents</SectionLabel>
-        <button onClick={() => onNavigate("agents")} className="font-mono text-[11px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]">
-          manage →
-        </button>
-      </div>
-      <div className="mb-7 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {SUB_AGENTS.map((a) => (
-          <button
-            key={a.id}
-            onClick={() => onNavigate("agents")}
-            className="flex flex-col items-center gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 text-center transition-colors hover:border-[hsl(var(--accent))]/40"
-          >
-            <PixelCharacter kind="agent" seed={a.name} status={a.status === "active" ? "active" : "idle"} size="md" />
-            <div className="min-w-0">
-              <div className="truncate font-mono text-[11.5px] text-[hsl(var(--text-primary))]">{a.name}</div>
-              <div className="truncate text-[10px] text-[hsl(var(--text-secondary))]/60">{a.scope}</div>
-            </div>
-          </button>
-        ))}
-      </div>
+      {(allowMockFallback || (real?.sessions?.length ?? 0) > 1) && (
+        <>
+          <div className="mb-2.5 flex items-center justify-between">
+            <SectionLabel>Your agents</SectionLabel>
+            <button onClick={() => onNavigate("agents")} className="font-mono text-[11px] text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--accent))]">
+              manage →
+            </button>
+          </div>
+          <div className="mb-7 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {(live
+              ? real!.sessions.filter((s) => s.id !== "you-local").slice(0, 4).map((s) => ({ id: s.id, name: s.agent, status: s.status, scope: s.project }))
+              : SUB_AGENTS
+            ).map((a) => (
+              <button
+                key={a.id}
+                onClick={() => onNavigate("agents")}
+                className="flex flex-col items-center gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3 text-center transition-colors hover:border-[hsl(var(--accent))]/40"
+              >
+                <PixelCharacter kind="agent" seed={a.name} status={a.status === "active" ? "active" : "idle"} size="md" />
+                <div className="min-w-0">
+                  <div className="truncate font-mono text-[11.5px] text-[hsl(var(--text-primary))]">{a.name}</div>
+                  <div className="truncate text-[10px] text-[hsl(var(--text-secondary))]/60">{a.scope}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* live activity — the system visibly working for you */}
       <div className="mb-7">

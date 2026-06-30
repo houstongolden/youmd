@@ -1,7 +1,7 @@
 "use client";
 
 import { SKILLS, STACKS } from "../../_data/mock";
-import { useRealData } from "../../_lib/RealDataContext";
+import { useAllowMockFallback, useRealData } from "../../_lib/RealDataContext";
 import { Icon } from "../icons";
 import { Chip, SectionLabel, ViewHeader } from "../primitives";
 
@@ -9,6 +9,7 @@ const VIS_TONE = { private: "default", scoped: "accent", public: "green" } as co
 
 export function SkillsView() {
   const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
   const live = Boolean(real?.available);
 
   if (live) {
@@ -62,7 +63,15 @@ export function SkillsView() {
     );
   }
 
-  // ── mock fallback ──
+  if (!allowMockFallback) {
+    return (
+      <div className="mx-auto h-full max-w-3xl overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+        <ViewHeader title="Skills & Stacks" description="Waiting for real synced skills. No placeholder skills are shown." />
+      </div>
+    );
+  }
+
+  // ── mock fallback for /desktop-demo only ──
   const metaSkills = SKILLS.filter((s) => s.meta);
   const totalInstalls = SKILLS.reduce((a, s) => a + s.sharedAcross, 0);
   return (

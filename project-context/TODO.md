@@ -1155,6 +1155,9 @@ These are implemented but Houston hasn't confirmed they work end-to-end:
 - [x] Collapse expanded shell sidebar groups by default so Projects/API/Skillstacks/Connect/Identity/Chats do not all render open at once
 - [x] Polish the shell composer so the orange prompt glyph and inner focus outline are gone, focus highlights only the outer composer shell, and the bottom row includes attach plus voice shortcut affordances
 - [x] Move shell sidebar collapse onto the YOU logo hover state, shrink the mark to avoid cropping, and move the right-pane toggle to the far-right top chrome
+- [x] Fix production `/shell` sidebar re-expansion state and remove demo/mock fallback rows from authenticated production shell surfaces
+- [x] Reduce public profile client payload by stripping heavy client-only ASCII portrait data before hydration
+- [ ] Deploy and visually verify the production `/shell` no-placeholder pass plus public profile crash fix
 - [ ] Add editable persisted YouStack records for default `youstack` and custom `{name}stack` metadata, visibility, capabilities, and owner policy
 - [ ] Add token scopes and generated docs for personal API/MCP extensions (`sessions`, `stacks`, `tools`, `functions`, `sources`)
 - [ ] Add Convex `agent_runs`, `agent_plan_steps`, and queued gateway messages so shell/MCP/external-channel conversations share live run state

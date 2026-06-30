@@ -3,8 +3,9 @@
 // Maps the authed user's REAL Convex data into the new-IA RealData shape and
 // provides it to the converged shell. Mirrors the exact queries the existing
 // shell already uses (so the calls are proven), and maps defensively — any
-// missing/shape-shifted field just yields fewer items, never a crash. Falls
-// back to the server-passed value (local fs in dev) or mock when empty.
+// missing/shape-shifted field just yields fewer items, never a crash. The
+// production shell is truth-first: when real data is still loading or absent,
+// it renders explicit empty/loading states instead of desktop-demo fixtures.
 import { useMemo } from "react";
 import { useUser } from "@/lib/you-auth";
 import { useConvexAuth, useQuery } from "convex/react";
@@ -154,5 +155,5 @@ export function ConvexRealDataProvider({
     };
   }, [clerkId, portfolio, installs, profile, activity, convexUser, fallback]);
 
-  return <RealDataProvider value={data ?? fallback}>{children}</RealDataProvider>;
+  return <RealDataProvider value={data ?? fallback} allowMockFallback={false}>{children}</RealDataProvider>;
 }

@@ -1,5 +1,15 @@
 # You.md — Changelog
 
+## 2026-06-30 — Shell truth-first pass + profile payload crash fix
+
+Fixed the production `/shell` and public profile issues reported from the live app.
+
+- Fixed the left sidebar collapse state so manual expansion overrides the wide-layout auto-collapse behavior.
+- Disabled mock/demo fallback data for authenticated production `/shell`; demo-only panes now show explicit real-data notices instead of fake rows.
+- Removed fake cloud sessions, demo chat responses, activity rows, machine/agent top-bar counts, and fallback skill/session/project rows from production shell rendering.
+- Slimmed public profile hydration by stripping heavy client-only `_profile.asciiPortrait` data from the client payload while keeping server-rendered profile/JSON-LD data intact.
+- Verified locally with `npx tsc --noEmit`, `git diff --check`, `npm run build`, authenticated `/shell` HTML smoke, and `/houstongolden` profile payload smoke.
+
 ## 2026-06-30 — folder.md zero-paste storage live proof + pointer fix
 
 Closed the live you.md ↔ folder.md storage proof.

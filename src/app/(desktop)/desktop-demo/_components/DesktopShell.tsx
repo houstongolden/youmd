@@ -11,7 +11,7 @@ import { Sidebar } from "./Sidebar";
 import { TitleBar } from "./TitleBar";
 import { SessionShell } from "./SessionShell";
 import { ResizeHandle } from "./ResizeHandle";
-import { useRealData } from "../_lib/RealDataContext";
+import { useAllowMockFallback, useRealData } from "../_lib/RealDataContext";
 import { type AgentAction, type ChatScope } from "./ChatPanel";
 import { SummaryWidget } from "./SummaryWidget";
 import { CommandPalette, type Command } from "./CommandPalette";
@@ -55,6 +55,33 @@ function MainView({
   selectedNode: string | null;
   onSelectNode: (id: string) => void;
 }) {
+  const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
+  const demoOnlyViews: ViewId[] = ["apps", "loops", "terminal", "provision"];
+  if (!allowMockFallback && demoOnlyViews.includes(view)) {
+    return (
+      <div className="flex h-full items-center justify-center px-6 text-center">
+        <div className="max-w-sm font-mono">
+          <div className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--accent))]">real data only</div>
+          <p className="text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]/70">
+            This pane is hidden in production until it is backed by real You.md data.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  if (!allowMockFallback && !real?.available && view !== "home") {
+    return (
+      <div className="flex h-full items-center justify-center px-6 text-center">
+        <div className="max-w-sm font-mono">
+          <div className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--accent))]">loading real data</div>
+          <p className="text-[13px] leading-relaxed text-[hsl(var(--text-secondary))]/70">
+            No placeholder rows are shown while the shell waits for your live state.
+          </p>
+        </div>
+      </div>
+    );
+  }
   switch (view) {
     case "home":
       return <HomeView onNavigate={onNavigate} tasks={tasks} />;
@@ -91,28 +118,30 @@ export function DesktopShell() {
   const isMobile = useIsMobile();
   // Live sessions from the real SessionSource (agent bus + local) when available.
   const real = useRealData();
-  const sessions = real?.sessions?.length ? (real.sessions as AgentSession[]) : SESSIONS;
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop rail
+  const allowMockFallback = useAllowMockFallback();
+  const liveProjects = real?.projects?.map((p) => ({ slug: p.name, name: p.name })) ?? [];
+  const sessions = real?.sessions?.length ? (real.sessions as AgentSession[]) : allowMockFallback ? SESSIONS : [];
+  const [sidebarCollapseMode, setSidebarCollapseMode] = useState<"auto" | "collapsed" | "expanded">("auto"); // desktop rail
   const [drawerOpen, setDrawerOpen] = useState(false); // mobile off-canvas
   const [chatFull, setChatFull] = useState(false);
   const [activeView, setActiveView] = useState<ViewId>("home");
   const [mobilePane, setMobilePane] = useState<"chat" | "view">("chat");
   const [editorFile, setEditorFile] = useState("identity/you.md");
-  const [selectedProject, setSelectedProject] = useState(PROJECTS[0].slug);
+  const [selectedProject, setSelectedProject] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   // Unified shell: which agent session is active (persists = "last used"), and
   // whether the shell docks on the left or right.
-  const [activeSessionId, setActiveSessionId] = useState(sessions[0].id);
+  const [activeSessionId, setActiveSessionId] = useState(sessions[0]?.id ?? "");
   const [chatSide, setChatSide] = useState<"left" | "right">("left");
   const [shellOpen, setShellOpen] = useState(true); // show/hide the whole sessions/shell pane
   const [railCollapsed, setRailCollapsed] = useState(false); // collapse just the session list
   const [shellWidth, setShellWidth] = useState(468);
   const [inspectorWidth, setInspectorWidth] = useState(304);
-  const [tasks, setTasks] = useState<Task[]>(TASKS);
-  const [chats, setChats] = useState<ChatThread[]>(CHATS);
-  const [activeChat, setActiveChat] = useState(CHATS[0].id);
+  const [tasks, setTasks] = useState<Task[]>(() => (allowMockFallback ? TASKS : []));
+  const [chats, setChats] = useState<ChatThread[]>(() => (allowMockFallback ? CHATS : []));
+  const [activeChat, setActiveChat] = useState(allowMockFallback ? CHATS[0].id : "");
   const { theme, toggle: toggleTheme } = useTheme();
   const toast = useToast();
 
@@ -133,6 +162,28 @@ export function DesktopShell() {
     focusChatPane();
   };
   const activeChatTitle = chats.find((c) => c.id === activeChat)?.title;
+
+  useEffect(() => {
+    if (!allowMockFallback) return;
+    setTasks((current) => (current.length ? current : TASKS));
+    setChats((current) => (current.length ? current : CHATS));
+    setActiveChat((current) => current || CHATS[0].id);
+  }, [allowMockFallback]);
+
+  useEffect(() => {
+    const firstProject = liveProjects[0]?.slug ?? (allowMockFallback ? PROJECTS[0].slug : "");
+    if (!selectedProject && firstProject) setSelectedProject(firstProject);
+  }, [allowMockFallback, liveProjects, selectedProject]);
+
+  useEffect(() => {
+    if (!sessions.length) {
+      if (activeSessionId) setActiveSessionId("");
+      return;
+    }
+    if (!sessions.some((s) => s.id === activeSessionId)) {
+      setActiveSessionId(sessions[0].id);
+    }
+  }, [activeSessionId, sessions]);
 
   // Switch the unified shell to a session (local chat/terminal or remote watch).
   const selectSession = (s: AgentSession) => {
@@ -207,7 +258,9 @@ export function DesktopShell() {
   // selected project when the node is a project we know).
   const selectNode = (id: string) => {
     setSelectedNode(id);
-    const asProject = PROJECTS.find((p) => p.slug === id);
+    const asProject =
+      liveProjects.find((p) => p.slug === id) ??
+      (allowMockFallback ? PROJECTS.find((p) => p.slug === id) : undefined);
     if (asProject) setSelectedProject(asProject.slug);
     setInspectorOpen(true);
   };
@@ -308,7 +361,12 @@ export function DesktopShell() {
       run: () => openNote(id),
     }));
 
-    const projects: Command[] = PROJECTS.map((p) => ({
+    const projectSources = real?.projects?.length
+      ? real.projects.map((p) => ({ slug: p.name, name: p.name }))
+      : allowMockFallback
+        ? PROJECTS
+        : [];
+    const projects: Command[] = projectSources.map((p) => ({
       id: `project:${p.slug}`,
       label: `Open project: ${p.name}`,
       group: "Projects",
@@ -343,14 +401,14 @@ export function DesktopShell() {
       },
     ];
 
-    return [...nav, ...notes, ...projects, ...actions];
+    return [...nav, ...(allowMockFallback ? notes : []), ...projects, ...actions];
     // navigate/openNote are stable enough for the demo; rebuild on layout flags.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatFull, isMobile]);
 
   const toggleSidebar = () => {
     if (isMobile) setDrawerOpen((o) => !o);
-    else setSidebarCollapsed((c) => !c);
+    else setSidebarCollapseMode(effectiveSidebarCollapsed ? "expanded" : "collapsed");
   };
 
   // Edge-swipe right opens the drawer; swipe left closes it.
@@ -378,7 +436,9 @@ export function DesktopShell() {
     1 + // main workspace / chat
     (inspectorOpen && !chatFull ? 1 : 0); // inspector
   const autoCollapseSidebar = !isMobile && !chatFull && visibleCols >= 4;
-  const effectiveSidebarCollapsed = sidebarCollapsed || autoCollapseSidebar;
+  const effectiveSidebarCollapsed =
+    sidebarCollapseMode === "collapsed" ||
+    (sidebarCollapseMode === "auto" && autoCollapseSidebar);
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -465,7 +525,7 @@ export function DesktopShell() {
               theme={theme}
               onToggleTheme={toggleTheme}
               onOpenStatus={() => navigate("sync")}
-              onExpand={() => setSidebarCollapsed(false)}
+              onExpand={() => setSidebarCollapseMode("expanded")}
               chats={chats}
               activeChat={activeChat}
               onSelectChat={selectChat}

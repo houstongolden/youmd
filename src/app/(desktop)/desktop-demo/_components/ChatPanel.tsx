@@ -7,6 +7,7 @@ import { Markdown } from "./Markdown";
 import { Icon } from "./icons";
 import { Dot } from "./primitives";
 import { cn } from "../_lib/cn";
+import { useAllowMockFallback } from "../_lib/RealDataContext";
 
 const WORK_STEPS = ["Reading portfolio graph", "Drafting plan", "Composing reply"];
 
@@ -130,7 +131,8 @@ export function ChatPanel({
   chatId?: string;
   chatTitle?: string;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>(() => seedFor(chatId, chatTitle));
+  const allowMockFallback = useAllowMockFallback();
+  const [messages, setMessages] = useState<ChatMessage[]>(() => allowMockFallback ? seedFor(chatId, chatTitle) : []);
   const [input, setInput] = useState("");
   const [working, setWorking] = useState(false);
   const [thinkIdx] = useState(() => Math.floor(Math.random() * THINKING.length));
@@ -138,11 +140,11 @@ export function ChatPanel({
 
   // Switching threads (or starting a new chat) swaps the conversation.
   useEffect(() => {
-    setMessages(seedFor(chatId, chatTitle));
+    setMessages(allowMockFallback ? seedFor(chatId, chatTitle) : []);
     setWorking(false);
     // chatTitle intentionally omitted — chatId drives the reset.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatId]);
+  }, [allowMockFallback, chatId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -153,6 +155,17 @@ export function ChatPanel({
     if (!text || working) return;
     setInput("");
     setMessages((m) => [...m, { id: `u${Date.now()}`, role: "user", text }]);
+    if (!allowMockFallback) {
+      setMessages((m) => [
+        ...m,
+        {
+          id: `a${Date.now()}`,
+          role: "agent",
+          text: "This production shell is currently showing real state only. The live You Agent stream is available in the classic shell while this new shell is being wired.",
+        },
+      ]);
+      return;
+    }
     setWorking(true);
     setTimeout(() => {
       setWorking(false);

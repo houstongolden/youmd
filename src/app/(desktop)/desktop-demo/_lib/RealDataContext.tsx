@@ -3,13 +3,33 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { RealData } from "./realData";
 
-const RealDataContext = createContext<RealData | null>(null);
+type RealDataContextValue = {
+  data: RealData | null;
+  allowMockFallback: boolean;
+};
 
-export function RealDataProvider({ value, children }: { value: RealData | null; children: ReactNode }) {
-  return <RealDataContext.Provider value={value}>{children}</RealDataContext.Provider>;
+const RealDataContext = createContext<RealDataContextValue>({
+  data: null,
+  allowMockFallback: true,
+});
+
+export function RealDataProvider({
+  value,
+  allowMockFallback = true,
+  children,
+}: {
+  value: RealData | null;
+  allowMockFallback?: boolean;
+  children: ReactNode;
+}) {
+  return <RealDataContext.Provider value={{ data: value, allowMockFallback }}>{children}</RealDataContext.Provider>;
 }
 
 // Returns live local data when available, else null (views fall back to mock).
 export function useRealData(): RealData | null {
-  return useContext(RealDataContext);
+  return useContext(RealDataContext).data;
+}
+
+export function useAllowMockFallback(): boolean {
+  return useContext(RealDataContext).allowMockFallback;
 }

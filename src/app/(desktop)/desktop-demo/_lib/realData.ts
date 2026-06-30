@@ -178,14 +178,7 @@ function buildSessions(localHostShort: string, topProject: string): RealSession[
     })
     .sort((a, b) => Number(Boolean(b.local)) - Number(Boolean(a.local)));
 
-  // Cloud-sandbox sessions (vendor APIs: Cursor/Claude/Codex cloud). Until those
-  // adapters are wired these are representative connect-points so the cloud
-  // dimension is visible alongside local + your-machine sessions.
-  const cloud: RealSession[] = [
-    { id: "cloud:cursor", title: "Connect Cursor cloud", kind: "terminal", agent: "cursor-cloud", model: "cursor", project: topProject || "you.md", machine: "Cursor cloud", local: false, cloud: true, status: "idle", summary: "Run + watch background agents in Cursor's cloud sandbox.", task: "cloud agent" },
-    { id: "cloud:codex", title: "Connect Codex cloud", kind: "terminal", agent: "codex-cloud", model: "codex", project: topProject || "you.md", machine: "Codex cloud", local: false, cloud: true, status: "idle", summary: "Run + watch tasks in a Codex cloud sandbox.", task: "cloud agent" },
-  ];
-  return [...sessions, ...busSessions, ...cloud];
+  return [...sessions, ...busSessions];
 }
 
 export function loadRealData(): RealData {

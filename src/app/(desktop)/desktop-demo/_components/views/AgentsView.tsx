@@ -2,7 +2,7 @@
 
 import { PixelCharacter } from "@/components/ui/PixelCharacter";
 import { SESSIONS, DEVICES, type AgentSession } from "../../_data/mock";
-import { useRealData } from "../../_lib/RealDataContext";
+import { useAllowMockFallback, useRealData } from "../../_lib/RealDataContext";
 import { ModelMark } from "../ModelSelector";
 import { Icon } from "../icons";
 import { Dot, Chip, SectionLabel, ViewHeader } from "../primitives";
@@ -12,7 +12,8 @@ import { Dot, Chip, SectionLabel, ViewHeader } from "../primitives";
 // sub-agents here; you get visibility into what's running, where, on what.
 export function AgentsView() {
   const real = useRealData();
-  const sessions: AgentSession[] = real?.sessions?.length ? (real.sessions as AgentSession[]) : SESSIONS;
+  const allowMockFallback = useAllowMockFallback();
+  const sessions: AgentSession[] = real?.sessions?.length ? (real.sessions as AgentSession[]) : allowMockFallback ? SESSIONS : [];
   const projects = Array.from(new Set(sessions.map((s) => s.project)));
   const machines = Array.from(new Set(sessions.map((s) => s.machine)));
 
@@ -35,7 +36,11 @@ export function AgentsView() {
         <span>{machines.length} machines</span>
       </div>
 
-      {projects.map((proj) => {
+      {projects.length === 0 ? (
+        <div className="rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-5 text-[12px] text-[hsl(var(--text-secondary))]/60">
+          no real agent sessions loaded yet
+        </div>
+      ) : projects.map((proj) => {
         const items = sessions.filter((s) => s.project === proj);
         return (
           <div key={proj} className="mb-5">
@@ -90,16 +95,20 @@ export function AgentsView() {
       })}
 
       {/* machines footer — where the agents run */}
-      <SectionLabel className="mb-2">Machines</SectionLabel>
-      <div className="flex flex-wrap gap-2">
-        {DEVICES.map((d) => (
-          <span key={d.name} className="flex items-center gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-2.5 py-1.5">
-            <PixelCharacter kind="machine" seed={d.name} status={d.status === "idle" ? "idle" : "ready"} size="xs" />
-            <span className="font-mono text-[11px] text-[hsl(var(--text-primary))]">{d.name}</span>
-            {d.current && <Chip>this</Chip>}
-          </span>
-        ))}
-      </div>
+      {allowMockFallback && (
+        <>
+          <SectionLabel className="mb-2">Machines</SectionLabel>
+          <div className="flex flex-wrap gap-2">
+            {DEVICES.map((d) => (
+              <span key={d.name} className="flex items-center gap-2 rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] px-2.5 py-1.5">
+                <PixelCharacter kind="machine" seed={d.name} status={d.status === "idle" ? "idle" : "ready"} size="xs" />
+                <span className="font-mono text-[11px] text-[hsl(var(--text-primary))]">{d.name}</span>
+                {d.current && <Chip>this</Chip>}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

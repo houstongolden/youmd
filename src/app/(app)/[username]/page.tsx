@@ -61,6 +61,18 @@ async function fetchProfileData(username: string) {
   }
 }
 
+function stripClientOnlyHeavyProfileData(data: ProfilePageJson | null): ProfilePageJson | null {
+  if (!data) return data;
+  const profileMeta =
+    data._profile && typeof data._profile === "object"
+      ? { ...data._profile, asciiPortrait: null }
+      : data._profile;
+  return {
+    ...data,
+    _profile: profileMeta,
+  };
+}
+
 // ── Server-side metadata generation for SEO / OG tags ──
 export async function generateMetadata({
   params,
@@ -330,6 +342,7 @@ export default async function ProfilePage({
   const { username: rawUsername } = await params;
   const username = normalizeUsernameParam(rawUsername);
   const ssrData = await fetchProfileData(username);
+  const clientSsrData = stripClientOnlyHeavyProfileData(ssrData);
 
   // Build JSON-LD server-side so it's in the initial HTML for crawlers
   const jsonLd = ssrData ? buildJsonLd(username, ssrData) : null;
@@ -370,7 +383,7 @@ export default async function ProfilePage({
       {/* SSR plain-text fallback — always in HTML for agents that parse DOM without JS */}
       {ssrData && <SsrProfileText username={username} data={ssrData} />}
       {/* Client-side interactive profile — ssrData used for instant first paint */}
-      <ProfileContent ssrData={ssrData} />
+      <ProfileContent ssrData={clientSsrData} />
     </>
   );
 }

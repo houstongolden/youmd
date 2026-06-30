@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { PixelCharacter, type PixelCharacterStatus } from "@/components/ui/PixelCharacter";
-import { useRealData } from "../../_lib/RealDataContext";
+import { useAllowMockFallback, useRealData } from "../../_lib/RealDataContext";
 import { ACTIVITY, AGENT_BUS } from "../../_data/mock";
 import { Dot, ViewHeader } from "../primitives";
 
@@ -27,6 +27,7 @@ function pixelStatus(s: Status): PixelCharacterStatus {
 
 export function LiveLogView() {
   const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
   const endRef = useRef<HTMLDivElement | null>(null);
 
   let entries: Entry[] = [];
@@ -58,7 +59,7 @@ export function LiveLogView() {
     for (const p of real.projects.filter((p) => p.hasEnvLocal).slice(0, 4)) {
       entries.push({ id: `env-${p.name}`, actor: p.name, kind: "machine", text: "env.local present", detail: "ready to run", channel: "repo", at: "repo", status: "info" });
     }
-  } else {
+  } else if (allowMockFallback) {
     entries = [
       ...ACTIVITY.map((a) => ({ id: a.id, actor: a.actor, kind: a.kind, text: a.text, channel: a.kind === "machine" ? "sync" : "bus", at: a.at, status: (a.kind === "machine" ? "ok" : "live") as Status })),
       ...AGENT_BUS.map((m) => ({ id: m.id, actor: m.from, kind: "agent" as const, text: m.text, channel: "bus", at: m.at, status: "info" as Status })),
@@ -77,7 +78,7 @@ export function LiveLogView() {
           description="Realtime agent messages, daemon proof, skill syncs, vault, and repo activity across your machines."
           right={
             <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--success))]">
-              <Dot tone="green" pulse size={5} /> {live ? "live · real" : "live"}
+              <Dot tone={live ? "green" : "dim"} pulse={live} size={5} /> {live ? "live · real" : "waiting"}
             </span>
           }
         />

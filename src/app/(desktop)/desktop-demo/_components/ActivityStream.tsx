@@ -2,7 +2,7 @@
 
 import { PixelCharacter } from "@/components/ui/PixelCharacter";
 import { ACTIVITY, type ActivityEvent } from "../_data/mock";
-import { useRealData } from "../_lib/RealDataContext";
+import { useAllowMockFallback, useRealData } from "../_lib/RealDataContext";
 import { Dot } from "./primitives";
 
 // The "your second brain is working for you" feed — agents + machines doing
@@ -10,10 +10,13 @@ import { Dot } from "./primitives";
 // agent-bus activity when available, else the mock feed.
 export function ActivityStream({ limit }: { limit?: number }) {
   const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
   const source: ActivityEvent[] =
     real?.available && real.activity.length
       ? real.activity.map((a) => ({ id: a.id, actor: a.actor, kind: a.kind, status: "active", text: a.text, at: a.at }))
-      : ACTIVITY;
+      : allowMockFallback
+        ? ACTIVITY
+        : [];
   const events = limit ? source.slice(0, limit) : source;
   return (
     <div className="overflow-hidden rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))]">
@@ -22,11 +25,15 @@ export function ActivityStream({ limit }: { limit?: number }) {
           Live activity
         </span>
         <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--success))]">
-          <Dot tone="green" pulse size={5} /> live
+          <Dot tone={events.length ? "green" : "dim"} pulse={events.length > 0} size={5} /> {events.length ? "live" : "waiting"}
         </span>
       </div>
       <div>
-        {events.map((e, i) => (
+        {events.length === 0 ? (
+          <div className="px-3.5 py-6 text-center text-[12px] text-[hsl(var(--text-secondary))]/50">
+            no real activity loaded yet
+          </div>
+        ) : events.map((e, i) => (
           <div
             key={e.id}
             className={
