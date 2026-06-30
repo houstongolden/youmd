@@ -18,9 +18,9 @@ Closed the live you.md ↔ folder.md storage proof.
 - Re-ran live push/list/pull: upload returned file `j977gnz8dng3as0fe3k8jq1hnn89m3tb`, list showed
   `/youmd/proofs/youmd-foldermd-roundtrip-proof-20260630T231554Z.txt`, and pull read back the proof
   contents.
-- Bumped CLI to `youmd@0.9.1`; focused storage tests, CLI build, and npm pack dry-run pass.
-
-Remaining distribution step: publish `youmd@0.9.1` after this commit is on `origin/main`.
+- Bumped and published CLI `youmd@0.9.1`; focused storage tests, CLI build, npm pack dry-run, and
+  `npm view youmd version` pass. The trusted publish workflow reported a duplicate-version error
+  after npm accepted the publish, so the package is live despite the red workflow ending.
 
 ## 2026-06-27 — "Continue ALL": Vercel unblock + orchestrator hardening + two-machine readiness
 

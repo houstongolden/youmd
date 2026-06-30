@@ -15,7 +15,7 @@ PRD Version: 2.3
 - [x] Fix You.md CLI pointer generation for folder.md's wrapped `{ file: ... }` upload response
 - [x] Verify live `you storage push` → `you storage list` → `you storage pull` round-trip against folder.md
 - [x] Bump CLI to `youmd@0.9.1` and pass focused storage tests, CLI build, and package dry-run
-- [ ] Publish `youmd@0.9.1` after the commit is pushed to `origin/main`
+- [x] Publish `youmd@0.9.1` to npm; `npm view youmd version` returns `0.9.1` (trusted workflow reported a duplicate-version error after npm accepted the publish)
 
 ### 2026-06-19 — Local/global agent stack inventory
 - [x] Confirm `youmd skill list` is catalog-driven, not a full local filesystem skill crawl

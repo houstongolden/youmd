@@ -7,7 +7,7 @@ Last Updated: 2026-06-27
 ## 2026-06-27 — Finish the native you.md ↔ folder.md integration (autonomous /provision)
 
 ### 146. folder.md autonomous /provision — zero-paste key mint replacing `you storage setup`
-**Status:** LIVE VERIFIED / CLI 0.9.1 PUBLISH TARGET READY
+**Status:** LIVE VERIFIED / CLI 0.9.1 PUBLISHED
 **Verified:** YES — `FOLDERMD_SERVICE_SECRET` is configured on You.md Convex prod
 `kindly-cassowary-600` and folder.md Vercel production; folder.md production was redeployed and
 folder.md Convex prod `youthful-raccoon-702` was deployed with `externalAccounts` functions/indexes.
@@ -17,8 +17,9 @@ You.md and uploaded a proof file; follow-up push after the client response-shape
 folder.md file id, `you storage list --json` listed the uploaded path, and `you storage pull` read
 back the proof contents. Focused storage regression test now covers folder.md's wrapped
 `{ file: ... }` upload response, and `cli npm run build` + `npm pack --dry-run` pass for `youmd@0.9.1`.
-**Production Verified:** YES for the live API/storage path. npm publication of `youmd@0.9.1` remains
-the distribution step for fresh installs.
+**Production Verified:** YES for the live API/storage path. npm `youmd@0.9.1` is published for
+fresh installs (`npm view youmd version` returns `0.9.1`; trusted workflow reported a duplicate
+version error after npm accepted the publish).
 **Source:** 2026-06-27 — Houston: "start a new chat with both youmd and folder-md GitHub repos
 connected … finish the full native integration between these two projects APIs/mcps etc … folder.md
 autonomous /provision — share the folder-md repo and I'll build the zero-paste key mint that
@@ -35,7 +36,8 @@ server-to-server, stores it encrypted, syncs it to the user's machines, and uplo
 3. CLI/MCP `ensureProvisionedKey()` auto-mint-and-cache wired into `you storage` + `store_media`/
    `get_media`; `setup` kept as optional BYO override; CLI 0.9.0.
 **Open / next:**
-- Publish `youmd@0.9.1` through trusted publishing or npm OTP so fresh installs get the pointer fix.
+- No storage-lane blocker remains; continue with the separate live two-machine spawn test and
+  real-model orchestrator tuning.
 - (Houston's other pending items, out of this session's scope) live two-machine spawn test,
   orchestrator LLM tuning, Vercel project-setting deploy fix.
 
