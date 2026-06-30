@@ -1,6 +1,6 @@
 # You.md Reference Intelligence
 
-Last updated: 2026-06-27T15:34:46.856Z
+Last updated: 2026-06-30T17:47:40.844Z
 
 You.md keeps selected upstream agent-infrastructure repos as local references, then turns upstream changes into reviewable tasks for YouStacks and the You.md brain/context layer. Reference repos are not vendored into this repository; they live under `.reference-repos/` and are ignored by git. "No new commits since last sync" means no delta versus the previous local reference head, not "the upstream repo has been inactive."
 
@@ -27,7 +27,7 @@ Follow-through ledger:
 - Local path: `.reference-repos/garrytan/gstack`
 - Branch: `main`
 - Latest commit: `11de390be1be`
-- Latest upstream activity: 2026-06-25T09:42:45-07:00 (1d ago)
+- Latest upstream activity: 2026-06-25T09:42:45-07:00 (5d ago)
 - Mode: No new commits since last sync (11de390)
 
 - No commits found.
@@ -38,7 +38,7 @@ Follow-through ledger:
 - Local path: `.reference-repos/garrytan/gbrain`
 - Branch: `master`
 - Latest commit: `814258dda679`
-- Latest upstream activity: 2026-06-24T06:05:16-07:00 (3d ago)
+- Latest upstream activity: 2026-06-24T06:05:16-07:00 (6d ago)
 - Mode: No new commits since last sync (814258d)
 
 - No commits found.
@@ -48,11 +48,14 @@ Follow-through ledger:
 - URL: https://github.com/steipete/agent-scripts
 - Local path: `.reference-repos/steipete/agent-scripts`
 - Branch: `main`
-- Latest commit: `ea989d661163`
-- Latest upstream activity: 2026-06-22T00:35:16-04:00 (5d ago)
-- Mode: No new commits since last sync (ea989d6)
+- Latest commit: `761e0fbbaa77`
+- Latest upstream activity: 2026-06-28T10:38:14-07:00 (2d ago)
+- Mode: Changes since 7648ffc
 
-- No commits found.
+- `761e0fb` 2026-06-28 — docs: add GitHub auth guidance
+  Files: `AGENTS.MD`
+- `9cf17ae` 2026-06-28 — docs: clarify corporate Mac Studio routing
+  Files: `skills/remote-mac/SKILL.md`
 
 ## The Library
 
@@ -60,11 +63,14 @@ Follow-through ledger:
 - Local path: `.reference-repos/disler/the-library`
 - Branch: `main`
 - Latest commit: `47f455cd139b`
-- Latest upstream activity: 2026-03-15T10:00:28-05:00 (104d ago)
+- Latest upstream activity: 2026-03-15T10:00:28-05:00 (107d ago)
 - Mode: No new commits since last sync (47f455c)
 
 - No commits found.
 
 ## Candidate Tasks
 
-- No task candidates generated.
+- [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
+  Source: Agent Scripts 761e0fb: docs: add GitHub auth guidance
+- [ ] Cross-agent instruction portability: Review whether this upstream shared-instruction pattern should improve `youmd skill init-project`, host adapters, or repo-local pointer rules.
+  Source: Agent Scripts 9cf17ae: docs: clarify corporate Mac Studio routing
