@@ -26,13 +26,13 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 - `/shell` now renders the converged second-brain shell (`ShellV2`): unified sessions (chat/CLI/remote/cloud), Obsidian-grade Vault (Read/Live/Source, outline/backlinks/tags/wikilinks), force-directed graph, Live Log, Connections, Provision, Sync.
 - Classic Convex shell remains at `/shell?ui=classic` (or `YOUMD_SHELL_LEGACY=1`); `ShellV2` falls back to it via an ErrorBoundary if the data layer errors.
 - Real data via `ConvexRealDataProvider` (portfolio/skills/profile/brainActivity). Production `/shell` disables demo/mock fallback so placeholder sessions, counts, activity rows, chat responses, and demo-only panes do not render as if they were real.
-- Local fix pending deploy: manual sidebar expansion now overrides the auto-collapse breakpoint, so the left sidebar can reopen on wide production layouts after it was collapsed.
+- Production fix deployed in `c80ccb8`: manual sidebar expansion now overrides the auto-collapse breakpoint, so the left sidebar can reopen on wide production layouts after it was collapsed. Authenticated shell visual confirmation is still pending because curl cannot reuse Houston's production browser session.
 - Cloud-agent integration endpoint `GET /api/cloud/[provider]` is live (gated; returns connection state, live sessions once vendor contracts confirmed).
 - KNOWN: authed `/shell` render not yet eyeball-verified in prod by Houston; live cloud-agent fetches are stubbed (return `[]`) pending each vendor contract; vault edit persistence is in-memory (no save-to-backend yet).
 
-### Public profile payload stability — local fix pending deploy
-- Local production build now strips heavy client-only `_profile.asciiPortrait` data from the public profile client payload while preserving the server-rendered public profile and JSON-LD data.
-- Local smoke for `/houstongolden` returns `200`, ~94 KB HTML, one `asciiPortrait` reference, and no `Application error` markers. Production before the fix was ~1.13 MB.
+### Public profile payload stability — deployed 2026-06-30
+- Production now strips heavy client-only `_profile.asciiPortrait` data from the public profile client payload while preserving the server-rendered public profile and JSON-LD data.
+- Live smoke for `/houstongolden?smoke=c80ccb8` returns `200`, ~97 KB HTML, one `asciiPortrait` reference, and no `Application error` markers. Production before the fix was ~1.13 MB.
 
 ### Trusted-Device Secret Vault
 - Account-backed encrypted `.env.local` snapshots now have a trusted-device layer instead of relying on snapshot presence alone.

@@ -9,6 +9,7 @@ Fixed the production `/shell` and public profile issues reported from the live a
 - Removed fake cloud sessions, demo chat responses, activity rows, machine/agent top-bar counts, and fallback skill/session/project rows from production shell rendering.
 - Slimmed public profile hydration by stripping heavy client-only `_profile.asciiPortrait` data from the client payload while keeping server-rendered profile/JSON-LD data intact.
 - Verified locally with `npx tsc --noEmit`, `git diff --check`, `npm run build`, authenticated `/shell` HTML smoke, and `/houstongolden` profile payload smoke.
+- Deployed `c80ccb8` to Vercel and live-smoked `https://www.you.md/houstongolden?smoke=c80ccb8` at ~97 KB with no app-error markers. Authenticated production `/shell` visual verification remains pending in Houston's browser session.
 
 ## 2026-06-30 — folder.md zero-paste storage live proof + pointer fix
 
