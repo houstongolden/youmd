@@ -29,7 +29,27 @@ export interface FolderMdFile {
   name?: string;
   size?: number;
   mimeType?: string;
+  mime_type?: string;
   [k: string]: unknown;
+}
+
+function normalizeFileRecord(raw: unknown): FolderMdFile {
+  const record = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const wrapped = record.file && typeof record.file === "object"
+    ? (record.file as Record<string, unknown>)
+    : record;
+  return {
+    ...wrapped,
+    id: String(wrapped.id ?? ""),
+    path: typeof wrapped.path === "string" ? wrapped.path : undefined,
+    name: typeof wrapped.name === "string" ? wrapped.name : undefined,
+    size: typeof wrapped.size === "number" ? wrapped.size : undefined,
+    mimeType: typeof wrapped.mimeType === "string"
+      ? wrapped.mimeType
+      : typeof wrapped.mime_type === "string"
+        ? wrapped.mime_type
+        : undefined,
+  };
 }
 
 /** Resolve a folder.md API key from explicit arg → config → env. Returns null if none. */
@@ -150,7 +170,7 @@ export async function createFolder(auth: FolderMdAuth, name: string): Promise<Fo
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw await asError(res);
-  return (await res.json()) as FolderMdFile;
+  return normalizeFileRecord(await res.json());
 }
 
 /** List files in a folder. */
@@ -190,7 +210,7 @@ export async function uploadFile(
     signal: AbortSignal.timeout(120_000),
   });
   if (!res.ok) throw await asError(res);
-  return (await res.json()) as FolderMdFile;
+  return normalizeFileRecord(await res.json());
 }
 
 /**

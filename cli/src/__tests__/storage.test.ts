@@ -2,7 +2,7 @@
  * Offline tests for the folder.md storage integration: key persistence + resolution precedence.
  * Network paths (push/pull/list against folder.md) need a live account and are not covered here.
  */
-import { describe, expect, it, beforeAll, beforeEach, afterAll } from "vitest";
+import { describe, expect, it, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
@@ -13,12 +13,14 @@ let tmpHome: string;
 let prevHome: string | undefined;
 let prevEnvKey: string | undefined;
 let prevEnvKey2: string | undefined;
+let originalFetch: typeof globalThis.fetch;
 
 beforeAll(() => {
   tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "you-storage-"));
   prevHome = process.env.YOU_HOME;
   prevEnvKey = process.env.FOLDER_API_KEY;
   prevEnvKey2 = process.env.FOLDERMD_API_KEY;
+  originalFetch = globalThis.fetch;
   process.env.YOU_HOME = tmpHome;
 });
 
@@ -26,6 +28,7 @@ beforeEach(async () => {
   // Reset config + env to a clean slate for each test.
   delete process.env.FOLDER_API_KEY;
   delete process.env.FOLDERMD_API_KEY;
+  globalThis.fetch = originalFetch;
   const { writeGlobalConfig } = await import("../lib/config");
   writeGlobalConfig({});
 });
@@ -37,6 +40,7 @@ afterAll(() => {
   else process.env.FOLDER_API_KEY = prevEnvKey;
   if (prevEnvKey2 === undefined) delete process.env.FOLDERMD_API_KEY;
   else process.env.FOLDERMD_API_KEY = prevEnvKey2;
+  globalThis.fetch = originalFetch;
   fs.rmSync(tmpHome, { recursive: true, force: true });
 });
 
@@ -83,5 +87,37 @@ describe("you storage setup + key resolution", () => {
     const res = await ensureProvisionedKey();
     expect(res.apiKey).toBe("fmd_live_cfg");
     expect(res.folderId).toBe("fld_9");
+  });
+});
+
+describe("folder.md response normalization", () => {
+  it("uploadFile unwraps folder.md's { file } response and normalizes snake_case fields", async () => {
+    const localFile = path.join(tmpHome, "upload-proof.txt");
+    fs.writeFileSync(localFile, "hello folder.md");
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({
+      file: {
+        id: "j97file",
+        name: "upload-proof.txt",
+        path: "/proofs/upload-proof.txt",
+        mime_type: "text/plain",
+        size: 15,
+      },
+    }), {
+      status: 201,
+      headers: { "content-type": "application/json" },
+    })) as unknown as typeof fetch;
+
+    const { uploadFile } = await import("../lib/foldermd");
+    const uploaded = await uploadFile(
+      { apiKey: "fmd_live_test", baseUrl: "https://folder.test/api/v1" },
+      "fld_test",
+      localFile,
+      { destPath: "/proofs/upload-proof.txt" }
+    );
+
+    expect(uploaded.id).toBe("j97file");
+    expect(uploaded.path).toBe("/proofs/upload-proof.txt");
+    expect(uploaded.mimeType).toBe("text/plain");
+    expect(uploaded.size).toBe(15);
   });
 });

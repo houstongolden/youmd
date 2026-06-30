@@ -7,6 +7,16 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-06-30 — folder.md native storage integration
+- [x] Configure the shared `FOLDERMD_SERVICE_SECRET` across You.md Convex prod and folder.md Vercel production without exposing the value
+- [x] Redeploy folder.md production and folder.md Convex so `/api/v1/provision` and `externalAccounts` are live together
+- [x] Verify direct folder.md `/api/v1/provision` auth behavior (`401` without secret, `201` with shared secret)
+- [x] Verify You.md zero-paste first-use storage provisioning from a CLI with no cached folder.md key
+- [x] Fix You.md CLI pointer generation for folder.md's wrapped `{ file: ... }` upload response
+- [x] Verify live `you storage push` → `you storage list` → `you storage pull` round-trip against folder.md
+- [x] Bump CLI to `youmd@0.9.1` and pass focused storage tests, CLI build, and package dry-run
+- [ ] Publish `youmd@0.9.1` after the commit is pushed to `origin/main`
+
 ### 2026-06-19 — Local/global agent stack inventory
 - [x] Confirm `youmd skill list` is catalog-driven, not a full local filesystem skill crawl
 - [x] Generate a secret-safe HTML + Mermaid visual of local/global skills, stacks, host exposure roots, prompts/preferences/context/log buckets, and counts

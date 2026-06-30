@@ -1,5 +1,27 @@
 # You.md — Changelog
 
+## 2026-06-30 — folder.md zero-paste storage live proof + pointer fix
+
+Closed the live you.md ↔ folder.md storage proof.
+
+- Configured the shared `FOLDERMD_SERVICE_SECRET` on the live deployment path without printing the
+  secret. You.md Convex prod already had the value; folder.md Vercel production now has it too.
+- Redeployed folder.md production so the new env is active, then deployed folder.md Convex prod
+  `youthful-raccoon-702`, which was the missing backend half (`externalAccounts:getByExternal` did
+  not exist on prod before the deploy).
+- Verified direct folder.md provisioning: unauthenticated `/api/v1/provision` returns `401` and an
+  authorized direct smoke returns `201` with folder/key fields.
+- Verified the real You.md path from a CLI with no cached folder.md key: `you storage push`
+  auto-provisioned through You.md, uploaded to folder.md, and cached the scoped key locally.
+- Fixed the You.md CLI folder.md client to unwrap folder.md's `{ file: ... }` upload response and
+  normalize `mime_type`, so brain pointers now contain a real `fileId` instead of `"undefined"`.
+- Re-ran live push/list/pull: upload returned file `j977gnz8dng3as0fe3k8jq1hnn89m3tb`, list showed
+  `/youmd/proofs/youmd-foldermd-roundtrip-proof-20260630T231554Z.txt`, and pull read back the proof
+  contents.
+- Bumped CLI to `youmd@0.9.1`; focused storage tests, CLI build, and npm pack dry-run pass.
+
+Remaining distribution step: publish `youmd@0.9.1` after this commit is on `origin/main`.
+
 ## 2026-06-27 — "Continue ALL": Vercel unblock + orchestrator hardening + two-machine readiness
 
 Swept the remaining pending items from the multi-computer handoff.

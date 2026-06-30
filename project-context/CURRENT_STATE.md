@@ -8,6 +8,20 @@ Latest CLI Publish Workflow Commit: 4a0d97a ci: align npm trusted publishing wor
 
 ## What's Deployed and Working
 
+### Native folder.md storage lane — live verified 2026-06-30
+- The zero-paste you.md -> folder.md media lane is live verified. `FOLDERMD_SERVICE_SECRET` is set
+  on You.md Convex prod and folder.md Vercel production; folder.md production and Convex prod
+  `youthful-raccoon-702` were redeployed so `/api/v1/provision` and `externalAccounts` are live
+  together.
+- Direct folder.md provisioning now behaves correctly: no secret returns `401`, the shared-secret
+  server-to-server call returns `201` with folder/key fields.
+- A You.md CLI with no cached folder.md key successfully auto-provisioned on first `you storage push`.
+  Follow-up live proof pushed, listed, and pulled
+  `/youmd/proofs/youmd-foldermd-roundtrip-proof-20260630T231554Z.txt` from folder.md.
+- CLI `youmd@0.9.1` fixes folder.md upload response normalization so brain pointers store the real
+  folder.md `fileId` instead of `"undefined"`. Focused storage tests, CLI build, and npm pack dry-run
+  pass. Remaining distribution step: publish `youmd@0.9.1`.
+
 ### Desktop shell — new 6-destination IA (default at `/shell`)
 - `/shell` now renders the converged second-brain shell (`ShellV2`): unified sessions (chat/CLI/remote/cloud), Obsidian-grade Vault (Read/Live/Source, outline/backlinks/tags/wikilinks), force-directed graph, Live Log, Connections, Provision, Sync.
 - Classic Convex shell remains at `/shell?ui=classic` (or `YOUMD_SHELL_LEGACY=1`); `ShellV2` falls back to it via an ErrorBoundary if the data layer errors.

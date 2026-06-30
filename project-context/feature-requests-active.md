@@ -7,13 +7,18 @@ Last Updated: 2026-06-27
 ## 2026-06-27 — Finish the native you.md ↔ folder.md integration (autonomous /provision)
 
 ### 146. folder.md autonomous /provision — zero-paste key mint replacing `you storage setup`
-**Status:** CODE COMPLETE BOTH REPOS / TYPECHECKS CLEAN / CLI BUILD + STORAGE TESTS GREEN / CLI 0.9.0 / AWAITING LIVE TWO-DEPLOYMENT ROUND-TRIP
-**Verified:** Code-level only here (no node_modules at session start; installed both):
-folder-md `npx tsc --noEmit` exit 0, you.md `tsc -p convex/tsconfig.json --noEmit` exit 0, CLI
-`tsc --noEmit` exit 0 + `tsc` build, `vitest run src/__tests__/storage.test.ts` 4/4 pass
-(incl. new `ensureProvisionedKey` offline short-circuit).
-**Production Verified:** NO — needs `FOLDERMD_SERVICE_SECRET` (>=32 chars, identical) on the you.md
-Convex deployment + folder.md, then one real `store_media`/`you storage push` round-trip.
+**Status:** LIVE VERIFIED / CLI 0.9.1 PUBLISH TARGET READY
+**Verified:** YES — `FOLDERMD_SERVICE_SECRET` is configured on You.md Convex prod
+`kindly-cassowary-600` and folder.md Vercel production; folder.md production was redeployed and
+folder.md Convex prod `youthful-raccoon-702` was deployed with `externalAccounts` functions/indexes.
+Direct authorized `POST https://www.folder.md/api/v1/provision` returned `201` with folder/key
+fields. From a You.md CLI with no cached folder.md key, `you storage push` auto-provisioned through
+You.md and uploaded a proof file; follow-up push after the client response-shape fix returned a real
+folder.md file id, `you storage list --json` listed the uploaded path, and `you storage pull` read
+back the proof contents. Focused storage regression test now covers folder.md's wrapped
+`{ file: ... }` upload response, and `cli npm run build` + `npm pack --dry-run` pass for `youmd@0.9.1`.
+**Production Verified:** YES for the live API/storage path. npm publication of `youmd@0.9.1` remains
+the distribution step for fresh installs.
 **Source:** 2026-06-27 — Houston: "start a new chat with both youmd and folder-md GitHub repos
 connected … finish the full native integration between these two projects APIs/mcps etc … folder.md
 autonomous /provision — share the folder-md repo and I'll build the zero-paste key mint that
@@ -30,7 +35,7 @@ server-to-server, stores it encrypted, syncs it to the user's machines, and uplo
 3. CLI/MCP `ensureProvisionedKey()` auto-mint-and-cache wired into `you storage` + `store_media`/
    `get_media`; `setup` kept as optional BYO override; CLI 0.9.0.
 **Open / next:**
-- Set `FOLDERMD_SERVICE_SECRET` on both deployments; run a live round-trip.
+- Publish `youmd@0.9.1` through trusted publishing or npm OTP so fresh installs get the pointer fix.
 - (Houston's other pending items, out of this session's scope) live two-machine spawn test,
   orchestrator LLM tuning, Vercel project-setting deploy fix.
 
@@ -44,7 +49,9 @@ server-to-server, stores it encrypted, syncs it to the user's machines, and uplo
 HELP_GROUPS in cli/src/index.ts: orchestrate, storage`); registered both (orchestrate → MACHINE &
 SYNC, new STORAGE group), regenerated artifacts, `npm run docs:check` exit 0. prebuild runs before
 `next build`, so this was the instant-error since PR #60 (same class as fix `8a4b34f` for `remote`).
-**Production Verified:** PENDING — confirm a green Vercel build once PR #61 merges to main.
+**Production Verified:** YES — Vercel production list shows latest You.md production deployments
+`Ready`; folder.md production redeploy after the service-secret env change also completed and aliased
+to `https://www.folder.md`.
 **Source:** 2026-06-27 — Houston: "Vercel deploy — worth a glance … it was instant-erroring even on
 web commits, which would block prod deploys (a project-level setting, not the code)." (It was the code.)
 
