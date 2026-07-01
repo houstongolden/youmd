@@ -97,12 +97,19 @@ registry-corruption resilience, prompt identity clarified; +5 offline tests, 16/
 **Source:** 2026-06-27 — Houston: "Orchestrator LLM tuning against real models."
 
 ### 149. Live two-machine spawn round-trip
-**Status:** CODE-READY / AWAITING LIVE HOST (no code changes needed)
+**Status:** CODE-READY / LIVE DISPATCH PROVEN / TARGET HOST NOT CONSUMING COMMANDS
 **Verified:** full audit of `MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md` vs CLI — every command +
 flag exists; Linux systemd `--user` units + linger and macOS launchd plists complete; cross-machine
 bus, durable `remoteCommands` table, scopes, host opt-in, redaction all shipped. Zero stubs in the
-critical paths.
-**Production Verified:** NO — needs a Hostinger VPS / Mac mini to run runbook sections 0–3.
+critical paths. 2026-07-01 live source-side proof: repo CLI `0.9.1` can dispatch durable
+`agent.status` remote commands to the Mac mini target through production; both partial-host and exact
+`Houstons-Mini.lan` dispatches created secret-safe queued `remoteCommands` rows, but neither was
+acked or completed within 60 seconds. The exact-host queued row plus older queued commands for the
+same target show the remaining blocker is target-side daemon freshness/version/launch/opt-in, not the
+source CLI or production dispatch endpoint. SSH direct repair was unavailable (`port 22 refused`).
+**Production Verified:** PARTIAL — source-side durable dispatch works; full spawn round-trip still
+requires the Mac mini / Hostinger host to run the remote-command daemon, answer `agent.status`, then
+opt in and run runbook sections 1-3.
 **Source:** 2026-06-27 — Houston: "Live two-machine test … run the real spawn round-trip."
 
 ---
