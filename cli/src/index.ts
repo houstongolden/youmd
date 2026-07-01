@@ -718,6 +718,7 @@ program
   .option("--goal <text>", "agent.spawn: task prompt for the remote worker")
   .option("--id <workerId>", "agent.output/agent.stop: remote worker id")
   .option("--lines <n>", "agent.output: lines to tail")
+  .option("--root <token>", "machine.verify: safe root token (current|CODE_2025|CODE_YOU)")
   .action((subcommand, args, options) => {
     return remoteCommand(subcommand, args || [], {
       limit: options.limit,
@@ -729,6 +730,7 @@ program
       goal: options.goal,
       id: options.id,
       lines: options.lines,
+      root: options.root,
     });
   });
 

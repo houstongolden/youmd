@@ -1460,7 +1460,7 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
   {
     name: "remote_machine_run",
     description:
-      "Dispatch a WHITELISTED command to one of the user's OTHER synced machines (e.g. tell an office Mac mini to commit and push) and wait (bounded) for the result. Use after remote_machine_status shows work that is dirty/unpushed. Only these actions are allowed: git.status, git.last_activity, git.commit_push (git add -A && commit && push), git.pull (--ff-only), agent.status. No arbitrary shell. Requires the opt-in `remote:command` API-key scope. The remote daemon validates the action against the whitelist and resolves the project against known You.md roots before executing.",
+      "Dispatch a WHITELISTED command to one of the user's OTHER synced machines (e.g. tell an office Mac mini to commit and push, refresh Skill Mesh inventory, or run a safe machine verify) and wait (bounded) for the result. Only these actions are allowed: " + ALLOWED_REMOTE_ACTIONS.join(", ") + ". No arbitrary shell. Requires the opt-in `remote:command` API-key scope. The remote daemon validates the action against the whitelist and resolves any project/root against known safe You.md locations before executing.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1475,10 +1475,11 @@ export const CLI_MCP_TOOLS: CliToolSpec[] = [
         },
         args: {
           type: "object",
-          description: "Action args. `project` (project name) is required for git.* actions; `message` sets the commit message for git.commit_push.",
+          description: "Action args. `project` (project name) is required for git.* and agent.spawn actions; `message` sets the commit message for git.commit_push; `root` for machine.verify is a safe token: current, CODE_2025, or CODE_YOU.",
           properties: {
             project: { type: "string", description: "Project name to operate on (resolved against known You.md roots on the target)." },
             message: { type: "string", description: "Commit message for git.commit_push." },
+            root: { type: "string", description: "machine.verify safe root token: current, CODE_2025, or CODE_YOU." },
           },
         },
         timeout_seconds: {

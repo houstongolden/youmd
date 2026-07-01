@@ -52,6 +52,8 @@ export const ALLOWED_REMOTE_ACTIONS = [
   "git.last_activity",
   "git.commit_push",
   "git.pull",
+  "skill.inventory",
+  "machine.verify",
   "agent.status",
   // ── Cross-machine orchestration (the You agent conductor driving a remote host) ──
   // agent.spawn / agent.stop launch/stop a WORKER harness on the target — a real
@@ -99,6 +101,18 @@ export const ACTION_SPECS: Record<RemoteAction, RemoteActionSpec> = {
     mutating: "reversible",
     timeoutMs: 120_000,
     description: "git pull --ff-only",
+  },
+  "skill.inventory": {
+    needsProject: false,
+    mutating: "reversible",
+    timeoutMs: 180_000,
+    description: "refresh Skill Mesh inventory, hydrate the You.md catalog, and sync the proof (opt-in host)",
+  },
+  "machine.verify": {
+    needsProject: false,
+    mutating: "reversible",
+    timeoutMs: 120_000,
+    description: "write and sync a machine verification report for a named safe root (opt-in host)",
   },
   "agent.status": {
     needsProject: false,
@@ -418,6 +432,70 @@ async function git(
   return runProcess("git", args, cwd, timeoutMs);
 }
 
+function currentYouInvocation(): { file: string; argsPrefix: string[] } {
+  const script = process.argv[1];
+  if (script && fs.existsSync(script)) {
+    return { file: process.execPath, argsPrefix: [script] };
+  }
+  const configured = process.env.YOUMD_CLI_BIN || process.env.YOU_CLI_BIN;
+  return { file: configured || "you", argsPrefix: [] };
+}
+
+async function youmd(
+  args: string[],
+  timeoutMs: number,
+  cwd?: string
+): Promise<RunResult> {
+  const invocation = currentYouInvocation();
+  return runProcess(invocation.file, [...invocation.argsPrefix, ...args], cwd, timeoutMs);
+}
+
+export function resolveMachineVerifyRoot(
+  root: unknown,
+  opts: { startDir?: string; homeDir?: string } = {}
+): { ok: true; dir: string; token: string } | { ok: false; reason: string } {
+  const raw = typeof root === "string" && root.trim().length > 0 ? root.trim() : "current";
+  if (/[\\/]/.test(raw) || raw.includes("..") || raw.startsWith("~") || raw.startsWith(".")) {
+    return { ok: false, reason: `invalid machine root token: ${raw}` };
+  }
+
+  const normalized = raw.toLowerCase().replace(/[-\s]+/g, "_");
+  const home = opts.homeDir || os.homedir();
+  const candidates: Record<string, string> = {
+    current: opts.startDir || process.cwd(),
+    cwd: opts.startDir || process.cwd(),
+    code_2025: path.join(home, "Desktop", "CODE_2025"),
+    desktop_code_2025: path.join(home, "Desktop", "CODE_2025"),
+    code_you: path.join(home, "Desktop", "CODE_YOU"),
+    desktop_code_you: path.join(home, "Desktop", "CODE_YOU"),
+  };
+  const candidate = candidates[normalized];
+  if (!candidate) {
+    return {
+      ok: false,
+      reason: "machine.verify root must be one of: current, CODE_2025, CODE_YOU",
+    };
+  }
+
+  try {
+    const stat = fs.statSync(candidate);
+    if (!stat.isDirectory()) {
+      return { ok: false, reason: `machine.verify root is not a directory: ${raw}` };
+    }
+    return { ok: true, dir: fs.realpathSync.native(candidate), token: raw };
+  } catch {
+    return { ok: false, reason: `machine.verify root does not exist on this host: ${raw}` };
+  }
+}
+
+function requireRemoteHostOptIn(action: RemoteAction, label: string): RemoteExecResult | null {
+  if (remoteAgentHostEnabled()) return null;
+  return reject(
+    action,
+    `this host does not accept remote ${label} (run \`you orchestrate host on\` or set YOU_REMOTE_AGENT_HOST=1 to enable)`
+  );
+}
+
 // ─── git state probe ───────────────────────────────────────────────────────────
 
 async function readGitState(cwd: string, timeoutMs: number): Promise<RemoteGitState> {
@@ -589,6 +667,50 @@ export async function executeRemoteAction(
           gitState,
           status: ok ? "ok" : "error",
           ...(ok ? {} : { error: push.timedOut ? "git push timed out" : "git push failed" }),
+          secretValuesExposed: false,
+        };
+      }
+
+      case "skill.inventory": {
+        const gate = requireRemoteHostOptIn(action, "Skill Mesh repairs");
+        if (gate) return gate;
+
+        const outDir = path.join(os.homedir(), ".you", "agent-stack-inventory");
+        const res = await youmd(
+          ["skill", "inventory", "--out-dir", outDir, "--register-catalog", "--sync"],
+          spec.timeoutMs
+        );
+        const ok = res.exitCode === 0;
+        return {
+          ok,
+          action,
+          exitCode: res.exitCode,
+          output: cleanOutput(res.stdout, res.stderr),
+          status: ok ? "ok" : "error",
+          ...(ok ? {} : { error: res.timedOut ? "skill inventory timed out" : "skill inventory failed" }),
+          secretValuesExposed: false,
+        };
+      }
+
+      case "machine.verify": {
+        const gate = requireRemoteHostOptIn(action, "machine verification repairs");
+        if (gate) return gate;
+
+        const root = resolveMachineVerifyRoot(args.root, { startDir: opts.startDir });
+        if (!root.ok) return reject(action, root.reason);
+
+        const res = await youmd(
+          ["machine", "verify", "--root", root.dir, "--write-report", "--sync-report"],
+          spec.timeoutMs
+        );
+        const ok = res.exitCode === 0;
+        return {
+          ok,
+          action,
+          exitCode: res.exitCode,
+          output: cleanOutput(res.stdout, res.stderr),
+          status: ok ? "ok" : "error",
+          ...(ok ? {} : { error: res.timedOut ? "machine verify timed out" : "machine verify failed" }),
           secretValuesExposed: false,
         };
       }

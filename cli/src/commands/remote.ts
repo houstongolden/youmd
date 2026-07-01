@@ -34,6 +34,8 @@ export type RemoteCommandOptions = {
   id?: string;
   /** agent.output: lines to tail. */
   lines?: string;
+  /** machine.verify: safe root token (current|CODE_2025|CODE_YOU). */
+  root?: string;
 };
 
 function relativeTime(ts: number): string {
@@ -274,7 +276,7 @@ async function runRemoteCommand(
 
   if (!machine || !action) {
     console.log("");
-    console.log(chalk.yellow("  usage: ") + chalk.cyan("youmd remote run <machine> <action> [--project <p>] [--message <m>]"));
+    console.log(chalk.yellow("  usage: ") + chalk.cyan("youmd remote run <machine> <action> [--project <p>] [--message <m>] [--root <token>]"));
     console.log("");
     console.log("  " + DIM("actions:"));
     for (const line of describeWhitelist()) {
@@ -299,6 +301,7 @@ async function runRemoteCommand(
   if (options.goal) args.goal = options.goal;
   if (options.id) args.id = options.id;
   if (options.lines) args.lines = options.lines;
+  if (options.root) args.root = options.root;
 
   const timeoutMs = Math.min(
     Math.max(Number(options.timeout) * 1000 || 60_000, 5_000),
@@ -392,7 +395,7 @@ function usage(): void {
   console.log("");
   console.log("  " + DIM("list:   ") + chalk.cyan("youmd remote list"));
   console.log("  " + DIM("status: ") + chalk.cyan("youmd remote status <machine>"));
-  console.log("  " + DIM("run:    ") + chalk.cyan("youmd remote run <machine> <action> [--project <p>] [--message <m>]"));
+  console.log("  " + DIM("run:    ") + chalk.cyan("youmd remote run <machine> <action> [--project <p>] [--message <m>] [--root <token>]"));
   console.log("");
   console.log("  " + DIM("actions:"));
   for (const line of describeWhitelist()) {

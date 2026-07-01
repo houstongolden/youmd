@@ -223,6 +223,8 @@ daemon. On each agent-bus update (already subscribed):
 | `git.last_activity` | last commit + last agent-bus message for the project | no |
 | `git.commit_push` | `git add -A && git commit -m <msg> && git push` on current branch | yes (reversible) |
 | `git.pull` | `git pull --ff-only` | yes (reversible) |
+| `skill.inventory` | refresh Skill Mesh inventory, hydrate the You.md catalog, and sync the proof — **requires `YOU_REMOTE_AGENT_HOST=1` or `you orchestrate host on` on the target** | yes (reversible) |
+| `machine.verify` | run `you machine verify --write-report --sync-report` against a named safe root token (`current`, `CODE_2025`, `CODE_YOU`) — **requires `YOU_REMOTE_AGENT_HOST=1` or `you orchestrate host on` on the target** | yes (reversible) |
 | `agent.status` | report running agent processes / last agent-bus heartbeat | no |
 | `agent.spawn` | launch a worker harness (claude\|codex\|cursor) on a task in a contained project — **requires `YOU_REMOTE_AGENT_HOST=1` on the target** | yes (reversible) |
 | `agent.list` | list worker agents + status on the target | no |
@@ -233,6 +235,13 @@ Explicitly **NOT** allowed: arbitrary shell, `rm`, force-push, branch deletion,
 `git reset --hard`, npm scripts, file writes outside git, `custom` harness over remote,
 anything not in the table. New actions require a code change + review — the whitelist is
 the security boundary.
+
+**Remote maintenance tier (2026-07-01):** `skill.inventory` and `machine.verify` are
+fixed-argv repair actions for trusted worker hosts. They exist so the conductor can refresh a
+machine's Skill Mesh catalog/proof or machine verification report without spawning a read-only
+coding worker and asking it to run shell commands it cannot write. `machine.verify` deliberately
+does not accept arbitrary filesystem paths; callers pass `--root CODE_2025`, `--root CODE_YOU`,
+or omit it for `current`, and the target resolves that token locally before executing.
 
 **Cross-machine orchestration tier (2026-06-26):** the `agent.*` spawn/list/output/stop
 actions let the You agent conductor on one machine launch + monitor worker harnesses on

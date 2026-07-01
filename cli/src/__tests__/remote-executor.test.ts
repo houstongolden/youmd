@@ -15,6 +15,7 @@ import {
   executeRemoteAction,
   isAllowedRemoteAction,
   resolveProjectDir,
+  resolveMachineVerifyRoot,
   redactSecrets,
   truncateOutput,
   remoteAgentHostEnabled,
@@ -37,6 +38,8 @@ describe("whitelist", () => {
       "git.last_activity",
       "git.commit_push",
       "git.pull",
+      "skill.inventory",
+      "machine.verify",
       "agent.status",
       "agent.spawn",
       "agent.list",
@@ -82,6 +85,78 @@ describe("whitelist", () => {
     const result = await executeRemoteAction({ action: "git.status; echo pwned" });
     expect(result.ok).toBe(false);
     expect(result.status).toBe("rejected");
+  });
+});
+
+describe("remote maintenance actions (opt-in + safe roots)", () => {
+  it("skill.inventory is gated behind the same remote host opt-in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "0";
+    try {
+      const result = await executeRemoteAction({ action: "skill.inventory" });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/YOU_REMOTE_AGENT_HOST|orchestrate host on/);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("machine.verify is gated behind the same remote host opt-in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "0";
+    try {
+      const result = await executeRemoteAction({
+        action: "machine.verify",
+        args: { root: "CODE_YOU" },
+      });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/YOU_REMOTE_AGENT_HOST|orchestrate host on/);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("machine.verify rejects path-shaped roots even when opted in", async () => {
+    const prev = process.env.YOU_REMOTE_AGENT_HOST;
+    process.env.YOU_REMOTE_AGENT_HOST = "1";
+    try {
+      const result = await executeRemoteAction({
+        action: "machine.verify",
+        args: { root: "/tmp" },
+      });
+      expect(result.ok).toBe(false);
+      expect(result.status).toBe("rejected");
+      expect(result.error).toMatch(/invalid machine root token/i);
+    } finally {
+      if (prev === undefined) delete process.env.YOU_REMOTE_AGENT_HOST;
+      else process.env.YOU_REMOTE_AGENT_HOST = prev;
+    }
+  });
+
+  it("resolveMachineVerifyRoot accepts only named safe roots", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "you-machine-root-"));
+    try {
+      const desktopCodeYou = path.join(tmp, "Desktop", "CODE_YOU");
+      fs.mkdirSync(desktopCodeYou, { recursive: true });
+
+      const current = resolveMachineVerifyRoot("current", { startDir: tmp, homeDir: tmp });
+      expect(current.ok).toBe(true);
+
+      const codeYou = resolveMachineVerifyRoot("CODE_YOU", { startDir: tmp, homeDir: tmp });
+      expect(codeYou.ok).toBe(true);
+      if (codeYou.ok) expect(codeYou.dir).toBe(fs.realpathSync.native(desktopCodeYou));
+
+      for (const bad of ["/etc", "../CODE_YOU", "~/Desktop/CODE_YOU", "Desktop/CODE_YOU", "arbitrary"]) {
+        const res = resolveMachineVerifyRoot(bad, { startDir: tmp, homeDir: tmp });
+        expect(res.ok).toBe(false);
+      }
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
 
