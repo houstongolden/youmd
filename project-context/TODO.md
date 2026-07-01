@@ -1,6 +1,6 @@
 # You.md — Build Progress & Roadmap
 
-Last Updated: 2026-06-22
+Last Updated: 2026-07-01
 PRD Version: 2.3
 
 ---
@@ -18,6 +18,13 @@ PRD Version: 2.3
 - [x] Publish `youmd@0.9.1` to npm; `npm view youmd version` returns `0.9.1` (trusted workflow reported a duplicate-version error after npm accepted the publish)
 - [x] Regenerate generated agent docs/OpenAPI surfaces and root handoff markers so the repo, `/llms.txt`, `/llms-full.txt`, and OpenAPI advertise CLI `0.9.1`
 - [x] Re-run a fresh folder.md storage push/list/pull byte-compare proof after the docs/build reconciliation (`/youmd/proofs/youmd-foldermd-live-proof-20260630T233716Z.txt`)
+
+### 2026-07-01 — production shell visual proof and real machine counts
+- [x] Verify authenticated production `/shell` in Houston's real Chrome session after deployment
+- [x] Confirm the left sidebar expands from the collapsed rail and shows Home/Projects/Skills labels
+- [x] Derive production shell machine counts from real sessions instead of `user.hostName`, fixing the misleading `0 machines` state
+- [x] Deploy `94a2d56` through Vercel (`dpl_9UrW7btDtfSAHMd9jsdHwPmBCY73`) and verify the visible shell shows `5` machines in the top strip, sidebar, Home sync strip, Home brief, and Machines card
+- [x] Confirm GitHub Actions CI run `28487402599` passes after the shell fix
 
 ### 2026-06-19 — Local/global agent stack inventory
 - [x] Confirm `youmd skill list` is catalog-driven, not a full local filesystem skill crawl
@@ -148,7 +155,7 @@ PRD Version: 2.3
 - [x] Surface the proof as a compact `live skill mesh` block on Home
 - [x] Surface the detailed proof in Machine readiness with sync/verify commands
 - [x] Verify with root TypeScript, production build, direct readiness payload proof, and local server restart
-- [ ] Next pass: make the desktop app System Status popover consume the same real readiness payload instead of mock sync data
+- [x] Make the desktop app System Status popover consume real session-derived machine proof instead of mock sync data
 
 ### 2026-06-19 — Shared Project Clarity Audit skill
 - [x] Package the reusable Project Clarity Audit prompt as `project-clarity-audit`

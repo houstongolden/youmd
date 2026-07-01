@@ -1,15 +1,17 @@
 # You.md — Changelog
 
-## 2026-07-01 — Authenticated production shell visual QA closed
+## 2026-07-01 — Authenticated production shell proof + real machine counts
 
 - Verified the authenticated production `/shell` in Houston's Chrome session at
-  `https://www.you.md/shell?smoke=94a2d56`.
+  `https://www.you.md/shell`.
 - Fixed the shell Home greeting hydration mismatch by suppressing the expected time-of-day text
   difference between server render and the browser's local timezone.
-- Production shell proof after deploy: no app-error marker, no exact removed demo strings, zero
-  browser console errors, and the left sidebar expands from `58px` to `240px` with labels visible.
-- Vercel production deployment `https://youmd-l5kxnjwgw-hubify.vercel.app` is Ready and aliased to
-  `https://www.you.md`.
+- Added shared machine-proof derivation from real sessions so shell chrome, Home, graph, sync, and
+  System Status no longer report `0 machines` when session hosts are present.
+- Production shell proof after deploy: the left sidebar expands with labels visible, and the title
+  bar, sidebar, Home sync strip, Home brief, and Machines card all show `5` real machines.
+- Vercel production deployment `dpl_9UrW7btDtfSAHMd9jsdHwPmBCY73` is Ready and aliased to
+  `https://www.you.md`; GitHub Actions CI run `28487402599` passed.
 
 ## 2026-06-30 — Full workstream reconciliation + agent docs 0.9.1 alignment
 

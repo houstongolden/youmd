@@ -3,12 +3,12 @@ All messages from Claude Code sessions for the You.md project.
 Auto-maintained — new messages appended each session.
 
 **Total sessions:** 128
-**Total messages:** 564
-**Last updated:** 2026-06-30
+**Total messages:** 566
+**Last updated:** 2026-07-01
 
 ## Table of Contents
 
-1. [2026-06-30 (foldermd-full-workstream-reconciliation)](#session-2026-06-30-foldermd-full-workstream-reconciliation) --- 5 messages
+1. [2026-06-30 (foldermd-full-workstream-reconciliation)](#session-2026-06-30-foldermd-full-workstream-reconciliation) --- 7 messages
 1. [2026-06-30 (prod-shell-profile-placeholder-fix)](#session-2026-06-30-prod-shell-profile-placeholder-fix) --- 1 message
 1. [2026-06-20 (skill-mesh-server-restart-and-mac-mini-proof)](#session-2026-06-20-skill-mesh-server-restart-and-mac-mini-proof) --- 1 message
 1. [2026-06-20 (minimal-surface-synced-brain-graph)](#session-2026-06-20-minimal-surface-synced-brain-graph) --- 1 message
@@ -16748,3 +16748,22 @@ Note: Codex desktop transcript JSONL was not available at the documented `~/.Cod
 
 **2026-06-30 23:31:54 UTC**
 > bro you need to touch everything and make sure it is all working there's no way the goal is achieved and you left so many things unfinished that are still in progress -- create a full more complete goal please
+
+**2026-07-01 01:22:00 UTC**
+> continue
+
+**2026-07-01 01:27:00 UTC**
+> <codex_delegation>
+>   <source_thread_id>019f19aa-8872-7701-8f39-c124511c9e0e</source_thread_id>
+>   <input>Folder.md status handoff from the active foldermd thread, no secrets printed:
+>
+> - foldermd `main`/`origin/main` is at `bb12445 docs: mark youmd provision proof verified`; latest push was docs-only to reconcile the provision handoff with the You.md live proof.
+> - Login slice fix is complete: `2e68d6a fix: handle existing-account signup keys` is committed, pushed, deployed, and live QA already passed for email-code signup, existing-account no-new-key copy, dashboard landing, API keys page, and magic-link login.
+> - Latest folder.md Vercel production deployment is Ready: `dpl_6v7MhmFfkxa9rRWytCsAy69HomSN`, aliased to `https://www.folder.md`.
+> - No-secret prod smoke after deploy: `GET https://www.folder.md/` returns `200`; unauthenticated `POST https://www.folder.md/api/v1/provision` returns `401 {"error":"Unauthorized. Invalid or missing service secret."}`.
+> - `FOLDERMD_SERVICE_SECRET` is configured as encrypted env on folder.md Production; route still returns `503` when unset/short, `401` when missing/wrong. Do not print or move the value through chat.
+> - folder.md Convex prod `youthful-raccoon-702` has the `externalAccounts` functions/indexes deployed; `/api/v1/provision` is idempotent per `(externalSystem, externalUserId)`, mints scoped `write` keys, repeat calls return no re-revealed key unless forced rotation is used.
+> - Folder.md-side blocker for native You.md large-file storage: none. The storage lane has been live-proven from You.md with push/list/pull byte-compare per You.md trackers. Remaining work is broader You.md scope only: authenticated prod `/shell` visual QA, live two-host spawn, and real-model orchestrator tuning.
+>
+> Changed file in foldermd: `project-context/YOUMD_PROVISION_INTEGRATION_2026-06-27.md`. Local foldermd tree only has old untracked `.env.local.bak.*` files.</input>
+> </codex_delegation>
