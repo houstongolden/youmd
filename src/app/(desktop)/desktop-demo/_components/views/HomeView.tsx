@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { PixelCharacter } from "@/components/ui/PixelCharacter";
 import {
   PROJECTS,
@@ -18,7 +17,8 @@ import { ActivityStream } from "../ActivityStream";
 import { useAllowMockFallback, useRealData } from "../../_lib/RealDataContext";
 import { realMachineCount } from "../../_lib/machineProof";
 
-function greetingForHour(h: number) {
+function greeting() {
+  const h = new Date().getHours();
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
@@ -29,13 +29,8 @@ type HomeProject = { name: string; blurb: string; focus: "focusing" | "active" |
 export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => void; tasks: Task[] }) {
   const real = useRealData();
   const allowMockFallback = useAllowMockFallback();
-  const [greeting, setGreeting] = useState("Hello");
   const openTasks = tasks.filter((t) => t.status !== "done").length;
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
-
-  useEffect(() => {
-    setGreeting(greetingForHour(new Date().getHours()));
-  }, []);
 
   // Real-aware: counts, projects, and a generated summary + "needs you".
   const live = Boolean(real?.available);
@@ -93,8 +88,11 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
           </span>
         </span>
       </div>
-      <h1 className="mb-4 font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
-        {greeting}, Houston
+      <h1
+        className="mb-4 font-mono text-2xl font-semibold tracking-tight sm:text-3xl"
+        suppressHydrationWarning
+      >
+        {greeting()}, Houston
       </h1>
 
       {/* what this is — orientation anyone can read in one breath */}
