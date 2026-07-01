@@ -18,7 +18,9 @@ PRD Version: 2.3
 - [x] Re-run the real-model no-spawn orchestrator smoke against built dist; it listed `Houstons-Mini.lan — warn` and finished without spawning workers
 - [x] Publish `youmd@0.9.2` to npm through trusted workflow run `28497007544`
 - [x] Refresh this source Mac's local runtime to `youmd@0.9.2` and confirm all five daemons are loaded
-- [ ] Update the Mac mini to `youmd@0.9.2+`, reload daemons, run `you orchestrate host on`, and re-run the live spawn runbook sections 1-3
+- [x] Prove a real second-host round-trip on `Houstons-MacBook-Air.local`: remote `agent.status`, `agent.list`, `agent.spawn`, `agent.output`, and exited-worker cleanup all returned through the production remote-command bus
+- [x] Prove `com.you.realtime-sync` launchd alone consumes the queue after daemon reinstall/kickstart; launchd-only `agent.status` returned request `rc_01KWE6YTZ4000F2NCT6DK` and launchd-only Codex spawn `w_mr1psrnm504d26` completed read-only
+- [ ] Update the Mac mini to `youmd@0.9.2+`, reload daemons, run `you orchestrate host on`, and re-run the live spawn runbook sections 1-3 on that specific host
 
 ### 2026-06-30 — folder.md native storage integration
 - [x] Configure the shared `FOLDERMD_SERVICE_SECRET` across You.md Convex prod and folder.md Vercel production without exposing the value

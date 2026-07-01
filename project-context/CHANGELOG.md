@@ -1,5 +1,25 @@
 # You.md — Changelog
 
+## 2026-07-01 — MacBook Air live two-host launchd spawn proof
+
+- Proved the real second-host remote-command path against `Houstons-MacBook-Air.local` using
+  production durable remote commands, not a local-only shortcut.
+- First remote receiver proof: `agent.status` returned from the Air in about 2s with
+  `remote-agent-host: enabled`, then `agent.list` returned no active workers and `git.status`
+  returned the Air's `youmd` repo state.
+- Safe remote Codex spawn proof: launched worker `w_mr1pggvia11acf` in
+  `/Users/houstongolden/Desktop/CODE_YOU/youmd`; `agent.output` showed hostname
+  `Houstons-MacBook-Air.local`, branch `main`, only existing untracked `.env.local.bak.*` files,
+  and no edits/installs/servers/commits. Follow-up `agent.list` showed the worker exited.
+- Launchd-only proof after Houston reinstalled/kickstarted the daemon and stopped the foreground
+  receiver: `agent.status` request `rc_01KWE6YTZ4000F2NCT6DK` returned from pid `97782`; launchd-only
+  `agent.spawn` request `rc_01KWE6ZCTN000EKJWWS8X` launched Codex worker `w_mr1psrnm504d26`; output
+  again reported the Air host/path/branch/status read-only; final `agent.list` showed both workers
+  exited.
+- Conclusion: the multi-computer remote-command + launchd receiver path is live verified on the
+  MacBook Air. The remaining two-host follow-up is Mac mini-specific stale runtime/daemon refresh,
+  not a source CLI or production bus blocker.
+
 ## 2026-07-01 — Remote command reliability + live orchestrator model smoke
 
 - Fixed the hosted installer/runtime link path so `https://you.md/install.sh` validates candidate

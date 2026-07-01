@@ -9,7 +9,7 @@ Latest CLI Release: youmd@0.9.2
 
 ## What's Deployed and Working
 
-### Runtime installer + remote command source path — live verified 2026-07-01
+### Runtime installer + remote command two-host path — live verified 2026-07-01
 - Production `https://you.md/install.sh` now includes version-aware runtime relinking:
   `binary_meets_required_version`, `find_runtime_bin_dir`, and `PREFERRED_BIN_DIR` prevent the
   installer from relinking `~/.you/bin/you` back to a stale user prefix after installing the current
@@ -19,10 +19,20 @@ Latest CLI Release: youmd@0.9.2
 - Source-side durable remote dispatch is verified with repo/local CLI `0.9.1+`:
   `you remote run MacBookPro.lan agent.status --timeout 45 --json` completed successfully with
   request `rc_01KWE3P4KV000CEX41MD8`.
-- The Mac mini live proof remains target-side blocked: exact target dispatch
+- Real second-host proof is now complete on `Houstons-MacBook-Air.local`: remote `agent.status`,
+  `agent.list`, `agent.spawn`, `agent.output`, and exited-worker cleanup all returned through the
+  production remote-command bus. The safe Codex worker `w_mr1pggvia11acf` ran read-only in
+  `/Users/houstongolden/Desktop/CODE_YOU/youmd`, reported hostname/path/branch/status, made no
+  edits, and exited.
+- Launchd-only receiver proof also passed after Houston reinstalled/kickstarted
+  `com.you.realtime-sync` and stopped the foreground daemon: `agent.status` request
+  `rc_01KWE6YTZ4000F2NCT6DK` returned from the launchd daemon, then launchd-only `agent.spawn`
+  request `rc_01KWE6ZCTN000EKJWWS8X` launched worker `w_mr1psrnm504d26`; `agent.output` returned the
+  same read-only Air proof and final `agent.list` showed both Air workers exited.
+- The Mac mini live proof remains a host-specific follow-up: exact target dispatch
   `rc_01KWE3PQBK000KS20PB4N` to `Houstons-Mini.lan` timed out after 75 seconds. The source can
-  create durable remoteCommands rows; the target is not consuming them yet and needs runtime/daemon
-  refresh plus `you orchestrate host on` before the spawn round-trip can be closed.
+  create durable remoteCommands rows and another real Mac can consume/spawn; the mini needs
+  runtime/daemon refresh plus `you orchestrate host on` before its own spawn round-trip can close.
 
 ### Orchestrator real-model tuning — live verified 2026-07-01
 - A real-model no-spawn smoke exposed a natural tool-name mismatch:

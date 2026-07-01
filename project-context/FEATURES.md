@@ -12,6 +12,13 @@ Last Updated: 2026-07-01
   `list_machines`; a real-model no-spawn smoke listed `Houstons-Mini.lan — warn` and finished
   without spawning. CLI `youmd@0.9.2` is published and installed on the source Mac.
 
+- 2026-07-01 MacBook Air live two-host proof: `Houstons-MacBook-Air.local` now proves the
+  multi-computer remote-command path end to end. The Air answered remote `agent.status` and
+  `agent.list`, launched read-only Codex workers through `agent.spawn`, returned `agent.output` with
+  hostname/path/branch/status, and showed both workers exited. After `you stack daemon install` plus
+  `launchctl kickstart`, launchd-only `com.you.realtime-sync` consumed the queue without a foreground
+  `you sync --live --daemon`, so the remaining stale-host item is Mac mini-specific.
+
 - 2026-06-19 local/global agent stack inventory: Added a repeatable secret-safe local inventory generator at `scripts/local-agent-stack-inventory.mjs`. It writes `project-context/local-agent-stack-inventory-2026-06-19.html` with a Mermaid topology diagram and tables for canonical roots, host exposure paths, shared instruction symlinks, prompt/preference/context/log buckets, project-context coverage, and the You.md catalog gap. The companion JSON snapshot records 427 unique local skill names, 824 unique real `SKILL.md` files, 409 direct host exposure records, 814 canonical stack/plugin skill files, and 12 You.md cataloged skills. First diagnosis: `youmd skill list` is currently catalog-driven, while Claude/Codex/GStack/SciStack/shared roots contain the broader local stack.
 
 - 2026-06-19 shared `agent-stack-inventory` skill: The local/global inventory workflow is now a canonical shared skill at `~/.agent-shared/claude-skills/agent-stack-inventory`, registered in the You.md catalog as `source: shared:agent-stack-inventory`, and mirrored into Claude/Codex/Pi. The scanner no longer depends on repo packages, can run from another Mac with `node ~/.agent-shared/claude-skills/agent-stack-inventory/scripts/local-agent-stack-inventory.mjs`, and now adds ownership classes, sync policies, provenance hints, same-name/different-realpath DRY review queues, and same-realpath healthy mirror detection. `AGENT_STACK_INVENTORY_AND_SYNC_ARCHITECTURE_2026-06-19.md` captures how this becomes a You.md/Tauri/Convex/username-you-md repo surface.

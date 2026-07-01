@@ -7,16 +7,16 @@ Last Updated: 2026-07-01
 ## 2026-06-30 — Full workstream reconciliation after folder.md storage proof
 
 ### 151. Reconcile the whole active You.md workstream before calling the goal done
-**Status:** DEPLOYED / LOCAL+PRODUCTION CORE VERIFIED / EXTERNAL LIVE-HOST ITEMS REMAIN
+**Status:** DEPLOYED / LOCAL+PRODUCTION CORE VERIFIED / MAC MINI FOLLOW-UP REMAINS
 **Verified:** Local `main` fast-forward pulled from `origin/main`; folder.md `main` pulled from `origin/main`; coordinated with the active folder.md Codex thread; folder.md reported production login fix deployed/verified, Vercel production ready, `FOLDERMD_SERVICE_SECRET` present, and unauthenticated provision smoke returning `401`; You.md agent docs were regenerated for CLI `0.9.1`; `AGENTS.md` / `CLAUDE.md` handoff markers now match `cli/package.json`; `npm run agent-docs:ci`, `npm run profiles:targets-check`, `npm run profiles:portrait-contract`, CLI storage regression tests, CLI build, `git diff --check`, and full `npm run build` pass; fresh live folder.md storage push/list/pull byte-compare proof passed for `j975wqrpzz1x74tnc8pz03m7qx89nvdy` at `/youmd/proofs/youmd-foldermd-live-proof-20260630T233716Z.txt`; `npm view youmd version` and `npx youmd@0.9.1 --version` return `0.9.1`; pushed commit `30c92d7`; GitHub Actions `Agent Docs` run `28483088103` and `CI` run `28483088114` passed; Vercel deployment `dpl_HtDuYc4GPQJwQwnUS83Jkf6geZoW` is Ready and aliased to `https://www.you.md`; live `npm run llms:smoke -- --base-url https://www.you.md` passed; production `/houstongolden?smoke=30c92d7` returned `200`, ~97 KB, one `asciiPortrait`, no app-error marker, and no demo strings; unauthenticated production `/shell` returned `307` to `/sign-in?next=%2Fshell` with no app-error marker; follow-up commits `c0e0a2e` and `94a2d56` deployed in Vercel `dpl_9UrW7btDtfSAHMd9jsdHwPmBCY73`, GitHub Actions CI run `28487402599` passed, and authenticated Chrome QA on `https://www.you.md/shell` verified Houston's shell loads, the sidebar expands with labels visible, and real session-derived machine counts render as `5` in the title bar, sidebar, Home sync strip, Home brief, and Machines card.
-**Production Verified:** YES for docs/API/profile/storage and authenticated `/shell` visual proof. The separate two-host spawn/model-tuning items still require their external runtime.
+**Production Verified:** YES for docs/API/profile/storage, authenticated `/shell` visual proof, real-model orchestrator smoke, and live MacBook Air two-host spawn/launchd proof. Mac mini remains a stale-host follow-up only.
 **Source:** 2026-06-30 — Houston: "bro you need to touch everything and make sure it is all working there's no way the goal is achieved and you left so many things unfinished that are still in progress -- create a full more complete goal please"
 **Actionable Scope:**
 1. Reconstruct the active worklist from git, trackers, folder.md coordination, CI, npm, and deployment state. **DONE.**
 2. Reconcile dirty generated docs/root handoff markers after CLI `0.9.1`. **DONE LOCAL.**
 3. Re-run focused local verification for docs, shell/profile contracts, CLI, and storage. **DONE LOCAL.**
 4. Commit/push the reconciliation and verify GitHub Actions + Vercel production. **DONE for `30c92d7`.**
-5. Leave only true external blockers explicit: live two-host spawn runbook and real-model orchestrator tuning. **DONE.**
+5. Leave only true external blockers explicit. **DONE, updated 2026-07-01:** the MacBook Air closed the live two-host spawn proof; only the Mac mini-specific stale runtime/daemon refresh remains.
 
 ---
 
@@ -102,7 +102,7 @@ listed `Houstons-Mini.lan — warn`, and finished without spawning, stopping, or
 **Source:** 2026-06-27 — Houston: "Orchestrator LLM tuning against real models."
 
 ### 149. Live two-machine spawn round-trip
-**Status:** CODE-READY / LIVE DISPATCH PROVEN / TARGET HOST NOT CONSUMING COMMANDS
+**Status:** LIVE VERIFIED ON MACBOOK AIR / MAC MINI STALE-HOST FOLLOW-UP
 **Verified:** full audit of `MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md` vs CLI — every command +
 flag exists; Linux systemd `--user` units + linger and macOS launchd plists complete; cross-machine
 bus, durable `remoteCommands` table, scopes, host opt-in, redaction all shipped. Zero stubs in the
@@ -127,9 +127,18 @@ fixes; npm publish workflow `28497007544`, Agent Docs, and CI passed. `npm view 
 Post-publish live `agent.status` smoke dispatched `rc_01KWE43QJ6000MZ3SS1PY` to
 `Houstons-Mini.lan`, but the row remained `queued`, confirming the target host still needs to
 install/run the new daemon.
-**Production Verified:** PARTIAL — source-side durable dispatch works; full spawn round-trip still
-requires the Mac mini / Hostinger host to run the remote-command daemon, answer `agent.status`, then
-opt in and run runbook sections 1-3.
+MacBook Air live proof: `Houstons-MacBook-Air.local` answered `agent.status` with
+`remote-agent-host: enabled`, returned `agent.list`, and launched read-only Codex worker
+`w_mr1pggvia11acf` in `/Users/houstongolden/Desktop/CODE_YOU/youmd`; `agent.output` reported
+hostname/path/branch/status, only existing untracked `.env.local.bak.*` files, no edits, no installs,
+no servers, and no commits, then `agent.list` showed it exited. Launchd-only follow-up after Houston
+ran `you stack daemon install` and `launchctl kickstart`: with the foreground receiver stopped,
+`agent.status` request `rc_01KWE6YTZ4000F2NCT6DK` returned from pid `97782`, launchd-only
+`agent.spawn` request `rc_01KWE6ZCTN000EKJWWS8X` launched worker `w_mr1psrnm504d26`, `agent.output`
+returned the same read-only Air proof, and final `agent.list` showed both workers exited.
+**Production Verified:** YES for the live second-host path on `Houstons-MacBook-Air.local`
+including launchd-only queue consumption and remote Codex spawn/output. The Mac mini remains a
+host-specific stale runtime/daemon follow-up, not a source CLI or production remote-command blocker.
 **Source:** 2026-06-27 — Houston: "Live two-machine test … run the real spawn round-trip."
 
 ---
