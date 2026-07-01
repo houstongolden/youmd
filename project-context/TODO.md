@@ -80,6 +80,8 @@ PRD Version: 2.3
 - [x] Make the shared synced brain graph selectable with real active-link pulses and collapse Machine repair/diagnostic clutter behind focused disclosure
 - [ ] Next pass: remove remaining non-canonical fallback liveness paths after production API/MCP graph smoke proves parity
 - [ ] Next pass: publish the current CLI package to npm when CLI code changes require npm fallback parity, then update/install it on the Mac mini
+- [x] Fix `you skill inventory --register-catalog --sync` so fresh machines rerun inventory after catalog hydration/registration and do not sync a stale zero-catalog proof
+- [ ] Rerun the Air Skill Mesh proof after the catalog convergence fix, or rerun the current CLI command twice as a temporary proof, until `Houstons-MacBook-Air.local` no longer reports `youmdCatalogSkills: 0`
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison
 - [x] Add hosted MCP resources for agent stack topology/report files, including generated safe HTML and repo-backed markdown/JSON snapshots

@@ -34,6 +34,22 @@ Latest CLI Release: youmd@0.9.2
   create durable remoteCommands rows and another real Mac can consume/spawn; the mini needs
   runtime/daemon refresh plus `you orchestrate host on` before its own spawn round-trip can close.
 
+### Skill Mesh catalog convergence — locally fixed, Air proof pending 2026-07-01
+- The Air is consuming the production remote-command queue again: `you remote run
+  Houstons-MacBook-Air.local agent.status --timeout 45 --json` returned request
+  `rc_01KWE8F8H20001EY40S95` from launchd pid `18698` with `remote-agent-host: enabled`.
+- Hosted production API/MCP smokes for the synced brain graph and agent-stack inventory passed
+  against `https://kindly-cassowary-600.convex.site` with `secretValuesExposed: false`.
+- The remaining Air Skill Mesh issue is narrower: its synced inventory row still reports
+  `youmdCatalogSkills: 0`, so it discovers filesystem skills but has not yet published a
+  post-catalog inventory proof.
+- Local CLI fix: `you skill inventory --register-catalog --sync` now reruns inventory once after
+  catalog hydration/registration changes the catalog count, then syncs the refreshed proof. A
+  temp-home compiled CLI smoke converged from `catalog: 0 / missing: 1` to
+  `catalog: 12 / missing: 0` in one command.
+- Live closure still needs either the patched CLI installed on the Air or a one-time second run of
+  the existing Air inventory command now that the catalog has been written.
+
 ### Orchestrator real-model tuning — live verified 2026-07-01
 - A real-model no-spawn smoke exposed a natural tool-name mismatch:
   `list_synced_machines` instead of the registered `list_machines`.

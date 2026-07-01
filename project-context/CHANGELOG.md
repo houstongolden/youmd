@@ -1,5 +1,22 @@
 # You.md — Changelog
 
+## 2026-07-01 — Skill Mesh catalog convergence fix
+
+- Fixed `you skill inventory --register-catalog --sync` so a fresh machine that starts with an empty
+  You.md skill catalog now produces a post-registration inventory proof in the same run.
+- Root cause from the MacBook Air repair lane: the first inventory pass could discover filesystem
+  skills, hydrate/write the local `~/.you/skills/youmd-skills.yaml` catalog, and still sync the
+  pre-registration snapshot whose `youmdCatalogSkills` remained `0`.
+- The CLI now reruns the inventory pass once when registration or hydration increases the catalog
+  count, then syncs the refreshed proof. If the post-catalog pass fails, sync is skipped instead of
+  publishing a stale zero-catalog row.
+- Verification: `cd cli && npm run build`, `cd cli && npx vitest run src/__tests__/skill-catalog.test.ts`,
+  and a temp-home compiled CLI smoke where one fresh command converged from `catalog: 0 / missing: 1`
+  to `catalog: 12 / missing: 0` without touching the real home catalog.
+- Live Air status after Houston's repair block: `Houstons-MacBook-Air.local` launchd answered
+  `agent.status` request `rc_01KWE8F8H20001EY40S95`, hosted Convex API/MCP smokes passed, but the
+  synced Air Skill Mesh row still needs one post-catalog proof before the drift item can close.
+
 ## 2026-07-01 — MacBook Air live two-host launchd spawn proof
 
 - Proved the real second-host remote-command path against `Houstons-MacBook-Air.local` using

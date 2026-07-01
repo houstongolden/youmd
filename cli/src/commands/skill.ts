@@ -1706,22 +1706,37 @@ async function inventoryCmd(args: string[]): Promise<void> {
   if (date) scriptArgs.push("--date", date);
 
   console.log("");
-  const spinner = new BrailleSpinner("mapping the local skill mesh");
-  spinner.start();
-  let output = "";
-  try {
-    output = await runInventoryScript(scriptArgs, spinner);
-  } catch (err) {
-    spinner.fail("inventory failed");
-    const message = err instanceof Error ? err.message : String(err);
-    console.log(DIM(`  ${message}`));
-    console.log("");
-    return;
+  type InventoryPassResult = {
+    output: string;
+    latest: string | null;
+    parsed: InventorySnapshot | null;
+  };
+  let skipSyncReason: string | null = null;
+  async function runInventoryPass(label: string, successLabel: string): Promise<InventoryPassResult | null> {
+    const spinner = new BrailleSpinner(label);
+    spinner.start();
+    try {
+      const passOutput = await runInventoryScript(scriptArgs, spinner);
+      const passLatest = findLatestInventoryJson(outDir, startedAt);
+      const passParsed = passLatest ? readInventorySnapshot(passLatest) : null;
+      spinner.stop(successLabel);
+      return { output: passOutput, latest: passLatest, parsed: passParsed };
+    } catch (err) {
+      spinner.fail("inventory failed");
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(DIM(`  ${message}`));
+      console.log("");
+      return null;
+    }
   }
 
-  const latest = findLatestInventoryJson(outDir, startedAt);
-  const parsed = latest ? readInventorySnapshot(latest) : null;
-  spinner.stop("inventory generated");
+  const firstPass = await runInventoryPass("mapping the local skill mesh", "inventory generated");
+  if (!firstPass) {
+    return;
+  }
+  let output = firstPass.output;
+  let latest = firstPass.latest;
+  let parsed = firstPass.parsed;
   console.log("");
   if (parsed?.totals) {
     renderInventoryTotals(parsed.totals);
@@ -1730,12 +1745,26 @@ async function inventoryCmd(args: string[]): Promise<void> {
   }
 
   if (shouldRegisterCatalog && parsed) {
+    const catalogCountBeforeRegister = safeInventoryCount(parsed.totals?.youmdCatalogSkills);
     const catalog = readSkillCatalog();
     const result = addInventorySkillsToCatalog(catalog, inventoryCatalogRows(parsed));
     const label = result.added > 0 ? chalk.green(`${result.added} added`) : DIM("no new entries");
     console.log(`  ${DIM("catalog")} ${label}${result.skipped ? DIM(` · ${result.skipped} already known/skipped`) : ""}`);
     if (result.skills.length > 0) {
       console.log(`  ${DIM("catalog samples")} ${result.skills.slice(0, 8).map((name) => chalk.cyan(name)).join(DIM(", "))}`);
+    }
+    if (result.added > 0 || catalog.skills.length > catalogCountBeforeRegister) {
+      const refreshed = await runInventoryPass(
+        "refreshing post-catalog inventory proof",
+        "post-catalog inventory proof generated"
+      );
+      if (refreshed) {
+        output = refreshed.output;
+        latest = refreshed.latest;
+        parsed = refreshed.parsed;
+      } else {
+        skipSyncReason = "post-catalog proof refresh failed; rerun `you skill inventory --register-catalog --sync` before syncing";
+      }
     }
   }
 
@@ -1755,6 +1784,11 @@ async function inventoryCmd(args: string[]): Promise<void> {
   }
 
   if (shouldSync && parsed) {
+    if (skipSyncReason) {
+      console.log(`  ${DIM("sync skipped:")} ${skipSyncReason}`);
+      console.log("");
+      return;
+    }
     if (!isAuthenticated()) {
       console.log(DIM("  sync skipped: run `you login` or set YOU_API_KEY to persist this machine inventory."));
     } else {
