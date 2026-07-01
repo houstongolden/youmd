@@ -114,6 +114,8 @@ The live daemon also polls the durable queue independently every 5 seconds and r
 maintenance in the background so remote command pickup is not blocked behind stack/inventory sync.
 Follow-up: durable polling now queries both original-case and lowercase host aliases, because stored
 `targetHost` values are matched literally by the API.
+Release target: CLI package/doc handoff is being prepared as `youmd@0.9.2` for the remote-command
+daemon reliability fixes.
 **Production Verified:** PARTIAL — source-side durable dispatch works; full spawn round-trip still
 requires the Mac mini / Hostinger host to run the remote-command daemon, answer `agent.status`, then
 opt in and run runbook sections 1-3.
