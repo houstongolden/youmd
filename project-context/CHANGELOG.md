@@ -1,5 +1,16 @@
 # You.md — Changelog
 
+## 2026-07-01 — Authenticated production shell visual QA closed
+
+- Verified the authenticated production `/shell` in Houston's Chrome session at
+  `https://www.you.md/shell?smoke=94a2d56`.
+- Fixed the shell Home greeting hydration mismatch by suppressing the expected time-of-day text
+  difference between server render and the browser's local timezone.
+- Production shell proof after deploy: no app-error marker, no exact removed demo strings, zero
+  browser console errors, and the left sidebar expands from `58px` to `240px` with labels visible.
+- Vercel production deployment `https://youmd-l5kxnjwgw-hubify.vercel.app` is Ready and aliased to
+  `https://www.you.md`.
+
 ## 2026-06-30 — Full workstream reconciliation + agent docs 0.9.1 alignment
 
 Followed through after the folder.md storage proof so the repo, docs, and trackers do not overclaim.

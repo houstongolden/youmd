@@ -1,7 +1,7 @@
 # You.md — Current State
 
-Last Updated: 2026-06-30
-Latest Verified Production Web Commit: 30c92d7 docs: reconcile youmd 0.9.1 handoff state
+Last Updated: 2026-07-01
+Latest Verified Production Web Commit: 94a2d56 fix(shell): suppress time greeting hydration mismatch
 Latest CLI Publish Workflow Commit: 51999bf fix(storage): normalize foldermd upload pointers
 
 ---
@@ -42,9 +42,9 @@ Latest CLI Publish Workflow Commit: 51999bf fix(storage): normalize foldermd upl
 - `/shell` now renders the converged second-brain shell (`ShellV2`): unified sessions (chat/CLI/remote/cloud), Obsidian-grade Vault (Read/Live/Source, outline/backlinks/tags/wikilinks), force-directed graph, Live Log, Connections, Provision, Sync.
 - Classic Convex shell remains at `/shell?ui=classic` (or `YOUMD_SHELL_LEGACY=1`); `ShellV2` falls back to it via an ErrorBoundary if the data layer errors.
 - Real data via `ConvexRealDataProvider` (portfolio/skills/profile/brainActivity). Production `/shell` disables demo/mock fallback so placeholder sessions, counts, activity rows, chat responses, and demo-only panes do not render as if they were real.
-- Production fix deployed in `c80ccb8`: manual sidebar expansion now overrides the auto-collapse breakpoint, so the left sidebar can reopen on wide production layouts after it was collapsed. Authenticated shell visual confirmation is still pending because curl cannot reuse Houston's production browser session.
+- Production fix deployed in `c80ccb8`: manual sidebar expansion now overrides the auto-collapse breakpoint, so the left sidebar can reopen on wide production layouts after it was collapsed. Follow-up authenticated Chrome QA on `https://www.you.md/shell?smoke=94a2d56` verified the production shell loads in Houston's session, no app-error marker renders, no exact removed demo strings render, browser console errors are empty after the greeting hydration fix, and the sidebar expands from `58px` to `240px` with Home/Projects/Skills labels visible.
 - Cloud-agent integration endpoint `GET /api/cloud/[provider]` is live (gated; returns connection state, live sessions once vendor contracts confirmed).
-- KNOWN: authed `/shell` render not yet eyeball-verified in prod by Houston; live cloud-agent fetches are stubbed (return `[]`) pending each vendor contract; vault edit persistence is in-memory (no save-to-backend yet).
+- KNOWN: live cloud-agent fetches are stubbed (return `[]`) pending each vendor contract; vault edit persistence is in-memory (no save-to-backend yet).
 
 ### Public profile payload stability — deployed 2026-06-30
 - Production now strips heavy client-only `_profile.asciiPortrait` data from the public profile client payload while preserving the server-rendered public profile and JSON-LD data.
