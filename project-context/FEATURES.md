@@ -23,8 +23,9 @@ Last Updated: 2026-07-01
   reruns inventory after catalog hydration/registration changes the local You.md catalog count. This
   prevents fresh machines from syncing the first pre-registration snapshot with
   `youmdCatalogSkills: 0`; a temp-home compiled CLI smoke converged a fake fresh machine from
-  `catalog: 0 / missing: 1` to `catalog: 12 / missing: 0` in one command. The Air daemon is
-  responsive again, but its live Skill Mesh row still needs a post-catalog proof before drift closes.
+  `catalog: 0 / missing: 1` to `catalog: 12 / missing: 0` in one command. CLI `youmd@0.9.3`
+  is published with this fix. The Air daemon is responsive again, but its live Skill Mesh row still
+  needs a post-catalog proof before drift closes.
 
 - 2026-06-19 local/global agent stack inventory: Added a repeatable secret-safe local inventory generator at `scripts/local-agent-stack-inventory.mjs`. It writes `project-context/local-agent-stack-inventory-2026-06-19.html` with a Mermaid topology diagram and tables for canonical roots, host exposure paths, shared instruction symlinks, prompt/preference/context/log buckets, project-context coverage, and the You.md catalog gap. The companion JSON snapshot records 427 unique local skill names, 824 unique real `SKILL.md` files, 409 direct host exposure records, 814 canonical stack/plugin skill files, and 12 You.md cataloged skills. First diagnosis: `youmd skill list` is currently catalog-driven, while Claude/Codex/GStack/SciStack/shared roots contain the broader local stack.
 

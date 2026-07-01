@@ -79,9 +79,9 @@ PRD Version: 2.3
 - [x] Add `npm run sync:graph:smoke` so the synced-brain graph REST/MCP proof is repeatable without printing secrets
 - [x] Make the shared synced brain graph selectable with real active-link pulses and collapse Machine repair/diagnostic clutter behind focused disclosure
 - [ ] Next pass: remove remaining non-canonical fallback liveness paths after production API/MCP graph smoke proves parity
-- [ ] Next pass: publish the current CLI package to npm when CLI code changes require npm fallback parity, then update/install it on the Mac mini
+- [ ] Next pass: update/install `youmd@0.9.3+` on the Mac mini, reload daemons, and run its live spawn proof when the Mini is available
 - [x] Fix `you skill inventory --register-catalog --sync` so fresh machines rerun inventory after catalog hydration/registration and do not sync a stale zero-catalog proof
-- [x] Prepare CLI `youmd@0.9.3` publish target for the Skill Mesh catalog convergence fix, including generated docs/OpenAPI and handoff markers
+- [x] Publish CLI `youmd@0.9.3` for the Skill Mesh catalog convergence fix, including generated docs/OpenAPI, handoff markers, npm proof, source Mac runtime refresh, and daemon reload
 - [ ] Rerun the Air Skill Mesh proof after the catalog convergence fix, or rerun the current CLI command twice as a temporary proof, until `Houstons-MacBook-Air.local` no longer reports `youmdCatalogSkills: 0`
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison

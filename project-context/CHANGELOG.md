@@ -13,8 +13,11 @@
 - Verification: `cd cli && npm run build`, `cd cli && npx vitest run src/__tests__/skill-catalog.test.ts`,
   and a temp-home compiled CLI smoke where one fresh command converged from `catalog: 0 / missing: 1`
   to `catalog: 12 / missing: 0` without touching the real home catalog.
-- Prepared CLI `youmd@0.9.3` as the npm publish target for this fix, regenerated agent docs/OpenAPI
-  surfaces, and updated root handoff markers to `0.9.3`.
+- Published CLI `youmd@0.9.3` through trusted workflow `28501017652`; `npm view youmd version`
+  and `npx youmd@0.9.3 --version` both return `0.9.3`.
+- Regenerated agent docs/OpenAPI surfaces, updated root handoff markers to `0.9.3`, refreshed this
+  Mac's local `~/.you/npm-global` runtime to `0.9.3`, and reinstalled/reloaded all five resident
+  daemons.
 - Live Air status after Houston's repair block: `Houstons-MacBook-Air.local` launchd answered
   `agent.status` request `rc_01KWE8F8H20001EY40S95`, hosted Convex API/MCP smokes passed, but the
   synced Air Skill Mesh row still needs one post-catalog proof before the drift item can close.

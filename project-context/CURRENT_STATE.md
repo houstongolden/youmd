@@ -1,10 +1,9 @@
 # You.md — Current State
 
 Last Updated: 2026-07-01
-Latest Verified Production Web Commit: 755d830 fix(install): link current runtime binaries
-Latest CLI Publish Workflow Commit: 466e2f9 docs: record orchestrator and remote command proof
-Latest CLI Release: youmd@0.9.2
-Latest CLI Publish Target: youmd@0.9.3
+Latest Verified Production Web Commit: d789e2a chore(cli): prepare 0.9.3 release
+Latest CLI Publish Workflow Commit: d789e2a chore(cli): prepare 0.9.3 release
+Latest CLI Release: youmd@0.9.3
 
 ---
 
@@ -48,8 +47,14 @@ Latest CLI Publish Target: youmd@0.9.3
   catalog hydration/registration changes the catalog count, then syncs the refreshed proof. A
   temp-home compiled CLI smoke converged from `catalog: 0 / missing: 1` to
   `catalog: 12 / missing: 0` in one command.
-- CLI `youmd@0.9.3` is prepared as the publish target for this fix; package files, generated
-  agent docs/OpenAPI surfaces, and root handoff markers all now point at `0.9.3`.
+- CLI `youmd@0.9.3` is published through trusted workflow `28501017652`; `npm view youmd version`,
+  `npx youmd@0.9.3 --version`, this Mac's `you --version`, and
+  `/Users/houstongolden/.you/bin/you --version` all return `0.9.3`.
+- Vercel production deployment `https://youmd-ogzceggj7-hubify.vercel.app` is Ready and aliased to
+  `https://you.md` / `https://www.you.md`.
+- This Mac's `~/.you/npm-global` runtime is refreshed to `0.9.3`, and `you stack daemon install`
+  reloaded all five resident daemons. Follow-up `you stack daemon status` shows all five loaded with
+  fresh activity and no stale orchestrator warning.
 - Live closure still needs either the patched CLI installed on the Air or a one-time second run of
   the existing Air inventory command now that the catalog has been written.
 
@@ -60,9 +65,9 @@ Latest CLI Publish Target: youmd@0.9.3
   `list_synced_machines` / `list_remote_machines`. The step log records the canonical tool name.
 - Follow-up live smoke against built local dist completed read-only with `--max-steps 5`, listed
   `Houstons-Mini.lan — warn`, and finished without spawning, stopping, or writing workers.
-- CLI `youmd@0.9.2` is published; `npm view youmd version`, `npx youmd@0.9.2 --version`, `you
-  --version`, and `/Users/houstongolden/.you/bin/you --version` all return `0.9.2`.
-- The source Mac's `~/.you/npm-global` runtime has been refreshed to `youmd@0.9.2`; all five
+- CLI `youmd@0.9.3` is now the latest published release. `0.9.2` remains the remote-command
+  reliability release; `0.9.3` adds the Skill Mesh catalog convergence fix.
+- The source Mac's `~/.you/npm-global` runtime has been refreshed to `youmd@0.9.3`; all five
   resident daemons are loaded.
 
 ### Native folder.md storage lane — live verified 2026-06-30
