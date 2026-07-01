@@ -5,6 +5,8 @@ import { LiveBrainLog, type LiveLogEntry } from "@/components/terminal/LiveBrain
 import { DAEMONS, DEVICES, AGENT_BUS, WORKSPACE } from "../_data/mock";
 import { Icon } from "./icons";
 import { Dot, SectionLabel } from "./primitives";
+import { useAllowMockFallback, useRealData } from "../_lib/RealDataContext";
+import { realMachineRows } from "../_lib/machineProof";
 
 function mockTimeAgo(value: string): number {
   const now = Date.now();
@@ -24,11 +26,46 @@ function mockTimeAgo(value: string): number {
 // daemons, realtime sync, machines, crawlers, agent bus. No controls, no
 // config. It's managed by the curl-installed daemons; the app just reflects it.
 export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const real = useRealData();
+  const allowMockFallback = useAllowMockFallback();
+
   if (!open) return null;
 
-  const online = DEVICES.filter((d) => d.status !== "idle").length;
-  const logEntries: LiveLogEntry[] = [
-    ...AGENT_BUS.map((message) => ({
+  const machineRows = real?.available
+    ? realMachineRows(real)
+    : allowMockFallback ? DEVICES.map((device) => ({
+        name: device.name,
+        detail: device.agents.join(", "),
+        status: device.status,
+        lastSync: device.lastSync,
+        current: Boolean(device.current),
+      })) : [];
+  const online = machineRows.filter((d) => d.status !== "idle").length;
+  const logEntries: LiveLogEntry[] = real?.available
+    ? [
+        ...real.activity.map((entry) => ({
+          id: `real-${entry.id}`,
+          at: entry.at,
+          source: entry.kind === "machine" ? "machine" : "bus",
+          channel: entry.kind === "machine" ? "sync" : "activity",
+          kind: entry.kind,
+          title: entry.actor,
+          detail: entry.text,
+          status: entry.kind === "machine" ? "ok" as const : "live" as const,
+        })),
+        ...machineRows.map((machine) => ({
+          id: `machine-${machine.name}`,
+          at: machine.lastSync,
+          source: "machine",
+          channel: machine.name,
+          kind: machine.status,
+          title: `${machine.name}${machine.current ? " · this machine" : ""}`,
+          detail: machine.detail,
+          status: machine.status === "blocked" || machine.status === "waiting" ? "warn" as const : "ok" as const,
+        })),
+      ]
+    : allowMockFallback ? [
+        ...AGENT_BUS.map((message) => ({
       id: `bus-${message.id}`,
       at: mockTimeAgo(message.at),
       source: "bus",
@@ -58,7 +95,8 @@ export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => 
       detail: device.agents.join(", "),
       status: device.status === "idle" ? "warn" as const : "ok" as const,
     })),
-  ].sort((a, b) => Number(a.at ?? 0) - Number(b.at ?? 0));
+      ] : [];
+  logEntries.sort((a, b) => Number(a.at ?? 0) - Number(b.at ?? 0));
 
   return (
     <div className="fixed inset-0 z-50">
@@ -74,9 +112,11 @@ export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => 
         {/* header */}
         <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] px-4 py-3">
           <Dot tone="green" pulse />
-          <span className="text-[13px] text-[hsl(var(--text-primary))]">Everything&apos;s in sync</span>
+          <span className="text-[13px] text-[hsl(var(--text-primary))]">
+            {real?.available || allowMockFallback ? "Everything's in sync" : "Real sync data loading"}
+          </span>
           <span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--text-secondary))]/55">
-            {WORKSPACE.lastSync}
+            {real?.available ? "real proof" : allowMockFallback ? WORKSPACE.lastSync : "waiting"}
           </span>
         </div>
 
@@ -98,10 +138,10 @@ export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => 
 
           {/* machines */}
           <SectionLabel className="mb-1.5 px-1">
-            Machines · {online}/{DEVICES.length} online
+            Machines · {online}/{machineRows.length} online
           </SectionLabel>
           <div className="mb-4 space-y-1">
-            {DEVICES.map((d) => (
+            {machineRows.map((d) => (
               <div key={d.name} className="flex items-center gap-2.5 px-1 py-1">
                 <Icon name="device" size={13} className="text-[hsl(var(--text-secondary))]/70" />
                 <span className="font-mono text-[12px] text-[hsl(var(--text-primary))]">{d.name}</span>
@@ -109,7 +149,7 @@ export function SystemStatus({ open, onClose }: { open: boolean; onClose: () => 
                   <span className="font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--accent))]">this</span>
                 )}
                 <span className="ml-auto flex items-center gap-1.5">
-                  <Dot tone={d.status === "idle" ? "dim" : "green"} size={5} pulse={d.status === "active"} />
+                  <Dot tone={d.status === "idle" ? "dim" : d.status === "blocked" || d.status === "waiting" ? "orange" : "green"} size={5} pulse={d.status === "active"} />
                   <span className="font-mono text-[10px] text-[hsl(var(--text-secondary))]/45">{d.lastSync}</span>
                 </span>
               </div>

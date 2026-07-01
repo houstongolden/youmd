@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { PixelCharacter } from "@/components/ui/PixelCharacter";
 import {
   PROJECTS,
@@ -15,9 +16,9 @@ import { Dot, Chip, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
 import { ActivityStream } from "../ActivityStream";
 import { useAllowMockFallback, useRealData } from "../../_lib/RealDataContext";
+import { realMachineCount } from "../../_lib/machineProof";
 
-function greeting() {
-  const h = new Date().getHours();
+function greetingForHour(h: number) {
   if (h < 12) return "Good morning";
   if (h < 18) return "Good afternoon";
   return "Good evening";
@@ -28,8 +29,13 @@ type HomeProject = { name: string; blurb: string; focus: "focusing" | "active" |
 export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => void; tasks: Task[] }) {
   const real = useRealData();
   const allowMockFallback = useAllowMockFallback();
+  const [greeting, setGreeting] = useState("Hello");
   const openTasks = tasks.filter((t) => t.status !== "done").length;
   const activeAgents = SUB_AGENTS.filter((a) => a.status === "active").length;
+
+  useEffect(() => {
+    setGreeting(greetingForHour(new Date().getHours()));
+  }, []);
 
   // Real-aware: counts, projects, and a generated summary + "needs you".
   const live = Boolean(real?.available);
@@ -45,7 +51,7 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
       ? PROJECTS.map((p) => ({ name: p.name, blurb: p.blurb, focus: p.focus, metric: p.shipped7d }))
       : [];
   const skillCount = live ? real!.skills.length : 0;
-  const machineCount = live ? (real!.machine?.host ? 1 : 0) : allowMockFallback ? 3 : 0;
+  const machineCount = live ? realMachineCount(real) : allowMockFallback ? 3 : 0;
 
   // "Needs you" — derived from real project gaps when live, else mock tasks.
   const realNeeds = live
@@ -88,7 +94,7 @@ export function HomeView({ onNavigate, tasks }: { onNavigate: (v: ViewId) => voi
         </span>
       </div>
       <h1 className="mb-4 font-mono text-2xl font-semibold tracking-tight sm:text-3xl">
-        {greeting()}, Houston
+        {greeting}, Houston
       </h1>
 
       {/* what this is — orientation anyone can read in one breath */}

@@ -6,6 +6,7 @@ import { Dot } from "./primitives";
 import { DEVICES, SUB_AGENTS } from "../_data/mock";
 import { cn } from "../_lib/cn";
 import { useAllowMockFallback, useRealData } from "../_lib/RealDataContext";
+import { realMachineCount } from "../_lib/machineProof";
 
 // macOS-style title bar. Window-level layout controls (shell dock side,
 // inspector, focus) are consolidated behind one minimal "layout" popover so the
@@ -45,7 +46,7 @@ export function TitleBar({
 }) {
   const real = useRealData();
   const allowMockFallback = useAllowMockFallback();
-  const machines = real?.machine?.host ? 1 : allowMockFallback ? DEVICES.length : 0;
+  const machines = real?.available ? realMachineCount(real) : allowMockFallback ? DEVICES.length : 0;
   const agents = real?.sessions
     ? real.sessions.filter((session) => session.id !== "you-local" && session.status === "active").length
     : allowMockFallback

@@ -6,6 +6,7 @@ import { Icon } from "./icons";
 import { Dot, SectionLabel } from "./primitives";
 import { cn } from "../_lib/cn";
 import { useAllowMockFallback, useRealData } from "../_lib/RealDataContext";
+import { realMachineCount } from "../_lib/machineProof";
 
 export function Sidebar({
   collapsed,
@@ -37,7 +38,7 @@ export function Sidebar({
   const [accountOpen, setAccountOpen] = useState(false);
   const real = useRealData();
   const allowMockFallback = useAllowMockFallback();
-  const machineCount = real?.machine?.host ? 1 : allowMockFallback ? WORKSPACE.machines : 0;
+  const machineCount = real?.available ? realMachineCount(real) : allowMockFallback ? WORKSPACE.machines : 0;
   const displayName = allowMockFallback ? WORKSPACE.name : "you.md";
   const displayHandle = allowMockFallback ? WORKSPACE.handle : real?.machine?.host ?? "real data only";
 

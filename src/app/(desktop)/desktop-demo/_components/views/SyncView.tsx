@@ -5,6 +5,7 @@ import { DEVICES, DAEMONS, WORKSPACE, SUB_AGENTS, SKILLS } from "../../_data/moc
 import { ViewHeader, Chip, Dot, SectionLabel } from "../primitives";
 import { Icon } from "../icons";
 import { useAllowMockFallback, useRealData } from "../../_lib/RealDataContext";
+import { realMachineRows } from "../../_lib/machineProof";
 import { useToast } from "../Toast";
 
 // The "everything's in sync" overview — promoted from a cramped popout to a
@@ -15,16 +16,15 @@ export function SyncView() {
   const allowMockFallback = useAllowMockFallback();
   const toast = useToast();
   const live = Boolean(real?.available);
-  const realMachineRows = real?.machine?.host
-    ? [{
-        name: real.machine.host,
-        os: `${real.machine.ready ?? 0}/${real.machine.scanned ?? 0} projects ready`,
-        status: "synced" as const,
-        lastSync: "real proof",
-        current: true,
-      }]
-    : [];
-  const machineRows = live ? realMachineRows : allowMockFallback ? DEVICES : [];
+  const machineRows = live
+    ? realMachineRows(real).map((row) => ({
+        name: row.name,
+        os: row.detail,
+        status: row.status,
+        lastSync: row.lastSync,
+        current: row.current,
+      }))
+    : allowMockFallback ? DEVICES : [];
   // Mark "this machine" by the REAL host (server-detected), not a hardcoded
   // flag — so it's never wrong. If the host is unknown (e.g. hosted web with no
   // local fs), show no "this" badge rather than mislabel a machine.
@@ -111,7 +111,7 @@ export function SyncView() {
           return (
             <div key={d.name} className="group rounded-sm border border-[hsl(var(--border))] bg-[hsl(var(--bg-raised))] p-3">
               <div className="mb-2 flex items-center gap-2.5">
-                <PixelCharacter kind="machine" seed={d.name} status={d.status === "active" || d.status === "synced" ? "ready" : "idle"} size="md" />
+                <PixelCharacter kind="machine" seed={d.name} status={d.status === "active" || d.status === "synced" ? "ready" : d.status === "blocked" ? "blocked" : "idle"} size="md" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="truncate font-mono text-[12px] text-[hsl(var(--text-primary))]">{d.name}</span>

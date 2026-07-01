@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GRAPH_NODES, GRAPH_EDGES } from "../../_data/mock";
 import { useRealData } from "../../_lib/RealDataContext";
+import { realMachineRows } from "../../_lib/machineProof";
 import { Icon } from "../icons";
 import { cn } from "../../_lib/cn";
 
@@ -31,9 +32,9 @@ function buildGraph(real: ReturnType<typeof useRealData>): { nodes: GNode[]; edg
   }
   const nodes: GNode[] = [{ id: "you", label: "YOU", kind: "you" }];
   const edges: GEdge[] = [];
-  for (const m of [real.machine?.host, "Houstons-MBP", "cloud-vps"].filter(Boolean).slice(0, 3) as string[]) {
-    nodes.push({ id: `m:${m}`, label: m, kind: "machine" });
-    edges.push({ from: "you", to: `m:${m}` });
+  for (const row of realMachineRows(real).slice(0, 3)) {
+    nodes.push({ id: `m:${row.name}`, label: row.name, kind: "machine" });
+    edges.push({ from: "you", to: `m:${row.name}` });
   }
   for (const b of real.brain.slice(0, 8)) {
     nodes.push({ id: `b:${b.id}`, label: b.name, kind: "note" });
