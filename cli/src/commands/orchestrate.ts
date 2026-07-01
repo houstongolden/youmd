@@ -19,7 +19,7 @@ import {
 import { sendAgentBusMessage } from "../lib/api";
 import { isAuthenticated, readGlobalConfig, writeGlobalConfig } from "../lib/config";
 import { remoteAgentHostEnabled } from "../lib/remote-executor";
-import { buildOrchestratorTools, makeModelCaller, resolveProjectDir } from "../lib/orchestrator/tools";
+import { buildOrchestratorTools, buildBrainTools, makeModelCaller, resolveProjectDir } from "../lib/orchestrator/tools";
 import { runAgentLoop } from "../lib/orchestrator/loop";
 
 const ACCENT = chalk.hex("#C46A3A");
@@ -247,7 +247,9 @@ export async function orchestrateCommand(
       return;
     }
     const maxSteps = Number(options.maxSteps) > 0 ? Number(options.maxSteps) : 12;
-    const tools = buildOrchestratorTools({ host, cwd: process.cwd() });
+    // Brain tools (read-only identity/portfolio) come first so U can route by project goal/context
+    // BEFORE spawning workers, instead of only reacting to the prompt.
+    const tools = [...buildBrainTools(), ...buildOrchestratorTools({ host, cwd: process.cwd() })];
     const callModel = makeModelCaller();
 
     console.log("");
@@ -259,7 +261,7 @@ export async function orchestrateCommand(
       tools,
       callModel,
       maxSteps,
-      context: `host: ${host}\nYou can run workers on THIS host, or delegate to another computer: call list_machines to see synced machines, then pass machine="<hostname>" to spawn_agent/list_agents/get_agent_output/stop_agent (the target must have YOU_REMOTE_AGENT_HOST=1 to accept spawns).`,
+      context: `host: ${host}\nRoute by the user's brain before spawning: call get_identity to orient, list_projects to see which project/repo a goal maps to, and get_project <name> to resolve a goal (e.g. "push the youmd PR") to the right repo/stack. Then run workers on THIS host, or delegate to another computer: call list_machines to see synced machines, then pass machine="<hostname>" to spawn_agent/list_agents/get_agent_output/stop_agent (the target must have YOU_REMOTE_AGENT_HOST=1 to accept spawns).`,
       onStep: (step) => {
         const head = step.thought ? `${step.thought} ` : "";
         console.log("  " + DIM(`#${step.index + 1} `) + chalk.cyan(step.tool) + " " + DIM(head));

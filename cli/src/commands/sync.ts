@@ -29,6 +29,11 @@ import {
 } from "../lib/remote-command";
 import type { AgentBusMessage } from "../lib/api";
 import {
+  buildAutoRestoreArgs,
+  resolveAutoRestoreRoot,
+  shouldAutoRestoreVault,
+} from "../lib/vault-autorestore";
+import {
   DEFAULT_AGENT_STACK_INVENTORY_INTERVAL_SECONDS,
   DEFAULT_AGENT_STACK_REPAIR_INTERVAL_SECONDS,
   describeRealtimeAgentBus,
@@ -396,6 +401,13 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   const vaultShareMinMs = envNumber("YOUMD_LIVE_SYNC_VAULT_SHARE_INTERVAL_SECONDS", 10 * 60) * 1000;
   const vaultShareEnabled =
     options.daemon === true && process.env.YOUMD_LIVE_SYNC_VAULT_SHARE !== "0";
+  // Receiving-side auto-restore: once a trusted device has shared an envelope to THIS host, the
+  // daemon applies the latest snapshot to local `.env.local` files with zero manual command
+  // (the missing half of the handshake — see lib/vault-autorestore.ts). `--existing-only` means it
+  // can only write into projects that already exist here, so it converges secrets safely.
+  const vaultRestoreMinMs = envNumber("YOUMD_LIVE_SYNC_VAULT_RESTORE_INTERVAL_SECONDS", 10 * 60) * 1000;
+  const vaultRestoreEnabled =
+    options.daemon === true && process.env.YOUMD_LIVE_SYNC_VAULT_RESTORE !== "0";
   const stackSyncEnabled = process.env.YOUMD_LIVE_SYNC_STACK !== "0";
   const contextSyncEnabled = process.env.YOUMD_LIVE_SYNC_CONTEXT !== "0";
   const inventorySyncEnabled = process.env.YOUMD_LIVE_SYNC_INVENTORY !== "0";
@@ -410,6 +422,8 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   let lastRepairRunAt = 0;
   let lastUpgradeRunAt = 0;
   let lastVaultShareRunAt = 0;
+  let lastVaultRestoreRunAt = 0;
+  let lastRestoredVaultSha: string | null = null;
   let lastAgentMessageAt = 0;
   const seenRemoteCommands = new SeenRequestSet();
   let materializing = false;
@@ -590,6 +604,27 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
               chalk.dim(`  -- secret vault: ${envelopes}/${devices} device envelopes — auto-sharing to new trusted device(s)...`),
             );
             runYoumdSubcommand("auto-share secret vault to new trusted devices", ["env", "vault", "share"], commandTimeoutMs);
+          }
+        }
+
+        if (vaultRestoreEnabled && shouldRunBoundedSync(lastVaultRestoreRunAt, now, vaultRestoreMinMs)) {
+          lastVaultRestoreRunAt = now;
+          const vault = describeRealtimeSecretVault(latestHead);
+          const decision = shouldAutoRestoreVault({
+            state: vault.state,
+            latestSnapshotEnvelopeCount: vault.latestSnapshotEnvelopeCount ?? 0,
+            snapshotSha: vault.latestSnapshot?.sha256 ?? null,
+            lastRestoredSha: lastRestoredVaultSha,
+            enabled: true,
+          });
+          if (decision.restore) {
+            console.log(chalk.dim(`  -- secret vault: ${decision.reason} — auto-restoring .env.local (no homework)...`));
+            runYoumdSubcommand(
+              "auto-restore secret vault to local projects",
+              buildAutoRestoreArgs(resolveAutoRestoreRoot()),
+              commandTimeoutMs,
+            );
+            lastRestoredVaultSha = vault.latestSnapshot?.sha256 ?? lastRestoredVaultSha;
           }
         }
       } while (pendingReason && !stopped);

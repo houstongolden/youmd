@@ -11,6 +11,10 @@ type PixelCharacterProps = {
   className?: string;
 };
 
+// Warm-pixel pass: friendlier creatures (big eyes, a status antenna, warm blush cheeks `p`, a
+// little smile `c`) while staying pixel-native and monochrome + one-orange-accent. Motion stays
+// quiet and reduced-motion-safe (see globals.css) and only the alive-bob runs for live agents, so
+// movement still signals real state per BRANDING.md — not decoration.
 const PATTERNS: Record<PixelCharacterKind, string[][]> = {
   machine: [
     [
@@ -18,75 +22,111 @@ const PATTERNS: Record<PixelCharacterKind, string[][]> = {
       "..aaaaaa..",
       ".abbbbbba.",
       ".ab0bb0ba.",
-      ".abbbbbba.",
-      ".abbccba.",
+      ".abpbbpba.",
+      ".abbccbba.",
       ".abbbbbba.",
       "..aaaaaa..",
-      "...dddd...",
       "..dddddd..",
+      "..d....d..",
     ],
     [
       ".......s..",
-      ".aaaaaaaa.",
+      "..aaaaaa..",
       ".abbbbbba.",
-      ".abb0b0ba.",
+      ".ab0bb0ba.",
       ".abbbbbba.",
-      ".abccbbba.",
+      ".abpccpba.",
       ".abbbbbba.",
-      ".aaaaaaaa.",
-      "...dddd...",
+      "..aaaaaa..",
       "..dddddd..",
+      "..d....d..",
+    ],
+    [
+      "........s.",
+      "..aaaaaa..",
+      ".abbbbbba.",
+      ".abcbbcba.",
+      ".abpbbpba.",
+      ".abbccbba.",
+      ".abbbbbba.",
+      "..aaaaaa..",
+      "..dddddd..",
+      "..d....d..",
     ],
   ],
   agent: [
     [
-      "...aaaa...",
-      "..abbbba..",
-      ".ab0bb0ba.",
-      ".abbbbbba.",
-      ".abbccba.",
+      "....s.....",
+      "....a.....",
       "..aaaaaa..",
-      "...a..a.s",
-      "..aa..aa..",
-      ".a......a.",
+      ".abbbbbba.",
+      ".ab0bb0ba.",
+      ".abpbbpba.",
+      ".abbccbba.",
+      "..aaaaaa..",
+      "..d....d..",
       "..........",
     ],
     [
+      ".s........",
+      ".a........",
       "..aaaaaa..",
-      ".aabbbbaa.",
+      ".abbbbbba.",
       ".ab0bb0ba.",
       ".abbbbbba.",
-      ".abccbbba.",
+      ".abpccpba.",
       "..aaaaaa..",
-      ".s.a..a..",
-      "..aa..aa.",
-      "...a..a..",
+      "..d....d..",
+      "..........",
+    ],
+    [
+      "....s.....",
+      "....a.....",
+      "..aaaaaa..",
+      ".abbbbbba.",
+      ".abcbbcba.",
+      ".abpbbpba.",
+      ".abbccbba.",
+      "..aaaaaa..",
+      ".d......d.",
       "..........",
     ],
   ],
   shell: [
     [
-      ".aaaaaaa..",
-      "aabbbbba.",
-      "ab0bbbba.",
-      "abbbbbba.",
-      "abbbccba.",
-      "abbbbbba.",
-      ".aaaaaaa.",
-      "...dd..s.",
-      "..dddd...",
+      ".aaaaaaaa.",
+      ".abbbbbba.",
+      ".ab0bb0ba.",
+      ".abbppbba.",
+      ".abbccbba.",
+      ".abbbbbba.",
+      ".aaaaaaaa.",
+      "...dd...s.",
+      "..dddd....",
       "..........",
     ],
     [
-      "..aaaaaa..",
-      ".aabbbbba.",
-      ".ab0bbbba.",
+      ".aaaaaaaa.",
       ".abbbbbba.",
-      ".abbccba.",
+      ".ab0bb0ba.",
       ".abbbbbba.",
-      "..aaaaaa..",
-      "...dd...s",
-      "..dddd...",
+      ".abbppbba.",
+      ".abbccbba.",
+      ".aaaaaaaa.",
+      "...dd..s..",
+      "..dddd....",
+      "..........",
+    ],
+    [
+      ".aaaaaaaa.",
+      ".abbbbbba.",
+      ".abcbbcba.",
+      ".abbppbba.",
+      ".abbccbba.",
+      ".abbbbbba.",
+      ".aaaaaaaa.",
+      "...dd...s.",
+      "..dddd....",
       "..........",
     ],
   ],
@@ -122,7 +162,11 @@ function cellColor(cell: string, status: PixelCharacterStatus) {
     case "b":
       return "hsl(var(--shell-active))";
     case "c":
-      return "hsl(var(--accent-light) / 0.68)";
+      return "hsl(var(--accent-mid) / 0.7)";
+    case "p":
+      // Warm blush cheek — the "alive/human" warmth, kept inside the single orange accent family
+      // so it reads as charm, not a second color.
+      return "hsl(var(--accent-light) / 0.5)";
     case "d":
       return "hsl(var(--text-secondary) / 0.36)";
     case "0":
@@ -168,6 +212,7 @@ export function PixelCharacter({
           className={[
             cell === "0" ? "pixel-character-eye" : "",
             cell === "s" ? "pixel-character-status" : "",
+            cell === "p" ? "pixel-character-blush" : "",
           ].join(" ")}
           style={{
             backgroundColor: cellColor(cell, status),

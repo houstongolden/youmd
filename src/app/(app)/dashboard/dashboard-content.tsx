@@ -82,6 +82,10 @@ const AgentsPane = dynamic(
   () => import("@/components/panes/AgentsPane").then((m) => ({ default: m.AgentsPane })),
   { ssr: false, loading: PaneSkeleton }
 );
+const LiveAgentsPane = dynamic(
+  () => import("@/components/panes/LiveAgentsPane").then((m) => ({ default: m.LiveAgentsPane })),
+  { ssr: false, loading: PaneSkeleton }
+);
 const VaultPane = dynamic(
   () => import("@/components/panes/VaultPane").then((m) => ({ default: m.VaultPane })),
   { ssr: false, loading: PaneSkeleton }
@@ -171,6 +175,7 @@ const PANE_GROUPS: Array<{
       { key: "github", label: "api/mcp" },
       { key: "vault", label: "vault" },
       { key: "agents", label: "activity" },
+      { key: "live-agents", label: "live agents" },
       { key: "analytics", label: "stats" },
       { key: "portrait", label: "portrait" },
       { key: "help", label: "help" },
@@ -854,6 +859,7 @@ function ShellSidebar({
         { label: "API / MCP", detail: "scoped agent access", icon: Code2, pane: "github" },
         { label: "Vault", detail: "encrypted secrets", icon: BookOpen, pane: "vault" },
         { label: "Activity", detail: "central log + agents", icon: Activity, pane: "agents" },
+        { label: "Live Agents", detail: "fleet + attention queue", icon: Activity, pane: "live-agents", status: "new" },
         { label: "Analytics", detail: "reads + views", icon: BarChart3, pane: "analytics" },
         { label: "Portrait", detail: "ascii identity", icon: Image, pane: "portrait" },
       ],
@@ -2401,6 +2407,7 @@ export function DashboardContent() {
                     <AnalyticsPane clerkId={user.id} profileId={userProfile?._id} />
                   )}
                   {rightPane === "agents" && <AgentsPane />}
+                  {rightPane === "live-agents" && <LiveAgentsPane />}
                   {rightPane === "vault" && user?.id && (
                     <VaultPane clerkId={user.id} />
                   )}

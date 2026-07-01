@@ -1,6 +1,44 @@
 # Active Feature Requests — Tracked Until Verified
 
-Last Updated: 2026-06-27
+Last Updated: 2026-07-01
+
+---
+
+## 2026-07-01 — Competitor research (Draft/Blume/Cofounder) → positioning + gap-closing build
+
+### 147. Research draftai.us / blume.codes / cofounder.co for relevance to You.md
+**Status:** DONE (research + written teardown). See `COMPETITIVE_AND_POSITIONING_2026-07-01.md`.
+Blume design refs saved under `project-context/design-references/blume/`. Live sites 403 automated
+capture from this environment; Blume analyzed from Houston's screenshot, Cofounder from search only
+(couldn't render — needs a screenshot from Houston to analyze visually).
+
+### 148. Sharpen product clarity / value prop
+**Status:** DONE (proposed). Positioning: *the synced brain and conductor for your fleet of agents*;
+protocol line kept (*an MCP where the context is you*); wedge demo = laptop→other-machine CI-fix +
+overnight skill propagation. Awaiting Houston's sign-off on the headline.
+
+### 149. Orchestrator brain-aware routing
+**Status:** CODE COMPLETE / CLI BUILD + 12 NEW TESTS GREEN. `get_identity`/`list_projects`/
+`get_project` read-only tools wired into `you orchestrate run`. Live-LLM routing behavior assumed
+(mocked in tests), not exercised against the live backend.
+
+### 150. Live Agents / Attention Queue widget (answer to Blume's "watch every agent")
+**Status:** CODE COMPLETE / TSC CLEAN / WIRED INTO DASHBOARD. `LiveAgentsPane` +
+`convex/agentActivity.ts#liveAgents` (read-only, auth-scoped). AWAITING live render with real worker
+data.
+
+### 151. PixelCharacter warmth pass (Blume/Cofounder warmth on our pixel system)
+**Status:** CODE COMPLETE / TSC CLEAN. Cuter creatures + alive-bob (live only) + blush, reduced-
+motion-safe, same props API. AWAITING visual QA render.
+
+### 152. Gap — Linux daemon always-on by default (rented-host path)
+**Status:** CODE COMPLETE / TSC CLEAN. `install.sh` auto-installs the resident daemon by default on
+Linux+systemd hosts. AWAITING one live proof on a real VPS.
+
+### 153. Gap — Secret Vault receiving-side auto-restore (no-homework handshake)
+**Status:** CODE COMPLETE / CLI BUILD + 10 NEW TESTS GREEN. Daemon auto-restores `.env.local` once
+an envelope exists for the host (`--existing-only` safety belt; opt-out env). AWAITING one live
+Keychain/vault round-trip proof.
 
 ---
 

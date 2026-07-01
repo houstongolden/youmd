@@ -16,7 +16,14 @@ import {
 } from "./supervisor";
 import { readGlobalConfig, isAuthenticated } from "../config";
 import { dispatchRemoteCommand, pollForResult } from "../remote-command";
-import { getMachineProofs } from "../api";
+import {
+  getMachineProofs,
+  getMe,
+  getMeUser,
+  getPortfolioGraph,
+  apiErrorMessage,
+  PortfolioGraphSnapshot,
+} from "../api";
 
 const SITE = process.env.YOU_APP_URL || process.env.YOUMD_APP_URL || "https://you.md";
 const CHAT_PROXY_URL = `${SITE}/api/v1/chat`;
@@ -178,6 +185,143 @@ export function buildOrchestratorTools(opts: BuildToolsOptions = {}): LoopTool[]
             return `${name}${tag} — ${m.status ?? "?"}, last seen ${m.generatedAt ?? "?"}`;
           })
           .join("\n");
+      },
+    },
+  ];
+}
+
+// ─── Brain tools (READ-ONLY identity/portfolio routing) ─────────────────────────
+//
+// These give U the "brain" it needs to route work BEFORE spawning: who the user is, what
+// projects/repos/machines exist, and the goal/stack/repo for a single project. They reuse the
+// existing read-only api.ts client methods (getMe / getPortfolioGraph) — no new endpoints — and
+// degrade gracefully when unauthenticated, mirroring how list_machines handles that case.
+
+/** Narrow a portfolio-graph project match by name or slug (case/format tolerant). */
+function normalizeKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function findProject(
+  snapshot: PortfolioGraphSnapshot,
+  query: string
+): PortfolioGraphSnapshot["projects"][number] | undefined {
+  const q = normalizeKey(query);
+  if (!q) return undefined;
+  return snapshot.projects.find((p) => {
+    const slug = normalizeKey(p.slug || "");
+    const name = normalizeKey(p.name || "");
+    const repo = normalizeKey(p.repoName || p.directoryName || "");
+    return slug === q || name === q || repo === q || q.includes(slug);
+  });
+}
+
+/** One-line summary of a project for list_projects. */
+function projectLine(p: PortfolioGraphSnapshot["projects"][number]): string {
+  const repo = p.repoFullName || p.repoName || p.directoryName || p.repoPath || "-";
+  const status = p.status || p.focusStatus || "?";
+  const stack = p.stackName || p.stackSlug || "-";
+  const focus = p.focusStatus ? ` focus=${p.focusStatus}` : "";
+  return `${p.slug || p.name} [${status}]${focus} stack=${stack} repo=${repo}`;
+}
+
+/**
+ * Build the READ-ONLY brain tool set (identity + portfolio graph). These let U route a goal to the
+ * right project/repo/machine/harness before delegating. All handlers catch errors and return a
+ * readable string; none throw, and each degrades to a clear "not authenticated" message.
+ */
+export function buildBrainTools(): LoopTool[] {
+  return [
+    {
+      name: "get_identity",
+      description:
+        "READ-ONLY. Who the user is and their current context (name, role, plan, latest identity bundle summary). Call this FIRST to orient before routing or spawning workers.",
+      parameters: {},
+      run: async () => {
+        if (!isAuthenticated()) return "not authenticated — run `you login` (no identity/brain data available)";
+        try {
+          const res = await getMe();
+          if (!res.ok || !res.data) {
+            const msg = apiErrorMessage(res.data);
+            return `error: could not fetch identity${msg ? ` — ${msg}` : ` (status ${res.status})`}`;
+          }
+          const user = getMeUser(res.data);
+          const lines: string[] = [];
+          if (user.displayName) lines.push(`Name: ${user.displayName}`);
+          if (user.username) lines.push(`Username: ${user.username}`);
+          if (user.email) lines.push(`Email: ${user.email}`);
+          if (user.plan) lines.push(`Plan: ${user.plan}`);
+          const bundle = res.data.latestBundle;
+          if (bundle) {
+            lines.push(
+              `Latest bundle: v${bundle.version}${bundle.isPublished ? " (published)" : " (draft)"}`
+            );
+          }
+          lines.push(`Bundles: ${res.data.bundleCount ?? 0}`);
+          return lines.length ? lines.join("\n") : "(no identity fields available)";
+        } catch (err) {
+          return `error fetching identity: ${(err as Error).message}`;
+        }
+      },
+    },
+    {
+      name: "list_projects",
+      description:
+        "READ-ONLY. List the user's projects from the You.md portfolio graph (slug, status, focus, stack, repo). Use this to see which project/repo a goal maps to before spawning a worker.",
+      parameters: {},
+      run: async () => {
+        if (!isAuthenticated()) return "not authenticated — run `you login` (no portfolio/brain data available)";
+        try {
+          const res = await getPortfolioGraph();
+          if (!res.ok || !res.data) {
+            const msg = apiErrorMessage(res.data);
+            return `error: could not fetch portfolio graph${msg ? ` — ${msg}` : ` (status ${res.status})`}`;
+          }
+          const projects = res.data.projects || [];
+          if (projects.length === 0) return "no projects in the portfolio graph yet";
+          return projects.map(projectLine).join("\n");
+        } catch (err) {
+          return `error listing projects: ${(err as Error).message}`;
+        }
+      },
+    },
+    {
+      name: "get_project",
+      description:
+        "READ-ONLY. Details for ONE project by name/slug: goal, focus, stack, repo, product URL, tags, environments. Use to resolve a goal like \"push the youmd PR\" to the right repo + machine + harness before delegating.",
+      parameters: { project: "project name or slug (e.g. youmd)" },
+      run: async (args) => {
+        const query = String(args.project || "").trim();
+        if (!query) return "error: get_project requires a project name/slug";
+        if (!isAuthenticated()) return "not authenticated — run `you login` (no portfolio/brain data available)";
+        try {
+          const res = await getPortfolioGraph({ includeTasks: true });
+          if (!res.ok || !res.data) {
+            const msg = apiErrorMessage(res.data);
+            return `error: could not fetch portfolio graph${msg ? ` — ${msg}` : ` (status ${res.status})`}`;
+          }
+          const p = findProject(res.data, query);
+          if (!p) {
+            const known = (res.data.projects || []).map((x) => x.slug || x.name).slice(0, 20).join(", ");
+            return `no project matched "${query}". Known projects: ${known || "(none)"}`;
+          }
+          const lines: string[] = [];
+          lines.push(`Project: ${p.name || p.slug}${p.slug && p.slug !== p.name ? ` (${p.slug})` : ""}`);
+          if (p.status || p.focusStatus) lines.push(`Status: ${p.status || p.focusStatus}`);
+          if (p.stackName || p.stackSlug) lines.push(`Stack: ${p.stackName || p.stackSlug}`);
+          if (p.goal) lines.push(`Goal: ${p.goal}`);
+          if (p.focus) lines.push(`Focus: ${p.focus}`);
+          if (p.summary) lines.push(`Summary: ${p.summary}`);
+          const repo = p.repoFullName || p.repoName || p.directoryName || p.repoPath;
+          if (repo) lines.push(`Repo: ${repo}`);
+          if (p.repoUrl) lines.push(`Repo URL: ${p.repoUrl}`);
+          if (p.productUrl) lines.push(`Product: ${p.productUrl}`);
+          if (Array.isArray(p.environments) && p.environments.length) lines.push(`Environments: ${p.environments.join(", ")}`);
+          if (Array.isArray(p.tags) && p.tags.length) lines.push(`Tags: ${p.tags.join(", ")}`);
+          return lines.join("\n");
+        } catch (err) {
+          return `error fetching project: ${(err as Error).message}`;
+        }
       },
     },
   ];

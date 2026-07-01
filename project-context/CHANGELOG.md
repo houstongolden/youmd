@@ -1,5 +1,46 @@
 # You.md — Changelog
 
+## 2026-07-01 — Competitive research (Draft/Blume/Cofounder) → positioning + gap-closing build
+
+Houston flagged three adjacent products and asked for real product clarity + action end-to-end.
+Researched all three, audited what You.md actually ships (code-level), wrote the positioning doc,
+and shipped the concrete moves that make the "conductor for your fleet of agents" wedge real.
+
+### Research + positioning
+- New doc `project-context/COMPETITIVE_AND_POSITIONING_2026-07-01.md`: teardown of Draft (team
+  knowledge from meetings/Slack), Blume (per-repo agent config + live agent observability; drifting
+  toward team intent), Cofounder (AI-runs-company / design reference). None own You.md's axis —
+  **personal fleet + portable identity**. Sharpened positioning: *the synced brain and conductor for
+  your fleet of agents*, plus the laptop→other-machine CI-fix wedge demo.
+- Saved Blume design references to `project-context/design-references/blume/` (live sites 403 our
+  automated capture; crops sliced from Houston's screenshot).
+
+### Shipped code (build clean; 661 CLI unit tests pass — 7 failures are pre-existing network-gated
+integration tests; frontend `tsc --noEmit` clean)
+- **Orchestrator brain-aware routing** (`cli/src/lib/orchestrator/tools.ts`): read-only
+  `get_identity` / `list_projects` / `get_project` tools (reuse `api.ts` getMe/getPortfolioGraph),
+  wired into `you orchestrate run` so U routes by project/goal before spawning. +12 tests.
+- **Live Agents / Attention Queue widget** (`src/components/panes/LiveAgentsPane.tsx` +
+  read-only auth-scoped `convex/agentActivity.ts#liveAgents`): our answer to Blume's "watch every
+  agent" — running/finished workers + a needs-you attention section, PixelCharacter avatars. Wired
+  into the dashboard (nav chip + render switch).
+- **PixelCharacter warmth pass** (`src/components/ui/PixelCharacter.tsx` + `globals.css`): cuter
+  creatures (eyes/antenna/blush/smile), quiet alive-bob for live agents only, reduced-motion-safe,
+  same props API — the Blume/Cofounder warmth applied to our own pixel system without losing the
+  terminal core.
+- **Gap: Linux daemon always-on** (`src/app/install.sh/route.ts`): resident-daemon auto-install now
+  defaults ON for Linux + systemd --user hosts (rented VPS becomes a fleet peer with zero steps),
+  overridable via `YOU_INSTALL_DAEMON`.
+- **Gap: Secret Vault receiving-side auto-restore** (`cli/src/lib/vault-autorestore.ts` wired into
+  the `you sync --live` daemon): the missing half of the handshake — once an envelope exists for a
+  host it auto-restores `.env.local` (`--existing-only` safety belt), no manual command. Opt-out via
+  `YOUMD_LIVE_SYNC_VAULT_RESTORE=0`. +10 tests.
+
+### Verification frontier (coded + typechecked + unit-tested; each needs one live proof)
+Linux daemon on a real VPS; vault auto-restore with a real envelope; LiveAgentsPane rendering real
+worker data; PixelCharacter visual QA. Sandbox can't deploy / reach live endpoints / render / run
+systemd. None speculative — all reuse shipped patterns.
+
 ## 2026-06-27 — "Continue ALL": Vercel unblock + orchestrator hardening + two-machine readiness
 
 Swept the remaining pending items from the multi-computer handoff.

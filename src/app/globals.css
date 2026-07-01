@@ -370,12 +370,34 @@ code, pre, .font-mono {
   animation: pixel-character-blink 4.8s steps(1, end) infinite;
 }
 
+/* Warm blush cheek — a soft, quiet breath of warmth so the creature reads alive, not clinical. */
+@keyframes pixel-character-blush {
+  0%, 100% { opacity: 0.42; }
+  50% { opacity: 0.62; }
+}
+
+.pixel-character-blush {
+  animation: pixel-character-blush 5.6s ease-in-out infinite;
+}
+
+/* Alive-bob: only live agents drift, so the motion signals real state (BRANDING.md), not decor. */
+@keyframes pixel-character-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+
+.pixel-character[data-live="true"] {
+  animation: pixel-character-breathe 3.4s ease-in-out infinite;
+}
+
 .pixel-character[data-live="true"] .pixel-character-status {
   animation: pixel-character-signal 2.4s steps(2, end) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pixel-character,
   .pixel-character-eye,
+  .pixel-character-blush,
   .pixel-character-status {
     animation: none !important;
   }

@@ -429,13 +429,22 @@ if machine_sync_enabled; then
   fi
 fi
 
-if [ "\${YOU_INSTALL_DAEMON:-\${YOUMD_INSTALL_DAEMON:-0}}" = "1" ]; then
-  UNAME_S="$(uname -s 2>/dev/null || true)"
+# Resident-daemon auto-install policy (PRINCIPLES.md: no user homework, always-on by default).
+# A rented Linux host with systemd --user has no reason NOT to be always-on, so it defaults ON:
+# you.md/install.sh on a cheap VPS makes it a live peer of your fleet with zero extra steps.
+# macOS/laptop installs stay opt-in (a dev may not want a resident daemon).
+# Either default is overridable with YOU_INSTALL_DAEMON=0/1.
+UNAME_S="$(uname -s 2>/dev/null || true)"
+DAEMON_DEFAULT=0
+if [ "$UNAME_S" = "Linux" ] && systemctl --user --version >/dev/null 2>&1; then
+  DAEMON_DEFAULT=1
+fi
+if [ "\${YOU_INSTALL_DAEMON:-\${YOUMD_INSTALL_DAEMON:-$DAEMON_DEFAULT}}" = "1" ]; then
   if [ "$UNAME_S" = "Darwin" ]; then
     echo "Installing resident You.md sync daemon (launchd)..."
     you stack daemon install || true
   elif [ "$UNAME_S" = "Linux" ] && systemctl --user --version >/dev/null 2>&1; then
-    echo "Installing resident You.md sync daemon (systemd --user)..."
+    echo "Installing resident You.md sync daemon (systemd --user) — always-on by default on Linux hosts..."
     you stack daemon install || true
   else
     echo "Resident daemon auto-install needs launchd (macOS) or systemd --user (Linux); skipping."
