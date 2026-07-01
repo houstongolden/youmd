@@ -86,10 +86,46 @@ npm_install_global() {
   fi
 }
 
+binary_meets_required_version() {
+  local candidate="$1"
+  local version
+  if [ -z "$candidate" ] || [ ! -x "$candidate" ]; then
+    return 1
+  fi
+  version="$("$candidate" --version 2>/dev/null | tr -d '[:space:]' || true)"
+  [ -n "$version" ] && version_at_least "$version" "$CLI_VERSION"
+}
+
+find_runtime_bin_dir() {
+  local npm_prefix npm_bin_dir
+
+  if [ -n "$NPM_GLOBAL_PREFIX" ] && binary_meets_required_version "$NPM_GLOBAL_PREFIX/bin/you"; then
+    echo "$NPM_GLOBAL_PREFIX/bin"
+    return 0
+  fi
+
+  npm_prefix="$(npm prefix -g 2>/dev/null || true)"
+  npm_bin_dir="\${npm_prefix:+$npm_prefix/bin}"
+  if [ -n "$npm_bin_dir" ] && binary_meets_required_version "$npm_bin_dir/you"; then
+    echo "$npm_bin_dir"
+    return 0
+  fi
+
+  if binary_meets_required_version "$YOUMD_NPM_PREFIX/bin/you"; then
+    echo "$YOUMD_NPM_PREFIX/bin"
+    return 0
+  fi
+
+  return 1
+}
+
 link_runtime_bins() {
   mkdir -p "$YOUMD_BIN_DIR"
+  PREFERRED_BIN_DIR="$(find_runtime_bin_dir 2>/dev/null || true)"
   for BIN_NAME in youmd you create-youmd; do
-    if [ -x "$YOUMD_NPM_PREFIX/bin/$BIN_NAME" ]; then
+    if [ -n "$PREFERRED_BIN_DIR" ] && [ -x "$PREFERRED_BIN_DIR/$BIN_NAME" ]; then
+      BIN_PATH="$PREFERRED_BIN_DIR/$BIN_NAME"
+    elif [ -x "$YOUMD_NPM_PREFIX/bin/$BIN_NAME" ]; then
       BIN_PATH="$YOUMD_NPM_PREFIX/bin/$BIN_NAME"
     else
       BIN_PATH=""
