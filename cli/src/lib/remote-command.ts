@@ -71,6 +71,18 @@ function hostnameAliases(hostname = os.hostname()): string[] {
   return [...aliases];
 }
 
+function durableTargetHostCandidates(hostname = os.hostname()): string[] {
+  const trimmed = hostname.trim();
+  if (!trimmed) return [];
+  const candidates = new Set<string>([trimmed, trimmed.toLowerCase()]);
+  const short = trimmed.split(".")[0];
+  if (short) {
+    candidates.add(short);
+    candidates.add(short.toLowerCase());
+  }
+  return [...candidates];
+}
+
 export function targetMatchesHost(targetHost: string | null | undefined, hostname = os.hostname()): boolean {
   const target = String(targetHost || "").trim().toLowerCase();
   if (!target) return false;
@@ -391,7 +403,7 @@ export async function handleQueuedDurableRemoteCommands(
   log?: (line: string) => void,
   hostname = os.hostname()
 ): Promise<number> {
-  const targets = hostnameAliases(hostname);
+  const targets = durableTargetHostCandidates(hostname);
   const rows = new Map<string, RemoteCommandRecord>();
 
   for (const targetHost of targets) {

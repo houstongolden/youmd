@@ -268,8 +268,8 @@ describe("durable queued command pull", () => {
       status: 200,
       data: {
         success: true,
-        count: targetHost === "houstons-mini.lan" ? 1 : 0,
-        commands: targetHost === "houstons-mini.lan"
+        count: targetHost === "Houstons-Mini.lan" ? 1 : 0,
+        commands: targetHost === "Houstons-Mini.lan"
           ? [
               {
                 id: "row_1",
@@ -298,6 +298,11 @@ describe("durable queued command pull", () => {
     const processed = await handleQueuedDurableRemoteCommands(seen, undefined, "Houstons-Mini.lan");
 
     expect(processed).toBe(1);
+    expect(listRemoteCommands).toHaveBeenCalledWith({
+      targetHost: "Houstons-Mini.lan",
+      status: "queued",
+      limit: 25,
+    });
     expect(seen.has("rc_queued_1")).toBe(true);
     expect(executeRemoteAction).toHaveBeenCalledWith({ action: "agent.status", args: {} });
     const statuses = updateRemoteCommandStatus.mock.calls.map((c) => (c[0] as { status: string }).status);

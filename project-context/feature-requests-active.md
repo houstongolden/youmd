@@ -112,6 +112,8 @@ host aliases on every startup/heartbeat pass, so commands are no longer dependen
 current realtime agent-bus head; short host and FQDN names now match within the same hostname family.
 The live daemon also polls the durable queue independently every 5 seconds and runs heavier
 maintenance in the background so remote command pickup is not blocked behind stack/inventory sync.
+Follow-up: durable polling now queries both original-case and lowercase host aliases, because stored
+`targetHost` values are matched literally by the API.
 **Production Verified:** PARTIAL — source-side durable dispatch works; full spawn round-trip still
 requires the Mac mini / Hostinger host to run the remote-command daemon, answer `agent.status`, then
 opt in and run runbook sections 1-3.
