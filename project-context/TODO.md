@@ -16,7 +16,8 @@ PRD Version: 2.3
 - [x] Run a real-model orchestrator no-spawn smoke and capture the model's natural `list_synced_machines` alias mismatch
 - [x] Add deterministic orchestrator tool aliases and regression coverage so `list_synced_machines` resolves to canonical `list_machines`
 - [x] Re-run the real-model no-spawn orchestrator smoke against built dist; it listed `Houstons-Mini.lan — warn` and finished without spawning workers
-- [ ] Publish `youmd@0.9.2` to npm after the trusted publish workflow is triggered and green
+- [x] Publish `youmd@0.9.2` to npm through trusted workflow run `28497007544`
+- [x] Refresh this source Mac's local runtime to `youmd@0.9.2` and confirm all five daemons are loaded
 - [ ] Update the Mac mini to `youmd@0.9.2+`, reload daemons, run `you orchestrate host on`, and re-run the live spawn runbook sections 1-3
 
 ### 2026-06-30 — folder.md native storage integration

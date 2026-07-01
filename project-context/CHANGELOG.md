@@ -19,8 +19,9 @@
   tool aliases and the machine-listing tool advertises the alias. Follow-up live smoke completed
   read-only with `node cli/dist/you.js orchestrate run ... --max-steps 5`, listed
   `Houstons-Mini.lan — warn`, and finished without spawning workers.
-- CLI release target is now `youmd@0.9.2`; generated docs, OpenAPI, llms files, and root handoff
-  markers have been aligned to that version.
+- CLI `youmd@0.9.2` is now published. Trusted publish workflow `28497007544` completed green;
+  `npm view youmd version`, `npx youmd@0.9.2 --version`, and the source Mac's installed
+  `you --version` all return `0.9.2`.
 - Verification: focused orchestrator loop tests pass, CLI build passes, GitHub Actions CI for
   `755d830` passed, and Vercel production deployment for `755d830` completed successfully.
 

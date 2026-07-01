@@ -2,8 +2,8 @@
 
 Last Updated: 2026-07-01
 Latest Verified Production Web Commit: 755d830 fix(install): link current runtime binaries
-Latest CLI Publish Workflow Commit: 51999bf fix(storage): normalize foldermd upload pointers
-Latest CLI Release Target: youmd@0.9.2 (pending npm publish)
+Latest CLI Publish Workflow Commit: 466e2f9 docs: record orchestrator and remote command proof
+Latest CLI Release: youmd@0.9.2
 
 ---
 
@@ -31,8 +31,10 @@ Latest CLI Release Target: youmd@0.9.2 (pending npm publish)
   `list_synced_machines` / `list_remote_machines`. The step log records the canonical tool name.
 - Follow-up live smoke against built local dist completed read-only with `--max-steps 5`, listed
   `Houstons-Mini.lan — warn`, and finished without spawning, stopping, or writing workers.
-- CLI release target is `youmd@0.9.2`; npm latest remains `0.9.1` until the trusted publish workflow
-  runs successfully.
+- CLI `youmd@0.9.2` is published; `npm view youmd version`, `npx youmd@0.9.2 --version`, `you
+  --version`, and `/Users/houstongolden/.you/bin/you --version` all return `0.9.2`.
+- The source Mac's `~/.you/npm-global` runtime has been refreshed to `youmd@0.9.2`; all five
+  resident daemons are loaded.
 
 ### Native folder.md storage lane — live verified 2026-06-30
 - The zero-paste you.md -> folder.md media lane is live verified. `FOLDERMD_SERVICE_SECRET` is set

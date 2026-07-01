@@ -121,10 +121,12 @@ The live daemon also polls the durable queue independently every 5 seconds and r
 maintenance in the background so remote command pickup is not blocked behind stack/inventory sync.
 Follow-up: durable polling now queries both original-case and lowercase host aliases, because stored
 `targetHost` values are matched literally by the API.
-Release target: CLI package/doc handoff shipped as `youmd@0.9.2` for the remote-command daemon
-reliability fixes; npm publish, Agent Docs, and CI passed on commit `10667b6`. Post-publish live
-`agent.status` smoke dispatched `rc_01KWE43QJ6000MZ3SS1PY` to `Houstons-Mini.lan`, but the row
-remained `queued`, confirming the target host still needs to install/run the new daemon.
+Release: CLI package/doc handoff shipped as `youmd@0.9.2` for the remote-command daemon reliability
+fixes; npm publish workflow `28497007544`, Agent Docs, and CI passed. `npm view youmd version`,
+`npx youmd@0.9.2 --version`, and this source Mac's installed `you --version` all return `0.9.2`.
+Post-publish live `agent.status` smoke dispatched `rc_01KWE43QJ6000MZ3SS1PY` to
+`Houstons-Mini.lan`, but the row remained `queued`, confirming the target host still needs to
+install/run the new daemon.
 **Production Verified:** PARTIAL — source-side durable dispatch works; full spawn round-trip still
 requires the Mac mini / Hostinger host to run the remote-command daemon, answer `agent.status`, then
 opt in and run runbook sections 1-3.
