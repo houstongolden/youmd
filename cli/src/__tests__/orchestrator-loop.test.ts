@@ -108,4 +108,29 @@ describe("runAgentLoop bounded retry", () => {
     expect(outcome.summary).toBe("done");
     expect(outcome.steps).toHaveLength(1);
   });
+
+  it("accepts model-chosen tool aliases and records the canonical tool name", async () => {
+    const script = [
+      JSON.stringify({ tool: "list_synced_machines", args: {} }),
+      JSON.stringify({ tool: "finish", args: { summary: "machines checked" } }),
+    ];
+    let i = 0;
+    const outcome = await runAgentLoop({
+      goal: "check machines",
+      tools: [
+        {
+          name: "list_machines",
+          aliases: ["list_synced_machines"],
+          description: "",
+          parameters: {},
+          run: async () => "Houstons-Mini.lan — warn",
+        },
+      ],
+      callModel: async () => script[i++],
+      maxSteps: 5,
+    });
+    expect(outcome.finished).toBe(true);
+    expect(outcome.steps[0]?.tool).toBe("list_machines");
+    expect(outcome.steps[0]?.result).toContain("Houstons-Mini.lan");
+  });
 });

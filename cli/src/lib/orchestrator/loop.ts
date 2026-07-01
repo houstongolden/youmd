@@ -13,6 +13,8 @@
 
 export interface LoopTool {
   name: string;
+  /** Natural names real models may choose for the same deterministic tool. */
+  aliases?: string[];
   description: string;
   /** Human-readable parameter hints, e.g. { harness: "claude|codex|cursor", goal: "task text" }. */
   parameters: Record<string, string>;
@@ -73,7 +75,8 @@ function buildSystemPrompt(goal: string, tools: LoopTool[], context?: string): s
       const params = Object.entries(t.parameters)
         .map(([k, v]) => `      - ${k}: ${v}`)
         .join("\n");
-      return `  - ${t.name}: ${t.description}${params ? `\n${params}` : ""}`;
+      const aliases = t.aliases?.length ? ` (aliases: ${t.aliases.join(", ")})` : "";
+      return `  - ${t.name}${aliases}: ${t.description}${params ? `\n${params}` : ""}`;
     })
     .join("\n");
 
@@ -191,7 +194,11 @@ export async function runAgentLoop(options: RunLoopOptions): Promise<LoopOutcome
   const maxSteps = options.maxSteps ?? 12;
   const maxModelRetries = options.maxModelRetries ?? 2;
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
-  const toolByName = new Map(tools.map((t) => [t.name, t]));
+  const toolByName = new Map<string, LoopTool>();
+  for (const tool of tools) {
+    toolByName.set(tool.name, tool);
+    for (const alias of tool.aliases ?? []) toolByName.set(alias, tool);
+  }
 
   // Absorb transient model-call failures (timeouts, 5xx, socket resets) with bounded
   // exponential backoff. Real LLM/proxy endpoints hiccup; a single blip shouldn't abandon
@@ -285,7 +292,7 @@ export async function runAgentLoop(options: RunLoopOptions): Promise<LoopOutcome
       }
     }
 
-    const step: LoopStep = { index: i, tool: call.tool, args: call.args, result, thought: call.thought };
+    const step: LoopStep = { index: i, tool: tool?.name ?? call.tool, args: call.args, result, thought: call.thought };
     steps.push(step);
     options.onStep?.(step);
 

@@ -163,6 +163,7 @@ export function buildOrchestratorTools(opts: BuildToolsOptions = {}): LoopTool[]
     },
     {
       name: "list_machines",
+      aliases: ["list_synced_machines", "list_remote_machines"],
       description: "List the user's synced machines (candidates to delegate work to).",
       parameters: {},
       run: async () => {
