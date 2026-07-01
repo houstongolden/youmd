@@ -81,6 +81,7 @@ PRD Version: 2.3
 - [ ] Next pass: remove remaining non-canonical fallback liveness paths after production API/MCP graph smoke proves parity
 - [ ] Next pass: publish the current CLI package to npm when CLI code changes require npm fallback parity, then update/install it on the Mac mini
 - [x] Fix `you skill inventory --register-catalog --sync` so fresh machines rerun inventory after catalog hydration/registration and do not sync a stale zero-catalog proof
+- [x] Prepare CLI `youmd@0.9.3` publish target for the Skill Mesh catalog convergence fix, including generated docs/OpenAPI and handoff markers
 - [ ] Rerun the Air Skill Mesh proof after the catalog convergence fix, or rerun the current CLI command twice as a temporary proof, until `Houstons-MacBook-Air.local` no longer reports `youmdCatalogSkills: 0`
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison

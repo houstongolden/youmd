@@ -4,6 +4,7 @@ Last Updated: 2026-07-01
 Latest Verified Production Web Commit: 755d830 fix(install): link current runtime binaries
 Latest CLI Publish Workflow Commit: 466e2f9 docs: record orchestrator and remote command proof
 Latest CLI Release: youmd@0.9.2
+Latest CLI Publish Target: youmd@0.9.3
 
 ---
 
@@ -47,6 +48,8 @@ Latest CLI Release: youmd@0.9.2
   catalog hydration/registration changes the catalog count, then syncs the refreshed proof. A
   temp-home compiled CLI smoke converged from `catalog: 0 / missing: 1` to
   `catalog: 12 / missing: 0` in one command.
+- CLI `youmd@0.9.3` is prepared as the publish target for this fix; package files, generated
+  agent docs/OpenAPI surfaces, and root handoff markers all now point at `0.9.3`.
 - Live closure still needs either the patched CLI installed on the Air or a one-time second run of
   the existing Air inventory command now that the catalog has been written.
 
