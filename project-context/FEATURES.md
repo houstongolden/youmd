@@ -4,6 +4,17 @@ Last Updated: 2026-07-01
 
 ## 2026-06-17 Session Notes
 
+- 2026-07-01 remote Skill Mesh maintenance actions: CLI `youmd@0.9.4` adds first-class
+  whitelist-only remote `skill.inventory` and `machine.verify` actions. `skill.inventory` runs the
+  catalog-converging inventory sync on the target host, and `machine.verify` writes/syncs a proof only
+  for safe root tokens (`current`, `CODE_2025`, `CODE_YOU`); both require host opt-in and never run a
+  shell. Published through trusted workflow `28501882181`; CI, Agent Docs, Vercel production, and
+  live `llms:smoke` are green for `cc1d76e`. This Mac's runtime/daemons are on `0.9.4`, active auth
+  config was reconciled safely, and self-dispatch proved `agent.status` plus `skill.inventory` with a
+  fresh baseline of `434` unique skill names, `1,175` real `SKILL.md` files, `431` You.md catalog
+  skills, and `4` catalog gaps. The Air currently needs local runtime/daemon refresh before the
+  source can close its stale `youmdCatalogSkills: 0` row.
+
 - 2026-07-01 remote-command/orchestrator reliability: The curl installer now validates candidate
   `you` binaries before relinking runtime shims, preventing stale `0.8.x` globals from overriding a
   fresh `0.9.x` source install. Durable remote-command polling now queries exact-case and lowercase

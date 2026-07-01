@@ -1,13 +1,46 @@
 # You.md — Current State
 
 Last Updated: 2026-07-01
-Latest Verified Production Web Commit: d789e2a chore(cli): prepare 0.9.3 release
-Latest CLI Publish Workflow Commit: d789e2a chore(cli): prepare 0.9.3 release
-Latest CLI Release: youmd@0.9.3
+Latest Verified Production Web Commit: cc1d76e chore(cli): prepare 0.9.4 release
+Latest CLI Publish Workflow Commit: cc1d76e chore(cli): prepare 0.9.4 release
+Latest CLI Release: youmd@0.9.4
 
 ---
 
 ## What's Deployed and Working
+
+### Remote Skill Mesh maintenance actions — live verified 2026-07-01
+- CLI `youmd@0.9.4` is published through trusted workflow `28501882181`; `npm view youmd version`,
+  `npx -y youmd@0.9.4 --version`, this Mac's `you --version`, and
+  `/Users/houstongolden/.you/bin/you --version` all return `0.9.4`.
+- New whitelist-only remote actions are live in the CLI/MCP contract:
+  `skill.inventory` runs `you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync`;
+  `machine.verify` runs `you machine verify --write-report --sync-report` against a safe root token
+  (`current`, `CODE_2025`, or `CODE_YOU`). Both require the target host opt-in and never run a shell.
+- Local verification passed: `cd cli && npm run build`, focused
+  `npx vitest run src/__tests__/remote-executor.test.ts` (`30` tests), `npm run agent-docs:ci`,
+  and `cd cli && npm pack --dry-run`.
+- GitHub Actions for commit `cc1d76e` are green: CI `28501882155`, Agent Docs `28501882183`, and
+  Publish CLI `28501882181`. The duplicate manual publish run `28501889503` was cancelled before it
+  could race the same npm version.
+- Vercel production deployment for `cc1d76e` completed successfully:
+  `https://youmd-3z1afb7el-hubify.vercel.app`, aliased through `https://www.you.md`.
+  Live `npm run llms:smoke -- --base-url https://www.you.md` passed and `/llms.txt` reports CLI
+  version `0.9.4`.
+- This Mac's resident runtime was refreshed to `0.9.4`, the active `~/.you/config.json` was safely
+  reconciled with the legacy authenticated `~/.youmd/config.json` without printing secret values,
+  `you orchestrate host on` is active, and all five launchd daemons were reloaded.
+- Live self-dispatch proof passed: `you remote run MacBookPro.lan agent.status --timeout 45 --json`
+  returned request `rc_01KWEAJCCB000GM3JCT7S` in ~2s with `remote-agent-host: enabled`.
+  `you remote run MacBookPro.lan skill.inventory --timeout 180 --json` returned request
+  `rc_01KWEAJPP50002M9MM2K4` in ~29s with `ok: true`, `secretValuesExposed: false`, and a fresh
+  synced baseline row showing `434` unique skill names, `1,175` real skill files,
+  `431` You.md catalog skills, and `4` catalog gaps.
+- Current Air blocker: after `0.9.4` shipped, `Houstons-MacBook-Air.local` did not answer
+  `skill.inventory` request `rc_01KWEAN93J0002YFA726J` within 60s or `agent.status` request
+  `rc_01KWEAQBV6000G2ZT2KJT` within 45s. Its last synced inventory row still reports
+  `youmdCatalogSkills: 0`; the Air needs local runtime/daemon refresh before source-side remote
+  repair can close that proof.
 
 ### Runtime installer + remote command two-host path — live verified 2026-07-01
 - Production `https://you.md/install.sh` now includes version-aware runtime relinking:
@@ -47,16 +80,14 @@ Latest CLI Release: youmd@0.9.3
   catalog hydration/registration changes the catalog count, then syncs the refreshed proof. A
   temp-home compiled CLI smoke converged from `catalog: 0 / missing: 1` to
   `catalog: 12 / missing: 0` in one command.
-- CLI `youmd@0.9.3` is published through trusted workflow `28501017652`; `npm view youmd version`,
-  `npx youmd@0.9.3 --version`, this Mac's `you --version`, and
-  `/Users/houstongolden/.you/bin/you --version` all return `0.9.3`.
+- CLI `youmd@0.9.3` was published through trusted workflow `28501017652` for this catalog convergence
+  fix and is superseded by `youmd@0.9.4`, which adds first-class remote maintenance actions.
 - Vercel production deployment `https://youmd-ogzceggj7-hubify.vercel.app` is Ready and aliased to
   `https://you.md` / `https://www.you.md`.
-- This Mac's `~/.you/npm-global` runtime is refreshed to `0.9.3`, and `you stack daemon install`
-  reloaded all five resident daemons. Follow-up `you stack daemon status` shows all five loaded with
-  fresh activity and no stale orchestrator warning.
-- Live closure still needs either the patched CLI installed on the Air or a one-time second run of
-  the existing Air inventory command now that the catalog has been written.
+- This Mac's `~/.you/npm-global` runtime has since been refreshed to `0.9.4`, and `you stack daemon
+  install` reloaded all five resident daemons after auth config reconciliation.
+- Live closure still needs the current CLI installed/reloaded on the Air, then a source-side
+  `skill.inventory` rerun until the Air publishes a non-zero catalog proof.
 
 ### Orchestrator real-model tuning — live verified 2026-07-01
 - A real-model no-spawn smoke exposed a natural tool-name mismatch:
@@ -65,9 +96,10 @@ Latest CLI Release: youmd@0.9.3
   `list_synced_machines` / `list_remote_machines`. The step log records the canonical tool name.
 - Follow-up live smoke against built local dist completed read-only with `--max-steps 5`, listed
   `Houstons-Mini.lan — warn`, and finished without spawning, stopping, or writing workers.
-- CLI `youmd@0.9.3` is now the latest published release. `0.9.2` remains the remote-command
-  reliability release; `0.9.3` adds the Skill Mesh catalog convergence fix.
-- The source Mac's `~/.you/npm-global` runtime has been refreshed to `youmd@0.9.3`; all five
+- CLI `youmd@0.9.4` is now the latest published release. `0.9.2` remains the remote-command
+  reliability release, `0.9.3` adds the Skill Mesh catalog convergence fix, and `0.9.4` adds
+  first-class remote Skill Mesh maintenance actions.
+- The source Mac's `~/.you/npm-global` runtime has been refreshed to `youmd@0.9.4`; all five
   resident daemons are loaded.
 
 ### Native folder.md storage lane — live verified 2026-06-30

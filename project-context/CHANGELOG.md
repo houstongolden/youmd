@@ -1,5 +1,38 @@
 # You.md — Changelog
 
+## 2026-07-01 — Remote Skill Mesh maintenance actions + CLI 0.9.4
+
+- Added first-class remote maintenance actions for trusted hosts: `skill.inventory` runs
+  `you skill inventory --out-dir ~/.you/agent-stack-inventory --register-catalog --sync`, and
+  `machine.verify` runs `you machine verify --write-report --sync-report` against safe root tokens
+  only (`current`, `CODE_2025`, `CODE_YOU`).
+- Hardened the remote executor contract around these actions: fixed argv construction, target host
+  opt-in is required, arbitrary filesystem roots are rejected, and no shell execution is introduced.
+- Updated the CLI, local MCP registry schema, and remote command help so agents can discover and call
+  the new maintenance lane without inventing raw commands.
+- Verification: `cd cli && npm run build`, focused
+  `cd cli && npx vitest run src/__tests__/remote-executor.test.ts` (`30` tests),
+  `npm run agent-docs:ci`, `cd cli && npm pack --dry-run`, and live
+  `npm run llms:smoke -- --base-url https://www.you.md` all passed.
+- Published CLI `youmd@0.9.4` through trusted workflow `28501882181`; the duplicate manual publish run
+  `28501889503` was cancelled before racing the same version. `npm view youmd version`,
+  `npx -y youmd@0.9.4 --version`, this Mac's `you --version`, and
+  `/Users/houstongolden/.you/bin/you --version` all return `0.9.4`.
+- GitHub Actions are green for `cc1d76e`: CI `28501882155`, Agent Docs `28501882183`, and Publish CLI
+  `28501882181`. Vercel production deployment `https://youmd-3z1afb7el-hubify.vercel.app` is
+  successful and aliased through `https://www.you.md`.
+- Refreshed this Mac's resident runtime to `0.9.4`, safely reconciled the active `~/.you` config with
+  the legacy authenticated `~/.youmd` config without printing secret values, reloaded all five launchd
+  daemons, and re-enabled remote host opt-in.
+- Live self-dispatch proof passed: `MacBookPro.lan` returned `agent.status` request
+  `rc_01KWEAJCCB000GM3JCT7S` in about 2s, and `skill.inventory` request
+  `rc_01KWEAJPP50002M9MM2K4` in about 29s with `secretValuesExposed: false`, `434` unique skill names,
+  `1,175` real skill files, `431` You.md catalog skills, and `4` catalog gaps.
+- Remaining blocker is host-local: `Houstons-MacBook-Air.local` did not answer post-0.9.4
+  `skill.inventory` request `rc_01KWEAN93J0002YFA726J` within 60s or `agent.status` request
+  `rc_01KWEAQBV6000G2ZT2KJT` within 45s. The Air needs local runtime/daemon refresh before the source
+  can close its stale `youmdCatalogSkills: 0` row.
+
 ## 2026-07-01 — Skill Mesh catalog convergence fix
 
 - Fixed `you skill inventory --register-catalog --sync` so a fresh machine that starts with an empty

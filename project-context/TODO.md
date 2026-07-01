@@ -7,6 +7,15 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-07-01 — remote Skill Mesh maintenance actions and CLI 0.9.4
+- [x] Add whitelist-only remote `skill.inventory` and `machine.verify` maintenance actions with fixed argv, no shell execution, target-host opt-in, and safe root-token handling
+- [x] Verify the remote maintenance actions locally with `cd cli && npm run build` and focused `remote-executor` coverage (`30` tests)
+- [x] Publish `youmd@0.9.4` through trusted workflow `28501882181`; npm, `npx`, this Mac's `you`, and `/Users/houstongolden/.you/bin/you` all report `0.9.4`
+- [x] Confirm GitHub Actions CI `28501882155`, Agent Docs `28501882183`, Vercel production deployment `https://youmd-3z1afb7el-hubify.vercel.app`, and live `llms:smoke` are green for `cc1d76e`
+- [x] Reconcile this Mac's active `~/.you/config.json` with the legacy authenticated `~/.youmd/config.json` without printing secret values, then reload all five launchd daemons
+- [x] Live-prove self remote dispatch on `MacBookPro.lan` with `agent.status` request `rc_01KWEAJCCB000GM3JCT7S` and `skill.inventory` request `rc_01KWEAJPP50002M9MM2K4`
+- [ ] Update/install `youmd@0.9.4+` on `Houstons-MacBook-Air.local`, reload daemons, and rerun source-side `skill.inventory` plus `machine.verify --root CODE_2025`
+
 ### 2026-07-01 — remote-command reliability and real-model orchestrator tuning
 - [x] Fix hosted installer relinking so a freshly installed current runtime is not overwritten by a stale `~/.you/npm-global` binary
 - [x] Verify production `https://you.md/install.sh` contains the version-aware runtime guard
@@ -20,7 +29,7 @@ PRD Version: 2.3
 - [x] Refresh this source Mac's local runtime to `youmd@0.9.2` and confirm all five daemons are loaded
 - [x] Prove a real second-host round-trip on `Houstons-MacBook-Air.local`: remote `agent.status`, `agent.list`, `agent.spawn`, `agent.output`, and exited-worker cleanup all returned through the production remote-command bus
 - [x] Prove `com.you.realtime-sync` launchd alone consumes the queue after daemon reinstall/kickstart; launchd-only `agent.status` returned request `rc_01KWE6YTZ4000F2NCT6DK` and launchd-only Codex spawn `w_mr1psrnm504d26` completed read-only
-- [ ] Update the Mac mini to `youmd@0.9.2+`, reload daemons, run `you orchestrate host on`, and re-run the live spawn runbook sections 1-3 on that specific host
+- [ ] Update the Mac mini to `youmd@0.9.4+`, reload daemons, run `you orchestrate host on`, and re-run the live spawn runbook sections 1-3 on that specific host
 
 ### 2026-06-30 — folder.md native storage integration
 - [x] Configure the shared `FOLDERMD_SERVICE_SECRET` across You.md Convex prod and folder.md Vercel production without exposing the value
@@ -79,10 +88,10 @@ PRD Version: 2.3
 - [x] Add `npm run sync:graph:smoke` so the synced-brain graph REST/MCP proof is repeatable without printing secrets
 - [x] Make the shared synced brain graph selectable with real active-link pulses and collapse Machine repair/diagnostic clutter behind focused disclosure
 - [ ] Next pass: remove remaining non-canonical fallback liveness paths after production API/MCP graph smoke proves parity
-- [ ] Next pass: update/install `youmd@0.9.3+` on the Mac mini, reload daemons, and run its live spawn proof when the Mini is available
+- [ ] Next pass: update/install `youmd@0.9.4+` on the Mac mini, reload daemons, and run its live spawn proof when the Mini is available
 - [x] Fix `you skill inventory --register-catalog --sync` so fresh machines rerun inventory after catalog hydration/registration and do not sync a stale zero-catalog proof
 - [x] Publish CLI `youmd@0.9.3` for the Skill Mesh catalog convergence fix, including generated docs/OpenAPI, handoff markers, npm proof, source Mac runtime refresh, and daemon reload
-- [ ] Rerun the Air Skill Mesh proof after the catalog convergence fix, or rerun the current CLI command twice as a temporary proof, until `Houstons-MacBook-Air.local` no longer reports `youmdCatalogSkills: 0`
+- [ ] Rerun the Air Skill Mesh proof after installing/reloading `youmd@0.9.4+` on the Air until `Houstons-MacBook-Air.local` no longer reports `youmdCatalogSkills: 0`
 - [x] Expose first agent stack inventory topology through You.md local and hosted MCP
 - [x] Add richer API/MCP drift query models for agent stack topology and trusted-machine comparison
 - [x] Add hosted MCP resources for agent stack topology/report files, including generated safe HTML and repo-backed markdown/JSON snapshots
