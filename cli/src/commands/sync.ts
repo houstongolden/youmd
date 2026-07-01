@@ -25,6 +25,7 @@ import { BrailleSpinner } from "../lib/render";
 import {
   SeenRequestSet,
   handleRemoteCommand,
+  handleQueuedDurableRemoteCommands,
   REMOTE_COMMAND_CHANNEL,
 } from "../lib/remote-command";
 import type { AgentBusMessage } from "../lib/api";
@@ -438,6 +439,13 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
         const now = Date.now();
         const signature = realtimeSyncHeadSignature(latestHead);
         const changed = signature !== lastSignature;
+        const durableCommandCount = await handleQueuedDurableRemoteCommands(
+          seenRemoteCommands,
+          (line) => console.log(chalk.dim("  -- remote-command: ") + line),
+        );
+        if (durableCommandCount > 0) {
+          console.log(chalk.dim("  -- remote-command: ") + chalk.green(`processed ${durableCommandCount} durable queued command(s)`));
+        }
 
         if (changed) {
           lastSignature = signature;

@@ -107,6 +107,9 @@ critical paths. 2026-07-01 live source-side proof: repo CLI `0.9.1` can dispatch
 acked or completed within 60 seconds. The exact-host queued row plus older queued commands for the
 same target show the remaining blocker is target-side daemon freshness/version/launch/opt-in, not the
 source CLI or production dispatch endpoint. SSH direct repair was unavailable (`port 22 refused`).
+Code follow-up: the realtime daemon now also pulls durable queued `remoteCommands` rows for its own
+host aliases on every startup/heartbeat pass, so commands are no longer dependent on appearing in the
+current realtime agent-bus head; short host and FQDN names now match within the same hostname family.
 **Production Verified:** PARTIAL — source-side durable dispatch works; full spawn round-trip still
 requires the Mac mini / Hostinger host to run the remote-command daemon, answer `agent.status`, then
 opt in and run runbook sections 1-3.

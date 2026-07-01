@@ -18,6 +18,7 @@ const recordBrainActivity = vi.fn(async () => ({ ok: true, status: 200, data: {}
 const dispatchRemoteCommandDurable = vi.fn();
 const updateRemoteCommandStatus = vi.fn();
 const getRemoteCommand = vi.fn();
+const listRemoteCommands = vi.fn();
 
 vi.mock("../lib/api", () => ({
   sendAgentBusMessage: (...a: unknown[]) => sendAgentBusMessage(...a),
@@ -26,6 +27,7 @@ vi.mock("../lib/api", () => ({
   dispatchRemoteCommandDurable: (...a: unknown[]) => dispatchRemoteCommandDurable(...a),
   updateRemoteCommandStatus: (...a: unknown[]) => updateRemoteCommandStatus(...a),
   getRemoteCommand: (...a: unknown[]) => getRemoteCommand(...a),
+  listRemoteCommands: (...a: unknown[]) => listRemoteCommands(...a),
 }));
 
 // ─── executor mock (so handleRemoteCommand doesn't run real git) ─────────────
@@ -43,8 +45,10 @@ import {
   dispatchRemoteCommand,
   pollForResult,
   handleRemoteCommand,
+  handleQueuedDurableRemoteCommands,
   SeenRequestSet,
   REMOTE_COMMAND_CHANNEL,
+  targetMatchesHost,
 } from "../lib/remote-command";
 import type { AgentBusMessage } from "../lib/api";
 
@@ -55,6 +59,7 @@ beforeEach(() => {
   sendAgentBusMessage.mockResolvedValue({ ok: true, status: 201, data: { success: true, message: {} } });
   listAgentBusMessages.mockResolvedValue({ ok: true, status: 200, data: { messages: [] } });
   updateRemoteCommandStatus.mockResolvedValue({ ok: true, status: 200, data: { command: {} } });
+  listRemoteCommands.mockResolvedValue({ ok: true, status: 200, data: { success: true, commands: [], count: 0 } });
 });
 
 afterEach(() => {
@@ -245,5 +250,63 @@ describe("handleRemoteCommand — best-effort durable status transitions", () =>
     const statuses = updateRemoteCommandStatus.mock.calls.map((c) => (c[0] as { status: string }).status);
     expect(statuses).toContain("error");
     expect(sendAgentBusMessage).toHaveBeenCalled();
+  });
+});
+
+describe("durable queued command pull", () => {
+  it("processes queued durable commands even when the realtime bus head is empty", async () => {
+    executeRemoteAction.mockResolvedValue({
+      ok: true,
+      action: "agent.status",
+      exitCode: 0,
+      output: "ready",
+      status: "ok",
+      secretValuesExposed: false,
+    });
+    listRemoteCommands.mockImplementation(async ({ targetHost }: { targetHost: string }) => ({
+      ok: true,
+      status: 200,
+      data: {
+        success: true,
+        count: targetHost === "houstons-mini.lan" ? 1 : 0,
+        commands: targetHost === "houstons-mini.lan"
+          ? [
+              {
+                id: "row_1",
+                requestId: "rc_queued_1",
+                targetHost: "Houstons-Mini.lan",
+                sourceHost: "MacBookPro.lan",
+                sourceAgent: "youmd remote cli",
+                action: "agent.status",
+                args: {},
+                status: "queued",
+                ok: null,
+                output: null,
+                exitCode: null,
+                gitState: null,
+                issuedAt: Date.now(),
+                expiresAt: Date.now() + 60_000,
+                completedAt: null,
+                secretValuesExposed: false,
+              },
+            ]
+          : [],
+      },
+    }));
+
+    const seen = new SeenRequestSet();
+    const processed = await handleQueuedDurableRemoteCommands(seen, undefined, "Houstons-Mini.lan");
+
+    expect(processed).toBe(1);
+    expect(seen.has("rc_queued_1")).toBe(true);
+    expect(executeRemoteAction).toHaveBeenCalledWith({ action: "agent.status", args: {} });
+    const statuses = updateRemoteCommandStatus.mock.calls.map((c) => (c[0] as { status: string }).status);
+    expect(statuses).toEqual(["acked", "running", "done"]);
+  });
+
+  it("matches short host aliases without widening beyond the same hostname", () => {
+    expect(targetMatchesHost("Houstons-Mini", "Houstons-Mini.lan")).toBe(true);
+    expect(targetMatchesHost("Houstons-Mini.lan", "Houstons-Mini")).toBe(true);
+    expect(targetMatchesHost("Other-Mini", "Houstons-Mini.lan")).toBe(false);
   });
 });

@@ -15,7 +15,9 @@ import {
   dispatchRemoteCommandDurable,
   updateRemoteCommandStatus,
   getRemoteCommand,
+  listRemoteCommands,
   type AgentBusMessage,
+  type RemoteCommandRecord,
 } from "./api";
 import { generateRequestId } from "./request-id";
 import {
@@ -58,6 +60,23 @@ function asMetadata(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function hostnameAliases(hostname = os.hostname()): string[] {
+  const lower = hostname.trim().toLowerCase();
+  if (!lower) return [];
+  const aliases = new Set([lower]);
+  const short = lower.split(".")[0];
+  if (short) aliases.add(short);
+  return [...aliases];
+}
+
+export function targetMatchesHost(targetHost: string | null | undefined, hostname = os.hostname()): boolean {
+  const target = String(targetHost || "").trim().toLowerCase();
+  if (!target) return false;
+  const targetAliases = hostnameAliases(target);
+  const localAliases = hostnameAliases(hostname);
+  return targetAliases.some((alias) => localAliases.includes(alias));
 }
 
 // ─── Dispatch (issuer side) ────────────────────────────────────────────────────
@@ -319,8 +338,7 @@ export function shouldHandleCommand(
   if (message.channel !== REMOTE_COMMAND_CHANNEL) {
     return { process: false, reason: "not a remote-command" };
   }
-  const target = String(message.targetHost || "").toLowerCase();
-  if (!target || target !== hostname.toLowerCase()) {
+  if (!targetMatchesHost(message.targetHost, hostname)) {
     return { process: false, reason: "not addressed to this host" };
   }
   const meta = asMetadata(message.metadata);
@@ -336,6 +354,71 @@ export function shouldHandleCommand(
     return { process: false, reason: "command expired" };
   }
   return { process: true };
+}
+
+export function durableCommandToAgentBusMessage(row: RemoteCommandRecord): AgentBusMessage {
+  return {
+    messageId: `remote-command:${row.requestId}`,
+    channel: REMOTE_COMMAND_CHANNEL,
+    kind: "command",
+    body: row.action,
+    sourceHost: row.sourceHost,
+    sourceAgent: row.sourceAgent || "youmd remote cli",
+    targetHost: row.targetHost,
+    metadata: {
+      requestId: row.requestId,
+      action: row.action,
+      args: row.args && typeof row.args === "object" && !Array.isArray(row.args)
+        ? row.args
+        : undefined,
+      issuedAt: row.issuedAt,
+      expiresAt: row.expiresAt,
+      secretValuesExposed: false,
+    },
+    createdAt: row.issuedAt,
+    secretValuesExposed: false,
+  };
+}
+
+/**
+ * Pull durable queued work addressed to this host, independent of the realtime
+ * agent-bus head. This closes the reliability gap where a daemon starts late or
+ * the bus head truncates before the command is seen, leaving a valid durable row
+ * stuck in `queued` forever.
+ */
+export async function handleQueuedDurableRemoteCommands(
+  seen: SeenRequestSet,
+  log?: (line: string) => void,
+  hostname = os.hostname()
+): Promise<number> {
+  const targets = hostnameAliases(hostname);
+  const rows = new Map<string, RemoteCommandRecord>();
+
+  for (const targetHost of targets) {
+    try {
+      const res = await listRemoteCommands({ targetHost, status: "queued", limit: 25 });
+      if (!res.ok) {
+        if (res.status && res.status !== 404) {
+          log?.(`remote-command durable queue poll returned HTTP ${res.status}`);
+        }
+        continue;
+      }
+      for (const row of res.data?.commands ?? []) {
+        if (row.status === "queued") rows.set(row.requestId, row);
+      }
+    } catch (err) {
+      log?.(`remote-command durable queue poll failed: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+
+  let processed = 0;
+  for (const row of [...rows.values()].sort((a, b) => a.issuedAt - b.issuedAt)) {
+    const wasSeen = seen.has(row.requestId);
+    await handleRemoteCommand(durableCommandToAgentBusMessage(row), seen, log, hostname);
+    if (!wasSeen && seen.has(row.requestId)) processed += 1;
+  }
+
+  return processed;
 }
 
 /**
@@ -386,9 +469,10 @@ async function patchRemoteStatus(
 export async function handleRemoteCommand(
   message: AgentBusMessage,
   seen: SeenRequestSet,
-  log?: (line: string) => void
+  log?: (line: string) => void,
+  hostname = os.hostname()
 ): Promise<void> {
-  const decision = shouldHandleCommand(message, seen);
+  const decision = shouldHandleCommand(message, seen, hostname);
   if (!decision.process) return;
 
   const meta = asMetadata(message.metadata);
