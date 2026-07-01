@@ -303,6 +303,87 @@ function runYoumdSubcommand(label: string, args: string[], timeoutMs: number): v
   }
 }
 
+function runYoumdSubcommandInBackground(
+  label: string,
+  args: string[],
+  timeoutMs: number,
+  inFlight: Set<string>,
+): void {
+  if (inFlight.has(label)) {
+    console.log(chalk.dim(`  -- ${label}: already running`));
+    return;
+  }
+
+  const command = `youmd ${args.join(" ")}`;
+  console.log(chalk.dim(`  -- ${label}: ${command}`));
+  inFlight.add(label);
+
+  const spawnChild = (cmd: string, cmdArgs: string[]) =>
+    child_process.spawn(cmd, cmdArgs, {
+      stdio: "inherit",
+      env: process.env,
+    });
+
+  let child: child_process.ChildProcess;
+  try {
+    child = spawnChild("youmd", args);
+  } catch (err) {
+    inFlight.delete(label);
+    console.log(chalk.yellow(`  ${label} warning: ${err instanceof Error ? err.message : err}`));
+    return;
+  }
+
+  let fallbackStarted = false;
+  let settled = false;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+
+  const finish = (message?: string) => {
+    if (settled) return;
+    settled = true;
+    if (timeout) clearTimeout(timeout);
+    inFlight.delete(label);
+    if (message) console.log(message);
+  };
+
+  const armTimeout = (activeChild: child_process.ChildProcess) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      activeChild.kill("SIGTERM");
+      finish(chalk.yellow(`  ${label} timed out after ${Math.round(timeoutMs / 1000)}s`));
+    }, timeoutMs);
+  };
+
+  const attach = (activeChild: child_process.ChildProcess, allowFallback: boolean) => {
+    armTimeout(activeChild);
+    activeChild.on("error", (err: NodeJS.ErrnoException) => {
+      if (
+        allowFallback &&
+        err.code === "ENOENT" &&
+        process.argv[1] &&
+        !fallbackStarted
+      ) {
+        fallbackStarted = true;
+        const fallback = spawnChild(process.execPath, [process.argv[1], ...args]);
+        attach(fallback, false);
+        return;
+      }
+      finish(chalk.yellow(`  ${label} warning: ${err.message}`));
+    });
+    activeChild.on("exit", (code, signal) => {
+      if (settled) return;
+      if (typeof code === "number" && code !== 0) {
+        finish(chalk.yellow(`  ${label} exited ${code}`));
+      } else if (signal) {
+        finish(chalk.yellow(`  ${label} stopped by ${signal}`));
+      } else {
+        finish();
+      }
+    });
+  };
+
+  attach(child, true);
+}
+
 // Self-upgrade: the resident daemon must keep the runtime current without the
 // user ever running a command (autonomous-first). We spawn the installer-written
 // `youmd-auto-upgrade` helper DETACHED so that when the upgrade reloads the
@@ -368,6 +449,7 @@ async function recordDaemonCheckpoint(fields: {
 
 async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Promise<void> {
   const heartbeatMs = envNumber("YOUMD_LIVE_SYNC_HEARTBEAT_SECONDS", 60) * 1000;
+  const remoteCommandPollMs = envNumber("YOUMD_LIVE_SYNC_REMOTE_COMMAND_POLL_SECONDS", 5) * 1000;
   const localMinMs = envNumber("YOUMD_LIVE_SYNC_LOCAL_INTERVAL_SECONDS", 5) * 1000;
   const stackMinMs = envNumber("YOUMD_LIVE_SYNC_STACK_INTERVAL_SECONDS", 60) * 1000;
   const contextMinMs = envNumber("YOUMD_LIVE_SYNC_CONTEXT_INTERVAL_SECONDS", 120) * 1000;
@@ -414,8 +496,10 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   let lastAgentMessageAt = 0;
   const seenRemoteCommands = new SeenRequestSet();
   let materializing = false;
+  let pollingRemoteCommands = false;
   let pendingReason: string | null = null;
   let latestHead: RealtimeSyncHead | null = null;
+  const backgroundMaintenance = new Set<string>();
 
   const stop = () => {
     stopped = true;
@@ -423,6 +507,26 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   };
   process.once("SIGINT", stop);
   process.once("SIGTERM", stop);
+
+  async function processQueuedRemoteCommands(reason: string): Promise<void> {
+    if (pollingRemoteCommands) return;
+    pollingRemoteCommands = true;
+    try {
+      const durableCommandCount = await handleQueuedDurableRemoteCommands(
+        seenRemoteCommands,
+        (line) => console.log(chalk.dim("  -- remote-command: ") + line),
+      );
+      if (durableCommandCount > 0) {
+        console.log(
+          chalk.dim("  -- remote-command: ") +
+            chalk.green(`processed ${durableCommandCount} durable queued command(s)`) +
+            chalk.dim(` (${reason})`),
+        );
+      }
+    } finally {
+      pollingRemoteCommands = false;
+    }
+  }
 
   async function materialize(reason: string, head?: RealtimeSyncHead): Promise<void> {
     if (head) latestHead = head;
@@ -439,13 +543,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
         const now = Date.now();
         const signature = realtimeSyncHeadSignature(latestHead);
         const changed = signature !== lastSignature;
-        const durableCommandCount = await handleQueuedDurableRemoteCommands(
-          seenRemoteCommands,
-          (line) => console.log(chalk.dim("  -- remote-command: ") + line),
-        );
-        if (durableCommandCount > 0) {
-          console.log(chalk.dim("  -- remote-command: ") + chalk.green(`processed ${durableCommandCount} durable queued command(s)`));
-        }
+        await processQueuedRemoteCommands(activeReason);
 
         if (changed) {
           lastSignature = signature;
@@ -526,21 +624,32 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
 
         if (stackSyncEnabled && shouldRunBoundedSync(lastStackRunAt, now, stackMinMs)) {
           lastStackRunAt = now;
-          runYoumdSubcommand("shared skill/stack git sync", ["stack", "sync"], commandTimeoutMs);
+          runYoumdSubcommandInBackground(
+            "shared skill/stack git sync",
+            ["stack", "sync"],
+            commandTimeoutMs,
+            backgroundMaintenance,
+          );
         }
 
         if (contextSyncEnabled && shouldRunBoundedSync(lastContextRunAt, now, contextMinMs)) {
           lastContextRunAt = now;
-          runYoumdSubcommand("project-context git sync", ["stack", "context-sync"], commandTimeoutMs);
+          runYoumdSubcommandInBackground(
+            "project-context git sync",
+            ["stack", "context-sync"],
+            commandTimeoutMs,
+            backgroundMaintenance,
+          );
         }
 
         if (inventorySyncEnabled && shouldRunBoundedSync(lastInventoryRunAt, now, inventoryMinMs)) {
           lastInventoryRunAt = now;
           const inventoryDir = resolveAgentStackInventoryDir();
-          runYoumdSubcommand(
+          runYoumdSubcommandInBackground(
             "agent stack inventory sync",
             ["skill", "inventory", "--out-dir", inventoryDir, "--register-catalog", "--sync"],
             commandTimeoutMs,
+            backgroundMaintenance,
           );
         }
 
@@ -613,6 +722,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
   while (!stopped) {
     let client: ConvexClient | null = null;
     let heartbeat: ReturnType<typeof setInterval> | null = null;
+    let remoteCommandPoll: ReturnType<typeof setInterval> | null = null;
     let unsubscribe: (() => void) | null = null;
 
     try {
@@ -644,6 +754,9 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
       heartbeat = setInterval(() => {
         void materialize("heartbeat");
       }, heartbeatMs);
+      remoteCommandPoll = setInterval(() => {
+        void processQueuedRemoteCommands("remote command poll");
+      }, remoteCommandPollMs);
 
       await materialize("startup");
       const renewInMs = Math.max(30_000, session.data.expiresAt - Date.now() - 60_000);
@@ -654,6 +767,7 @@ async function runLiveSync(options: { local?: boolean; daemon?: boolean }): Prom
       await liveSyncSleep(10_000);
     } finally {
       if (heartbeat) clearInterval(heartbeat);
+      if (remoteCommandPoll) clearInterval(remoteCommandPoll);
       if (unsubscribe) unsubscribe();
       if (client) client.close();
     }

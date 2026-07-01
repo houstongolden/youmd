@@ -110,6 +110,8 @@ source CLI or production dispatch endpoint. SSH direct repair was unavailable (`
 Code follow-up: the realtime daemon now also pulls durable queued `remoteCommands` rows for its own
 host aliases on every startup/heartbeat pass, so commands are no longer dependent on appearing in the
 current realtime agent-bus head; short host and FQDN names now match within the same hostname family.
+The live daemon also polls the durable queue independently every 5 seconds and runs heavier
+maintenance in the background so remote command pickup is not blocked behind stack/inventory sync.
 **Production Verified:** PARTIAL — source-side durable dispatch works; full spawn round-trip still
 requires the Mac mini / Hostinger host to run the remote-command daemon, answer `agent.status`, then
 opt in and run runbook sections 1-3.
