@@ -1,12 +1,38 @@
 # You.md — Current State
 
 Last Updated: 2026-07-01
-Latest Verified Production Web Commit: 94a2d56 fix(shell): suppress time greeting hydration mismatch
+Latest Verified Production Web Commit: 755d830 fix(install): link current runtime binaries
 Latest CLI Publish Workflow Commit: 51999bf fix(storage): normalize foldermd upload pointers
+Latest CLI Release Target: youmd@0.9.2 (pending npm publish)
 
 ---
 
 ## What's Deployed and Working
+
+### Runtime installer + remote command source path — live verified 2026-07-01
+- Production `https://you.md/install.sh` now includes version-aware runtime relinking:
+  `binary_meets_required_version`, `find_runtime_bin_dir`, and `PREFERRED_BIN_DIR` prevent the
+  installer from relinking `~/.you/bin/you` back to a stale user prefix after installing the current
+  runtime.
+- GitHub Actions CI for `755d830` passed, and Vercel's production deployment status for that commit
+  is `success`.
+- Source-side durable remote dispatch is verified with repo/local CLI `0.9.1+`:
+  `you remote run MacBookPro.lan agent.status --timeout 45 --json` completed successfully with
+  request `rc_01KWE3P4KV000CEX41MD8`.
+- The Mac mini live proof remains target-side blocked: exact target dispatch
+  `rc_01KWE3PQBK000KS20PB4N` to `Houstons-Mini.lan` timed out after 75 seconds. The source can
+  create durable remoteCommands rows; the target is not consuming them yet and needs runtime/daemon
+  refresh plus `you orchestrate host on` before the spawn round-trip can be closed.
+
+### Orchestrator real-model tuning — live verified 2026-07-01
+- A real-model no-spawn smoke exposed a natural tool-name mismatch:
+  `list_synced_machines` instead of the registered `list_machines`.
+- The loop now supports deterministic aliases on tools, and the machine-list tool advertises
+  `list_synced_machines` / `list_remote_machines`. The step log records the canonical tool name.
+- Follow-up live smoke against built local dist completed read-only with `--max-steps 5`, listed
+  `Houstons-Mini.lan — warn`, and finished without spawning, stopping, or writing workers.
+- CLI release target is `youmd@0.9.2`; npm latest remains `0.9.1` until the trusted publish workflow
+  runs successfully.
 
 ### Native folder.md storage lane — live verified 2026-06-30
 - The zero-paste you.md -> folder.md media lane is live verified. `FOLDERMD_SERVICE_SECRET` is set

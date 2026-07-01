@@ -70,9 +70,9 @@ server-to-server, stores it encrypted, syncs it to the user's machines, and uplo
    `get_media`; `setup` kept as optional BYO override; CLI 0.9.0.
 **Open / next:**
 - No storage-lane blocker remains; continue with the separate live two-machine spawn test and
-  real-model orchestrator tuning.
+  Mac mini target-host repair / spawn proof.
 - (Houston's other pending items, out of this session's scope) live two-machine spawn test,
-  orchestrator LLM tuning, Vercel project-setting deploy fix.
+  Mac mini target-host daemon refresh, Vercel project-setting deploy fix.
 
 ---
 
@@ -91,9 +91,14 @@ to `https://www.folder.md`.
 web commits, which would block prod deploys (a project-level setting, not the code)." (It was the code.)
 
 ### 148. Orchestrator tuning against real models
-**Status:** HARDENED FOR REAL-MODEL BEHAVIOR (live-model tuning still needs a live model)
+**Status:** LIVE-MODEL SMOKED / ALIAS TUNING SHIPPED LOCALLY
 **Verified:** retry/backoff around the model call, message-budget guard, >256KB tool-call rejection,
-registry-corruption resilience, prompt identity clarified; +5 offline tests, 16/16 pass, tsc clean.
+registry-corruption resilience, prompt identity clarified; offline orchestrator coverage passes.
+2026-07-01 real-model no-spawn smoke first exposed a natural tool-name mismatch
+(`list_synced_machines` vs canonical `list_machines`). The loop now supports deterministic tool
+aliases, `list_machines` advertises `list_synced_machines` / `list_remote_machines`, and the focused
+regression passes. Follow-up live smoke against built local dist completed with `--max-steps 5`,
+listed `Houstons-Mini.lan — warn`, and finished without spawning, stopping, or writing workers.
 **Source:** 2026-06-27 — Houston: "Orchestrator LLM tuning against real models."
 
 ### 149. Live two-machine spawn round-trip
@@ -101,12 +106,14 @@ registry-corruption resilience, prompt identity clarified; +5 offline tests, 16/
 **Verified:** full audit of `MULTICOMPUTER_OPERATOR_RUNBOOK_2026-06-26.md` vs CLI — every command +
 flag exists; Linux systemd `--user` units + linger and macOS launchd plists complete; cross-machine
 bus, durable `remoteCommands` table, scopes, host opt-in, redaction all shipped. Zero stubs in the
-critical paths. 2026-07-01 live source-side proof: repo CLI `0.9.1` can dispatch durable
-`agent.status` remote commands to the Mac mini target through production; both partial-host and exact
-`Houstons-Mini.lan` dispatches created secret-safe queued `remoteCommands` rows, but neither was
-acked or completed within 60 seconds. The exact-host queued row plus older queued commands for the
-same target show the remaining blocker is target-side daemon freshness/version/launch/opt-in, not the
-source CLI or production dispatch endpoint. SSH direct repair was unavailable (`port 22 refused`).
+critical paths. 2026-07-01 live source-side proof: repo/local CLI `0.9.1+` can dispatch and consume
+durable `agent.status` remote commands through production; self-target request
+`rc_01KWE3P4KV000CEX41MD8` completed successfully on `MacBookPro.lan`. Exact target request
+`rc_01KWE3PQBK000KS20PB4N` to `Houstons-Mini.lan` created a secret-safe queued `remoteCommands` row
+but was not acked or completed within 75 seconds. The exact-host queued row plus older queued
+commands for the same target show the remaining blocker is target-side daemon
+freshness/version/launch/opt-in, not the source CLI or production dispatch endpoint. SSH direct
+repair was unavailable (`port 22 refused`).
 Code follow-up: the realtime daemon now also pulls durable queued `remoteCommands` rows for its own
 host aliases on every startup/heartbeat pass, so commands are no longer dependent on appearing in the
 current realtime agent-bus head; short host and FQDN names now match within the same hostname family.

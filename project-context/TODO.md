@@ -7,6 +7,18 @@ PRD Version: 2.3
 
 ## COMPLETED
 
+### 2026-07-01 — remote-command reliability and real-model orchestrator tuning
+- [x] Fix hosted installer relinking so a freshly installed current runtime is not overwritten by a stale `~/.you/npm-global` binary
+- [x] Verify production `https://you.md/install.sh` contains the version-aware runtime guard
+- [x] Fix durable remote-command polling for case-sensitive Convex `targetHost` rows by querying exact-case and lowercase host aliases
+- [x] Prove source-side durable remote command pickup with `MacBookPro.lan` request `rc_01KWE3P4KV000CEX41MD8`
+- [x] Prove the remaining Mac mini two-host blocker is target-side by dispatching exact target request `rc_01KWE3PQBK000KS20PB4N` and observing no daemon response before timeout
+- [x] Run a real-model orchestrator no-spawn smoke and capture the model's natural `list_synced_machines` alias mismatch
+- [x] Add deterministic orchestrator tool aliases and regression coverage so `list_synced_machines` resolves to canonical `list_machines`
+- [x] Re-run the real-model no-spawn orchestrator smoke against built dist; it listed `Houstons-Mini.lan — warn` and finished without spawning workers
+- [ ] Publish `youmd@0.9.2` to npm after the trusted publish workflow is triggered and green
+- [ ] Update the Mac mini to `youmd@0.9.2+`, reload daemons, run `you orchestrate host on`, and re-run the live spawn runbook sections 1-3
+
 ### 2026-06-30 — folder.md native storage integration
 - [x] Configure the shared `FOLDERMD_SERVICE_SECRET` across You.md Convex prod and folder.md Vercel production without exposing the value
 - [x] Redeploy folder.md production and folder.md Convex so `/api/v1/provision` and `externalAccounts` are live together

@@ -1,8 +1,16 @@
 # You.md — Feature Inventory
 
-Last Updated: 2026-06-20
+Last Updated: 2026-07-01
 
 ## 2026-06-17 Session Notes
+
+- 2026-07-01 remote-command/orchestrator reliability: The curl installer now validates candidate
+  `you` binaries before relinking runtime shims, preventing stale `0.8.x` globals from overriding a
+  fresh `0.9.x` source install. Durable remote-command polling now queries exact-case and lowercase
+  host aliases for Convex `targetHost` rows. The orchestrator loop now supports deterministic tool
+  aliases, with `list_synced_machines` and `list_remote_machines` mapped to canonical
+  `list_machines`; a real-model no-spawn smoke listed `Houstons-Mini.lan — warn` and finished
+  without spawning. CLI release target: `youmd@0.9.2`.
 
 - 2026-06-19 local/global agent stack inventory: Added a repeatable secret-safe local inventory generator at `scripts/local-agent-stack-inventory.mjs`. It writes `project-context/local-agent-stack-inventory-2026-06-19.html` with a Mermaid topology diagram and tables for canonical roots, host exposure paths, shared instruction symlinks, prompt/preference/context/log buckets, project-context coverage, and the You.md catalog gap. The companion JSON snapshot records 427 unique local skill names, 824 unique real `SKILL.md` files, 409 direct host exposure records, 814 canonical stack/plugin skill files, and 12 You.md cataloged skills. First diagnosis: `youmd skill list` is currently catalog-driven, while Claude/Codex/GStack/SciStack/shared roots contain the broader local stack.
 

@@ -1,5 +1,29 @@
 # You.md — Changelog
 
+## 2026-07-01 — Remote command reliability + live orchestrator model smoke
+
+- Fixed the hosted installer/runtime link path so `https://you.md/install.sh` validates candidate
+  `you` binaries against the required CLI version before relinking `~/.you/bin`. This prevents a
+  fresh install from building `0.9.1+` and then accidentally pointing back at a stale `0.8.x`
+  runtime. Live `https://you.md/install.sh` now contains `binary_meets_required_version` and
+  `find_runtime_bin_dir`.
+- Fixed durable remote-command pickup for case-sensitive Convex `targetHost` rows by polling
+  exact-case and lowercase host aliases.
+- Verified source-side durable dispatch after the fix:
+  `you remote run MacBookPro.lan agent.status --timeout 45 --json` completed successfully with
+  request `rc_01KWE3P4KV000CEX41MD8`; `Houstons-Mini.lan` dispatch
+  `rc_01KWE3PQBK000KS20PB4N` still timed out, proving the remaining two-host blocker is target-side
+  daemon/host opt-in freshness.
+- Ran a real-model orchestrator smoke against the built CLI. The first live run exposed a model
+  alias mismatch (`list_synced_machines` vs `list_machines`); the loop now supports deterministic
+  tool aliases and the machine-listing tool advertises the alias. Follow-up live smoke completed
+  read-only with `node cli/dist/you.js orchestrate run ... --max-steps 5`, listed
+  `Houstons-Mini.lan — warn`, and finished without spawning workers.
+- CLI release target is now `youmd@0.9.2`; generated docs, OpenAPI, llms files, and root handoff
+  markers have been aligned to that version.
+- Verification: focused orchestrator loop tests pass, CLI build passes, GitHub Actions CI for
+  `755d830` passed, and Vercel production deployment for `755d830` completed successfully.
+
 ## 2026-07-01 — Authenticated production shell proof + real machine counts
 
 - Verified the authenticated production `/shell` in Houston's Chrome session at
